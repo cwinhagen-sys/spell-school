@@ -431,10 +431,10 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
         feedbackType = 'info'
       }
       
-      setFeedback({ 
-        type: feedbackType, 
-        message: score === 0 ? result.feedback : `Great! You earned ${score} points. ${result.feedback}` 
-      })
+         setFeedback({ 
+     type: feedbackType as 'success' | 'error' | 'info', 
+     message: score === 0 ? result.feedback : `Great! You earned ${score} points. ${result.feedback}` 
+   })
       
       // Mark as submitted and show finish button
       setHasSubmitted(true)
