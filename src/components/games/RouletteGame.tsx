@@ -68,7 +68,7 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
   useEffect(() => {
     startedAtRef.current = Date.now()
     ;(async () => {
-         const session = await startGameSession('roulette' as GameType, trackingContext)
+            const session = await startGameSession('roulette' as any, trackingContext)
       setSessionId(session?.id ?? null)
     })()
   }, [trackingContext])
