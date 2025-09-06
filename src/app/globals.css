@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --brand-50: #eef2ff;
+    --brand-600: #4f46e5; /* indigo-600 */
+    --brand-700: #4338ca;
+    --radius-card: 1rem;
+  }
+  html, body { @apply bg-gray-900 text-white; }
+  a { @apply text-indigo-400 no-underline hover:text-indigo-300; }
+}
+
+/* Using only Tailwind utilities in markup for compatibility */
+
+/* Custom CSS for 3D flip animation */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-style-preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
