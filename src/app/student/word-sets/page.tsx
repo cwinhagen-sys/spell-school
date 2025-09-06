@@ -76,7 +76,7 @@ export default function StudentWordSetsPage() {
         }
 
         // Merge unique by word set id
-        const combined = [...(direct as AssignedRecord[] || []), ...classAssigned]
+           const combined = [...(direct as unknown as AssignedRecord[] || []), ...classAssigned]
         const seen = new Set<string>()
         const unique = combined.filter((rec) => {
           const setId = rec.word_sets?.id
