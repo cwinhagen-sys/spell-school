@@ -176,7 +176,7 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
         
         const displayText = words[i].length > 12 ? words[i].substring(0, 12) + '...' : words[i]
         ctx.fillText(displayText, 170, 0)
-        ctx.restore()
+        ctx.restore() 
       }
 
       console.log('Wheel drawn successfully')
