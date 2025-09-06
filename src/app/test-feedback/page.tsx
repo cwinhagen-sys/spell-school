@@ -40,7 +40,7 @@ export default function TestFeedbackPage() {
       const data = await response.json()
       setResult(data)
     } catch (error) {
-      setResult({ error: error.message })
+         setResult({ error: (error as Error).message })
     } finally {
       setLoading(false)
     }
