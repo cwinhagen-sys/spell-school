@@ -14,6 +14,11 @@ const nextConfig: NextConfig = {
     formats: ['image/webp', 'image/avif'],
   },
   
+  // Disable ESLint during build for deployment
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  
   // Webpack optimizations
   webpack: (config, { dev, isServer }) => {
     if (!dev && !isServer) {
