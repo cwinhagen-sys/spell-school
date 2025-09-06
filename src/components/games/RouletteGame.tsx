@@ -166,7 +166,6 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
         
         ctx.textAlign = 'right'
         ctx.textBaseline = 'middle'
-        ctx.textRenderingOptimization = 'optimizeSpeed'
         ctx.imageSmoothingEnabled = false
         
         // Remove shadow for sharper text
