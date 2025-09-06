@@ -420,7 +420,7 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
       setAwardedPoints(score)
       
       // Update progress
-      const newTotal = await updateStudentProgress(score, 'roulette', trackingContext)
+         const newTotal = await updateStudentProgress(score, 'roulette' as any, trackingContext)
       onScoreUpdate(score, newTotal)
       
       // Determine feedback type based on color
