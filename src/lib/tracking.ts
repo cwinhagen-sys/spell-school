@@ -1,7 +1,7 @@
 
 import { supabase } from '@/lib/supabase'
 
-export type GameType = 'flashcards' | 'match' | 'typing' | 'story' | 'translate' | 'connect' | 'quiz' | 'choice'
+export type GameType = 'flashcards' | 'match' | 'typing' | 'story' | 'translate' | 'connect' | 'quiz' | 'choice' | 'roulette' | 'story_gap'
 
 export interface TrackingContext {
   wordSetId?: string
