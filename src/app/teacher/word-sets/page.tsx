@@ -110,9 +110,13 @@ export default function TeacherWordSetsPage() {
 
   const load = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      
       const { data, error } = await supabase
         .from('word_sets')
         .select('id,title,words,created_at,color')
+        .eq('teacher_id', user.id)
         .order('created_at', { ascending: false })
       if (error) throw error
       setWordSets((data as any[])?.map(ws => ({ id: ws.id, title: ws.title, words: ws.words, created_at: ws.created_at, color: ws.color })) ?? [])
@@ -146,7 +150,14 @@ export default function TeacherWordSetsPage() {
 
   const remove = async (id: string) => {
     try {
-      const { error } = await supabase.from('word_sets').delete().eq('id', id)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      
+      const { error } = await supabase
+        .from('word_sets')
+        .delete()
+        .eq('id', id)
+        .eq('teacher_id', user.id)
       if (error) throw error
       load()
     } catch {
@@ -156,7 +167,14 @@ export default function TeacherWordSetsPage() {
 
   const update = async (id: string, newTitle: string, newColor?: string) => {
     try {
-      const { error } = await supabase.from('word_sets').update({ title: newTitle, color: newColor ?? null }).eq('id', id)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      
+      const { error } = await supabase
+        .from('word_sets')
+        .update({ title: newTitle, color: newColor ?? null })
+        .eq('id', id)
+        .eq('teacher_id', user.id)
       if (error) throw error
       load()
     } catch {
@@ -182,12 +200,16 @@ export default function TeacherWordSetsPage() {
 
   const saveEdit = async (id: string) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      
       const clean = editRows.filter(r => r.en.trim() && r.sv.trim())
       if (!editTitle.trim() || clean.length === 0) { setMessage('Please provide title and at least one word'); return }
       const { error } = await supabase
         .from('word_sets')
         .update({ title: editTitle.trim(), words: clean as any, color: editColor || null })
         .eq('id', id)
+        .eq('teacher_id', user.id)
       if (error) throw error
       cancelEdit()
       await load()
