@@ -210,16 +210,17 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
   const finishGame = async () => {
     setGameFinished(true)
     
-    // New fixed scoring (halved) based on number of wrong attempts (tries)
-    //  >10 = 10, 8-10 = 15, 6-7 = 20, 4-5 = 25, 2-3 = 40, 0-1 = 50
+    // Balanced scoring: 3-5 points per word pair based on performance
+    // 0-1 wrong = 5 per pair, 2-3 wrong = 4 per pair, 4-5 wrong = 3 per pair, 6+ wrong = 2 per pair
     const wa = Math.max(0, wrongAttempts)
-    let points = 0
-    if (wa <= 1) points = 50
-    else if (wa <= 3) points = 40
-    else if (wa <= 5) points = 25
-    else if (wa <= 7) points = 20
-    else if (wa <= 10) points = 15
-    else points = 10
+    const wordPairs = words.length
+    let pointsPerPair = 2
+    if (wa <= 1) pointsPerPair = 5
+    else if (wa <= 3) pointsPerPair = 4
+    else if (wa <= 5) pointsPerPair = 3
+    else pointsPerPair = 2
+    
+    const points = wordPairs * pointsPerPair
 
     setAwardedPoints(points)
     const newTotal = await updateStudentProgress(points, 'match', trackingContext)

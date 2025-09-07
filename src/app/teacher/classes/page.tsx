@@ -51,6 +51,7 @@ export default function TeacherClassesPage() {
       const { data, error } = await supabase
         .from('classes')
         .select('id, teacher_id, name, created_at, join_code')
+        .eq('teacher_id', user.id)
         .order('created_at', { ascending: false })
       if (error) throw error
       setClasses(data || [])
@@ -78,7 +79,14 @@ export default function TeacherClassesPage() {
 
   const deleteClass = async (id: string) => {
     try {
-      const { error } = await supabase.from('classes').delete().eq('id', id)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      
+      const { error } = await supabase
+        .from('classes')
+        .delete()
+        .eq('id', id)
+        .eq('teacher_id', user.id)
       if (error) throw error
       if (selectedClassId === id) {
         setSelectedClassId(null)
@@ -175,11 +183,15 @@ export default function TeacherClassesPage() {
 
   const setOrRegenerateJoinCode = async (classId: string) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      
       const newCode = generateJoinCode(6)
       const { error } = await supabase
         .from('classes')
         .update({ join_code: newCode })
         .eq('id', classId)
+        .eq('teacher_id', user.id)
       if (error) throw error
       setSelectedClassJoinCode(newCode)
       await fetchClasses()
