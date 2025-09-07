@@ -37,7 +37,7 @@ export interface VocabularyWord {
 export interface GameScore {
   id: string
   student_id: string
-  game_type: 'flashcards' | 'matching' | 'typing'
+  game_type: 'flashcards' | 'matching' | 'typing' | 'roulette' | 'story_gap' | 'story' | 'connect' | 'match' | 'choice' | 'translate' | 'quiz'
   score: number
   time_taken: number
   played_at: string
