@@ -81,11 +81,20 @@ export default function TeacherSignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center p-4">
+    <div className="min-h-[calc(100vh+4rem)] -mt-16 -mb-16 bg-gray-900 text-white flex items-center justify-center px-6">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl">
-            <img src="/assets/wizard/wizard_powerful.png" alt="Teacher Wizard" className="w-16 h-16" />
+          <div className="w-32 h-32 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-600 overflow-hidden">
+            <img 
+              src="/assets/wizard/wizard_powerful.png" 
+              alt="Teacher Wizard" 
+              className="w-28 h-28 object-cover rounded-full"
+              style={{
+                filter: 'drop-shadow(0 0 20px rgba(16, 185, 129, 0.3))',
+                maskImage: 'radial-gradient(circle, black 60%, transparent 100%)',
+                WebkitMaskImage: 'radial-gradient(circle, black 60%, transparent 100%)'
+              }}
+            />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">Teacher Sign Up</h1>
           <p className="text-gray-300">Start your magical teaching journey!</p>
@@ -124,7 +133,7 @@ export default function TeacherSignupPage() {
                 value={formData.name}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="Enter your full name"
               />
             </div>
@@ -140,7 +149,7 @@ export default function TeacherSignupPage() {
                 value={formData.email}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="Enter your email address"
               />
             </div>
@@ -157,7 +166,7 @@ export default function TeacherSignupPage() {
                 onChange={handleInputChange}
                 required
                 minLength={6}
-                className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="Create a password (min 6 characters)"
               />
             </div>
@@ -165,7 +174,7 @@ export default function TeacherSignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-green-600 hover:to-emerald-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 transition-all duration-200"
+              className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 transition-all duration-200"
             >
               {loading ? 'Creating Account...' : 'Create Teacher Account'}
             </button>
@@ -184,7 +193,7 @@ export default function TeacherSignupPage() {
           <div className="mt-6 text-center">
             <p className="text-gray-400">
               Already have an account?{' '}
-              <Link href="/" className="text-green-400 hover:text-green-300 font-medium">
+              <Link href="/" className="text-indigo-400 hover:text-indigo-300 font-medium">
                 Sign in here
               </Link>
             </p>
