@@ -10,14 +10,12 @@ export default function GameCard({
   color = "blue",
   onClick,
   locked = false,
-  subtitle,
 }: {
   title: string
   icon: ReactNode
   color?: ColorVariant
   onClick: () => void
   locked?: boolean
-  subtitle?: string
 }) {
   const cardBg: Record<ColorVariant, string> = {
     blue: "bg-blue-500/15 border-blue-500/30 hover:border-blue-500/50",
@@ -54,7 +52,6 @@ export default function GameCard({
           {icon}
         </div>
         <h3 className="text-lg font-semibold text-white">{title}</h3>
-        {subtitle && <p className="text-xs text-white/70 mt-1">{subtitle}</p>}
       </div>
       {locked && (
         <div className="absolute inset-0 rounded-2xl bg-black/20 flex items-center justify-center">

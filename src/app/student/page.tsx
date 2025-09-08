@@ -15,7 +15,6 @@ import StoryGapGame from '@/components/games/StoryGapGame'
 import QuizGame from '@/components/games/QuizGame'
 import MultipleChoiceGame from '@/components/games/MultipleChoiceGame'
 import RouletteGame from '@/components/games/RouletteGame'
-import BundleSelector from '@/components/BundleSelector'
 import { type TrackingContext } from '@/lib/tracking'
 import GameCard from '@/components/GameCard'
 
@@ -62,8 +61,6 @@ export default function StudentDashboard() {
   const [showRoulette, setShowRoulette] = useState(false)
   const [pendingGame, setPendingGame] = useState<'flashcards' | 'match' | 'typing' | 'translate' | 'connect' | 'quiz' | 'choice' | 'storygap' | 'roulette' | null>(null)
   const [selectedHomework, setSelectedHomework] = useState<Homework | null>(null)
-  const [selectedBundleForGame, setSelectedBundleForGame] = useState<any>(null)
-  const [selectedWordBundle, setSelectedWordBundle] = useState<any>(null)
   const [showHomeworkSelection, setShowHomeworkSelection] = useState(false)
   const [showLevelUp, setShowLevelUp] = useState<{ level: number; title?: string; image?: string; description?: string } | null>(null)
   const [classInfo, setClassInfo] = useState<{id: string, name: string} | null>(null)
@@ -72,20 +69,9 @@ export default function StudentDashboard() {
   const leveling = levelForXp(points)
   const wizardTitle = titleForLevel(leveling.level)
 
-  // Helper function to get current game data (homework or word bundle)
+  // Helper function to get current game data (homework only)
   const getCurrentGameData = () => {
-    if (selectedWordBundle) {
-      return {
-        words: selectedWordBundle.words.map((w: any) => w.en),
-        wordObjects: selectedWordBundle.words,
-        translations: selectedWordBundle.words.reduce((acc: any, w: any) => {
-          acc[w.en] = w.sv
-          return acc
-        }, {}),
-        color: selectedWordBundle.color,
-        title: selectedWordBundle.title
-      }
-    } else if (selectedHomework) {
+    if (selectedHomework) {
       return {
         words: selectedHomework.vocabulary_words,
         wordObjects: selectedHomework.words,
@@ -324,14 +310,12 @@ export default function StudentDashboard() {
   }
 
   const startFlashcardGame = () => {
-    if (homeworks.length === 0 && !selectedWordBundle) {
-      setMessage('No vocabulary sets available. Please wait for your teacher to assign vocabulary or select a word bundle.')
+    if (homeworks.length === 0) {
+      setMessage('No vocabulary sets available. Please wait for your teacher to assign vocabulary.')
       return
     }
-    if (homeworks.length === 1 && !selectedWordBundle) {
+    if (homeworks.length === 1) {
       setSelectedHomework(homeworks[0])
-      setShowFlashcardGame(true)
-    } else if (selectedWordBundle) {
       setShowFlashcardGame(true)
     } else {
       setPendingGame('flashcards')
@@ -340,14 +324,12 @@ export default function StudentDashboard() {
   }
 
   const startWordMatchingGame = () => {
-    if (homeworks.length === 0 && !selectedWordBundle) {
-      setMessage('No vocabulary sets available. Please wait for your teacher to assign vocabulary or select a word bundle.')
+    if (homeworks.length === 0) {
+      setMessage('No vocabulary sets available. Please wait for your teacher to assign vocabulary.')
       return
     }
-    if (homeworks.length === 1 && !selectedWordBundle) {
+    if (homeworks.length === 1) {
       setSelectedHomework(homeworks[0])
-      setShowWordMatchingGame(true)
-    } else if (selectedWordBundle) {
       setShowWordMatchingGame(true)
     } else {
       setPendingGame('match')
@@ -356,14 +338,12 @@ export default function StudentDashboard() {
   }
 
   const startTypingChallenge = () => {
-    if (homeworks.length === 0 && !selectedWordBundle) {
-      alert('No word sets assigned yet. Please ask your teacher to assign some word sets or select a word bundle.')
+    if (homeworks.length === 0) {
+      alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
       return
     }
-    if (homeworks.length === 1 && !selectedWordBundle) {
+    if (homeworks.length === 1) {
       setSelectedHomework(homeworks[0])
-      setShowTypingChallenge(true)
-    } else if (selectedWordBundle) {
       setShowTypingChallenge(true)
     } else {
       setPendingGame('typing')
@@ -372,12 +352,6 @@ export default function StudentDashboard() {
   }
 
   const handleScoreUpdate = async (newScore: number, newTotal?: number) => {
-    // Apply 50% point reduction for word bundles
-    let adjustedScore = newScore
-    if (selectedWordBundle) {
-      adjustedScore = Math.floor(newScore * 0.5)
-    }
-
     // Don't update local state immediately - wait for database refresh
     // This ensures we show the same points that are stored in the database
     
@@ -400,13 +374,13 @@ export default function StudentDashboard() {
     }
   }
 
-  // Wrapper for tracking context that applies word bundle point reduction
+  // Wrapper for tracking context
   const getTrackingContext = () => {
     const baseContext = {
       studentId: null as string | null,
-      wordSetId: selectedWordBundle ? selectedWordBundle.id : selectedHomework?.id,
-      homeworkId: selectedWordBundle ? selectedWordBundle.id : selectedHomework?.id,
-      isWordBundle: !!selectedWordBundle
+      wordSetId: selectedHomework?.id,
+      homeworkId: selectedHomework?.id,
+      isWordBundle: false
     }
 
     return baseContext
@@ -441,49 +415,6 @@ export default function StudentDashboard() {
     }
   }
 
-  // Bundle selection for game
-  const selectBundleForGame = async (bundle: any) => {
-    // Convert bundle to homework format for compatibility
-    const bundleHomework: Homework = {
-      id: bundle.id,
-      title: bundle.title,
-      description: bundle.description,
-      vocabulary_words: bundle.words.map((w: any) => w.en),
-      words: bundle.words,
-      translations: bundle.words.reduce((acc: any, word: any) => {
-        acc[word.en] = word.sv
-        return acc
-      }, {}),
-      due_date: new Date().toISOString(),
-      teacher_id: 'bundle',
-      created_at: new Date().toISOString(),
-      color: bundle.color
-    }
-    
-    setSelectedHomework(bundleHomework)
-    setShowHomeworkSelection(false)
-    
-    // Start the pending game with the selected bundle
-    if (pendingGame === 'flashcards') {
-      setShowFlashcardGame(true)
-    } else if (pendingGame === 'match') {
-      setShowWordMatchingGame(true)
-    } else if (pendingGame === 'typing') {
-      setShowTypingChallenge(true)
-    } else if (pendingGame === 'translate') {
-      setShowTranslateGame(true)
-    } else if (pendingGame === 'connect') {
-      setShowLineMatchingGame(true)
-    } else if (pendingGame === 'quiz') {
-      setShowQuiz(true)
-    } else if (pendingGame === 'choice') {
-      setShowChoice(true)
-    } else if (pendingGame === 'storygap') {
-      setShowStoryGap(true)
-    } else if (pendingGame === 'roulette') {
-      setShowRoulette(true)
-    }
-  }
 
 
   const loadClassInfo = async () => {
@@ -854,37 +785,6 @@ export default function StudentDashboard() {
           </div>
         </div>
 
-        {/* Word Bundle Selection */}
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 mb-8">
-          <h2 className="text-xl font-bold mb-4 flex items-center">
-            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center mr-3">
-              <BookOpen className="w-5 h-5" />
-            </div>
-            Word Bundles
-          </h2>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
-              <p className="text-gray-300 text-sm">
-                Practice with predefined word bundles (50% points)
-              </p>
-              {selectedWordBundle && (
-                <div className="flex items-center gap-2 bg-purple-500/20 border border-purple-500/30 rounded-lg px-3 py-1">
-                  <div 
-                    className="w-2 h-2 rounded-full" 
-                    style={{ backgroundColor: selectedWordBundle.color }}
-                  />
-                  <span className="text-purple-200 text-sm font-medium">
-                    {selectedWordBundle.title} selected
-                  </span>
-                </div>
-              )}
-            </div>
-            <BundleSelector 
-              onBundleSelect={setSelectedWordBundle}
-              selectedBundle={selectedWordBundle}
-            />
-          </div>
-        </div>
 
         {/* Assignments Section (compact with expandable rows) */}
         <div className="rounded-2xl border border-white/10 bg-white/5 p-6 mb-8">
@@ -1013,12 +913,8 @@ export default function StudentDashboard() {
               color="purple"
               icon={<span className="text-3xl">🔗</span>}
               onClick={() => {
-                if (homeworks.length === 0 && !selectedWordBundle) {
-                  alert('No word sets assigned yet. Please ask your teacher to assign some word sets or select a word bundle.')
-                  return
-                }
-                if (selectedWordBundle) {
-                  setShowLineMatchingGame(true)
+                if (homeworks.length === 0) {
+                  alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
                   return
                 }
                 if (homeworks.length > 1) {
@@ -1041,14 +937,12 @@ export default function StudentDashboard() {
               color="yellow"
               icon={<span className="text-3xl">🌐</span>}
               onClick={() => {
-                if (homeworks.length === 0 && !selectedWordBundle) {
-                  alert('No word sets assigned yet. Please ask your teacher to assign some word sets or select a word bundle.')
+                if (homeworks.length === 0) {
+                  alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
                   return
                 }
-                if (homeworks.length === 1 && !selectedWordBundle) {
+                if (homeworks.length === 1) {
                   setSelectedHomework(homeworks[0])
-                  setShowTranslateGame(true)
-                } else if (selectedWordBundle) {
                   setShowTranslateGame(true)
                 } else {
                   setPendingGame('translate')
@@ -1062,14 +956,12 @@ export default function StudentDashboard() {
               color="pink"
               icon={<span className="text-3xl">⌨️</span>}
               onClick={() => {
-                if (homeworks.length === 0 && !selectedWordBundle) {
-                  alert('No word sets assigned yet. Please ask your teacher to assign some word sets or select a word bundle.')
+                if (homeworks.length === 0) {
+                  alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
                   return
                 }
-                if (homeworks.length === 1 && !selectedWordBundle) {
+                if (homeworks.length === 1) {
                   setSelectedHomework(homeworks[0])
-                  setShowTypingChallenge(true)
-                } else if (selectedWordBundle) {
                   setShowTypingChallenge(true)
                 } else {
                   setPendingGame('typing')
@@ -1083,14 +975,12 @@ export default function StudentDashboard() {
               color="teal"
               icon={<span className="text-3xl">📖</span>}
               onClick={() => {
-                if (homeworks.length === 0 && !selectedWordBundle) {
-                  alert('No word sets assigned yet. Please ask your teacher to assign some word sets or select a word bundle.')
+                if (homeworks.length === 0) {
+                  alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
                   return
                 }
-                if (homeworks.length === 1 && !selectedWordBundle) {
+                if (homeworks.length === 1) {
                   setSelectedHomework(homeworks[0])
-                  setShowStoryGap(true)
-                } else if (selectedWordBundle) {
                   setShowStoryGap(true)
                 } else {
                   setPendingGame('storygap')
@@ -1105,12 +995,8 @@ export default function StudentDashboard() {
               color="red"
               icon={<span className="text-3xl">🎰</span>}
               onClick={() => {
-                if (homeworks.length === 0 && !selectedWordBundle) {
-                  alert('No word sets assigned yet. Please ask your teacher to assign some word sets or select a word bundle.')
-                  return
-                }
-                if (selectedWordBundle) {
-                  setShowRoulette(true)
+                if (homeworks.length === 0) {
+                  alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
                   return
                 }
                 if (homeworks.length > 1) {
@@ -1135,12 +1021,8 @@ export default function StudentDashboard() {
               icon={<span className="text-3xl">📝</span>}
               locked={false}
               onClick={async () => {
-                if (homeworks.length === 0 && !selectedWordBundle) {
-                  alert('No word sets assigned yet. Please ask your teacher to assign some word sets or select a word bundle.')
-                  return
-                }
-                if (selectedWordBundle) {
-                  setShowQuiz(true)
+                if (homeworks.length === 0) {
+                  alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
                   return
                 }
                 if (homeworks.length > 1) {
@@ -1264,8 +1146,8 @@ export default function StudentDashboard() {
                 await supabase.from('student_progress')
                   .upsert({
                     student_id: user.id,
-                    word_set_id: selectedWordBundle ? selectedWordBundle.id : selectedHomework?.id,
-                    homework_id: selectedWordBundle ? selectedWordBundle.id : selectedHomework?.id,
+                    word_set_id: selectedHomework?.id,
+                    homework_id: selectedHomework?.id,
                     last_quiz_score: quizScore,
                     last_quiz_at: new Date().toISOString(),
                   }, { onConflict: 'student_id,word_set_id,homework_id' })
@@ -1298,46 +1180,9 @@ export default function StudentDashboard() {
                 <p className="text-gray-300">Select which vocabulary list you want to practice with:</p>
               </div>
               
-              {/* Bundle Selector */}
-              <div className="mb-6 p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h3 className="font-semibold text-purple-200">Word Bundle (50% points)</h3>
-                    <p className="text-sm text-purple-300">Choose a predefined vocabulary bundle</p>
-                  </div>
-                  <BundleSelector 
-                    onBundleSelect={setSelectedBundleForGame}
-                    selectedBundle={selectedBundleForGame}
-                  />
-                </div>
-                {selectedBundleForGame && (
-                  <div className="mt-3 p-3 bg-purple-500/20 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: selectedBundleForGame.color }}
-                      />
-                      <span className="font-medium text-purple-200">{selectedBundleForGame.title}</span>
-                    </div>
-                    <p className="text-sm text-purple-300 mb-2">{selectedBundleForGame.description}</p>
-                    <div className="flex flex-wrap gap-1">
-                      {selectedBundleForGame.words.slice(0, 5).map((word: any, index: number) => (
-                        <span key={index} className="bg-purple-500/20 text-purple-200 text-xs px-2 py-1 rounded-full">
-                          {word.en}
-                        </span>
-                      ))}
-                      {selectedBundleForGame.words.length > 5 && (
-                        <span className="bg-purple-500/20 text-purple-300 text-xs px-2 py-1 rounded-full">
-                          +{selectedBundleForGame.words.length - 5} more
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
               
               <div className="mb-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Assigned Vocabulary Sets (100% points)</h3>
+                <h3 className="text-lg font-semibold text-white mb-4">Assigned Vocabulary Sets</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[40vh] overflow-y-auto pr-2">
                   {homeworks.map((homework) => (
                     <button

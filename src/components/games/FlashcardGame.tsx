@@ -264,10 +264,10 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                 </div>
                 
                 {/* Right side - Word */}
-                <div className="w-1/2 flex items-center justify-center p-8">
-                  <div className="text-center">
-                    <h3 className="text-5xl font-bold text-gray-800 mb-2">{currentEnglish}</h3>
-                    <div className="text-gray-500 text-lg">English</div>
+                <div className="w-1/2 flex items-center justify-center p-6">
+                  <div className="text-center w-full">
+                    <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 mb-2 break-words leading-tight">{currentEnglish}</h3>
+                    <div className="text-gray-500 text-sm sm:text-base">English</div>
                   </div>
                 </div>
               </div>
@@ -312,10 +312,10 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                 </div>
                 
                 {/* Right side - Word */}
-                <div className="w-1/2 flex items-center justify-center p-8">
-                  <div className="text-center">
-                    <h3 className="text-5xl font-bold text-gray-800 mb-2">{currentSwedish}</h3>
-                    <div className="text-gray-500 text-lg">Swedish</div>
+                <div className="w-1/2 flex items-center justify-center p-6">
+                  <div className="text-center w-full">
+                    <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 mb-2 break-words leading-tight">{currentSwedish}</h3>
+                    <div className="text-gray-500 text-sm sm:text-base">Swedish</div>
                   </div>
                 </div>
               </div>
