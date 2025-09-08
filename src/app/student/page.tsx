@@ -853,14 +853,12 @@ export default function StudentDashboard() {
               color="blue"
               icon={<span className="text-3xl">🃏</span>}
               onClick={() => {
-                if (homeworks.length === 0 && !selectedWordBundle) {
-                  setMessage('No vocabulary sets available. Please wait for your teacher to assign vocabulary or select a word bundle.')
+                if (homeworks.length === 0) {
+                  setMessage('No vocabulary sets available. Please wait for your teacher to assign vocabulary.')
                   return
                 }
-                if (homeworks.length === 1 && !selectedWordBundle) {
+                if (homeworks.length === 1) {
                   setSelectedHomework(homeworks[0])
-                  setShowFlashcardGame(true)
-                } else if (selectedWordBundle) {
                   setShowFlashcardGame(true)
                 } else {
                   setPendingGame('flashcards')
@@ -874,19 +872,14 @@ export default function StudentDashboard() {
               title="Multiple Choice"
               color="green"
               icon={<span className="text-3xl">✅</span>}
-              subtitle={selectedHomework ? undefined : 'Select a set'}
               locked={false}
               onClick={() => {
-                if (homeworks.length === 0 && !selectedWordBundle) {
-                  alert('No word sets assigned yet. Please ask your teacher to assign some word sets or select a word bundle.')
+                if (homeworks.length === 0) {
+                  alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
                   return
                 }
-                if (homeworks.length === 1 && !selectedWordBundle) {
+                if (homeworks.length === 1) {
                   setSelectedHomework(homeworks[0])
-                  setShowChoice(true)
-                  return
-                }
-                if (selectedWordBundle) {
                   setShowChoice(true)
                   return
                 }
@@ -1214,14 +1207,6 @@ export default function StudentDashboard() {
               </div>
               
               <div className="flex gap-3">
-                {selectedBundleForGame && (
-                  <button
-                    onClick={() => selectBundleForGame(selectedBundleForGame)}
-                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-lg font-medium transition-colors"
-                  >
-                    Play with {selectedBundleForGame.title} (50% points)
-                  </button>
-                )}
                 <button
                   onClick={() => setShowHomeworkSelection(false)}
                   className="flex-1 bg-white/10 border border-white/10 text-white py-3 px-6 rounded-lg font-medium hover:bg-white/15 transition-colors"
