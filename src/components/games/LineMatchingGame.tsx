@@ -38,6 +38,8 @@ export default function LineMatchingGame({ words, translations, onClose, onScore
     const built: Pair[] = []
     const lowerMap: Record<string, string> = {}
     const reverseMap: Record<string, string> = {}
+    
+    // Build translation maps
     for (const [k, v] of Object.entries(translations || {})) {
       const key = String(k ?? '').trim().toLowerCase()
       const val = String(v ?? '').trim()
@@ -45,26 +47,58 @@ export default function LineMatchingGame({ words, translations, onClose, onScore
       lowerMap[key] = val
       reverseMap[val.toLowerCase()] = k
     }
+    
     const sourceWords = (words && words.length > 0)
       ? words.filter(w => typeof w === 'string' && String(w).trim().length > 0)
       : Object.keys(lowerMap).length > 0
         ? Object.keys(lowerMap)
         : Object.keys(reverseMap)
+    
+    // Create unique pairs, handling duplicate translations
+    const usedPairs = new Set<string>()
+    const translationCount: Record<string, number> = {}
+    
     for (const w of sourceWords) {
       const wStr = String(w ?? '')
       const wTrim = wStr.trim()
       const wl = wTrim.toLowerCase()
+      
+      let pair: Pair | null = null
+      
       // Prefer sv->en mapping if available; else try en->sv and flip
       if (lowerMap[wl]) {
-        built.push({ sv: wTrim, en: lowerMap[wl] })
+        pair = { sv: wTrim, en: lowerMap[wl] }
       } else if (reverseMap[wl]) {
-        built.push({ sv: reverseMap[wl], en: wTrim })
+        pair = { sv: reverseMap[wl], en: wTrim }
       } else {
         // Fallback: assume w is Swedish; mirror to English if mapping missing
-        built.push({ sv: wTrim, en: wTrim })
+        pair = { sv: wTrim, en: wTrim }
+      }
+      
+      if (pair) {
+        // Create unique identifier for this pair
+        const pairKey = `${pair.sv.toLowerCase()}|${pair.en.toLowerCase()}`
+        
+        // Count how many times this Swedish translation appears
+        const svKey = pair.sv.toLowerCase()
+        translationCount[svKey] = (translationCount[svKey] || 0) + 1
+        
+        // Only add if we haven't seen this exact pair before
+        if (!usedPairs.has(pairKey)) {
+          built.push(pair)
+          usedPairs.add(pairKey)
+        }
       }
     }
-    const shuffled = built.sort(() => Math.random() - 0.5)
+    
+    // Filter out pairs where Swedish translation appears multiple times
+    // This prevents conflicts like "leaf" and "leaves" both mapping to "löv"
+    const filteredPairs = built.filter(pair => {
+      const svKey = pair.sv.toLowerCase()
+      return translationCount[svKey] === 1
+    })
+    
+    const shuffled = filteredPairs.sort(() => Math.random() - 0.5)
     // Limit to at most 10 pairs per session to keep rounds manageable
     return shuffled.slice(0, Math.min(10, shuffled.length))
   }, [words, translations])

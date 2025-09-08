@@ -93,8 +93,28 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
   }, [])
 
   const initializeGame = () => {
-    // Shuffle incoming words and pick up to 8
-    const shuffled = [...words].sort(() => Math.random() - 0.5)
+    // Filter out words with duplicate translations to avoid conflicts
+    const translationCount: Record<string, number> = {}
+    const uniqueWords: string[] = []
+    
+    // Count how many English words map to each Swedish translation
+    words.forEach(word => {
+      const translation = getTranslation(word)
+      const svKey = translation.toLowerCase()
+      translationCount[svKey] = (translationCount[svKey] || 0) + 1
+    })
+    
+    // Only include words where the Swedish translation appears only once
+    words.forEach(word => {
+      const translation = getTranslation(word)
+      const svKey = translation.toLowerCase()
+      if (translationCount[svKey] === 1) {
+        uniqueWords.push(word)
+      }
+    })
+    
+    // Shuffle and pick up to 8 words
+    const shuffled = [...uniqueWords].sort(() => Math.random() - 0.5)
     const gameWords = shuffled.slice(0, Math.min(8, shuffled.length)) // Max 8 words
     const gameCards: WordCard[] = []
     
