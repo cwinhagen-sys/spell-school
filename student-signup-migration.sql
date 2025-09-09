@@ -15,3 +15,4 @@ CREATE INDEX IF NOT EXISTS idx_profiles_class_code ON profiles(class_code);
 UPDATE profiles 
 SET name = COALESCE(full_name, email) 
 WHERE name IS NULL;
+

@@ -1,14 +1,11 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 
 export default function SignupPage() {
-  const [selectedRole, setSelectedRole] = useState<'student' | 'teacher' | null>(null)
 
   return (
-    <div className="min-h-[calc(100vh+4rem)] -mt-16 -mb-16 bg-gray-900 text-white flex items-center justify-center px-6">
+    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-4xl">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-white mb-4">Welcome to Spell School!</h1>
@@ -17,14 +14,10 @@ export default function SignupPage() {
 
         <div className="grid md:grid-cols-2 gap-8 mb-8">
           {/* Student Option */}
-          <div
-            className={`p-8 rounded-2xl border cursor-pointer transition-all duration-300 ${
-              selectedRole === 'student'
-                ? 'border-indigo-400 bg-indigo-400/10 shadow-2xl scale-105'
-                : 'border-white/10 bg-white/5 hover:bg-white/10 hover:scale-102'
-            }`}
-            onClick={() => setSelectedRole('student')}
-          >
+          <Link href="/signup/student">
+            <div
+              className="p-8 rounded-2xl border cursor-pointer transition-all duration-300 border-white/10 bg-white/5 hover:bg-white/10 hover:scale-102"
+            >
             <div className="text-center">
               <div className="w-32 h-32 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-600 overflow-hidden">
                 <img 
@@ -46,17 +39,14 @@ export default function SignupPage() {
                 • Join your teacher's class
               </div>
             </div>
-          </div>
+            </div>
+          </Link>
 
           {/* Teacher Option */}
-          <div
-            className={`p-8 rounded-2xl border cursor-pointer transition-all duration-300 ${
-              selectedRole === 'teacher'
-                ? 'border-indigo-400 bg-indigo-400/10 shadow-2xl scale-105'
-                : 'border-white/10 bg-white/5 hover:bg-white/10 hover:scale-102'
-            }`}
-            onClick={() => setSelectedRole('teacher')}
-          >
+          <Link href="/signup/teacher">
+            <div
+              className="p-8 rounded-2xl border cursor-pointer transition-all duration-300 border-white/10 bg-white/5 hover:bg-white/10 hover:scale-102"
+            >
             <div className="text-center">
               <div className="w-32 h-32 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-600 overflow-hidden">
                 <img 
@@ -78,19 +68,9 @@ export default function SignupPage() {
                 • Manage your classes
               </div>
             </div>
-          </div>
+            </div>
+          </Link>
         </div>
-
-        {selectedRole && (
-          <div className="text-center">
-            <Link
-              href={`/signup/${selectedRole}`}
-              className="inline-block bg-indigo-600 text-white py-4 px-8 rounded-lg font-bold hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 transition-all duration-200 shadow-xl hover:shadow-indigo-500/25 text-lg"
-            >
-              Continue as {selectedRole === 'student' ? 'Student' : 'Teacher'}
-            </Link>
-          </div>
-        )}
 
         <div className="text-center mt-8">
           <p className="text-gray-400">
