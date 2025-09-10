@@ -221,8 +221,8 @@ export default function TestQuizPage() {
             translations={testTranslations}
             onClose={() => setShowQuiz(false)}
             trackingContext={{
-              wordSetId: realWordSetId, // Use real word set ID if available
-              homeworkId: null
+              wordSetId: realWordSetId || undefined, // Use real word set ID if available
+              homeworkId: undefined
             }}
             onSubmitScore={(score) => {
               addDebugInfo(`Quiz completed with score: ${score}`)
