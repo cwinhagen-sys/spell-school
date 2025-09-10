@@ -264,17 +264,44 @@ export default function TeacherProgressPage() {
     return 'bg-gray-700/5 text-gray-500 border border-gray-600'
   }
 
-  const formatLastActive = (timestamp: string): string => {
+  const formatLastActive = (timestamp: string): { text: string; isPlaying: boolean; exactTime: string } => {
     const date = new Date(timestamp)
     const now = new Date()
     const diffMs = now.getTime() - date.getTime()
+    const diffMinutes = Math.floor(diffMs / (1000 * 60))
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
     
-    if (diffDays === 0) return 'Today'
-    if (diffDays === 1) return 'Yesterday'
-    if (diffDays < 7) return `${diffDays} days ago`
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`
-    return date.toLocaleDateString()
+    // Check if student is currently playing (active within last 5 minutes)
+    const isPlaying = diffMinutes <= 5
+    
+    // Format exact time
+    const exactTime = date.toLocaleString('sv-SE', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+    
+    let text: string
+    if (isPlaying) {
+      text = 'Playing'
+    } else if (diffMinutes < 60) {
+      text = `${diffMinutes} min ago`
+    } else if (diffHours < 24) {
+      text = `${diffHours}h ago`
+    } else if (diffDays === 1) {
+      text = 'Yesterday'
+    } else if (diffDays < 7) {
+      text = `${diffDays} days ago`
+    } else if (diffDays < 30) {
+      text = `${Math.floor(diffDays / 7)} weeks ago`
+    } else {
+      text = date.toLocaleDateString('sv-SE')
+    }
+    
+    return { text, isPlaying, exactTime }
   }
 
   return (
@@ -285,6 +312,25 @@ export default function TeacherProgressPage() {
             <BarChart3 className="w-6 h-6 text-blue-400" />
             Student Progress
           </h1>
+          <div className="flex items-center gap-4 text-sm">
+            {(() => {
+              const activeStudents = rows.filter(s => s.lastActive && formatLastActive(s.lastActive).isPlaying).length
+              const totalStudents = rows.length
+              return (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span className="text-green-300 font-medium">{activeStudents}</span>
+                    <span className="text-gray-400">playing now</span>
+                  </div>
+                  <div className="text-gray-500">•</div>
+                  <div className="text-gray-400">
+                    {totalStudents} total students
+                  </div>
+                </div>
+              )
+            })()}
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 mb-6">
@@ -363,6 +409,7 @@ export default function TeacherProgressPage() {
                         <span className="text-gray-300">{sortDir==='desc' ? '↓' : '↑'}</span>
                       )}
                     </div>
+                    <div className="text-xs text-gray-500 mt-1">Hover for exact time</div>
                   </th>
                 </tr>
               </thead>
@@ -413,9 +460,24 @@ export default function TeacherProgressPage() {
                     </td>
                     <td className="px-6 py-4">
                       {s.lastActive ? (
-                        <div className="flex items-center gap-2">
-                          <Clock3 className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm">{formatLastActive(s.lastActive)}</span>
+                        <div className="flex flex-col gap-1 group">
+                          <div className="flex items-center gap-2">
+                            <Clock3 className={`w-4 h-4 ${formatLastActive(s.lastActive).isPlaying ? 'text-green-400' : 'text-gray-400'}`} />
+                            <span className={`text-sm font-medium ${formatLastActive(s.lastActive).isPlaying ? 'text-green-300' : 'text-gray-300'}`}>
+                              {formatLastActive(s.lastActive).text}
+                            </span>
+                            {formatLastActive(s.lastActive).isPlaying && (
+                              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500 ml-6 group-hover:text-gray-400 transition-colors">
+                            {formatLastActive(s.lastActive).exactTime}
+                          </div>
+                          {/* Hover tooltip */}
+                          <div className="absolute z-10 invisible group-hover:visible bg-gray-800 text-white text-xs rounded py-1 px-2 shadow-lg border border-gray-600 mt-1 ml-6">
+                            Last activity: {formatLastActive(s.lastActive).exactTime}
+                            {formatLastActive(s.lastActive).isPlaying && ' (Currently playing)'}
+                          </div>
                         </div>
                       ) : (
                         <span className="text-gray-500">—</span>

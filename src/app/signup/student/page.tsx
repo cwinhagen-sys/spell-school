@@ -54,7 +54,29 @@ export default function StudentSignupPage() {
 
       if (profileError) throw profileError
 
-      setMessage('Account created successfully! You can now sign in.')
+      // If class code is provided, try to join the class
+      if (formData.classCode.trim()) {
+        try {
+          const normalizedCode = formData.classCode.trim().toUpperCase()
+          const { data: joinResult, error: joinError } = await supabase.rpc('join_class_with_code', { 
+            p_code: normalizedCode 
+          })
+          
+          if (joinError) {
+            console.error('Error joining class:', joinError)
+            setMessage('Account created successfully! However, there was an issue joining the class. You can try joining manually later.')
+          } else if (joinResult === true) {
+            setMessage('Account created successfully! You have automatically joined the class.')
+          } else {
+            setMessage('Account created successfully! However, the class code was invalid. You can try joining manually later.')
+          }
+        } catch (joinErr) {
+          console.error('Error joining class:', joinErr)
+          setMessage('Account created successfully! However, there was an issue joining the class. You can try joining manually later.')
+        }
+      } else {
+        setMessage('Account created successfully! You can now sign in.')
+      }
       
       // Redirect to login after a short delay
       setTimeout(() => {
