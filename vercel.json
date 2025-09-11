@@ -1,17 +1,13 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next",
-  "framework": "nextjs",
-  "installCommand": "npm install",
-  "devCommand": "npm run dev",
-  "regions": ["iad1"],
+  "regions": ["fra1"],
   "functions": {
-    "src/app/api/**/*.ts": {
-      "maxDuration": 30
+    "app/api/**/*.js": {
+      "regions": ["fra1"]
+    }
+  },
+  "build": {
+    "env": {
+      "VERCEL_REGION": "fra1"
     }
   }
 }
-
-
-
-
