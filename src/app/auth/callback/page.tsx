@@ -23,9 +23,30 @@ export default function AuthCallback() {
         // Try to upsert profile from auth metadata to avoid forcing role select
         const metaRole = (session.user.user_metadata?.role as string | undefined) || null
         const metaName = (session.user.user_metadata?.username || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '').trim() || null
-        const { data: upserted } = await supabase
+        const { data: upserted, error: upsertError } = await supabase
           .from('profiles')
-          .upsert({ id: session.user.id, email: session.user.email, role: metaRole || undefined, full_name: metaName || undefined }, { onConflict: 'id' })
+          .upsert({ 
+            id: session.user.id, 
+            email: session.user.email, 
+            role: metaRole || undefined, 
+            full_name: metaName || undefined,
+            last_active: new Date().toISOString() // Track login time
+          }, { onConflict: 'id' })
+        
+        if (upsertError) {
+          console.log('Profile upsert error (may be missing last_active column):', upsertError)
+          // Try without last_active if column doesn't exist
+          if (upsertError.code === '42703') {
+            await supabase
+              .from('profiles')
+              .upsert({ 
+                id: session.user.id, 
+                email: session.user.email, 
+                role: metaRole || undefined, 
+                full_name: metaName || undefined
+              }, { onConflict: 'id' })
+          }
+        }
 
         setStatus('Checking your role…')
         const { data: profile } = await supabase

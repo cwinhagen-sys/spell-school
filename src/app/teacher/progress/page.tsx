@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Trophy, Target, Clock3, Gamepad2, Filter, ChevronDown, BarChart3 } from 'lucide-react'
+import { Trophy, Target, Clock3, Gamepad2, Filter, ChevronDown, BarChart3, RefreshCw } from 'lucide-react'
 
 type StudentRow = {
   id: string
@@ -25,6 +25,8 @@ export default function TeacherProgressPage() {
   const [rows, setRows] = useState<StudentRow[]>([])
   const [sortKey, setSortKey] = useState<'points' | 'accuracy' | 'sessions' | 'lastActive' | 'student'>('points')
   const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc')
+  const [refreshTrigger, setRefreshTrigger] = useState(0) // For auto-refresh
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   useEffect(() => {
     ;(async () => {
@@ -53,6 +55,16 @@ export default function TeacherProgressPage() {
         setLoading(false)
       }
     })()
+  }, [])
+
+  // Auto-refresh data every 15 seconds to update "Playing" status more frequently
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log('Progress DEBUG → Auto-refreshing data...')
+      setRefreshTrigger(prev => prev + 1)
+    }, 15000) // 15 seconds
+
+    return () => clearInterval(interval)
   }, [])
 
   useEffect(() => {
@@ -172,11 +184,34 @@ export default function TeacherProgressPage() {
           }
         }
 
-        // Fetch display names
+        // Fetch display names and last_active
         const { data: profs, error: profsError } = await supabase
           .from('profiles')
-          .select('id,email,display_alias')
+          .select('id,email,display_alias,last_active')
           .in('id', studentIds)
+        
+        if (profsError) {
+          console.log('Error fetching profiles (may be missing last_active column):', profsError)
+          // Try without last_active if column doesn't exist
+          if (profsError.code === '42703') {
+            const { data: profsFallback } = await supabase
+              .from('profiles')
+              .select('id,email,display_alias')
+              .in('id', studentIds)
+            
+            if (profsFallback) {
+              // Add null last_active for all profiles
+              const profsWithNullActive = profsFallback.map(p => ({ ...p, last_active: null }))
+              setRows(prevRows => prevRows.map(row => {
+                const profile = profsWithNullActive.find(p => p.id === row.id)
+                return {
+                  ...row,
+                  lastActive: profile?.last_active || null
+                }
+              }))
+            }
+          }
+        }
         
         console.log('Progress DEBUG → profiles result:', { 
           profilesCount: profs?.length || 0, 
@@ -184,17 +219,26 @@ export default function TeacherProgressPage() {
           studentIds 
         })
 
-        const idToDisplay: Record<string, { email: string; display: string }> = {}
+        const idToDisplay: Record<string, { email: string; display: string; lastActive: string | null }> = {}
         for (const p of (profs as any[] || [])) {
           const email: string = p.email
           const disp = (p.display_alias || (email ? String(email).split('@')[0] : p.id)) as string
-          idToDisplay[p.id] = { email, display: disp }
+          idToDisplay[p.id] = { email, display: disp, lastActive: p.last_active }
         }
 
         const out: StudentRow[] = studentIds.map(id => {
           const agg = byStudent[id] || { points: 0, count: 0, accSum: 0, lastActive: null }
-          const info = idToDisplay[id] || { email: id, display: id }
+          const info = idToDisplay[id] || { email: id, display: id, lastActive: null }
           const avgAccuracy = agg.count > 0 ? Math.round(agg.accSum / agg.count) : null
+          
+          // Use the most recent activity: either from games or from profile login
+          let bestLastActive = agg.lastActive
+          if (info.lastActive) {
+            if (!bestLastActive || new Date(info.lastActive).getTime() > new Date(bestLastActive).getTime()) {
+              bestLastActive = info.lastActive
+            }
+          }
+          
           return {
             id,
             email: info.email,
@@ -202,7 +246,7 @@ export default function TeacherProgressPage() {
             points: agg.points,
             avgAccuracy,
             sessions: agg.count,
-            lastActive: agg.lastActive,
+            lastActive: bestLastActive,
           }
         })
 
@@ -214,13 +258,14 @@ export default function TeacherProgressPage() {
         })
 
         setRows(out)
+        setLastUpdated(new Date())
       } catch (e: any) {
         setError(e?.message || 'Failed to load progress')
       } finally {
         setLoading(false)
       }
     })()
-  }, [selectedClass, timeFilter])
+  }, [selectedClass, timeFilter, refreshTrigger])
 
   const sorted = useMemo(() => {
     const list = [...rows]
@@ -272,8 +317,9 @@ export default function TeacherProgressPage() {
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
     
-    // Check if student is currently playing (active within last 5 minutes)
-    const isPlaying = diffMinutes <= 5
+    // Check if student is currently playing (active within last 2 minutes)
+    // Only show "Playing" for truly active students
+    const isPlaying = diffMinutes <= 2
     
     // Format exact time
     const exactTime = date.toLocaleString('sv-SE', {
@@ -312,6 +358,14 @@ export default function TeacherProgressPage() {
             <BarChart3 className="w-6 h-6 text-blue-400" />
             Student Progress
           </h1>
+          <button
+            onClick={() => setRefreshTrigger(prev => prev + 1)}
+            className="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors"
+            disabled={loading}
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
           <div className="flex items-center gap-4 text-sm">
             {(() => {
               const activeStudents = rows.filter(s => s.lastActive && formatLastActive(s.lastActive).isPlaying).length
@@ -327,6 +381,14 @@ export default function TeacherProgressPage() {
                   <div className="text-gray-400">
                     {totalStudents} total students
                   </div>
+                  {lastUpdated && (
+                    <>
+                      <div className="text-gray-500">•</div>
+                      <div className="text-gray-500 text-xs">
+                        Updated {lastUpdated.toLocaleTimeString('sv-SE')}
+                      </div>
+                    </>
+                  )}
                 </div>
               )
             })()}

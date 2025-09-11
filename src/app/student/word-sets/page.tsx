@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import LogoutHandler from '@/components/LogoutHandler'
 
 interface WordSet {
   id: string
@@ -114,6 +115,7 @@ export default function StudentWordSetsPage() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
+      <LogoutHandler />
       <div className="container mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-white">Your Word Sets</h1>

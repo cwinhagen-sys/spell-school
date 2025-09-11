@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { levelForXp, cumulativeXp, deltaXp } from '@/lib/leveling'
 import { TITLE_STEPS, titleForLevel } from '@/lib/wizardTitles'
 import Link from 'next/link'
+import LogoutHandler from '@/components/LogoutHandler'
 
 export default function LevelsPage() {
   const [points, setPoints] = useState(0)
@@ -67,6 +68,7 @@ export default function LevelsPage() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
+      <LogoutHandler />
       <div className="border-b border-white/10 bg-gray-800">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold">Level Progress</h1>

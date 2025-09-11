@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useActivityTracking } from '@/hooks/useActivityTracking'
 import { BookOpen, Target, Star, Users, ChevronDown } from 'lucide-react'
 import { levelForXp } from '@/lib/leveling'
 import { titleForLevel } from '@/lib/wizardTitles'
@@ -17,6 +18,7 @@ import MultipleChoiceGame from '@/components/games/MultipleChoiceGame'
 import RouletteGame from '@/components/games/RouletteGame'
 import { type TrackingContext } from '@/lib/tracking'
 import GameCard from '@/components/GameCard'
+import LogoutHandler from '@/components/LogoutHandler'
 
 interface Word {
   en: string
@@ -46,6 +48,9 @@ interface StudentProgress {
 }
 
 export default function StudentDashboard() {
+  // Track user activity for better "Playing" status
+  useActivityTracking()
+  
   const [homeworks, setHomeworks] = useState<Homework[]>([])
   const [points, setPoints] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -297,13 +302,20 @@ export default function StudentDashboard() {
         vocabulary_words: extractEnglishWords(rec.word_sets.words), // Keep for backward compatibility
         words: rec.word_sets.words || [], // New field with full word objects
         teacher_id: '' as any,
-        created_at: new Date().toISOString() as any,
+        created_at: rec.created_at || new Date().toISOString(), // Use actual created_at for sorting
         translations: extractTranslations(rec.word_sets.words), // Add translations
         color: rec.word_sets.color || undefined,
       }))
 
-      console.log('Mapped homeworks:', mapped)
-      setHomeworks(mapped)
+      // Sort by created_at (newest first) for dashboard display
+      const sorted = mapped.sort((a, b) => {
+        const dateA = new Date(a.created_at).getTime()
+        const dateB = new Date(b.created_at).getTime()
+        return dateB - dateA // Newest first
+      })
+
+      console.log('Mapped homeworks (sorted by newest):', sorted)
+      setHomeworks(sorted)
     } catch (error) {
       console.error('Error fetching assigned word sets:', error)
     }
@@ -687,6 +699,7 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
+      <LogoutHandler />
       {/* Header */}
       <div className="bg-gray-800 border-b border-white/10">
         <div className="container mx-auto px-6 py-4">
@@ -702,139 +715,202 @@ export default function StudentDashboard() {
       </div>
 
       <div className="container mx-auto px-6 py-8">
-        {/* Hero Section Redesigned */}
-        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-900/40 via-purple-900/30 to-emerald-900/30 p-6 md:p-10 mb-8">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            {/* Left: Stats */}
-            <div>
-              <h2 className="text-2xl md:text-3xl font-extrabold mb-2">Welcome back!</h2>
+        {/* Hero Section - New Layout */}
+        <div className="grid lg:grid-cols-3 gap-8 mb-8">
+          {/* Left: Welcome + Assignments */}
+          <div className="lg:col-span-1 flex flex-col gap-6">
+            {/* Welcome Section */}
+            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-900/40 via-purple-900/30 to-emerald-900/30 p-6">
+              <h2 className="text-2xl font-extrabold mb-2">Welcome back!</h2>
               <p className="text-gray-300 mb-6">Keep casting spells and leveling up your vocabulary.</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-2xl bg-white/10 border border-white/10 p-4 flex items-center gap-3">
-                  <Star className="w-6 h-6 text-yellow-300" />
-                  <div>
-                    <div className="text-sm text-gray-300">Points</div>
-                    <div className="text-xl font-bold">{points}</div>
-                  </div>
-                </div>
-                <a href="/student/levels" className="rounded-2xl bg-white/10 border border-white/10 p-4 flex items-center gap-3 hover:bg-white/15 transition-colors" title="View level progress">
-                  <Target className="w-6 h-6 text-blue-300" />
-                  <div>
-                    <div className="text-sm text-gray-300">Level</div>
-                    <div className="text-xl font-bold">{currentLevel}</div>
-                  </div>
-                </a>
-                <div className="rounded-2xl bg-white/10 border border-white/10 p-4 col-span-2 flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                    <Users className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-300">Class</div>
-                    <div className="text-lg font-semibold">{classInfo ? classInfo.name : 'No class joined'}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 flex items-center gap-3">
-                <a href="/student/word-sets" className="px-4 py-2 rounded-md bg-white/10 text-white hover:bg-white/15 transition-colors">Your Word Sets</a>
-                <a href="/student/join" className="px-4 py-2 rounded-md bg-white/10 text-white hover:bg-white/15 transition-colors">Join a Class</a>
+              
+              <div className="mt-6 flex flex-col gap-3">
+                <a href="/student/word-sets" className="px-4 py-2 rounded-md bg-white/10 text-white hover:bg-white/15 transition-colors text-center">Your Word Sets</a>
+                <a href="/student/join" className="px-4 py-2 rounded-md bg-white/10 text-white hover:bg-white/15 transition-colors text-center">Join a Class</a>
               </div>
             </div>
 
-            {/* Right: Big Wizard Title Card */}
-            <div className="relative">
-              {wizardTitle.title && wizardTitle.image ? (
-                <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-white/5">
-                  <img src={wizardTitle.image} alt={wizardTitle.title} className="w-full h-64 md:h-80 object-cover" />
-                  <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
-                    <div className="text-sm text-gray-200">Current Title</div>
-                    <div className="text-2xl font-extrabold">{wizardTitle.title}</div>
+            {/* Assignments Section - Fixed Height */}
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 flex-1 flex flex-col">
+              <h2 className="text-lg font-bold mb-4 flex items-center">
+                <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center mr-3">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                Your Assignments
+              </h2>
+              
+              {homeworks.length === 0 ? (
+                <div className="text-center py-8 flex-1 flex flex-col justify-center">
+                  <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mx-auto mb-3">
+                    <BookOpen className="w-6 h-6 text-gray-300" />
                   </div>
+                  <p className="text-gray-300 text-sm">No assignments yet</p>
                 </div>
               ) : (
-                <div className="h-64 md:h-80 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-300">No title yet</div>
+                <div className="space-y-2 flex-1 flex flex-col">
+                  <div className="flex-1">
+                    {homeworks.slice(0, 2).map((homework) => (
+                      <div key={homework.id} className="border border-white/10 bg-white/5 rounded-lg p-3 mb-2">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: homework.color || 'transparent' }} />
+                          <span className="text-sm font-semibold text-white truncate">{homework.title}</span>
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          Due: {new Date(homework.due_date).toLocaleDateString('en-US')}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* View All Link */}
+                  <div className="text-center pt-2">
+                    <a href="/student/word-sets" className="text-xs text-gray-400 hover:text-white underline">
+                      View all assignments ({homeworks.length})
+                    </a>
+                  </div>
+                </div>
               )}
-              
-              {/* XP Progress Bar */}
-              <div className="mt-4 rounded-2xl bg-white/5 border border-white/10 p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm text-gray-300">Level {leveling.level}</div>
-                  <div className="text-sm text-gray-300">
-                    {leveling.nextDelta > 0 ? (
-                      <>
-                        {Math.round(leveling.progressToNext * leveling.nextDelta)} / {leveling.nextDelta} XP
-                      </>
-                    ) : (
-                      'Max Level'
+            </div>
+          </div>
+
+          {/* Right: Wizard + Stats */}
+          <div className="lg:col-span-2">
+            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-900/40 via-purple-900/30 to-emerald-900/30 p-6 h-full">
+              <div className="grid md:grid-cols-2 gap-6 h-full">
+                {/* Wizard Image */}
+                <div className="flex items-center justify-center">
+                  {wizardTitle.title && wizardTitle.image ? (
+                    <div className="relative w-full max-w-sm">
+                      <div className="relative rounded-2xl overflow-hidden border-2 border-white/30 shadow-lg">
+                        <img 
+                          src={wizardTitle.image} 
+                          alt={wizardTitle.title} 
+                          className="w-full h-auto object-contain" 
+                        />
+                        <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
+                          <div className="text-xs text-gray-200">Current Title</div>
+                          <div className="text-lg font-extrabold">{wizardTitle.title}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full max-w-sm h-64 rounded-2xl bg-white/5 border-2 border-white/30 flex items-center justify-center text-gray-300 shadow-lg">
+                      <div className="text-center">
+                        <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mx-auto mb-3">
+                          <Star className="w-6 h-6" />
+                        </div>
+                        <div>No title yet</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Stats */}
+                <div className="flex flex-col justify-center space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-2xl bg-white/10 border border-white/10 p-4 flex items-center gap-3">
+                      <Star className="w-6 h-6 text-yellow-300" />
+                      <div>
+                        <div className="text-sm text-gray-300">Points</div>
+                        <div className="text-xl font-bold">{points}</div>
+                      </div>
+                    </div>
+                    <a href="/student/levels" className="rounded-2xl bg-white/10 border border-white/10 p-4 flex items-center gap-3 hover:bg-white/15 transition-colors" title="View level progress">
+                      <Target className="w-6 h-6 text-blue-300" />
+                      <div>
+                        <div className="text-sm text-gray-300">Level</div>
+                        <div className="text-xl font-bold">{currentLevel}</div>
+                      </div>
+                    </a>
+                  </div>
+                  
+                  <div className="rounded-2xl bg-white/10 border border-white/10 p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                      <Users className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-300">Class</div>
+                      <div className="text-lg font-semibold">{classInfo ? classInfo.name : 'No class joined'}</div>
+                    </div>
+                  </div>
+                  
+                  {/* XP Progress Bar */}
+                  <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-sm text-gray-300">Level {leveling.level}</div>
+                      <div className="text-sm text-gray-300">
+                        {leveling.nextDelta > 0 ? (
+                          <>
+                            {Math.round(leveling.progressToNext * leveling.nextDelta)} / {leveling.nextDelta} XP
+                          </>
+                        ) : (
+                          'Max Level'
+                        )}
+                      </div>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-3 overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${leveling.progressToNext * 100}%` }}
+                      />
+                    </div>
+                    {leveling.nextDelta > 0 && (
+                      <div className="text-xs text-gray-400 mt-1 text-center">
+                        {Math.round((1 - leveling.progressToNext) * leveling.nextDelta)} XP to next level
+                      </div>
                     )}
                   </div>
-                </div>
-                <div className="w-full bg-gray-700 rounded-full h-3 overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500 ease-out"
-                    style={{ width: `${leveling.progressToNext * 100}%` }}
-                  />
-                </div>
-                {leveling.nextDelta > 0 && (
-                  <div className="text-xs text-gray-400 mt-1 text-center">
-                    {Math.round((1 - leveling.progressToNext) * leveling.nextDelta)} XP to next level
+                  
+                  {/* Badges Section - Compact */}
+                  <div className="rounded-2xl bg-white/5 border border-white/10 p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-5 h-5 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-md flex items-center justify-center">
+                        <span className="text-xs">🏆</span>
+                      </div>
+                      <div className="text-xs font-semibold text-white">Badges</div>
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                      {/* Coming Soon Badge */}
+                      <div className="flex items-center gap-2 p-1.5 rounded-md bg-white/5 border border-white/10">
+                        <div className="w-6 h-6 bg-gradient-to-br from-gray-400 to-gray-600 rounded-md flex items-center justify-center">
+                          <span className="text-xs">🔒</span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-xs font-medium text-gray-300">Badge System</div>
+                          <div className="text-xs text-gray-400">Coming Soon</div>
+                        </div>
+                      </div>
+                      
+                      {/* Placeholder for future badges */}
+                      <div className="flex items-center gap-2 p-1.5 rounded-md bg-white/5 border border-white/10 opacity-50">
+                        <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-blue-600 rounded-md flex items-center justify-center">
+                          <span className="text-xs">⭐</span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-xs font-medium text-gray-300">Achievement Badges</div>
+                          <div className="text-xs text-gray-400">Earn by playing games</div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 p-1.5 rounded-md bg-white/5 border border-white/10 opacity-50">
+                        <div className="w-6 h-6 bg-gradient-to-br from-green-400 to-green-600 rounded-md flex items-center justify-center">
+                          <span className="text-xs">🎯</span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-xs font-medium text-gray-300">Streak Badges</div>
+                          <div className="text-xs text-gray-400">Daily practice rewards</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
 
-        {/* Assignments Section (compact with expandable rows) */}
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 mb-8">
-          <h2 className="text-xl font-bold mb-4 flex items-center">
-            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center mr-3">
-              <BookOpen className="w-5 h-5" />
-            </div>
-            Your Assignments
-          </h2>
-          
-          {homeworks.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <BookOpen className="w-8 h-8 text-gray-300" />
-              </div>
-              <p className="text-gray-300 text-lg">No assignments available yet. Check back later!</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {homeworks.map((homework) => (
-                <div key={homework.id} className="border border-white/10 bg-white/5 rounded-xl">
-                  <button
-                    type="button"
-                    onClick={() => setExpanded(prev => ({ ...prev, [homework.id]: !prev[homework.id] }))}
-                    className="w-full px-4 py-3 flex items-center justify-between"
-                    aria-expanded={!!expanded[homework.id]}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: homework.color || 'transparent' }} />
-                      <span className="text-base font-semibold text-white">{homework.title}</span>
-                    </div>
-                    <ChevronDown className={`w-4 h-4 text-gray-300 transition-transform ${expanded[homework.id] ? 'rotate-180' : ''}`} />
-                  </button>
-                  {expanded[homework.id] && (
-                    <div className="px-4 pb-4">
-                      <div className="text-sm text-gray-300 mb-3">Due: {new Date(homework.due_date).toLocaleDateString('en-US')}</div>
-                      <div className="flex flex-wrap gap-2">
-                        {homework.vocabulary_words.map((word, index) => (
-                          <span key={index} className="bg-white/10 text-white text-xs px-2.5 py-1 rounded-full font-medium">
-                            {word}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
 
         {/* Games Section */}
         <div className="rounded-2xl border border-white/10 bg-white/5 p-8">
@@ -1029,7 +1105,6 @@ export default function StudentDashboard() {
               }}
             />
           </div>
-
 
         </div>
 

@@ -91,8 +91,11 @@ export async function startGameSession(gameType: GameType, context?: TrackingCon
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return null
 
-    // Ensure profile has a displayable name for later reporting
-    // No write to non-existent name columns
+    // Update last_active in profiles when starting a game
+    await supabase
+      .from('profiles')
+      .update({ last_active: new Date().toISOString() })
+      .eq('id', user.id)
 
     const { data, error } = await supabase
       .from('game_sessions')
@@ -208,6 +211,12 @@ export async function updateStudentProgress(score: number, gameType: GameType, c
     
     console.log('Debug - User ID:', user.id)
     const studentId = user!.id
+    
+    // Update last_active in profiles when updating progress
+    await supabase
+      .from('profiles')
+      .update({ last_active: new Date().toISOString() })
+      .eq('id', studentId)
     // Treat incoming score as the exact points to add (already scaled in the game if needed)
     let pointsToAdd = Math.max(0, Math.round(score))
 
