@@ -1,7 +1,8 @@
 {
+  "regions": ["arn1"], 
   "functions": {
     "api/**/*": {
-      "regions": ["arn1"]
+      "maxDuration": 10
     }
   }
 }
