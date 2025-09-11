@@ -220,32 +220,32 @@ export default function TeacherWordSetsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800">
       <div className="container mx-auto px-6 py-8">
-        <h1 className="text-2xl font-bold text-white mb-6">Word Sets</h1>
+        <h1 className="text-2xl font-bold text-gray-800 mb-6">Word Sets</h1>
 
-        <div className="bg-white/5 rounded-2xl border border-white/10 p-6 mb-6">
-          <h2 className="font-semibold text-white mb-4">Create new</h2>
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg p-6 mb-6">
+          <h2 className="font-semibold text-gray-800 mb-4">Create new</h2>
           <div className="grid md:grid-cols-2 gap-4 mb-4">
-            <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Title" className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-gray-400"/>
+            <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Title" className="px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm"/>
             <ColorSelect value={color} onChange={setColor} options={colorOptions} />
           </div>
           <div className="space-y-4 mb-4">
             {rows.map((r, i) => (
-              <div key={i} className="border border-white/10 rounded-lg p-4 bg-white/5">
+              <div key={i} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <input value={r.en} onPaste={handleCreatePasteEn} onChange={e=>{
                     const copy=[...rows]; copy[i]={...copy[i], en:e.target.value}; setRows(copy)
-                  }} placeholder="English" className="px-3 py-2 rounded bg-white/5 border border-white/10 text-white placeholder:text-gray-400"/>
+                  }} placeholder="English" className="px-3 py-2 rounded bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm"/>
                   <div className="flex gap-2">
                     <input value={r.sv} onPaste={handleCreatePasteSv} onChange={e=>{
                       const copy=[...rows]; copy[i]={...copy[i], sv:e.target.value}; setRows(copy)
-                    }} placeholder="Swedish" className="px-3 py-2 rounded w-full bg-white/5 border border-white/10 text-white placeholder:text-gray-400"/>
-                    <button onClick={()=>removeRow(i)} className="px-3 py-2 rounded bg-white/10 text-white hover:bg-white/15">-</button>
+                    }} placeholder="Swedish" className="px-3 py-2 rounded w-full bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm"/>
+                    <button onClick={()=>removeRow(i)} className="px-3 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300">-</button>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-white/60">Image:</span>
+                  <span className="text-sm text-gray-600">Image:</span>
                   <ImageSelector
                     value={r.image_url}
                     onChange={(imageUrl) => {
@@ -261,42 +261,42 @@ export default function TeacherWordSetsPage() {
                     word={r.en || 'word'}
                   />
                   {r.en && !r.image_url && (
-                    <span className="text-xs text-blue-400">
+                    <span className="text-xs text-blue-600">
                       💡 Type a word above, then click "Add image" for auto-suggestions
                     </span>
                   )}
                 </div>
               </div>
             ))}
-            <button onClick={addRow} className="px-3 py-2 rounded bg-white/10 text-white hover:bg-white/15">+ Add word</button>
+            <button onClick={addRow} className="px-3 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300">+ Add word</button>
           </div>
-          <button onClick={save} className="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700">Save</button>
+          <button onClick={save} className="px-4 py-2 rounded bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-md">Save</button>
         </div>
 
-        <div className="bg-white/5 rounded-2xl border border-white/10 p-6">
-          <h2 className="font-semibold text-white mb-4">Your Word Sets</h2>
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg p-6">
+          <h2 className="font-semibold text-gray-800 mb-4">Your Word Sets</h2>
           <div className="space-y-3">
             {wordSets.map(ws => (
-              <div key={ws.id} className="p-4 border border-white/10 bg-white/5 rounded-lg">
+              <div key={ws.id} className="p-4 border border-gray-200 bg-white rounded-lg shadow-sm">
                 {editingId === ws.id ? (
                   <div className="space-y-3">
                     <input
                       value={editTitle}
                       onChange={(e)=>setEditTitle(e.target.value)}
-                      className="w-full px-3 py-2 rounded bg-white/5 border border-white/10 text-white placeholder:text-gray-400"
+                      className="w-full px-3 py-2 rounded bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm"
                       placeholder="Title"
                     />
                     <ColorSelect value={editColor} onChange={setEditColor} options={colorOptions} />
                     <div className="space-y-4">
                       {editRows.map((r, i) => (
-                        <div key={i} className="border border-white/10 rounded-lg p-4 bg-white/5">
+                        <div key={i} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
                           <div className="grid grid-cols-2 gap-3 mb-3">
                             <input
                               value={r.en}
                               onPaste={handleEditPasteEn}
                               onChange={(e)=>{ const copy=[...editRows]; copy[i] = { ...copy[i], en: e.target.value }; setEditRows(copy) }}
                               placeholder="English"
-                              className="px-3 py-2 rounded bg-white/5 border border-white/10 text-white placeholder:text-gray-400"
+                              className="px-3 py-2 rounded bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm"
                             />
                             <div className="flex gap-2">
                               <input
@@ -304,13 +304,13 @@ export default function TeacherWordSetsPage() {
                                 onPaste={handleEditPasteSv}
                                 onChange={(e)=>{ const copy=[...editRows]; copy[i] = { ...copy[i], sv: e.target.value }; setEditRows(copy) }}
                                 placeholder="Swedish"
-                                className="px-3 py-2 rounded w-full bg-white/5 border border-white/10 text-white placeholder:text-gray-400"
+                                className="px-3 py-2 rounded w-full bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm"
                               />
-                              <button onClick={()=>removeEditRowAt(i)} className="px-3 py-2 rounded bg-white/10 text-white hover:bg-white/15">-</button>
+                              <button onClick={()=>removeEditRowAt(i)} className="px-3 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300">-</button>
                             </div>
                           </div>
                           <div className="flex items-center gap-3">
-                            <span className="text-sm text-white/60">Image:</span>
+                            <span className="text-sm text-gray-600">Image:</span>
                             <ImageSelector
                               value={r.image_url}
                               onChange={(imageUrl) => {
@@ -326,18 +326,18 @@ export default function TeacherWordSetsPage() {
                               word={r.en || 'word'}
                             />
                             {r.en && !r.image_url && (
-                              <span className="text-xs text-blue-400">
+                              <span className="text-xs text-blue-600">
                                 💡 Type a word above, then click "Add image" for auto-suggestions
                               </span>
                             )}
                           </div>
                         </div>
                       ))}
-                      <button onClick={addEditRow} className="px-3 py-2 rounded bg-white/10 text-white hover:bg-white/15">+ Add word</button>
+                      <button onClick={addEditRow} className="px-3 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300">+ Add word</button>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={()=>saveEdit(ws.id)} className="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700">Save</button>
-                      <button onClick={cancelEdit} className="px-4 py-2 rounded bg-white/10 text-white hover:bg-white/15">Cancel</button>
+                      <button onClick={()=>saveEdit(ws.id)} className="px-4 py-2 rounded bg-gradient-to-r from-emerald-600 to-green-600 text-white hover:from-emerald-700 hover:to-green-700 shadow-md">Save</button>
+                      <button onClick={cancelEdit} className="px-4 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300">Cancel</button>
                     </div>
                   </div>
                 ) : (
@@ -345,25 +345,25 @@ export default function TeacherWordSetsPage() {
                     <div className="flex-1">
                       <input defaultValue={ws.title} onBlur={(e)=>{
                         const v=e.target.value.trim(); if(v && v!==ws.title){update(ws.id, v, ws.color)}
-                      }} className="w-full bg-transparent text-white font-medium outline-none border-b border-white/10 focus:border-indigo-500" />
-                      <div className="text-gray-300 text-sm flex items-center gap-2">
+                      }} className="w-full bg-transparent text-gray-800 font-medium outline-none border-b border-gray-300 focus:border-indigo-500" />
+                      <div className="text-gray-600 text-sm flex items-center gap-2">
                         <span>{ws.words.length} words</span>
-                        {ws.color && <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ backgroundColor: ws.color }}></span><span className="text-gray-400">{ws.color}</span></span>}
+                        {ws.color && <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ backgroundColor: ws.color }}></span><span className="text-gray-500">{ws.color}</span></span>}
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <button onClick={()=>beginEdit(ws)} className="text-indigo-400 hover:text-indigo-300">Edit</button>
-                      <button onClick={()=>remove(ws.id)} className="text-red-400 hover:text-red-300">Delete</button>
+                      <button onClick={()=>beginEdit(ws)} className="text-indigo-600 hover:text-indigo-700">Edit</button>
+                      <button onClick={()=>remove(ws.id)} className="text-red-500 hover:text-red-600">Delete</button>
                     </div>
                   </div>
                 )}
               </div>
             ))}
-            {wordSets.length===0 && <div className="text-gray-300">No word sets yet.</div>}
+            {wordSets.length===0 && <div className="text-gray-500">No word sets yet.</div>}
           </div>
         </div>
 
-        {message && <div className="mt-6 p-3 rounded bg-blue-500/20 text-blue-200 border border-blue-400/30">{message}</div>}
+        {message && <div className="mt-6 p-3 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">{message}</div>}
       </div>
     </div>
   )

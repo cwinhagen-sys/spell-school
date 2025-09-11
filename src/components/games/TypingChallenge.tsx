@@ -222,14 +222,14 @@ export default function TypingChallenge({ words, onClose, onScoreUpdate, trackin
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-      <div className="rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative bg-gray-900 text-white border border-white/10">
+      <div className="rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative bg-white text-gray-800 border border-gray-200">
         {themeColor && <div className="h-1 rounded-md mb-4" style={{ backgroundColor: themeColor }}></div>}
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">⌨️ Typing Challenge</h2>
+          <h2 className="text-2xl font-bold text-gray-800">⌨️ Typing Challenge</h2>
           <button
             onClick={onClose}
-            className="text-gray-300 hover:text-white text-2xl transition-colors"
+            className="text-gray-600 hover:text-gray-800 text-2xl transition-colors"
           >
             ×
           </button>
@@ -238,26 +238,26 @@ export default function TypingChallenge({ words, onClose, onScoreUpdate, trackin
         {/* Game Info */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 bg-white/10 px-3 py-2 rounded-full border border-white/10">
-              <Clock className="w-4 h-4 text-blue-300" />
-              <span className="text-gray-200 font-medium">{formatTime(timeLeft)}</span>
+            <div className="flex items-center space-x-2 bg-gray-100 px-3 py-2 rounded-full border border-gray-200">
+              <Clock className="w-4 h-4 text-indigo-600" />
+              <span className="text-gray-800 font-medium">{formatTime(timeLeft)}</span>
             </div>
-            <div className="flex items-center space-x-2 bg-white/10 px-3 py-2 rounded-full border border-white/10">
-              <Target className="w-4 h-4 text-emerald-300" />
-              <span className="text-gray-200 font-medium">Streak: {streak}</span>
+            <div className="flex items-center space-x-2 bg-gray-100 px-3 py-2 rounded-full border border-gray-200">
+              <Target className="w-4 h-4 text-emerald-600" />
+              <span className="text-gray-800 font-medium">Streak: {streak}</span>
             </div>
           </div>
         </div>
 
         {/* Progress */}
         <div className="mb-6">
-          <div className="flex items-center justify-between text-sm text-gray-400 mb-2">
+          <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
             <span>Word {currentWordIndex + 1} of {wordList.length}</span>
             <span>{Math.round(((currentWordIndex + 1) / wordList.length) * 100)}%</span>
           </div>
-          <div className="w-full bg-white/10 rounded-full h-2">
+          <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
-              className="bg-orange-500 h-2 rounded-full transition-all duration-300"
+              className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full transition-all duration-300"
               style={{ width: `${((currentWordIndex + 1) / wordList.length) * 100}%` }}
             ></div>
           </div>
@@ -281,20 +281,20 @@ export default function TypingChallenge({ words, onClose, onScoreUpdate, trackin
               value={userInput}
               onChange={handleInputChange}
               placeholder="Type here..."
-              className="flex-1 px-4 py-3 border border-white/10 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder:text-gray-400 text-lg bg-white/5 transition-colors"
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-800 placeholder:text-gray-500 text-lg bg-white transition-colors"
               autoComplete="off"
               autoFocus
             />
             <button
               type="submit"
-              className="bg-orange-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-orange-700 transition-colors shadow-lg"
+              className="bg-gradient-to-r from-orange-600 to-red-600 text-white py-3 px-6 rounded-lg font-medium hover:from-orange-700 hover:to-red-700 transition-colors shadow-lg"
             >
               Submit
             </button>
             <button
               type="button"
               onClick={skipWord}
-              className="bg-white/10 border border-white/10 text-white py-3 px-6 rounded-lg font-medium hover:bg-white/15 transition-colors"
+              className="bg-gray-100 border border-gray-300 text-gray-800 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors"
             >
               Skip
             </button>

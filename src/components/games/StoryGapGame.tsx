@@ -257,7 +257,7 @@ export default function StoryGapGame({ words, onClose, trackingContext, themeCol
                   onChange={(e) => setAnswers(prev => ({ ...prev, [idx]: e.target.value }))}
                   onFocus={() => setActiveIndex(idx)}
                   placeholder={`#${idx}`}
-                  className="inline-block align-baseline mx-1 px-2 py-0.5 rounded bg-white/10 border border-white/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 text-white placeholder:text-gray-400"
+                  className="inline-block align-baseline mx-1 px-2 py-0.5 rounded bg-gray-50 border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 text-gray-800 placeholder:text-gray-500"
                   style={{ minWidth: '7ch', maxWidth: '22ch' }}
                 />
               )
@@ -270,11 +270,11 @@ export default function StoryGapGame({ words, onClose, trackingContext, themeCol
           const frameClass = isCorrect === null
             ? ''
             : isCorrect
-              ? 'border border-emerald-500/70 bg-emerald-900/10'
-              : 'border border-rose-500/70 bg-rose-900/10'
+              ? 'border border-emerald-500/70 bg-emerald-100'
+              : 'border border-rose-500/70 bg-red-100'
           return (
             <div key={`s-${si}`} className="flex items-start gap-2">
-              <div className="text-xs text-gray-400 pt-1">{si + 1}.</div>
+              <div className="text-xs text-gray-600 pt-1">{si + 1}.</div>
               <div className={`whitespace-pre-wrap leading-7 flex-1 rounded-md px-2 ${frameClass}`}>{rendered}</div>
             </div>
           )
@@ -286,12 +286,12 @@ export default function StoryGapGame({ words, onClose, trackingContext, themeCol
   if (loading && difficulty) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-        <div className="rounded-2xl p-8 max-w-md w-full shadow-2xl relative bg-gray-900 text-white border border-white/10 text-center">
-          <div className="mx-auto mb-4 w-24 h-24 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center animate-pulse">
+        <div className="rounded-2xl p-8 max-w-md w-full shadow-2xl relative bg-white text-gray-800 border border-gray-200 text-center">
+          <div className="mx-auto mb-4 w-24 h-24 rounded-2xl bg-gray-100 border border-gray-200 flex items-center justify-center animate-pulse">
             <img src="/assets/wizard/wizard_book.png" alt="Loading" className="w-16 h-16 animate-bounce" />
           </div>
-          <div className="text-lg">Conjuring your story…</div>
-          <div className="mt-2 text-sm text-gray-300">Shuffling words and crafting gaps</div>
+          <div className="text-lg text-gray-800">Conjuring your story…</div>
+          <div className="mt-2 text-sm text-gray-600">Shuffling words and crafting gaps</div>
         </div>
       </div>
     )
@@ -300,9 +300,9 @@ export default function StoryGapGame({ words, onClose, trackingContext, themeCol
   if (error) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-        <div className="rounded-2xl p-8 max-w-2xl w-full shadow-2xl relative bg-gray-900 text-white border border-white/10">
-          <div className="text-red-300 mb-2">{error}</div>
-          <button onClick={onClose} className="mt-2 bg-white/10 border border-white/10 text-white px-4 py-2 rounded hover:bg-white/15">Close</button>
+        <div className="rounded-2xl p-8 max-w-2xl w-full shadow-2xl relative bg-white text-gray-800 border border-gray-200">
+          <div className="text-red-600 mb-2">{error}</div>
+          <button onClick={onClose} className="mt-2 bg-gray-100 border border-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-200">Close</button>
         </div>
       </div>
     )
@@ -311,13 +311,13 @@ export default function StoryGapGame({ words, onClose, trackingContext, themeCol
   if (submitted) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-        <div className="rounded-2xl p-8 max-w-md w-full shadow-2xl relative bg-gray-900 text-white border border-white/10 text-center">
+        <div className="rounded-2xl p-8 max-w-md w-full shadow-2xl relative bg-white text-gray-800 border border-gray-200 text-center">
           {themeColor && <div className="h-1 rounded-md mb-4" style={{ backgroundColor: themeColor }}></div>}
-          <h2 className="text-2xl font-bold mb-2">Sentence Gap</h2>
-          <div className="text-lg">Poäng: {score} / {blanks * 2}</div>
-          <div className="mt-2 text-sm text-gray-300">Rätt: {Math.floor(score / 2)} / {blanks}</div>
+          <h2 className="text-2xl font-bold mb-2 text-gray-800">Sentence Gap</h2>
+          <div className="text-lg text-gray-800">Poäng: {score} / {blanks * 2}</div>
+          <div className="mt-2 text-sm text-gray-600">Rätt: {Math.floor(score / 2)} / {blanks}</div>
           <div className="mt-6">
-            <button onClick={onClose} className="px-4 py-2 bg-blue-600 rounded-lg">Stäng</button>
+            <button onClick={onClose} className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg shadow-md">Stäng</button>
           </div>
         </div>
       </div>
@@ -330,16 +330,16 @@ export default function StoryGapGame({ words, onClose, trackingContext, themeCol
   if (!difficulty) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-        <div className="rounded-2xl p-8 max-w-md w-full shadow-2xl relative bg-gray-900 text-white border border-white/10 text-center">
+        <div className="rounded-2xl p-8 max-w-md w-full shadow-2xl relative bg-white text-gray-800 border border-gray-200 text-center">
           {themeColor && <div className="h-1 rounded-md mb-4" style={{ backgroundColor: themeColor }}></div>}
-          <h2 className="text-xl font-semibold mb-2">Välj svårighetsgrad</h2>
-          <p className="text-sm text-gray-300 mb-4">Texten genereras först efter att du valt nivå.</p>
+          <h2 className="text-xl font-semibold mb-2 text-gray-800">Välj svårighetsgrad</h2>
+          <p className="text-sm text-gray-600 mb-4">Texten genereras först efter att du valt nivå.</p>
           <div className="flex items-center justify-center gap-2">
-            <button className="px-3 py-2 rounded bg-emerald-600 hover:bg-emerald-500" onClick={() => setDifficulty('green')}>Green</button>
-            <button className="px-3 py-2 rounded bg-amber-600 hover:bg-amber-500" onClick={() => setDifficulty('yellow')}>Yellow</button>
-            <button className="px-3 py-2 rounded bg-rose-600 hover:bg-rose-500" onClick={() => setDifficulty('red')}>Red</button>
+            <button className="px-3 py-2 rounded bg-emerald-600 hover:bg-emerald-700 text-white shadow-md" onClick={() => setDifficulty('green')}>Green</button>
+            <button className="px-3 py-2 rounded bg-amber-600 hover:bg-amber-700 text-white shadow-md" onClick={() => setDifficulty('yellow')}>Yellow</button>
+            <button className="px-3 py-2 rounded bg-rose-600 hover:bg-rose-700 text-white shadow-md" onClick={() => setDifficulty('red')}>Red</button>
           </div>
-          <button onClick={onClose} className="mt-4 text-gray-300 hover:text-white">Avbryt</button>
+          <button onClick={onClose} className="mt-4 text-gray-600 hover:text-gray-800">Avbryt</button>
         </div>
       </div>
     )
@@ -347,31 +347,31 @@ export default function StoryGapGame({ words, onClose, trackingContext, themeCol
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-      <div className="rounded-2xl p-8 max-w-5xl w-full max-h-[90vh] overflow-auto shadow-2xl relative bg-gray-900 text-white border border-white/10">
+      <div className="rounded-2xl p-8 max-w-5xl w-full max-h-[90vh] overflow-auto shadow-2xl relative bg-white text-gray-800 border border-gray-200">
         {themeColor && <div className="h-1 rounded-md mb-4" style={{ backgroundColor: themeColor }}></div>}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Sentence Gap</h2>
-          <button onClick={onClose} className="text-gray-300 hover:text-white text-2xl">×</button>
+          <h2 className="text-2xl font-bold text-gray-800">Sentence Gap</h2>
+          <button onClick={onClose} className="text-gray-600 hover:text-gray-800 text-2xl">×</button>
         </div>
 
         <div className="mb-4 flex items-center justify-between gap-4">
-          <div className="text-sm text-gray-300">
+          <div className="text-sm text-gray-600">
             {difficulty ? '' : 'Välj svårighetsgrad för att generera meningarna.'}
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-300">Level:</span>
+            <span className="text-gray-600">Level:</span>
             <button
-              className={`px-2 py-1 rounded ${difficulty==='green'?'bg-emerald-600 text-white':'bg-white/10 text-gray-200 hover:bg-white/15'}`}
+              className={`px-2 py-1 rounded ${difficulty==='green'?'bg-emerald-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
               onClick={() => setDifficulty('green')}
               title="Simple, student-friendly"
             >Green</button>
             <button
-              className={`px-2 py-1 rounded ${difficulty==='yellow'?'bg-amber-600 text-white':'bg-white/10 text-gray-200 hover:bg-white/15'}`}
+              className={`px-2 py-1 rounded ${difficulty==='yellow'?'bg-amber-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
               onClick={() => setDifficulty('yellow')}
               title="Moderate complexity"
             >Yellow</button>
             <button
-              className={`px-2 py-1 rounded ${difficulty==='red'?'bg-rose-600 text-white':'bg-white/10 text-gray-200 hover:bg-white/15'}`}
+              className={`px-2 py-1 rounded ${difficulty==='red'?'bg-rose-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
               onClick={() => setDifficulty('red')}
               title="More advanced"
             >Red</button>
@@ -380,16 +380,16 @@ export default function StoryGapGame({ words, onClose, trackingContext, themeCol
 
         <div className="grid lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-2">
-            <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+            <div className="rounded-xl bg-gray-50 border border-gray-200 p-4">
               {renderGapSentences()}
             </div>
-            <div className="mt-3 text-xs text-gray-400">Active blank: {activeIndex ?? '—'}</div>
+            <div className="mt-3 text-xs text-gray-600">Active blank: {activeIndex ?? '—'}</div>
             {/* Hints removed per requirements */}
           </div>
 
           <div>
-            <div className="rounded-xl bg-white/5 border border-white/10 p-4">
-              <div className="text-sm font-semibold mb-3">Available words</div>
+            <div className="rounded-xl bg-gray-50 border border-gray-200 p-4">
+              <div className="text-sm font-semibold mb-3 text-gray-800">Available words</div>
               <div className="flex flex-wrap gap-2">
                 {usedWords.map((w, i) => {
                   const key = String(w).toLowerCase()

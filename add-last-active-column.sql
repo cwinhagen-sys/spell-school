@@ -15,3 +15,4 @@ WHERE last_active IS NULL;
 
 -- Add a comment to explain the column
 COMMENT ON COLUMN profiles.last_active IS 'Tracks when the user was last active (logged in or performed an action)';
+

@@ -698,17 +698,17 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800">
       <LogoutHandler />
       {/* Header */}
-      <div className="bg-gray-800 border-b border-white/10">
+      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
                 <BookOpen className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-2xl font-bold">Student Dashboard</h1>
+              <h1 className="text-2xl font-bold text-gray-800">Student Dashboard</h1>
             </div>
           </div>
         </div>
@@ -720,42 +720,42 @@ export default function StudentDashboard() {
           {/* Left: Welcome + Assignments */}
           <div className="lg:col-span-1 flex flex-col gap-6">
             {/* Welcome Section */}
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-900/40 via-purple-900/30 to-emerald-900/30 p-6">
-              <h2 className="text-2xl font-extrabold mb-2">Welcome back!</h2>
-              <p className="text-gray-300 mb-6">Keep casting spells and leveling up your vocabulary.</p>
+            <div className="relative overflow-hidden rounded-3xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-lg p-6">
+              <h2 className="text-2xl font-extrabold mb-2 text-gray-800">Welcome back!</h2>
+              <p className="text-gray-600 mb-6">Keep casting spells and leveling up your vocabulary.</p>
               
               <div className="mt-6 flex flex-col gap-3">
-                <a href="/student/word-sets" className="px-4 py-2 rounded-md bg-white/10 text-white hover:bg-white/15 transition-colors text-center">Your Word Sets</a>
-                <a href="/student/join" className="px-4 py-2 rounded-md bg-white/10 text-white hover:bg-white/15 transition-colors text-center">Join a Class</a>
+                <a href="/student/word-sets" className="px-4 py-2 rounded-md bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 transition-colors text-center shadow-md">Your Word Sets</a>
+                <a href="/student/join" className="px-4 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors text-center border border-gray-200">Join a Class</a>
               </div>
             </div>
 
             {/* Assignments Section - Fixed Height */}
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 flex-1 flex flex-col">
-              <h2 className="text-lg font-bold mb-4 flex items-center">
-                <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center mr-3">
-                  <BookOpen className="w-4 h-4" />
+            <div className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-lg p-6 flex-1 flex flex-col">
+              <h2 className="text-lg font-bold mb-4 flex items-center text-gray-800">
+                <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                  <BookOpen className="w-4 h-4 text-white" />
                 </div>
                 Your Assignments
               </h2>
               
               {homeworks.length === 0 ? (
                 <div className="text-center py-8 flex-1 flex flex-col justify-center">
-                  <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                    <BookOpen className="w-6 h-6 text-gray-300" />
+                  <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                    <BookOpen className="w-6 h-6 text-gray-400" />
                   </div>
-                  <p className="text-gray-300 text-sm">No assignments yet</p>
+                  <p className="text-gray-500 text-sm">No assignments yet</p>
                 </div>
               ) : (
                 <div className="space-y-2 flex-1 flex flex-col">
                   <div className="flex-1">
                     {homeworks.slice(0, 2).map((homework) => (
-                      <div key={homework.id} className="border border-white/10 bg-white/5 rounded-lg p-3 mb-2">
+                      <div key={homework.id} className="border border-gray-200 bg-white/60 rounded-lg p-3 mb-2 shadow-sm">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: homework.color || 'transparent' }} />
-                          <span className="text-sm font-semibold text-white truncate">{homework.title}</span>
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: homework.color || '#6b7280' }} />
+                          <span className="text-sm font-semibold text-gray-800 truncate">{homework.title}</span>
                         </div>
-                        <div className="text-xs text-gray-400">
+                        <div className="text-xs text-gray-500">
                           Due: {new Date(homework.due_date).toLocaleDateString('en-US')}
                         </div>
                       </div>
@@ -764,7 +764,7 @@ export default function StudentDashboard() {
                   
                   {/* View All Link */}
                   <div className="text-center pt-2">
-                    <a href="/student/word-sets" className="text-xs text-gray-400 hover:text-white underline">
+                    <a href="/student/word-sets" className="text-xs text-gray-500 hover:text-indigo-600 underline">
                       View all assignments ({homeworks.length})
                     </a>
                   </div>
@@ -775,28 +775,28 @@ export default function StudentDashboard() {
 
           {/* Right: Wizard + Stats */}
           <div className="lg:col-span-2">
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-900/40 via-purple-900/30 to-emerald-900/30 p-6 h-full">
+            <div className="relative overflow-hidden rounded-3xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-lg p-6 h-full">
               <div className="grid md:grid-cols-2 gap-6 h-full">
                 {/* Wizard Image */}
                 <div className="flex items-center justify-center">
                   {wizardTitle.title && wizardTitle.image ? (
                     <div className="relative w-full max-w-sm">
-                      <div className="relative rounded-2xl overflow-hidden border-2 border-white/30 shadow-lg">
+                      <div className="relative rounded-2xl overflow-hidden border-2 border-gray-300 shadow-lg">
                         <img 
                           src={wizardTitle.image} 
                           alt={wizardTitle.title} 
                           className="w-full h-auto object-contain" 
                         />
-                        <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
+                        <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-gray-800/80 to-transparent">
                           <div className="text-xs text-gray-200">Current Title</div>
-                          <div className="text-lg font-extrabold">{wizardTitle.title}</div>
+                          <div className="text-lg font-extrabold text-white">{wizardTitle.title}</div>
                         </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="w-full max-w-sm h-64 rounded-2xl bg-white/5 border-2 border-white/30 flex items-center justify-center text-gray-300 shadow-lg">
+                    <div className="w-full max-w-sm h-64 rounded-2xl bg-gray-100 border-2 border-gray-300 flex items-center justify-center text-gray-500 shadow-lg">
                       <div className="text-center">
-                        <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mx-auto mb-3">
+                        <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto mb-3">
                           <Star className="w-6 h-6" />
                         </div>
                         <div>No title yet</div>
@@ -808,29 +808,29 @@ export default function StudentDashboard() {
                 {/* Stats */}
                 <div className="flex flex-col justify-center space-y-4">
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-2xl bg-white/10 border border-white/10 p-4 flex items-center gap-3">
-                      <Star className="w-6 h-6 text-yellow-300" />
+                    <div className="rounded-2xl bg-gradient-to-br from-yellow-100 to-yellow-200 border border-yellow-300 p-4 flex items-center gap-3">
+                      <Star className="w-6 h-6 text-yellow-600" />
                       <div>
-                        <div className="text-sm text-gray-300">Points</div>
-                        <div className="text-xl font-bold">{points}</div>
+                        <div className="text-sm text-gray-600">Points</div>
+                        <div className="text-xl font-bold text-gray-800">{points}</div>
                       </div>
                     </div>
-                    <a href="/student/levels" className="rounded-2xl bg-white/10 border border-white/10 p-4 flex items-center gap-3 hover:bg-white/15 transition-colors" title="View level progress">
-                      <Target className="w-6 h-6 text-blue-300" />
+                    <a href="/student/levels" className="rounded-2xl bg-gradient-to-br from-blue-100 to-blue-200 border border-blue-300 p-4 flex items-center gap-3 hover:from-blue-200 hover:to-blue-300 transition-colors" title="View level progress">
+                      <Target className="w-6 h-6 text-blue-600" />
                       <div>
-                        <div className="text-sm text-gray-300">Level</div>
-                        <div className="text-xl font-bold">{currentLevel}</div>
+                        <div className="text-sm text-gray-600">Level</div>
+                        <div className="text-xl font-bold text-gray-800">{currentLevel}</div>
                       </div>
                     </a>
                   </div>
                   
-                  <div className="rounded-2xl bg-white/10 border border-white/10 p-4 flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <div className="rounded-2xl bg-gradient-to-br from-indigo-100 to-indigo-200 border border-indigo-300 p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
                       <Users className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <div className="text-sm text-gray-300">Class</div>
-                      <div className="text-lg font-semibold">{classInfo ? classInfo.name : 'No class joined'}</div>
+                      <div className="text-sm text-gray-600">Class</div>
+                      <div className="text-lg font-semibold text-gray-800">{classInfo ? classInfo.name : 'No class joined'}</div>
                     </div>
                   </div>
                   
@@ -1242,36 +1242,36 @@ export default function StudentDashboard() {
         {/* Homework Selection Modal */}
         {showHomeworkSelection && (
           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-            <div className="rounded-2xl p-8 max-w-4xl w-full shadow-2xl relative bg-gray-900 text-white border border-white/10">
+            <div className="rounded-2xl p-8 max-w-4xl w-full shadow-2xl relative bg-white text-gray-800 border border-gray-200">
               <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold mb-2">Choose Vocabulary Set</h2>
-                <p className="text-gray-300">Select which vocabulary list you want to practice with:</p>
+                <h2 className="text-2xl font-bold mb-2 text-gray-800">Choose Vocabulary Set</h2>
+                <p className="text-gray-600">Select which vocabulary list you want to practice with:</p>
               </div>
               
               
               <div className="mb-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Assigned Vocabulary Sets</h3>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Assigned Vocabulary Sets</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[40vh] overflow-y-auto pr-2">
                   {homeworks.map((homework) => (
                     <button
                       key={homework.id}
                       onClick={() => selectHomeworkForGame(homework)}
-                      className="text-left p-4 border border-white/10 rounded-lg hover:bg-white/10 transition-colors border-l-4 min-h-[96px]"
+                      className="text-left p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors border-l-4 min-h-[96px] bg-white"
                       style={{ borderLeftColor: homework.color || undefined }}
                     >
-                      <h3 className="font-semibold mb-2 flex items-center gap-2">
+                      <h3 className="font-semibold mb-2 flex items-center gap-2 text-gray-800">
                         {homework.color && <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: homework.color }}></span>}
                         {homework.title}
                       </h3>
-                      <p className="text-gray-300 text-sm mb-2 line-clamp-2">{homework.description}</p>
+                      <p className="text-gray-600 text-sm mb-2 line-clamp-2">{homework.description}</p>
                       <div className="flex flex-wrap gap-2">
                         {homework.vocabulary_words.slice(0, 5).map((word, index) => (
-                          <span key={index} className="bg-white/10 text-white text-xs px-2 py-1 rounded-full border border-white/10">
+                          <span key={index} className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full border border-gray-200">
                             {word}
                           </span>
                         ))}
                         {homework.vocabulary_words.length > 5 && (
-                          <span className="bg-white/10 text-gray-300 text-xs px-2 py-1 rounded-full border border-white/10">
+                          <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full border border-gray-200">
                             +{homework.vocabulary_words.length - 5} more
                           </span>
                         )}
@@ -1284,7 +1284,7 @@ export default function StudentDashboard() {
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowHomeworkSelection(false)}
-                  className="flex-1 bg-white/10 border border-white/10 text-white py-3 px-6 rounded-lg font-medium hover:bg-white/15 transition-colors"
+                  className="flex-1 bg-gray-100 border border-gray-300 text-gray-800 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors"
                 >
                   Cancel
                 </button>

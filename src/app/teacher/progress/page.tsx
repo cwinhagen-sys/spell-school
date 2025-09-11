@@ -293,20 +293,13 @@ export default function TeacherProgressPage() {
     setSortDir(d => (sortKey === key ? (d === 'desc' ? 'asc' : 'desc') : 'desc'))
   }
 
-  // Helper functions for color coding
+  // Helper functions for color coding - Clean design
   const getAccuracyColor = (accuracy: number): string => {
-    if (accuracy >= 90) return 'text-emerald-200'
-    if (accuracy >= 75) return 'text-lime-200'
-    if (accuracy >= 60) return 'text-yellow-200'
-    if (accuracy >= 40) return 'text-orange-200'
-    return 'text-red-200'
+    return 'text-gray-800' // All accuracy in same clean color
   }
 
   const getSessionBadgeColor = (sessions: number): string => {
-    if (sessions >= 10) return 'bg-gray-700/30 text-gray-200 border border-gray-600'
-    if (sessions >= 5) return 'bg-gray-700/20 text-gray-300 border border-gray-600'
-    if (sessions >= 2) return 'bg-gray-700/10 text-gray-400 border border-gray-600'
-    return 'bg-gray-700/5 text-gray-500 border border-gray-600'
+    return 'bg-gray-100 text-gray-800 border border-gray-200' // Clean consistent styling
   }
 
   const formatLastActive = (timestamp: string): { text: string; isPlaying: boolean; exactTime: string } => {
@@ -351,16 +344,16 @@ export default function TeacherProgressPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800">
       <div className="max-w-6xl mx-auto p-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-blue-400" />
+          <h1 className="text-2xl font-bold flex items-center gap-2 text-gray-800">
+            <BarChart3 className="w-6 h-6 text-indigo-600" />
             Student Progress
           </h1>
           <button
             onClick={() => setRefreshTrigger(prev => prev + 1)}
-            className="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors"
+            className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 rounded text-sm transition-colors shadow-md"
             disabled={loading}
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -373,17 +366,17 @@ export default function TeacherProgressPage() {
               return (
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                    <span className="text-green-300 font-medium">{activeStudents}</span>
-                    <span className="text-gray-400">playing now</span>
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-green-600 font-medium">{activeStudents}</span>
+                    <span className="text-gray-600">playing now</span>
                   </div>
-                  <div className="text-gray-500">•</div>
-                  <div className="text-gray-400">
+                  <div className="text-gray-400">•</div>
+                  <div className="text-gray-600">
                     {totalStudents} total students
                   </div>
                   {lastUpdated && (
                     <>
-                      <div className="text-gray-500">•</div>
+                      <div className="text-gray-400">•</div>
                       <div className="text-gray-500 text-xs">
                         Updated {lastUpdated.toLocaleTimeString('sv-SE')}
                       </div>
@@ -397,78 +390,78 @@ export default function TeacherProgressPage() {
 
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Class</label>
-            <select value={selectedClass} onChange={e => setSelectedClass(e.target.value)} className="px-3 py-2 rounded bg-white/5 border border-white/10 text-white">
-              <option value="" className="text-black">All classes</option>
+            <label className="block text-sm text-gray-600 mb-1">Class</label>
+            <select value={selectedClass} onChange={e => setSelectedClass(e.target.value)} className="px-3 py-2 rounded bg-white border border-gray-300 text-gray-800 shadow-sm">
+              <option value="" className="text-gray-800">All classes</option>
               {classes.map(c => (
-                <option key={c.id} value={c.id} className="text-black">{c.name}</option>
+                <option key={c.id} value={c.id} className="text-gray-800">{c.name}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Time</label>
+            <label className="block text-sm text-gray-600 mb-1">Time</label>
             <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 opacity-70" />
-              <select value={timeFilter} onChange={e => setTimeFilter(e.target.value as TimeFilter)} className="px-3 py-2 rounded bg-white/5 border border-white/10 text-white">
-                <option value="today" className="text-black">Today</option>
-                <option value="last_week" className="text-black">Last week</option>
-                <option value="last_month" className="text-black">Last month</option>
-                <option value="all" className="text-black">All time</option>
+              <Filter className="w-4 h-4 text-gray-500" />
+              <select value={timeFilter} onChange={e => setTimeFilter(e.target.value as TimeFilter)} className="px-3 py-2 rounded bg-white border border-gray-300 text-gray-800 shadow-sm">
+                <option value="today" className="text-gray-800">Today</option>
+                <option value="last_week" className="text-gray-800">Last week</option>
+                <option value="last_month" className="text-gray-800">Last month</option>
+                <option value="all" className="text-gray-800">All time</option>
               </select>
             </div>
           </div>
         </div>
 
         {loading ? (
-          <div className="p-6 rounded-2xl bg-white/5 border border-white/10">Loading…</div>
+          <div className="p-6 rounded-2xl bg-white/80 border border-gray-200 shadow-lg">Loading…</div>
         ) : error ? (
-          <div className="p-6 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-200">{error}</div>
+          <div className="p-6 rounded-2xl bg-red-100 border border-red-300 text-red-700">{error}</div>
         ) : (
-          <div className="rounded-2xl bg-white/5 border border-white/10 overflow-auto shadow-xl">
+          <div className="rounded-2xl bg-white/80 border border-gray-200 overflow-auto shadow-xl">
             <table className="min-w-full">
               <thead>
-                <tr className="bg-gray-800/50 text-left text-sm text-gray-100 border-b border-gray-700">
-                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-gray-700/30 transition-colors" onClick={() => sortToggle('student')}>
+                <tr className="bg-gray-100 text-left text-sm text-gray-800 border-b border-gray-300">
+                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-gray-200 transition-colors" onClick={() => sortToggle('student')}>
                     <div className="flex items-center gap-2">
                       <span className="font-medium">Student</span>
                       {sortKey==='student' && (
-                        <span className="text-gray-300">{sortDir==='desc' ? '↓' : '↑'}</span>
+                        <span className="text-gray-600">{sortDir==='desc' ? '↓' : '↑'}</span>
                       )}
                     </div>
                   </th>
-                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-gray-700/30 transition-colors" onClick={() => sortToggle('points')}>
+                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-gray-200 transition-colors" onClick={() => sortToggle('points')}>
                     <div className="flex items-center gap-2">
-                      <Trophy className="w-4 h-4 text-gray-400" />
+                      <Trophy className="w-4 h-4 text-yellow-600" />
                       <span className="font-medium">Points</span>
                       {sortKey==='points' && (
-                        <span className="text-gray-300">{sortDir==='desc' ? '↓' : '↑'}</span>
+                        <span className="text-gray-600">{sortDir==='desc' ? '↓' : '↑'}</span>
                       )}
                     </div>
                   </th>
-                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-gray-700/30 transition-colors" onClick={() => sortToggle('accuracy')}>
+                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-gray-200 transition-colors" onClick={() => sortToggle('accuracy')}>
                     <div className="flex items-center gap-2">
-                      <Target className="w-4 h-4 text-gray-400" />
+                      <Target className="w-4 h-4 text-blue-600" />
                       <span className="font-medium">Avg. Accuracy</span>
                       {sortKey==='accuracy' && (
-                        <span className="text-gray-300">{sortDir==='desc' ? '↓' : '↑'}</span>
+                        <span className="text-gray-600">{sortDir==='desc' ? '↓' : '↑'}</span>
                       )}
                     </div>
                   </th>
-                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-gray-700/30 transition-colors" onClick={() => sortToggle('sessions')}>
+                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-gray-200 transition-colors" onClick={() => sortToggle('sessions')}>
                     <div className="flex items-center gap-2">
-                      <Gamepad2 className="w-4 h-4 text-gray-400" />
+                      <Gamepad2 className="w-4 h-4 text-purple-600" />
                       <span className="font-medium">Sessions</span>
                       {sortKey==='sessions' && (
-                        <span className="text-gray-300">{sortDir==='desc' ? '↓' : '↑'}</span>
+                        <span className="text-gray-600">{sortDir==='desc' ? '↓' : '↑'}</span>
                       )}
                     </div>
                   </th>
-                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-gray-700/30 transition-colors" onClick={() => sortToggle('lastActive')}>
+                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-gray-200 transition-colors" onClick={() => sortToggle('lastActive')}>
                     <div className="flex items-center gap-2">
-                      <Clock3 className="w-4 h-4 text-gray-400" />
+                      <Clock3 className="w-4 h-4 text-green-600" />
                       <span className="font-medium">Last Active</span>
                       {sortKey==='lastActive' && (
-                        <span className="text-gray-300">{sortDir==='desc' ? '↓' : '↑'}</span>
+                        <span className="text-gray-600">{sortDir==='desc' ? '↓' : '↑'}</span>
                       )}
                     </div>
                     <div className="text-xs text-gray-500 mt-1">Hover for exact time</div>
@@ -486,19 +479,19 @@ export default function TeacherProgressPage() {
                     </td>
                   </tr>
                 ) : sorted.map((s, index) => (
-                  <tr key={s.id} className={`border-t border-gray-700 text-sm transition-colors hover:bg-gray-800/30 ${index % 2 === 0 ? 'bg-gray-800/10' : 'bg-gray-800/20'}`}>
+                  <tr key={s.id} className="bg-white hover:bg-gray-50 border-b border-gray-200">
                     <td className="px-6 py-4 font-medium">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-medium text-gray-200">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-xs font-medium text-white">
                           {s.display.charAt(0).toUpperCase()}
                         </div>
-                        <span>{s.display}</span>
+                        <span className="text-gray-700">{s.display}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-base text-gray-200">{s.points}</span>
-                        <Trophy className="w-4 h-4 text-gray-400" />
+                        <span className="font-medium text-base text-gray-700">{s.points}</span>
+                        <Trophy className="w-4 h-4 text-yellow-600" />
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -514,7 +507,7 @@ export default function TeacherProgressPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-base text-gray-200">{s.sessions}</span>
+                        <span className="font-medium text-base text-gray-700">{s.sessions}</span>
                         <div className={`px-2 py-1 rounded-full text-xs font-medium ${getSessionBadgeColor(s.sessions)}`}>
                           {s.sessions === 1 ? 'session' : 'sessions'}
                         </div>
@@ -524,19 +517,19 @@ export default function TeacherProgressPage() {
                       {s.lastActive ? (
                         <div className="flex flex-col gap-1 group">
                           <div className="flex items-center gap-2">
-                            <Clock3 className={`w-4 h-4 ${formatLastActive(s.lastActive).isPlaying ? 'text-green-400' : 'text-gray-400'}`} />
-                            <span className={`text-sm font-medium ${formatLastActive(s.lastActive).isPlaying ? 'text-green-300' : 'text-gray-300'}`}>
+                            <Clock3 className={`w-4 h-4 ${formatLastActive(s.lastActive).isPlaying ? 'text-green-600' : 'text-gray-500'}`} />
+                            <span className={`text-sm font-medium ${formatLastActive(s.lastActive).isPlaying ? 'text-green-600' : 'text-gray-700'}`}>
                               {formatLastActive(s.lastActive).text}
                             </span>
                             {formatLastActive(s.lastActive).isPlaying && (
-                              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                             )}
                           </div>
-                          <div className="text-xs text-gray-500 ml-6 group-hover:text-gray-400 transition-colors">
+                          <div className="text-xs text-gray-500 ml-6 group-hover:text-gray-600 transition-colors">
                             {formatLastActive(s.lastActive).exactTime}
                           </div>
                           {/* Hover tooltip */}
-                          <div className="absolute z-10 invisible group-hover:visible bg-gray-800 text-white text-xs rounded py-1 px-2 shadow-lg border border-gray-600 mt-1 ml-6">
+                          <div className="absolute z-10 invisible group-hover:visible bg-gray-100 text-gray-800 text-xs rounded py-1 px-2 shadow-lg border border-gray-300 mt-1 ml-6">
                             Last activity: {formatLastActive(s.lastActive).exactTime}
                             {formatLastActive(s.lastActive).isPlaying && ' (Currently playing)'}
                           </div>

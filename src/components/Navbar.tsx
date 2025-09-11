@@ -68,10 +68,10 @@ export default function Navbar() {
   
   if (pathname === '/' || pathname === '/login' || pathname === '/signup') return null
   return (
-    <header className="bg-gray-900 border-b border-white/10">
+    <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 shadow-sm">
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 text-white">
-          <div className="w-9 h-9 rounded-xl bg-indigo-600 grid place-items-center font-bold">SS</div>
+        <Link href="/" className="flex items-center gap-2 text-gray-800">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 grid place-items-center font-bold text-white">SS</div>
           <span className="text-lg font-bold">Spell School</span>
         </Link>
         <nav className="flex items-center gap-2">
@@ -81,7 +81,7 @@ export default function Navbar() {
             className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               isLoggingOut 
                 ? 'text-gray-500 cursor-not-allowed' 
-                : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
             }`}
           >
             <LogOut className={`w-4 h-4 ${isLoggingOut ? 'animate-spin' : ''}`} />

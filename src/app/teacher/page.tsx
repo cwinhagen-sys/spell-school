@@ -136,71 +136,55 @@ export default function TeacherDashboard() {
   // Quiz unlock handlers now moved to /teacher/quiz
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      {/* Header */}
-      <div className="border-b border-white/10">
-        <div className="container mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center">
-                <BookOpen className="w-6 h-6 text-white" />
-              </div>
-              <h1 className="text-2xl font-bold">Teacher Dashboard</h1>
+    <div>
+      <h1 className="text-2xl font-bold text-gray-800 mb-6">Teacher Dashboard</h1>
+
+      {/* Quick navigation */}
+      <div className="grid md:grid-cols-3 gap-6 mb-8">
+        {/* Quiz removed for rebuild */}
+
+        <a
+          href="/teacher/classes"
+          className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-lg p-6 hover:border-indigo-500/50 hover:shadow-xl transition-all"
+        >
+          <div className="flex items-center mb-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center mr-3">
+              <Users className="w-5 h-5 text-white" />
             </div>
-            <div className="flex items-center space-x-4" />
+            <h3 className="text-lg font-semibold text-gray-800">Manage Classes</h3>
           </div>
-        </div>
+          <p className="text-sm text-gray-600">Create, edit, and delete classes. Add or remove students by email.</p>
+        </a>
+
+        <a
+          href="/teacher/word-sets"
+          className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-lg p-6 hover:border-emerald-500/50 hover:shadow-xl transition-all"
+        >
+          <div className="flex items-center mb-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-600 to-green-600 rounded-xl flex items-center justify-center mr-3">
+              <Library className="w-5 h-5 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800">Word Sets</h3>
+          </div>
+          <p className="text-sm text-gray-600">Create vocabulary packages with words and translations.</p>
+        </a>
+
+        <a
+          href="/teacher/assign"
+          className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-lg p-6 hover:border-purple-500/50 hover:shadow-xl transition-all"
+        >
+          <div className="flex items-center mb-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center mr-3">
+              <Link2 className="w-5 h-5 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800">Assign Word Sets</h3>
+          </div>
+          <p className="text-sm text-gray-600">Assign word sets to whole classes or specific students.</p>
+        </a>
+
+        {/* Progress card removed per request */}
       </div>
-
-      <div className="container mx-auto px-6 py-8">
-
-        {/* Quick navigation */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          {/* Quiz removed for rebuild */}
-
-          <a
-            href="/teacher/classes"
-            className="rounded-2xl border border-white/10 bg-white/5 p-6 hover:border-indigo-500/50 transition-colors"
-          >
-            <div className="flex items-center mb-3">
-              <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center mr-3">
-                <Users className="w-5 h-5" />
-              </div>
-              <h3 className="text-lg font-semibold">Manage Classes</h3>
-            </div>
-            <p className="text-sm text-gray-300">Create, edit, and delete classes. Add or remove students by email.</p>
-          </a>
-
-          <a
-            href="/teacher/word-sets"
-            className="rounded-2xl border border-white/10 bg-white/5 p-6 hover:border-emerald-500/50 transition-colors"
-          >
-            <div className="flex items-center mb-3">
-              <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center mr-3">
-                <Library className="w-5 h-5" />
-              </div>
-              <h3 className="text-lg font-semibold">Word Sets</h3>
-            </div>
-            <p className="text-sm text-gray-300">Create vocabulary packages with words and translations.</p>
-          </a>
-
-          <a
-            href="/teacher/assign"
-            className="rounded-2xl border border-white/10 bg-white/5 p-6 hover:border-purple-500/50 transition-colors"
-          >
-            <div className="flex items-center mb-3">
-              <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center mr-3">
-                <Link2 className="w-5 h-5" />
-              </div>
-              <h3 className="text-lg font-semibold">Assign Word Sets</h3>
-            </div>
-            <p className="text-sm text-gray-300">Assign word sets to whole classes or specific students.</p>
-          </a>
-
-          {/* Progress card removed per request */}
-        </div>
-        {/* Remove all other sections for a clean button-only dashboard */}
-      </div>
+      {/* Remove all other sections for a clean button-only dashboard */}
     </div>
   )
 }

@@ -235,53 +235,53 @@ export default function TeacherClassesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800">
       <div className="container mx-auto px-6 py-8">
-        <h1 className="text-2xl font-bold text-white mb-6">Classes</h1>
+        <h1 className="text-2xl font-bold text-gray-800 mb-6">Classes</h1>
 
-          <div className="bg-white/5 rounded-2xl border border-white/10 p-6 mb-6">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg p-6 mb-6">
             <div className="flex gap-3">
               <input
                 value={newClassName}
                 onChange={(e) => setNewClassName(e.target.value)}
                 placeholder="New class name"
-                className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-gray-400"
+                className="flex-1 px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm"
               />
-              <button onClick={createClass} className="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">Create</button>
+              <button onClick={createClass} className="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-md">Create</button>
             </div>
           </div>
 
         <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-white/5 rounded-2xl border border-white/10 p-6">
-            <h2 className="font-semibold text-white mb-4">Your Classes</h2>
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg p-6">
+            <h2 className="font-semibold text-gray-800 mb-4">Your Classes</h2>
             <div className="space-y-3">
               {classes.map((c) => (
-                <div key={c.id} className={`p-4 border rounded-lg ${selectedClassId===c.id?'border-indigo-500 bg-white/10':'border-white/10 bg-white/5'}`}>
+                <div key={c.id} className={`p-4 border rounded-lg ${selectedClassId===c.id?'border-indigo-500 bg-indigo-50':'border-gray-200 bg-white'}`}>
                   <div className="flex items-center justify-between">
-                    <button onClick={() => openClass(c.id)} className="text-left font-medium text-white hover:text-indigo-300">{c.name}</button>
-                    <button onClick={() => deleteClass(c.id)} className="text-red-400 hover:text-red-300">Delete</button>
+                    <button onClick={() => openClass(c.id)} className="text-left font-medium text-gray-800 hover:text-indigo-600">{c.name}</button>
+                    <button onClick={() => deleteClass(c.id)} className="text-red-500 hover:text-red-600">Delete</button>
                   </div>
-                  <div className="mt-2 text-sm text-gray-300">
-                    Join code: <span className="font-mono font-semibold text-white">{c.join_code ?? '—'}</span>
+                  <div className="mt-2 text-sm text-gray-600">
+                    Join code: <span className="font-mono font-semibold text-gray-800">{c.join_code ?? '—'}</span>
                   </div>
                 </div>
               ))}
-              {classes.length === 0 && <div className="text-gray-300">No classes yet.</div>}
+              {classes.length === 0 && <div className="text-gray-500">No classes yet.</div>}
             </div>
           </div>
 
-          <div className="bg-white/5 rounded-2xl border border-white/10 p-6">
-            <h2 className="font-semibold text-white mb-2">Class Students</h2>
-            {!selectedClassId && <div className="text-gray-300">Select a class to manage students.</div>}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg p-6">
+            <h2 className="font-semibold text-gray-800 mb-2">Class Students</h2>
+            {!selectedClassId && <div className="text-gray-500">Select a class to manage students.</div>}
             {selectedClassId && (
               <>
-                <div className="mb-4 p-3 rounded-lg bg-white/10 border border-white/10">
-                  <div className="text-sm text-gray-300">Share this code with your students so they can join your class:</div>
+                <div className="mb-4 p-3 rounded-lg bg-indigo-50 border border-indigo-200">
+                  <div className="text-sm text-gray-600">Share this code with your students so they can join your class:</div>
                   <div className="mt-1 flex items-center gap-3">
-                    <div className="px-3 py-1 rounded bg-gray-800 border border-white/10 font-mono font-semibold text-white">{selectedClassJoinCode ?? '—'}</div>
+                    <div className="px-3 py-1 rounded bg-gray-800 border border-gray-300 font-mono font-semibold text-white">{selectedClassJoinCode ?? '—'}</div>
                     <button
                       onClick={() => selectedClassId && setOrRegenerateJoinCode(selectedClassId)}
-                      className="px-3 py-1 rounded bg-indigo-600 text-white text-sm hover:bg-indigo-700"
+                      className="px-3 py-1 rounded bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm hover:from-indigo-700 hover:to-purple-700 shadow-md"
                     >
                       {selectedClassJoinCode ? 'Regenerate' : 'Generate'}
                     </button>
@@ -292,23 +292,23 @@ export default function TeacherClassesPage() {
                     value={studentEmail}
                     onChange={(e) => setStudentEmail(e.target.value)}
                     placeholder="student@email.com"
-                    className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-gray-400"
+                    className="flex-1 px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm"
                   />
-                  <button onClick={addStudentByEmail} className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">Add student</button>
+                  <button onClick={addStudentByEmail} className="px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-green-600 text-white hover:from-emerald-700 hover:to-green-700 shadow-md">Add student</button>
                 </div>
                 <div className="space-y-3">
                   {selectedClassStudents.map(s => (
-                    <div key={s.id} className="p-3 border border-white/10 rounded-lg flex items-center justify-between bg-white/5">
+                    <div key={s.id} className="p-3 border border-gray-200 rounded-lg flex items-center justify-between bg-white shadow-sm">
                       <div>
-                        <div className="font-medium text-white">{s.displayName}</div>
+                        <div className="font-medium text-gray-700">{s.displayName}</div>
                         {(!/@local\.local$/i.test(s.email)) && (
-                          <div className="text-gray-300 text-sm">{s.email}</div>
+                          <div className="text-gray-500 text-sm">{s.email}</div>
                         )}
                       </div>
-                      <button onClick={() => removeStudent(s.id)} className="text-red-400 hover:text-red-300">Remove</button>
+                      <button onClick={() => removeStudent(s.id)} className="text-red-500 hover:text-red-600">Remove</button>
                     </div>
                   ))}
-                  {selectedClassStudents.length === 0 && <div className="text-gray-300">No students in this class.</div>}
+                  {selectedClassStudents.length === 0 && <div className="text-gray-500">No students in this class.</div>}
                 </div>
               </>
             )}

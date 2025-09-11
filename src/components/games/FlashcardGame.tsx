@@ -182,14 +182,14 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-      <div className="rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative bg-gray-900 text-white border border-white/10">
+      <div className="rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative bg-white text-gray-800 border border-gray-200">
         {themeColor && <div className="h-1 rounded-md mb-4" style={{ backgroundColor: themeColor }}></div>}
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">🃏 Vocabulary Flashcards</h2>
+          <h2 className="text-2xl font-bold text-gray-800">🃏 Vocabulary Flashcards</h2>
           <button
             onClick={onClose}
-            className="text-gray-300 hover:text-white text-2xl transition-colors"
+            className="text-gray-600 hover:text-gray-800 text-2xl transition-colors"
           >
             ×
           </button>
@@ -197,11 +197,11 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
 
         {/* Progress Bar */}
         <div className="mb-6">
-          <div className="flex items-center justify-between text-sm text-gray-400 mb-2">
+          <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
             <span>Word {currentWordIndex + 1} of {wordList.length}</span>
             <span>{Math.round(progress)}%</span>
           </div>
-          <div className="w-full bg-white/10 rounded-full h-2">
+          <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
               className="h-2 rounded-full transition-all duration-300"
               style={{ width: `${progress}%`, backgroundColor: themeColor || '#3b82f6' }}
@@ -211,9 +211,9 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
 
         {/* Training Mode Indicator */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full border border-white/10">
-            <Star className="w-5 h-5 text-blue-400" />
-            <span className="font-semibold text-gray-200">Training Mode - No Points</span>
+          <div className="inline-flex items-center space-x-2 bg-gray-100 px-4 py-2 rounded-full border border-gray-200">
+            <Star className="w-5 h-5 text-indigo-600" />
+            <span className="font-semibold text-gray-800">Training Mode - No Points</span>
           </div>
         </div>
 
@@ -240,8 +240,8 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                 disabled={isSpeaking}
                 className={`absolute top-4 left-4 p-2 rounded-full transition-colors z-10 ${
                   isSpeaking 
-                    ? 'bg-blue-500/50 text-blue-200 cursor-not-allowed' 
-                    : 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-100'
+                    ? 'bg-indigo-500/50 text-indigo-200 cursor-not-allowed' 
+                    : 'bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-700'
                 }`}
               >
                 <Volume2 className={`w-5 h-5 ${isSpeaking ? 'animate-pulse' : ''}`} />
@@ -288,8 +288,8 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                 disabled={isSpeaking}
                 className={`absolute top-4 left-4 p-2 rounded-full transition-colors z-10 ${
                   isSpeaking 
-                    ? 'bg-green-500/50 text-green-200 cursor-not-allowed' 
-                    : 'bg-green-500/20 hover:bg-green-500/30 text-green-100'
+                    ? 'bg-emerald-500/50 text-emerald-200 cursor-not-allowed' 
+                    : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-700'
                 }`}
               >
                 <Volume2 className={`w-5 h-5 ${isSpeaking ? 'animate-pulse' : ''}`} />
@@ -328,14 +328,14 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
           <button
             onClick={handlePrevious}
             disabled={currentWordIndex === 0}
-            className="bg-white/10 border border-white/10 text-white py-3 px-6 rounded-lg font-medium hover:bg-white/15 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+            className="bg-gray-100 border border-gray-300 text-gray-800 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Previous</span>
           </button>
 
           <div className="text-center">
-            <div className="text-sm text-gray-400 mb-1">
+            <div className="text-sm text-gray-600 mb-1">
               {currentWordIndex + 1} of {wordList.length}
             </div>
             <div className="text-xs text-gray-500">
@@ -346,7 +346,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
           <button
             onClick={handleNext}
             disabled={currentWordIndex === wordList.length - 1}
-            className="bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-6 rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2 shadow-md"
           >
             <span>Next</span>
             <ArrowLeft className="w-4 h-4 rotate-180" />
@@ -354,7 +354,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
         </div>
 
         {/* Instructions */}
-        <div className="mt-6 text-center text-sm text-gray-400">
+        <div className="mt-6 text-center text-sm text-gray-600">
           <p>💡 Click the card to flip it • Use navigation to move between words • 🔊 Click the speaker to hear pronunciation</p>
         </div>
       </div>

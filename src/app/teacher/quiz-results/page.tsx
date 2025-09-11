@@ -260,11 +260,7 @@ export default function QuizResultsPage() {
   }
 
   const getScoreColor = (score: number): string => {
-    if (score >= 90) return 'text-emerald-200'
-    if (score >= 75) return 'text-lime-200'
-    if (score >= 60) return 'text-yellow-200'
-    if (score >= 40) return 'text-orange-200'
-    return 'text-red-200'
+    return 'text-gray-800' // Clean design - all scores in same color
   }
 
   const formatDate = (timestamp: string): string => {
@@ -273,92 +269,92 @@ export default function QuizResultsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800">
       <div className="max-w-6xl mx-auto p-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <FileText className="w-6 h-6 text-blue-400" />
+          <h1 className="text-2xl font-bold flex items-center gap-2 text-gray-800">
+            <FileText className="w-6 h-6 text-indigo-600" />
             Quiz Results
           </h1>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Class</label>
+            <label className="block text-sm text-gray-600 mb-1">Class</label>
             <select 
               value={selectedClass} 
               onChange={e => setSelectedClass(e.target.value)} 
-              className="px-3 py-2 rounded bg-white/5 border border-white/10 text-white"
+              className="px-3 py-2 rounded bg-white border border-gray-300 text-gray-800 shadow-sm"
             >
-              <option value="" className="text-black">All classes</option>
+              <option value="" className="text-gray-800">All classes</option>
               {classes.map(c => (
-                <option key={c.id} value={c.id} className="text-black">{c.name}</option>
+                <option key={c.id} value={c.id} className="text-gray-800">{c.name}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Word Set</label>
+            <label className="block text-sm text-gray-600 mb-1">Word Set</label>
             <select 
               value={selectedWordSet} 
               onChange={e => setSelectedWordSet(e.target.value)} 
-              className="px-3 py-2 rounded bg-white/5 border border-white/10 text-white"
+              className="px-3 py-2 rounded bg-white border border-gray-300 text-gray-800 shadow-sm"
             >
-              <option value="" className="text-black">All word sets</option>
+              <option value="" className="text-gray-800">All word sets</option>
               {wordSets.map(w => (
-                <option key={w.id} value={w.id} className="text-black">{w.title}</option>
+                <option key={w.id} value={w.id} className="text-gray-800">{w.title}</option>
               ))}
             </select>
           </div>
         </div>
 
         {loading ? (
-          <div className="p-6 rounded-2xl bg-white/5 border border-white/10">Loading…</div>
+          <div className="p-6 rounded-2xl bg-white/80 border border-gray-200 shadow-lg">Loading…</div>
         ) : error ? (
-          <div className="p-6 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-200">{error}</div>
+          <div className="p-6 rounded-2xl bg-red-100 border border-red-300 text-red-700">{error}</div>
         ) : (
-          <div className="rounded-2xl bg-white/5 border border-white/10 overflow-auto shadow-xl">
+          <div className="rounded-2xl bg-white/80 border border-gray-200 overflow-auto shadow-xl">
             <table className="min-w-full">
               <thead>
-                <tr className="bg-gray-800/50 text-left text-sm text-gray-100 border-b border-gray-700">
-                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-gray-700/30 transition-colors" onClick={() => sortToggle('student')}>
+                <tr className="bg-gray-100 text-left text-sm text-gray-800 border-b border-gray-300">
+                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-gray-200 transition-colors" onClick={() => sortToggle('student')}>
                     <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-gray-400" />
+                      <Users className="w-4 h-4 text-indigo-600" />
                       <span className="font-medium">Student</span>
                       {sortKey==='student' && (
-                        <span className="text-gray-300">{sortDir==='desc' ? '↓' : '↑'}</span>
+                        <span className="text-gray-600">{sortDir==='desc' ? '↓' : '↑'}</span>
                       )}
                     </div>
                   </th>
-                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-gray-700/30 transition-colors" onClick={() => sortToggle('score')}>
+                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-gray-200 transition-colors" onClick={() => sortToggle('score')}>
                     <div className="flex items-center gap-2">
-                      <Star className="w-4 h-4 text-gray-400" />
+                      <Star className="w-4 h-4 text-yellow-600" />
                       <span className="font-medium">Quiz Score</span>
                       {sortKey==='score' && (
-                        <span className="text-gray-300">{sortDir==='desc' ? '↓' : '↑'}</span>
+                        <span className="text-gray-600">{sortDir==='desc' ? '↓' : '↑'}</span>
                       )}
                     </div>
                   </th>
                   <th className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <Target className="w-4 h-4 text-gray-400" />
+                      <Target className="w-4 h-4 text-blue-600" />
                       <span className="font-medium">Percentage</span>
                     </div>
                   </th>
-                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-gray-700/30 transition-colors" onClick={() => sortToggle('wordSet')}>
+                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-gray-200 transition-colors" onClick={() => sortToggle('wordSet')}>
                     <div className="flex items-center gap-2">
-                      <BookOpen className="w-4 h-4 text-gray-400" />
+                      <BookOpen className="w-4 h-4 text-green-600" />
                       <span className="font-medium">Word Set</span>
                       {sortKey==='wordSet' && (
-                        <span className="text-gray-300">{sortDir==='desc' ? '↓' : '↑'}</span>
+                        <span className="text-gray-600">{sortDir==='desc' ? '↓' : '↑'}</span>
                       )}
                     </div>
                   </th>
-                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-gray-700/30 transition-colors" onClick={() => sortToggle('date')}>
+                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-gray-200 transition-colors" onClick={() => sortToggle('date')}>
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-gray-400" />
+                      <Calendar className="w-4 h-4 text-gray-500" />
                       <span className="font-medium">Date</span>
                       {sortKey==='date' && (
-                        <span className="text-gray-300">{sortDir==='desc' ? '↓' : '↑'}</span>
+                        <span className="text-gray-600">{sortDir==='desc' ? '↓' : '↑'}</span>
                       )}
                     </div>
                   </th>
@@ -375,23 +371,23 @@ export default function QuizResultsPage() {
                     </td>
                   </tr>
                 ) : sorted.map((result, index) => (
-                  <tr key={result.id} className={`border-t border-gray-700 text-sm transition-colors hover:bg-gray-800/30 ${index % 2 === 0 ? 'bg-gray-800/10' : 'bg-gray-800/20'}`}>
+                  <tr key={result.id} className="bg-white hover:bg-gray-50 border-b border-gray-200">
                     <td className="px-6 py-4 font-medium">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-medium text-gray-200">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-xs font-medium text-white">
                           {result.student_display.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-medium">{result.student_display}</div>
+                          <div className="font-medium text-gray-700">{result.student_display}</div>
                           {result.class_name !== 'No Class' && (
-                            <div className="text-xs text-gray-400">{result.class_name}</div>
+                            <div className="text-xs text-gray-500">{result.class_name}</div>
                           )}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-base text-gray-200">
+                        <span className="font-medium text-base text-gray-800">
                           {result.last_quiz_score}/{result.total_questions || '?'}
                         </span>
                       </div>
@@ -413,14 +409,14 @@ export default function QuizResultsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <BookOpen className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm">{result.word_set_title}</span>
+                        <BookOpen className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm text-gray-700">{result.word_set_title}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm">{formatDate(result.last_quiz_at)}</span>
+                        <Clock className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm text-gray-700">{formatDate(result.last_quiz_at)}</span>
                       </div>
                     </td>
                   </tr>

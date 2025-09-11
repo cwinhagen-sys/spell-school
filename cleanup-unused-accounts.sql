@@ -175,3 +175,4 @@ $$ LANGUAGE plpgsql;
 -- Run these after cleanup to verify the deletion worked
 SELECT 'Remaining profiles count' as description, COUNT(*) as count FROM profiles;
 SELECT 'Remaining auth users count' as description, COUNT(*) as count FROM auth.users;
+

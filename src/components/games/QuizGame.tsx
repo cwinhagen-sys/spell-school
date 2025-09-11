@@ -284,49 +284,49 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[1000]">
-      <div className="rounded-2xl p-8 max-w-3xl w-full max-h-[90vh] overflow-auto shadow-2xl relative bg-gray-900 text-white border border-white/10">
+      <div className="rounded-2xl p-8 max-w-3xl w-full max-h-[90vh] overflow-auto shadow-2xl relative bg-white text-gray-800 border border-gray-200">
         {themeColor && <div className="h-1 rounded-md mb-4" style={{ backgroundColor: themeColor }}></div>}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Quiz</h2>
+          <h2 className="text-2xl font-bold text-gray-800">Quiz</h2>
           {submitted ? (
-            <span className="text-sm text-gray-400">Result registered</span>
+            <span className="text-sm text-gray-600">Result registered</span>
           ) : (
-            <span className="text-sm text-gray-400">Finish and submit to exit</span>
+            <span className="text-sm text-gray-600">Finish and submit to exit</span>
           )}
         </div>
 
         {!submitted ? (
           <div className="space-y-4">
             {items.map((q, idx) => (
-              <div key={idx} className="p-4 rounded-xl bg-white/5 border border-white/10">
-                <div className="text-sm text-gray-300 mb-2">Translate:</div>
-                <div className="text-xl font-semibold mb-3">{q.prompt}</div>
+              <div key={idx} className="p-4 rounded-xl bg-gray-50 border border-gray-200">
+                <div className="text-sm text-gray-600 mb-2">Translate:</div>
+                <div className="text-xl font-semibold mb-3 text-gray-800">{q.prompt}</div>
                 <input
                   value={answers[idx]}
                   onChange={(e) => handleChange(idx, e.target.value)}
                   placeholder="Type your translation..."
-                  className="w-full px-4 py-2 rounded bg-white/5 border border-white/10 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="w-full px-4 py-2 rounded bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 />
               </div>
             ))}
             <div className="flex justify-end gap-3">
-              <button onClick={submitQuiz} className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">Submit Quiz</button>
+              <button onClick={submitQuiz} className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-lg hover:from-indigo-700 hover:to-purple-700 shadow-md">Submit Quiz</button>
             </div>
           </div>
         ) : !finalized ? (
           <div className="space-y-4">
             {aiLoading ? (
-              <div className="rounded-xl bg-blue-500/10 border border-blue-500/30 p-4">
-                <div className="text-sm text-blue-200">Rättar och genererar feedback…</div>
-                <div className="mt-3 h-2 w-full bg-white/10 rounded overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-blue-400/70 via-blue-500/80 to-blue-400/70 rounded"
+              <div className="rounded-xl bg-blue-50 border border-blue-200 p-4">
+                <div className="text-sm text-blue-700">Rättar och genererar feedback…</div>
+                <div className="mt-3 h-2 w-full bg-gray-200 rounded overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-blue-400 via-blue-500 to-blue-400 rounded"
                        style={{ width: `${loadingProgress}%`, transition: 'width 0.08s linear' }} />
                 </div>
               </div>
             ) : (
               <>
-                <div className="rounded-xl bg-white/5 border border-white/10 p-4">
-                  <h3 className="text-lg font-semibold mb-3">Dina svar</h3>
+                <div className="rounded-xl bg-gray-50 border border-gray-200 p-4">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800">Dina svar</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     {evaluations.map((e, i) => {
                       const k = makeKey(e.prompt, e.given, e.expected)
@@ -340,7 +340,7 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
                             ? 'bg-amber-500/15 border-amber-400/30 hover:bg-amber-500/20'
                             : 'bg-red-500/15 border-red-400/30 hover:bg-red-500/20'
                       const textColor =
-                        colorBase === 'emerald' ? 'text-emerald-200' : colorBase === 'amber' ? 'text-amber-200' : 'text-red-200'
+                        colorBase === 'emerald' ? 'text-emerald-800' : colorBase === 'amber' ? 'text-amber-800' : 'text-red-800'
                       return (
                         <div key={i}
                              className={`rounded-xl border p-4 cursor-pointer transition-colors ${boxClasses}`}
@@ -349,7 +349,7 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
                           <div className={`text-sm opacity-80 mb-1 ${textColor}`}>{e.prompt}</div>
                           <div className={`text-base font-semibold ${textColor}`}>{e.given || '—'}</div>
                           {open && (
-                            <div className="mt-3 text-xs text-white/90 bg-white/5 border border-white/10 rounded p-2">
+                            <div className="mt-3 text-xs text-gray-700 bg-white border border-gray-200 rounded p-2">
                               <div>{explanation}</div>
                               {e.verdict !== 'correct' && (
                                 <div className="mt-2">
@@ -365,8 +365,8 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="text-gray-300">Total points: <span className="font-semibold text-white">{aiTotal ?? score}</span> / {items.length * 2}</div>
-                  <button onClick={onClose} className="px-4 py-2 rounded bg-white/10 border border-white/10 hover:bg-white/15">Fortsätt</button>
+                  <div className="text-gray-600">Total points: <span className="font-semibold text-gray-800">{aiTotal ?? score}</span> / {items.length * 2}</div>
+                  <button onClick={onClose} className="px-4 py-2 rounded bg-gray-100 border border-gray-300 hover:bg-gray-200 text-gray-800">Fortsätt</button>
                 </div>
               </>
             )}
@@ -374,9 +374,9 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
         ) : (
           <div className="text-center">
             <div className="text-6xl mb-4">✅</div>
-            <h3 className="text-xl font-bold mb-2">Quiz submitted!</h3>
-            <p className="text-gray-300 mb-6">Your score: {score} / {items.length * 2}</p>
-            <button onClick={onClose} className="bg-white/10 border border-white/10 text-white px-6 py-3 rounded-lg hover:bg-white/15">Close</button>
+            <h3 className="text-xl font-bold mb-2 text-gray-800">Quiz submitted!</h3>
+            <p className="text-gray-600 mb-6">Your score: {score} / {items.length * 2}</p>
+            <button onClick={onClose} className="bg-gray-100 border border-gray-300 text-gray-800 px-6 py-3 rounded-lg hover:bg-gray-200">Close</button>
           </div>
         )}
       </div>

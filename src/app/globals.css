@@ -7,8 +7,8 @@
     --brand-700: #4338ca;
     --radius-card: 1rem;
   }
-  html, body { @apply bg-gray-900 text-white; }
-  a { @apply text-indigo-400 no-underline hover:text-indigo-300; }
+  html, body { @apply bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800; }
+  a { @apply text-indigo-600 no-underline hover:text-indigo-700; }
 }
 
 /* Using only Tailwind utilities in markup for compatibility */

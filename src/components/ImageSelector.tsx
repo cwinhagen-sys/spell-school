@@ -142,7 +142,7 @@ export default function ImageSelector({ value, onChange, onClear, word }: ImageS
             <img 
               src={value} 
               alt={word}
-              className="w-16 h-16 object-cover rounded-lg border border-white/10"
+              className="w-16 h-16 object-cover rounded-lg border border-gray-200"
             />
             <button
               onClick={onClear}
@@ -154,14 +154,14 @@ export default function ImageSelector({ value, onChange, onClear, word }: ImageS
         ) : (
           <button
             onClick={() => setShowModal(true)}
-            className="w-16 h-16 border-2 border-dashed border-white/20 rounded-lg flex items-center justify-center hover:border-white/40 transition-colors"
+            className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center hover:border-gray-400 transition-colors"
           >
-            <ImageIcon className="w-6 h-6 text-white/60" />
+            <ImageIcon className="w-6 h-6 text-gray-500" />
           </button>
         )}
         <button
           onClick={() => setShowModal(true)}
-          className="text-sm text-white/60 hover:text-white transition-colors"
+          className="text-sm text-gray-600 hover:text-gray-800 transition-colors"
         >
           {value ? 'Change' : 'Add image'}
         </button>
@@ -170,13 +170,13 @@ export default function ImageSelector({ value, onChange, onClear, word }: ImageS
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
-            <div className="p-6 border-b border-white/10">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold">Choose image for "{word}"</h3>
+                <h3 className="text-xl font-semibold text-gray-800">Choose image for "{word}"</h3>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="text-white/60 hover:text-white"
+                  className="text-gray-500 hover:text-gray-700"
                 >
                   <X className="w-6 h-6" />
                 </button>
@@ -185,28 +185,28 @@ export default function ImageSelector({ value, onChange, onClear, word }: ImageS
               {/* Search bar */}
               <div className="flex gap-2 mb-4">
                 <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/60" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && searchImages(searchQuery)}
                     placeholder="Search for images..."
-                    className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-white/60"
+                    className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 placeholder:text-gray-500 shadow-sm"
                   />
                 </div>
                 <button
                   onClick={() => searchImages(searchQuery)}
                   disabled={loading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 shadow-md"
                 >
                   {loading ? 'Searching...' : 'Search'}
                 </button>
               </div>
 
               {/* Upload section */}
-              <div className="mb-4 p-4 bg-white/5 rounded-lg">
-                <h4 className="font-medium mb-2">Or upload your own image:</h4>
+              <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-medium mb-2 text-gray-800">Or upload your own image:</h4>
                 <div className="flex items-center gap-4">
                   <input
                     type="file"
@@ -217,18 +217,18 @@ export default function ImageSelector({ value, onChange, onClear, word }: ImageS
                   />
                   <label
                     htmlFor="image-upload"
-                    className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg hover:bg-white/15 cursor-pointer transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors shadow-sm"
                   >
-                    <Upload className="w-4 h-4" />
-                    Choose file
+                    <Upload className="w-4 h-4 text-gray-600" />
+                    <span className="text-gray-700">Choose file</span>
                   </label>
                   {uploadPreview && (
                     <div className="flex items-center gap-2">
-                      <img src={uploadPreview} alt="Preview" className="w-12 h-12 object-cover rounded" />
+                      <img src={uploadPreview} alt="Preview" className="w-12 h-12 object-cover rounded border border-gray-200" />
                       <button
                         onClick={handleUpload}
                         disabled={loading}
-                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                        className="px-3 py-1 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded hover:from-emerald-700 hover:to-green-700 disabled:opacity-50 shadow-md"
                       >
                         Upload
                       </button>
@@ -241,15 +241,15 @@ export default function ImageSelector({ value, onChange, onClear, word }: ImageS
             {/* Image grid */}
             <div className="p-6 max-h-96 overflow-y-auto">
               {loading ? (
-                <div className="text-center py-8 text-white/60">Searching for images...</div>
+                <div className="text-center py-8 text-gray-600">Searching for images...</div>
               ) : !process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY || process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY === 'YOUR_UNSPLASH_ACCESS_KEY' ? (
-                <div className="text-center py-8 text-white/60">
-                  <div className="bg-blue-500/20 border border-blue-400/30 rounded-lg p-4 mb-4">
-                    <h4 className="font-semibold text-blue-200 mb-2">🔍 Automatiska bildförslag</h4>
-                    <p className="text-sm mb-2">För att få automatiska bildförslag när du skriver ord behöver du en Unsplash API-nyckel.</p>
-                    <p className="text-xs text-blue-300">Se UNSPLASH_SETUP.md för instruktioner</p>
+                <div className="text-center py-8 text-gray-600">
+                  <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-4">
+                    <h4 className="font-semibold text-indigo-800 mb-2">🔍 Automatiska bildförslag</h4>
+                    <p className="text-sm mb-2 text-gray-700">För att få automatiska bildförslag när du skriver ord behöver du en Unsplash API-nyckel.</p>
+                    <p className="text-xs text-indigo-600">Se UNSPLASH_SETUP.md för instruktioner</p>
                   </div>
-                  <p className="text-sm">Du kan fortfarande ladda upp egna bilder ovan ↑</p>
+                  <p className="text-sm text-gray-600">Du kan fortfarande ladda upp egna bilder ovan ↑</p>
                 </div>
               ) : unsplashImages.length > 0 ? (
                 <div className="grid grid-cols-3 gap-4">
@@ -257,7 +257,7 @@ export default function ImageSelector({ value, onChange, onClear, word }: ImageS
                     <button
                       key={image.id}
                       onClick={() => handleImageSelect(image.urls.regular)}
-                      className="group relative aspect-square overflow-hidden rounded-lg border border-white/10 hover:border-blue-500 transition-colors"
+                      className="group relative aspect-square overflow-hidden rounded-lg border border-gray-200 hover:border-indigo-500 transition-colors shadow-sm"
                     >
                       <img
                         src={image.urls.small}
@@ -269,7 +269,7 @@ export default function ImageSelector({ value, onChange, onClear, word }: ImageS
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-white/60">
+                <div className="text-center py-8 text-gray-600">
                   No images found. Try a different search term.
                 </div>
               )}

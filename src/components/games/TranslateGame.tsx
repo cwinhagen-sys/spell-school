@@ -262,14 +262,14 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
           <div className="space-y-3">
             <button
               onClick={restartGame}
-              className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 shadow-lg"
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-6 rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition-colors flex items-center justify-center space-x-2 shadow-lg"
             >
               <RotateCcw className="w-4 h-4" />
               <span>Play Again</span>
             </button>
             <button
               onClick={onClose}
-              className="w-full bg-gray-500 text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-600 transition-colors flex items-center justify-center space-x-2"
+              className="w-full bg-gray-100 text-gray-800 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center space-x-2 border border-gray-300"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Back to Dashboard</span>
@@ -294,17 +294,17 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-      <div className="rounded-2xl p-8 max-w-2xl w-full shadow-2xl relative bg-gray-900 text-white border border-white/10">
+      <div className="rounded-2xl p-8 max-w-2xl w-full shadow-2xl relative bg-white text-gray-800 border border-gray-200">
         {themeColor && <div className="h-1 rounded-md mb-4" style={{ backgroundColor: themeColor }}></div>}
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-white flex items-center">
-            <Languages className="w-6 h-6 mr-2 text-blue-400" />
+          <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+            <Languages className="w-6 h-6 mr-2 text-indigo-600" />
             Translate Challenge
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-300 hover:text-white text-2xl transition-colors"
+            className="text-gray-600 hover:text-gray-800 text-2xl transition-colors"
           >
             ×
           </button>
@@ -313,16 +313,16 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
         {/* Game Info */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full border border-white/10">
-              <span className="text-gray-200 font-medium">Time {Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, '0')}</span>
+            <div className="flex items-center space-x-2 bg-gray-100 px-4 py-2 rounded-full border border-gray-200">
+              <span className="text-gray-800 font-medium">Time {Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, '0')}</span>
             </div>
           </div>
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full bg-white/10 rounded-full h-2 mb-6">
+        <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
           <div 
-            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 h-2 rounded-full transition-all duration-300"
             style={{ width: `${((currentWordIndex + 1) / totalWords) * 100}%` }}
           ></div>
         </div>
@@ -330,15 +330,15 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
         {/* Word Display */}
         <div className="text-center mb-8">
           <div className="mb-4">
-            <span className="text-sm text-gray-400 uppercase tracking-wide">
+            <span className="text-sm text-gray-600 uppercase tracking-wide">
               {currentPair.originalLanguage === 'en' ? 'English' : 'Swedish'}
             </span>
           </div>
-          <div className="text-4xl font-bold text-white mb-6 p-6 bg-white/5 rounded-2xl border border-white/10">
+          <div className="text-4xl font-bold text-gray-800 mb-6 p-6 bg-gray-50 rounded-2xl border border-gray-200">
             {currentPair.original}
           </div>
           <div className="mb-4">
-            <span className="text-sm text-gray-400 uppercase tracking-wide">
+            <span className="text-sm text-gray-600 uppercase tracking-wide">
               Translate to {currentPair.targetLanguage === 'en' ? 'English' : 'Swedish'}
             </span>
           </div>
@@ -353,14 +353,14 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
               value={userAnswer}
               onChange={(e) => setUserAnswer(e.target.value)}
               placeholder={`Type your answer...`}
-              className="flex-1 px-4 py-3 text-lg border border-white/10 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-white placeholder:text-gray-400 bg-white/5"
+              className="flex-1 px-4 py-3 text-lg border border-gray-300 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors text-gray-800 placeholder:text-gray-500 bg-white"
               disabled={showFeedback}
               autoFocus
             />
             <button
               type="submit"
               disabled={!userAnswer.trim() || showFeedback}
-              className="px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 disabled:bg-gray-500/50 disabled:cursor-not-allowed transition-colors"
+              className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-xl hover:from-indigo-700 hover:to-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-md"
             >
               Submit
             </button>
@@ -371,20 +371,20 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
         {showFeedback && (
           <div className={`text-center p-4 rounded-xl mb-6 ${
             isCorrect 
-              ? 'bg-emerald-600/15 border border-emerald-400/40' 
-              : 'bg-red-600/15 border border-red-400/40'
+              ? 'bg-emerald-100 border border-emerald-300' 
+              : 'bg-red-100 border border-red-300'
           }`}>
             {isCorrect ? (
-              <div className="flex items-center justify-center space-x-2 text-emerald-300">
+              <div className="flex items-center justify-center space-x-2 text-emerald-800">
                 <CheckCircle className="w-5 h-5" />
                 <span className="font-medium">Correct!</span>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center space-y-2 text-red-300">
+              <div className="flex flex-col items-center justify-center space-y-2 text-red-800">
                 <div className="flex items-center space-x-2">
                   <XCircle className="w-5 h-5" />
                   {solutionRevealed ? (
-                    <span className="font-medium">Correct answer: <strong className="text-white">{currentPair.target}</strong></span>
+                    <span className="font-medium">Correct answer: <strong className="text-gray-800">{currentPair.target}</strong></span>
                   ) : (
                     <span className="font-medium">Incorrect. Try again.</span>
                   )}
@@ -393,7 +393,7 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
                   <button
                     type="button"
                     onClick={goToNextWord}
-                    className="mt-2 inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                    className="mt-2 inline-flex items-center px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 transition-colors shadow-md"
                   >
                     Next word
                   </button>

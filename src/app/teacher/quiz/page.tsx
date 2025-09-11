@@ -103,41 +103,41 @@ export default function TeacherQuizAssignPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800">
       <div className="max-w-4xl mx-auto p-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Assign/Unlock Quiz</h1>
-          <a href="/teacher/quiz-results" className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">View Results</a>
+          <h1 className="text-2xl font-bold text-gray-800">Assign/Unlock Quiz</h1>
+          <a href="/teacher/quiz-results" className="px-4 py-2 rounded bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-md">View Results</a>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+        <div className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-lg p-6">
           <div className="grid md:grid-cols-3 gap-4 mb-4">
             <div>
-              <label className="block text-sm text-gray-300 mb-1">Word Set</label>
-              <select value={selectedWordSet} onChange={e=>setSelectedWordSet(e.target.value)} className="w-full px-3 py-2 rounded bg-white/5 border border-white/10 text-white">
+              <label className="block text-sm text-gray-600 mb-1">Word Set</label>
+              <select value={selectedWordSet} onChange={e=>setSelectedWordSet(e.target.value)} className="w-full px-3 py-2 rounded bg-white border border-gray-300 text-gray-800 shadow-sm">
                 <option value="">Select word set</option>
                 {wordSets.map(ws=> (
-                  <option key={ws.id} value={ws.id} className="text-black">{ws.title}</option>
+                  <option key={ws.id} value={ws.id} className="text-gray-800">{ws.title}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm text-gray-300 mb-1">Class</label>
-              <select value={selectedClass} onChange={e=>setSelectedClass(e.target.value)} className="w-full px-3 py-2 rounded bg-white/5 border border-white/10 text-white">
+              <label className="block text-sm text-gray-600 mb-1">Class</label>
+              <select value={selectedClass} onChange={e=>setSelectedClass(e.target.value)} className="w-full px-3 py-2 rounded bg-white border border-gray-300 text-gray-800 shadow-sm">
                 <option value="">Select class</option>
                 {classes.map(c=> (
-                  <option key={c.id} value={c.id} className="text-black">{c.name}</option>
+                  <option key={c.id} value={c.id} className="text-gray-800">{c.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm text-gray-300 mb-1">Students</label>
-              <div className="max-h-44 overflow-auto rounded border border-white/10 bg-white/5 p-2">
+              <label className="block text-sm text-gray-600 mb-1">Students</label>
+              <div className="max-h-44 overflow-auto rounded border border-gray-200 bg-white p-2 shadow-sm">
                 {students.length === 0 ? (
-                  <div className="text-sm text-gray-400">No students loaded</div>
+                  <div className="text-sm text-gray-500">No students loaded</div>
                 ) : (
                   students.map(s => (
-                    <label key={s.id} className="flex items-center gap-2 text-sm text-white/90 py-1">
+                    <label key={s.id} className="flex items-center gap-2 text-sm text-gray-700 py-1">
                       <input
                         type="checkbox"
                         className="h-4 w-4"
@@ -154,11 +154,11 @@ export default function TeacherQuizAssignPage() {
             </div>
           </div>
           <div className="flex gap-2">
-            <button onClick={unlockForClass} className="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50" disabled={!selectedWordSet || !selectedClass}>Unlock for Class</button>
-            <button onClick={unlockForStudent} className="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50" disabled={!selectedWordSet || selectedStudentIds.length===0}>Unlock for Selected Students</button>
+            <button onClick={unlockForClass} className="px-4 py-2 rounded bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 disabled:opacity-50 text-white shadow-md" disabled={!selectedWordSet || !selectedClass}>Unlock for Class</button>
+            <button onClick={unlockForStudent} className="px-4 py-2 rounded bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 disabled:opacity-50 text-white shadow-md" disabled={!selectedWordSet || selectedStudentIds.length===0}>Unlock for Selected Students</button>
           </div>
-          {message && <div className="mt-3 text-sm text-white/90">{message}</div>}
-          <p className="mt-4 text-xs text-white/60">Unlock sätter flaggan quiz_unlocked på tilldelningen. Om kolumnen saknas i assigned_word_sets behöver den läggas till i databasen.</p>
+          {message && <div className="mt-3 text-sm text-gray-700">{message}</div>}
+          <p className="mt-4 text-xs text-gray-500">Unlock sätter flaggan quiz_unlocked på tilldelningen. Om kolumnen saknas i assigned_word_sets behöver den läggas till i databasen.</p>
         </div>
       </div>
     </div>

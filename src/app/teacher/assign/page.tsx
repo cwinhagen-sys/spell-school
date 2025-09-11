@@ -372,22 +372,22 @@ export default function AssignWordSetsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800">
       <div className="container mx-auto px-6 py-8">
-        <h1 className="text-2xl font-bold mb-6">Assign Word Sets</h1>
+        <h1 className="text-2xl font-bold text-gray-800 mb-6">Assign Word Sets</h1>
 
         {/* Assignment Form */}
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 mb-6">
+        <div className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-lg p-6 mb-6">
           <div className="grid md:grid-cols-4 gap-4 items-start">
             {/* Word Set Selection */}
             <div className="space-y-2">
-              <div className="font-medium text-gray-300">Word Set</div>
+              <div className="font-medium text-gray-600">Word Set</div>
               <div className="flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: (wordSets.find(w=>w.id===selectedWordSet)?.color) || 'transparent' }}></span>
+                <span className="w-6 h-6 rounded-full border border-gray-300" style={{ backgroundColor: (wordSets.find(w=>w.id===selectedWordSet)?.color) || 'transparent' }}></span>
                 <select 
                   value={selectedWordSet} 
                   onChange={e => setSelectedWordSet(e.target.value)}
-                  className="w-full h-10 px-3 text-sm rounded bg-white text-black border border-white/10"
+                  className="w-full h-10 px-3 text-sm rounded bg-white text-gray-800 border border-gray-300 shadow-sm"
                 >
                   <option value="">Select word set</option>
                   {wordSets.map(ws => (
@@ -399,23 +399,23 @@ export default function AssignWordSetsPage() {
 
             {/* Due Date */}
             <div className="space-y-2">
-              <div className="font-medium text-gray-300">Due date (optional)</div>
+              <div className="font-medium text-gray-600">Due date (optional)</div>
               <input
                 type="date"
                 value={dueDate}
                 onChange={(e)=>setDueDate(e.target.value)}
-                className="w-full h-10 px-3 text-sm rounded bg-white text-black border border-white/10"
+                className="w-full h-10 px-3 text-sm rounded bg-white text-gray-800 border border-gray-300 shadow-sm"
               />
             </div>
 
             {/* Class Assignment */}
             <div className="space-y-2">
-              <div className="font-medium text-gray-300">Assign to Class</div>
+              <div className="font-medium text-gray-600">Assign to Class</div>
               <div className="flex gap-2">
                 <select 
                   value={targetClass} 
                   onChange={e => setTargetClass(e.target.value)}
-                  className="flex-1 h-10 px-3 text-sm rounded bg-white text-black border border-white/10"
+                  className="flex-1 h-10 px-3 text-sm rounded bg-white text-gray-800 border border-gray-300 shadow-sm"
                 >
                   <option value="">Select class</option>
                   {classes.map(c => (
@@ -425,7 +425,7 @@ export default function AssignWordSetsPage() {
                 <button 
                   onClick={assignToClass}
                   disabled={loading || !selectedWordSet || !targetClass}
-                  className="h-10 px-3 text-sm rounded bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-500 text-white"
+                  className="h-10 px-3 text-sm rounded bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:bg-gray-400 text-white shadow-md"
                 >
                   Assign
                 </button>
@@ -434,13 +434,13 @@ export default function AssignWordSetsPage() {
 
             {/* Student Assignment */}
             <div className="space-y-2">
-              <div className="font-medium text-gray-300">Assign to Student</div>
+              <div className="font-medium text-gray-600">Assign to Student</div>
               <div className="flex gap-2">
                 <select 
                   value={targetStudent} 
                   onChange={e => setTargetStudent(e.target.value)}
                   disabled={!targetClass}
-                  className="flex-1 h-10 px-3 text-sm rounded bg-white text-black border border-white/10 disabled:bg-gray-300 disabled:text-gray-700"
+                  className="flex-1 h-10 px-3 text-sm rounded bg-white text-gray-800 border border-gray-300 disabled:bg-gray-200 disabled:text-gray-500 shadow-sm"
                 >
                   {!targetClass ? (
                     <option value="">Select class first</option>
@@ -460,7 +460,7 @@ export default function AssignWordSetsPage() {
                 <button 
                   onClick={assignToStudent}
                   disabled={loading || !selectedWordSet || !targetStudent}
-                  className="h-10 px-3 text-sm rounded bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-500 text-white"
+                  className="h-10 px-3 text-sm rounded bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 disabled:bg-gray-400 text-white shadow-md"
                 >
                   Assign to student
                 </button>
@@ -472,23 +472,23 @@ export default function AssignWordSetsPage() {
 
         {/* Message Display */}
         {message && (
-          <div className="mb-6 p-3 rounded bg-white/10 text-white border border-white/10">
+          <div className="mb-6 p-3 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
             {message}
           </div>
         )}
 
         {/* Existing Assignments */}
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-          <h2 className="text-lg font-semibold mb-4">Existing Assignments</h2>
+        <div className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-lg p-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Existing Assignments</h2>
           
           {assignments.length === 0 ? (
-            <div className="text-gray-300">No assignments yet.</div>
+            <div className="text-gray-500">No assignments yet.</div>
           ) : (
             <div className="space-y-2">
               {assignments.map(assignment => (
-                <div key={assignment.id} className="flex items-center justify-between p-3 rounded bg-white/5 border border-white/10">
-                  <div className="text-sm text-gray-200 flex items-center gap-2">
-                    <span className="inline-block w-3 h-3 rounded-full bg-white/30" title="Word set color"></span>
+                <div key={assignment.id} className="flex items-center justify-between p-3 rounded bg-white border border-gray-200 shadow-sm">
+                  <div className="text-sm text-gray-700 flex items-center gap-2">
+                    <span className="inline-block w-3 h-3 rounded-full bg-gray-300" title="Word set color"></span>
                     <span className="font-medium">{assignment.word_set_title}</span>
                     <span className="mx-2 text-gray-400">→</span>
                     {assignment.class_name ? (
@@ -501,7 +501,7 @@ export default function AssignWordSetsPage() {
                   </div>
                   <button 
                     onClick={() => removeAssignment(assignment.id)}
-                    className="text-red-400 hover:text-red-300"
+                    className="text-red-500 hover:text-red-600"
                   >
                     Delete
                   </button>

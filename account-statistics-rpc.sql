@@ -46,3 +46,4 @@ BEGIN
     (SELECT COUNT(*) FROM account_activity WHERE teacher_no_content AND created_at < NOW() - INTERVAL '7 days')::BIGINT as teacher_accounts_no_content;
 END;
 $$ LANGUAGE plpgsql;
+

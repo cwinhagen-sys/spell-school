@@ -51,11 +51,11 @@ export default function GameCard({
         >
           {icon}
         </div>
-        <h3 className="text-lg font-semibold text-white">{title}</h3>
+        <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
       </div>
       {locked && (
-        <div className="absolute inset-0 rounded-2xl bg-black/20 flex items-center justify-center">
-          <span className="text-white text-sm font-medium">🔒 Locked</span>
+        <div className="absolute inset-0 rounded-2xl bg-gray-200/80 flex items-center justify-center">
+          <span className="text-gray-800 text-sm font-medium">🔒 Locked</span>
         </div>
       )}
     </button>

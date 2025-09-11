@@ -108,17 +108,17 @@ export default function MultipleChoiceGame({ words, translations = {}, onClose, 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[1000]">
-      <div className="rounded-2xl p-8 max-w-xl w-full shadow-2xl relative bg-gray-900 text-white border border-white/10">
+      <div className="rounded-2xl p-8 max-w-xl w-full shadow-2xl relative bg-white text-gray-800 border border-gray-200">
         {themeColor && <div className="h-1 rounded-md mb-4" style={{ backgroundColor: themeColor }}></div>}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Multiple Choice</h2>
-          <button onClick={onClose} className="text-gray-300 hover:text-white text-2xl transition-colors">×</button>
+          <h2 className="text-2xl font-bold text-gray-800">Multiple Choice</h2>
+          <button onClick={onClose} className="text-gray-600 hover:text-gray-800 text-2xl transition-colors">×</button>
         </div>
 
         {!finished ? (
           <div className="space-y-4">
-            <div className="text-sm text-gray-300">Question {index + 1} / {questions.length}</div>
-            <div className="text-xl font-semibold">{questions[index]?.prompt}</div>
+            <div className="text-sm text-gray-600">Question {index + 1} / {questions.length}</div>
+            <div className="text-xl font-semibold text-gray-800">{questions[index]?.prompt}</div>
             <div className="grid grid-cols-1 gap-3 mt-4">
               {questions[index]?.options.map((opt, i) => (
                 <button
@@ -127,24 +127,24 @@ export default function MultipleChoiceGame({ words, translations = {}, onClose, 
                   disabled={locked}
                   className={[
                     'w-full text-left px-4 py-3 rounded-lg border transition-transform',
-                    'bg-white/5 border-white/10 hover:bg-white/10',
+                    'bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-800',
                     locked && feedbackIdx !== i ? 'opacity-60' : '',
-                    locked && feedbackIdx === i && feedbackType === 'correct' ? 'bg-emerald-600/20 border-emerald-400 text-emerald-200 animate-hop' : '',
-                    locked && feedbackIdx === i && feedbackType === 'wrong' ? 'bg-red-600/20 border-red-400 text-red-200 animate-burr' : ''
+                    locked && feedbackIdx === i && feedbackType === 'correct' ? 'bg-emerald-100 border-emerald-400 text-emerald-800 animate-hop' : '',
+                    locked && feedbackIdx === i && feedbackType === 'wrong' ? 'bg-red-100 border-red-400 text-red-800 animate-burr' : ''
                   ].join(' ')}
                 >
                   {opt}
                 </button>
               ))}
             </div>
-            <div className="mt-4 text-gray-300">Score: <span className="text-white font-semibold">{score}</span></div>
+            <div className="mt-4 text-gray-600">Score: <span className="text-gray-800 font-semibold">{score}</span></div>
           </div>
         ) : (
           <div className="text-center">
             <div className="text-6xl mb-4">🎯</div>
-            <h3 className="text-xl font-bold mb-2">Round finished</h3>
-            <p className="text-gray-300 mb-6">Your score: {score} / {questions.length}</p>
-            <button onClick={onClose} className="bg-white/10 border border-white/10 text-white px-6 py-3 rounded-lg hover:bg-white/15">Close</button>
+            <h3 className="text-xl font-bold mb-2 text-gray-800">Round finished</h3>
+            <p className="text-gray-600 mb-6">Your score: {score} / {questions.length}</p>
+            <button onClick={onClose} className="bg-gray-100 border border-gray-300 text-gray-800 px-6 py-3 rounded-lg hover:bg-gray-200">Close</button>
           </div>
         )}
       </div>
