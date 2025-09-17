@@ -32,7 +32,7 @@ interface Homework {
   description: string
   vocabulary_words: string[] // Keep for backward compatibility
   words?: Word[] // New field for word objects with images
-  due_date: string
+  due_date: string | null
   teacher_id: string
   created_at: string
   translations?: { [key: string]: string }
@@ -806,7 +806,7 @@ export default function StudentDashboard() {
                           <span className="text-sm font-semibold text-gray-800 truncate">{homework.title}</span>
                         </div>
                         <div className="text-xs text-gray-500">
-                          Due: {new Date(homework.due_date).toLocaleDateString('en-US')}
+                          Due: {homework.due_date ? new Date(homework.due_date).toLocaleDateString('en-US') : 'No due date'}
                         </div>
                       </div>
                     ))}

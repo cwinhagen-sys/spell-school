@@ -11,7 +11,7 @@ export interface Homework {
   title: string
   description: string
   vocabulary_words: string[]
-  due_date: string
+  due_date: string | null
   teacher_id: string
   created_at: string
   translations?: { [key: string]: string } // Optional translations for flashcards

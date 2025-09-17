@@ -5,11 +5,26 @@ import { supabase } from '@/lib/supabase'
 import { BookOpen, Plus, LogOut, Home, Calendar, FileText, Users, Clock, Gamepad2, LogIn, Trophy, Star } from 'lucide-react'
 import { Homework } from '@/types'
 
+interface Assignment {
+  id: string
+  student_id: string | null
+  class_id: string | null
+  word_set_id: string
+  created_at: string
+  due_date: string | null
+  quiz_unlocked: boolean
+  word_sets: {
+    id: string
+    title: string
+    teacher_id: string
+  }[]
+}
+
 export default function TeacherDashboard() {
   const [user, setUser] = useState<any>(null)
   const [classes, setClasses] = useState<any[]>([])
   const [wordSets, setWordSets] = useState<any[]>([])
-  const [homeworks, setHomeworks] = useState<Homework[]>([])
+  const [homeworks, setHomeworks] = useState<Assignment[]>([])
   const [activeStudents, setActiveStudents] = useState<any[]>([])
   const [studentActivity, setStudentActivity] = useState<any[]>([])
   const [newHomework, setNewHomework] = useState({
@@ -619,7 +634,7 @@ export default function TeacherDashboard() {
               {homeworks.length > 0 && (
                 <div className="flex items-center text-sm text-gray-600">
                   <div className="w-2 h-2 bg-purple-600 rounded-full mr-3"></div>
-                  <span>Latest assignment: <span className="font-medium">{homeworks[0]?.word_sets?.title || 'Unknown'}</span></span>
+                  <span>Latest assignment: <span className="font-medium">{homeworks[0]?.word_sets?.[0]?.title || 'Unknown'}</span></span>
                 </div>
               )}
               {classes.length === 0 && wordSets.length === 0 && homeworks.length === 0 && (
