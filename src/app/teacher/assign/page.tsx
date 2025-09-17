@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 type WordSet = { id: string; title: string; color?: string }
 type Class = { id: string; name: string }
 type Student = { id: string; email: string; role: string; display?: string }
-type Assignment = { id: string; word_set_title: string; class_name?: string; student_email?: string }
+type Assignment = { id: string; word_set_title: string; word_set_color?: string; class_name?: string; student_email?: string }
 
 export default function AssignWordSetsPage() {
   const [wordSets, setWordSets] = useState<WordSet[]>([])
@@ -267,7 +267,9 @@ export default function AssignWordSetsPage() {
         .from('assigned_word_sets')
         .select(`
           id,
-          word_sets!inner(title),
+          class_id,
+          student_id,
+          word_sets!inner(title, color),
           classes(name),
           profiles(email)
         `)
@@ -278,8 +280,9 @@ export default function AssignWordSetsPage() {
       const formattedAssignments: Assignment[] = (data || []).map((item: any) => ({
         id: item.id,
         word_set_title: item.word_sets?.title || 'Unknown',
-        class_name: item.classes?.name,
-        student_email: item.profiles?.email
+        word_set_color: item.word_sets?.color,
+        class_name: item.class_id ? item.classes?.name : 'Individual Assignment',
+        student_email: item.student_id ? item.profiles?.email : undefined
       }))
       
       setAssignments(formattedAssignments)
@@ -299,11 +302,13 @@ export default function AssignWordSetsPage() {
     setMessage('')
 
     try {
+      // Create a single class assignment (not individual student assignments)
       const { error } = await supabase
         .from('assigned_word_sets')
         .insert({ 
           word_set_id: selectedWordSet, 
           class_id: targetClass,
+          student_id: null, // Must be null due to constraint
           due_date: dueDate || null,
           quiz_unlocked: true
         })
@@ -337,6 +342,7 @@ export default function AssignWordSetsPage() {
         .insert({ 
           word_set_id: selectedWordSet, 
           student_id: targetStudent,
+          class_id: null, // Must be null due to constraint
           due_date: dueDate || null,
           quiz_unlocked: true
         })
@@ -488,15 +494,19 @@ export default function AssignWordSetsPage() {
               {assignments.map(assignment => (
                 <div key={assignment.id} className="flex items-center justify-between p-3 rounded bg-white border border-gray-200 shadow-sm">
                   <div className="text-sm text-gray-700 flex items-center gap-2">
-                    <span className="inline-block w-3 h-3 rounded-full bg-gray-300" title="Word set color"></span>
+                    <span 
+                      className="inline-block w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: assignment.word_set_color || '#e5e7eb' }}
+                      title="Word set color"
+                    ></span>
                     <span className="font-medium">{assignment.word_set_title}</span>
                     <span className="mx-2 text-gray-400">→</span>
-                    {assignment.class_name ? (
-                      <span>Class: {assignment.class_name}</span>
-                    ) : assignment.student_email ? (
-                      <span>Student: {assignment.student_email}</span>
+                    {assignment.student_email ? (
+                      <span className="text-green-600 font-medium">Individual: {assignment.student_email}</span>
+                    ) : assignment.class_name && assignment.class_name !== 'Individual Assignment' ? (
+                      <span className="text-blue-600 font-medium">Class: {assignment.class_name}</span>
                     ) : (
-                      <span>Unknown target</span>
+                      <span className="text-gray-500">Unknown target</span>
                     )}
                   </div>
                   <button 

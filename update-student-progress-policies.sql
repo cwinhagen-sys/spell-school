@@ -37,3 +37,4 @@ COMMENT ON POLICY "students_can_update_own_progress" ON student_progress IS 'Stu
 COMMENT ON POLICY "students_can_insert_own_progress" ON student_progress IS 'Students can create their own progress records';
 COMMENT ON POLICY "teachers_can_view_student_progress" ON student_progress IS 'Teachers can see progress of students in their classes';
 
+

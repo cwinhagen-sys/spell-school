@@ -9,6 +9,7 @@ interface ImageSelectorProps {
   onChange: (imageUrl: string) => void
   onClear: () => void
   word: string
+  wordIndex?: number
 }
 
 interface UnsplashImage {
@@ -23,14 +24,13 @@ interface UnsplashImage {
   }
 }
 
-export default function ImageSelector({ value, onChange, onClear, word }: ImageSelectorProps) {
+export default function ImageSelector({ value, onChange, onClear, word, wordIndex = 0 }: ImageSelectorProps) {
   const [showModal, setShowModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState(word)
   const [unsplashImages, setUnsplashImages] = useState<UnsplashImage[]>([])
   const [loading, setLoading] = useState(false)
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [uploadPreview, setUploadPreview] = useState<string | null>(null)
-
   // Search for images on Unsplash
   const searchImages = async (query: string) => {
     if (!query.trim()) return
@@ -116,6 +116,8 @@ export default function ImageSelector({ value, onChange, onClear, word }: ImageS
     }
   }
 
+
+
   // Search when modal opens or when word changes
   useEffect(() => {
     if (showModal) {
@@ -161,119 +163,115 @@ export default function ImageSelector({ value, onChange, onClear, word }: ImageS
         )}
         <button
           onClick={() => setShowModal(true)}
-          className="text-sm text-gray-600 hover:text-gray-800 transition-colors"
+          className="text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-3 py-1 rounded-lg transition-colors"
         >
-          {value ? 'Change' : 'Add image'}
+          {value ? 'Change image' : 'Add image'}
         </button>
       </div>
 
-      {/* Modal */}
+      {/* Inline Image Selector */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold text-gray-800">Choose image for "{word}"</h3>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              
-              {/* Search bar */}
-              <div className="flex gap-2 mb-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && searchImages(searchQuery)}
-                    placeholder="Search for images..."
-                    className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 placeholder:text-gray-500 shadow-sm"
-                  />
-                </div>
-                <button
-                  onClick={() => searchImages(searchQuery)}
-                  disabled={loading}
-                  className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 shadow-md"
-                >
-                  {loading ? 'Searching...' : 'Search'}
-                </button>
-              </div>
-
-              {/* Upload section */}
-              <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-medium mb-2 text-gray-800">Or upload your own image:</h4>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="image-upload"
-                  />
-                  <label
-                    htmlFor="image-upload"
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors shadow-sm"
-                  >
-                    <Upload className="w-4 h-4 text-gray-600" />
-                    <span className="text-gray-700">Choose file</span>
-                  </label>
-                  {uploadPreview && (
-                    <div className="flex items-center gap-2">
-                      <img src={uploadPreview} alt="Preview" className="w-12 h-12 object-cover rounded border border-gray-200" />
-                      <button
-                        onClick={handleUpload}
-                        disabled={loading}
-                        className="px-3 py-1 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded hover:from-emerald-700 hover:to-green-700 disabled:opacity-50 shadow-md"
-                      >
-                        Upload
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+        <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="font-medium text-gray-800">Choose image for "{word}"</h4>
+            <button
+              onClick={() => setShowModal(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          
+          {/* Search bar */}
+          <div className="flex gap-2 mb-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && searchImages(searchQuery)}
+                placeholder="Search for images..."
+                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 placeholder:text-gray-500 shadow-sm"
+              />
             </div>
+            <button
+              onClick={() => searchImages(searchQuery)}
+              disabled={loading}
+              className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 shadow-md"
+            >
+              {loading ? 'Searching...' : 'Search'}
+            </button>
+          </div>
 
-            {/* Image grid */}
-            <div className="p-6 max-h-96 overflow-y-auto">
-              {loading ? (
-                <div className="text-center py-8 text-gray-600">Searching for images...</div>
-              ) : !process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY || process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY === 'YOUR_UNSPLASH_ACCESS_KEY' ? (
-                <div className="text-center py-8 text-gray-600">
-                  <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-4">
-                    <h4 className="font-semibold text-indigo-800 mb-2">🔍 Automatiska bildförslag</h4>
-                    <p className="text-sm mb-2 text-gray-700">För att få automatiska bildförslag när du skriver ord behöver du en Unsplash API-nyckel.</p>
-                    <p className="text-xs text-indigo-600">Se UNSPLASH_SETUP.md för instruktioner</p>
-                  </div>
-                  <p className="text-sm text-gray-600">Du kan fortfarande ladda upp egna bilder ovan ↑</p>
-                </div>
-              ) : unsplashImages.length > 0 ? (
-                <div className="grid grid-cols-3 gap-4">
-                  {unsplashImages.map((image) => (
-                    <button
-                      key={image.id}
-                      onClick={() => handleImageSelect(image.urls.regular)}
-                      className="group relative aspect-square overflow-hidden rounded-lg border border-gray-200 hover:border-indigo-500 transition-colors shadow-sm"
-                    >
-                      <img
-                        src={image.urls.small}
-                        alt={image.alt_description}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-600">
-                  No images found. Try a different search term.
+          {/* Upload section */}
+          <div className="mb-4 p-3 bg-white rounded-lg border border-gray-200">
+            <h5 className="font-medium mb-2 text-gray-800">Or upload your own image:</h5>
+            <div className="flex items-center gap-4">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+                id="image-upload"
+              />
+              <label
+                htmlFor="image-upload"
+                className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
+              >
+                <Upload className="w-4 h-4 text-gray-600" />
+                <span className="text-gray-700 text-sm">Choose file</span>
+              </label>
+              {uploadPreview && (
+                <div className="flex items-center gap-2">
+                  <img src={uploadPreview} alt="Preview" className="w-10 h-10 object-cover rounded border border-gray-200" />
+                  <button
+                    onClick={handleUpload}
+                    disabled={loading}
+                    className="px-3 py-1 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded hover:from-emerald-700 hover:to-green-700 disabled:opacity-50 text-sm"
+                  >
+                    Upload
+                  </button>
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Image grid */}
+          <div className="max-h-64 overflow-y-auto">
+            {loading ? (
+              <div className="text-center py-6 text-gray-600">Searching for images...</div>
+            ) : !process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY || process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY === 'YOUR_UNSPLASH_ACCESS_KEY' ? (
+              <div className="text-center py-6 text-gray-600">
+                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 mb-3">
+                  <h5 className="font-semibold text-indigo-800 mb-1 text-sm">🔍 Automatiska bildförslag</h5>
+                  <p className="text-xs mb-1 text-gray-700">För att få automatiska bildförslag när du skriver ord behöver du en Unsplash API-nyckel.</p>
+                  <p className="text-xs text-indigo-600">Se UNSPLASH_SETUP.md för instruktioner</p>
+                </div>
+                <p className="text-xs text-gray-600">Du kan fortfarande ladda upp egna bilder ovan ↑</p>
+              </div>
+            ) : unsplashImages.length > 0 ? (
+              <div className="grid grid-cols-4 gap-3">
+                {unsplashImages.map((image) => (
+                  <button
+                    key={image.id}
+                    onClick={() => handleImageSelect(image.urls.regular)}
+                    className="group relative aspect-square overflow-hidden rounded-lg border border-gray-200 hover:border-indigo-500 transition-colors"
+                  >
+                    <img
+                      src={image.urls.small}
+                      alt={image.alt_description}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-gray-600">
+                No images found. Try a different search term.
+              </div>
+            )}
           </div>
         </div>
       )}

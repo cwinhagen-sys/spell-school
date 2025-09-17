@@ -19,17 +19,53 @@ export default function AuthCallback() {
           return
         }
 
+        setStatus('Checking email verification…')
+        // Check if email is verified (skip in development)
+        const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost'
+        if (!session.user.email_confirmed_at && !isDevelopment) {
+          setStatus('Please verify your email address first. Check your inbox.')
+          // Sign out the user since email is not verified
+          await supabase.auth.signOut()
+          router.replace('/?message=Please verify your email address before signing in.')
+          return
+        }
+        
+        // In development, manually confirm email if not already confirmed
+        if (!session.user.email_confirmed_at && isDevelopment) {
+          console.log('Development mode: Skipping email verification')
+          setStatus('Development mode: Skipping email verification…')
+        }
+
         setStatus('Ensuring your profile…')
-        // Try to upsert profile from auth metadata to avoid forcing role select
+        // Only create profile if email is verified
         const metaRole = (session.user.user_metadata?.role as string | undefined) || null
         const metaName = (session.user.user_metadata?.username || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '').trim() || null
+        
+        // For Google OAuth users, check if they already have a profile to determine role
+        let userRole = metaRole
+        if (!userRole) {
+          const { data: existingProfile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single()
+          userRole = existingProfile?.role || null
+        }
+        
+        // If still no role, redirect to role selection
+        if (!userRole) {
+          setStatus('Please select your role…')
+          router.replace('/select-role')
+          return
+        }
+        
         const { data: upserted, error: upsertError } = await supabase
           .from('profiles')
           .upsert({ 
             id: session.user.id, 
             email: session.user.email, 
-            role: metaRole || undefined, 
-            full_name: metaName || undefined,
+            role: userRole, 
+            name: metaName || undefined,
             last_active: new Date().toISOString() // Track login time
           }, { onConflict: 'id' })
         
@@ -43,7 +79,7 @@ export default function AuthCallback() {
                 id: session.user.id, 
                 email: session.user.email, 
                 role: metaRole || undefined, 
-                full_name: metaName || undefined
+                name: metaName || undefined
               }, { onConflict: 'id' })
           }
         }

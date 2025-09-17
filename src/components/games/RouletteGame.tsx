@@ -549,12 +549,12 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
   if (!spinMode) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-        <div className="rounded-2xl p-8 max-w-md w-full text-center shadow-2xl relative bg-gray-900 text-white border border-white/10">
+        <div className="rounded-2xl p-8 max-w-md w-full text-center shadow-2xl relative bg-white text-gray-800 border border-gray-200">
           {themeColor && <div className="h-1 rounded-md mb-4" style={{ backgroundColor: themeColor }}></div>}
           
           <div className="text-6xl mb-4">🎰</div>
           <h2 className="text-2xl font-bold mb-4">Roulette Game</h2>
-          <p className="text-gray-300 mb-6">
+          <p className="text-gray-600 mb-6">
             Spin the wheel and write a sentence using the selected words!
           </p>
           
@@ -570,7 +570,7 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
             </button>
           </div>
           
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+          <button onClick={onClose} className="text-gray-600 hover:text-gray-800 transition-colors">
             Back to Dashboard
           </button>
         </div>
@@ -581,7 +581,7 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
   // Main game screen
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-      <div className="rounded-2xl p-6 md:p-8 max-w-4xl w-full max-h-[90vh] overflow-auto shadow-2xl relative bg-gray-900 text-white border border-white/10">
+      <div className="rounded-2xl p-6 md:p-8 max-w-4xl w-full max-h-[90vh] overflow-auto shadow-2xl relative bg-white text-gray-800 border border-gray-200">
         {themeColor && <div className="h-1 rounded-md mb-4" style={{ backgroundColor: themeColor }}></div>}
         
         {/* Header */}
@@ -590,16 +590,16 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
             <span className="text-3xl mr-2">🎰</span>
             Roulette Game
           </h2>
-          <button onClick={onClose} className="text-gray-300 hover:text-white text-2xl transition-colors">×</button>
+          <button onClick={onClose} className="text-gray-600 hover:text-gray-800 text-2xl transition-colors">×</button>
         </div>
 
         {/* Game Stats */}
-        <div className="flex items-center justify-between mb-6 p-4 bg-gray-800/50 rounded-lg">
+        <div className="flex items-center justify-between mb-6 p-4 bg-gray-100 rounded-lg">
           <div className="flex items-center gap-4">
-            <div className="text-sm text-gray-400">Spins Remaining</div>
-            <div className="text-xl font-bold text-blue-400">{spinsRemaining}</div>
+            <div className="text-sm text-gray-600">Spins Remaining</div>
+            <div className="text-xl font-bold text-blue-600">{spinsRemaining}</div>
           </div>
-          <div className="text-sm text-gray-400">
+          <div className="text-sm text-gray-600">
             Time: {Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, '0')}
           </div>
         </div>
@@ -635,11 +635,11 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
                  width: '100%',
                  height: '100%',
                  borderRadius: '50%',
-                 border: '10px solid #333',
+                 border: '10px solid #e5e7eb',
                  boxShadow: '0 0 15px rgba(0,0,0,0.3)',
                  transition: 'transform 4s cubic-bezier(0.25, 1, 0.5, 1)',
                  transform: `rotate(${wheelRotation}deg)`,
-                 backgroundColor: '#2a2a2a',
+                 backgroundColor: '#f9fafb',
                  cursor: isSpinning ? 'not-allowed' : 'pointer'
                }}
              />
@@ -648,11 +648,11 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
 
         {/* Spun Words Display */}
         {spunWords.length > 0 && (
-          <div className="mb-6 p-4 bg-gray-800/30 rounded-lg">
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
             <h3 className="text-lg font-semibold mb-2">Selected Words:</h3>
             <div className="flex flex-wrap gap-2">
               {spunWords.map((spun, index) => (
-                <div key={index} className="bg-blue-600/20 text-blue-300 px-3 py-1 rounded-full text-sm">
+                <div key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
                   {spun.word}
                 </div>
               ))}
@@ -663,7 +663,7 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
         {/* Spin Instructions */}
         {spinsRemaining > 0 && (
           <div className="text-center mb-6">
-            <p className="text-gray-300 text-sm">
+            <p className="text-gray-600 text-sm">
               {isSpinning ? 'Spinning...' : `Click the wheel to spin! (${spinsRemaining} spins left)`}
             </p>
           </div>
@@ -678,13 +678,13 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
                 value={currentSentence}
                 onChange={(e) => setCurrentSentence(e.target.value)}
                 placeholder="Write your sentence here..."
-                className="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 resize-none"
+                className="w-full p-4 bg-white border border-gray-300 rounded-lg text-gray-800 placeholder-gray-500 resize-none"
                 rows={3}
               />
               <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-400">
+                <div className="text-sm text-gray-600">
                   {containsInappropriateWords(currentSentence) ? (
-                    <span className="text-red-400">Please use appropriate language</span>
+                    <span className="text-red-600">Please use appropriate language</span>
                   ) : (
                     "Must start with capital letter and end with . ! or ?"
                   )}
@@ -694,7 +694,7 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
                   disabled={!validateSentence(currentSentence) || isSubmitting || hasSubmitted || containsInappropriateWords(currentSentence)}
                   className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
                     !validateSentence(currentSentence) || isSubmitting || hasSubmitted || containsInappropriateWords(currentSentence)
-                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : 'bg-blue-600 text-white hover:bg-blue-700'
                   }`}
                 >
@@ -709,9 +709,9 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
                  {/* Feedback */}
          {feedback && (
            <div className={`p-4 rounded-lg mb-4 ${
-             feedback.type === 'success' ? 'bg-green-600/20 text-green-300 border border-green-600/30' :
-             feedback.type === 'error' ? 'bg-red-600/20 text-red-300 border border-red-600/30' :
-             'bg-blue-600/20 text-blue-300 border border-blue-600/30'
+             feedback.type === 'success' ? 'bg-green-100 text-green-800 border border-green-300' :
+             feedback.type === 'error' ? 'bg-red-100 text-red-800 border border-red-300' :
+             'bg-blue-100 text-blue-800 border border-blue-300'
            }`}>
              <div className="mb-3">{feedback.message}</div>
              {showFinishButton && (
@@ -731,7 +731,7 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
         <div className="flex justify-center gap-3">
           <button 
             onClick={restartGame} 
-            className="bg-white/10 border border-white/10 text-white py-2 px-4 rounded-lg font-medium hover:bg-white/15 transition-colors flex items-center gap-2"
+            className="bg-gray-100 border border-gray-300 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center gap-2"
           >
             <RotateCcw className="w-4 h-4" />
             Restart

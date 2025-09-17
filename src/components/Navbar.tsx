@@ -74,7 +74,21 @@ export default function Navbar() {
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 grid place-items-center font-bold text-white">SS</div>
           <span className="text-lg font-bold">Spell School</span>
         </Link>
-        <nav className="flex items-center gap-2">
+        <nav className="flex items-center gap-4">
+          {/* Dashboard link for teachers */}
+          {pathname.startsWith('/teacher') && (
+            <Link 
+              href="/teacher" 
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                pathname === '/teacher' 
+                  ? 'bg-indigo-100 text-indigo-700' 
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
+              }`}
+            >
+              Dashboard
+            </Link>
+          )}
+          
           <button
             onClick={handleSignOut}
             disabled={isLoggingOut}

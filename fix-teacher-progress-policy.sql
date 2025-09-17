@@ -23,3 +23,4 @@ CREATE POLICY "students_and_teachers_can_insert_progress" ON student_progress
 COMMENT ON POLICY "students_and_teachers_can_insert_progress" ON student_progress 
 IS 'Students can create their own progress, teachers can create progress for students in their classes';
 
+

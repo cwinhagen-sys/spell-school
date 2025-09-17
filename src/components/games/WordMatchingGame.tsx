@@ -33,6 +33,7 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
   const [isProcessing, setIsProcessing] = useState(false) // Locks the game while waiting
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [wrongAttempts, setWrongAttempts] = useState(0)
+  const [totalAttempts, setTotalAttempts] = useState(0)
   const startedAtRef = useRef<number | null>(null)
   const [awardedPoints, setAwardedPoints] = useState(0)
   const [feedback, setFeedback] = useState<{ type: 'correct' | 'wrong' | null; ids: number[] }>({ type: null, ids: [] })
@@ -180,29 +181,20 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
             ? { ...c, isMatched: true, isSelected: false, isFlipped: true }
             : c
         ))
-        setScore(score + 20)
+        // Increment total attempts (this was a successful attempt)
+        setTotalAttempts(prev => prev + 1)
         void logWordAttempt({ word: selectedCard.word, correct: true, gameType: 'match', context: trackingContext })
         void logWordAttempt({ word: card.word, correct: true, gameType: 'match', context: trackingContext })
 
-        // Step 2: After a short delay, fade them out
+        // Keep matched cards on the board and check if game is finished
         setTimeout(() => {
-          setCards(prev => prev.map(c => 
-            c.id === selectedCard.id || c.id === card.id
-              ? { ...c, isRemoving: true }
-              : c
-          ))
-        }, 500)
-
-        // Step 3: Remove from grid and continue
-        setTimeout(() => {
-          setCards(prev => prev.filter(c => !(c.id === selectedCard.id || c.id === card.id)))
-          const remainingAfter = cards.filter(c => !(c.id === selectedCard.id || c.id === card.id))
-          if (remainingAfter.length === 0) {
+          const remainingCards = cards.filter(c => !c.isMatched)
+          if (remainingCards.length === 2) { // Only 2 cards left (the ones we just matched)
             finishGame()
           }
           setSelectedCard(null)
           setIsProcessing(false)
-        }, 900)
+        }, 500)
       } else {
         // Animate burr (shake) for the two wrong cards
         setFeedback({ type: 'wrong', ids: [selectedCard.id, card.id] })
@@ -220,6 +212,7 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
         
         // Count wrong attempts for scoring
         setWrongAttempts(prev => prev + 1)
+        setTotalAttempts(prev => prev + 1)
         
         void logWordAttempt({ word: selectedCard.word, correct: false, gameType: 'match', context: trackingContext })
         void logWordAttempt({ word: card.word, correct: false, gameType: 'match', context: trackingContext })
@@ -230,21 +223,23 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
   const finishGame = async () => {
     setGameFinished(true)
     
-    // Balanced scoring: 3-5 points per word pair based on performance
-    // 0-1 wrong = 5 per pair, 2-3 wrong = 4 per pair, 4-5 wrong = 3 per pair, 6+ wrong = 2 per pair
-    const wa = Math.max(0, wrongAttempts)
+    // New scoring system: Max 25 points for perfect game, based on efficiency
     const wordPairs = words.length
-    let pointsPerPair = 2
-    if (wa <= 1) pointsPerPair = 5
-    else if (wa <= 3) pointsPerPair = 4
-    else if (wa <= 5) pointsPerPair = 3
-    else pointsPerPair = 2
+    const totalAttemptsUsed = totalAttempts
+    const perfectAttempts = wordPairs // Perfect would be 1 attempt per pair
     
-    const points = wordPairs * pointsPerPair
+    // Calculate efficiency percentage (0-100%)
+    const efficiency = Math.max(0, Math.min(100, (perfectAttempts / totalAttemptsUsed) * 100))
+    
+    // Convert efficiency to points (0-25 points)
+    const points = Math.round((efficiency / 100) * 25)
+    
+    // Ensure minimum 3 points for completing the game
+    const finalPoints = Math.max(3, points)
 
-    setAwardedPoints(points)
-    const newTotal = await updateStudentProgress(points, 'match', trackingContext)
-    onScoreUpdate(points, newTotal)
+    setAwardedPoints(finalPoints)
+    const newTotal = await updateStudentProgress(finalPoints, 'match', trackingContext)
+    onScoreUpdate(finalPoints, newTotal)
     
     // Session logging
     const matchesFound = Math.floor(cards.filter(c => c.isMatched).length / 2)
@@ -252,14 +247,28 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
     if (started) {
       const duration = Math.max(1, Math.floor((Date.now() - started) / 1000))
       void endGameSession(sessionId, 'match', { 
-        score: points, 
+        score: finalPoints, 
         durationSec: duration, 
-        details: { matches_found: matchesFound, total_pairs: words.length, wrongAttempts: wa, awarded_points: points } 
+        details: { 
+          matches_found: matchesFound, 
+          total_pairs: words.length, 
+          total_attempts: totalAttemptsUsed, 
+          wrong_attempts: wrongAttempts, 
+          efficiency_percent: Math.round(efficiency),
+          awarded_points: finalPoints 
+        } 
       })
     } else {
       void endGameSession(sessionId, 'match', { 
-        score: points, 
-        details: { matches_found: matchesFound, total_pairs: words.length, wrongAttempts: wa, awarded_points: points } 
+        score: finalPoints, 
+        details: { 
+          matches_found: matchesFound, 
+          total_pairs: words.length, 
+          total_attempts: totalAttemptsUsed, 
+          wrong_attempts: wrongAttempts, 
+          efficiency_percent: Math.round(efficiency),
+          awarded_points: finalPoints 
+        } 
       })
     }
   }
@@ -272,6 +281,7 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
     setElapsedSec(0)
     setIsProcessing(false)
     setWrongAttempts(0)
+    setTotalAttempts(0)
     initializeGame()
     startedAtRef.current = Date.now()
     ;(async () => {
@@ -305,14 +315,14 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-      <div className="rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative bg-gray-900 text-white border border-white/10">
+      <div className="rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative bg-white text-gray-800 border border-gray-200">
         {themeColor && <div className="h-1 rounded-md mb-4" style={{ backgroundColor: themeColor }}></div>}
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold">🧠 Memory Game</h2>
           <button
             onClick={onClose}
-            className="text-gray-300 hover:text-white text-2xl transition-colors"
+            className="text-gray-600 hover:text-gray-800 text-2xl transition-colors"
           >
             ×
           </button>
@@ -321,8 +331,8 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
         {/* Game Info (hide live points to avoid mismatch with final scoring) */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full border border-white/10">
-              <span className="text-gray-200 font-semibold">⏱️ {formatTime(elapsedSec)}</span>
+            <div className="flex items-center space-x-2 bg-gray-100 px-4 py-2 rounded-full border border-gray-200">
+              <span className="text-gray-700 font-semibold">⏱️ {formatTime(elapsedSec)}</span>
             </div>
           </div>
         </div>
@@ -336,13 +346,13 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
               className={`
                 aspect-square rounded-2xl cursor-pointer transition-all duration-500 transform hover:scale-105 shadow-xl
                 ${card.isMatched 
-                  ? 'bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-600 text-white shadow-2xl' 
+                  ? 'bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-600 text-white shadow-2xl ring-4 ring-emerald-300' 
                   : card.isFlipped 
-                    ? 'bg-gradient-to-br from-indigo-400 via-blue-500 to-purple-600 text-white shadow-2xl' 
-                    : 'bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300 border-2 border-slate-400/30 hover:border-slate-400/50'
+                    ? 'bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 text-white shadow-2xl' 
+                    : 'bg-gradient-to-br from-purple-100 via-indigo-100 to-blue-100 border-2 border-purple-200 hover:border-purple-300'
                 }
                 ${card.isMatched 
-                  ? 'opacity-90 cursor-not-allowed' 
+                  ? 'opacity-100 cursor-not-allowed' 
                   : ''
                 }
                 ${card.isSelected 
@@ -353,7 +363,6 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
                   ? 'cursor-not-allowed' 
                   : ''
                 }
-                ${card.isRemoving ? 'opacity-0 scale-90' : ''}
                 ${feedback.type === 'correct' && feedback.ids.includes(card.id) ? ' animate-hop' : ''}
                 ${feedback.type === 'wrong' && feedback.ids.includes(card.id) ? ' animate-burr' : ''}
               `}
@@ -361,19 +370,23 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
               <div className="w-full h-full flex items-center justify-center p-4">
                 {card.isFlipped ? (
                   <div className="text-center p-2">
-                    <div className="text-xl font-bold break-words leading-tight drop-shadow-sm">
+                    <div className="text-xl font-bold leading-tight drop-shadow-sm" style={{ 
+                      fontSize: 'clamp(0.8rem, 2.2vw, 1.1rem)',
+                      wordBreak: 'keep-all',
+                      overflowWrap: 'break-word',
+                      hyphens: 'none'
+                    }}>
                       {card.word}
                     </div>
                   </div>
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <div className="relative">
-                      {/* Modern geometric pattern */}
-                      <div className="w-12 h-12 mx-auto">
-                        <div className="w-full h-full bg-gradient-to-br from-slate-400 to-slate-500 rounded-lg transform rotate-45 shadow-inner"></div>
-                        <div className="absolute inset-2 bg-gradient-to-br from-slate-200 to-slate-300 rounded-md transform rotate-45"></div>
-                      </div>
-                    </div>
+                  <div className="w-full h-full flex items-center justify-center relative overflow-hidden">
+                    {/* Custom memory card back image */}
+                    <img 
+                      src="/images/memory-card-back.png" 
+                      alt="Memory card back"
+                      className="w-full h-full object-cover rounded-2xl"
+                    />
                   </div>
                 )}
               </div>
@@ -382,7 +395,7 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
         </div>
 
         {/* Instructions */}
-        <div className="text-center text-sm text-gray-500 mb-4">
+        <div className="text-center text-sm text-gray-600 mb-4">
           <p>💡 Find matching pairs: English word ↔ Swedish translation</p>
         </div>
 
@@ -390,7 +403,7 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
         <div className="text-center">
           <button
             onClick={restartGame}
-            className="bg-gray-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-gray-600 transition-colors flex items-center space-x-2 mx-auto"
+            className="bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center space-x-2 mx-auto border border-gray-300"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Restart Game</span>

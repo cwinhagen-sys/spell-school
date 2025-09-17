@@ -67,33 +67,33 @@ export default function LevelsPage() {
   const pct = lev.level >= 100 ? 1 : Math.max(0, Math.min(1, xpIntoLevel / nextDelta))
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800">
       <LogoutHandler />
-      <div className="border-b border-white/10 bg-gray-800">
+      <div className="border-b border-gray-200 bg-white">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold">Level Progress</h1>
-          <Link href="/student" className="text-blue-300 hover:underline">Back</Link>
+          <Link href="/student" className="text-indigo-600 hover:underline">Back</Link>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
         {/* Level bar */}
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-8">
+        <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-lg">
           {loading ? (
-            <div className="text-gray-300">Loading…</div>
+            <div className="text-gray-600">Loading…</div>
           ) : (
             <div className="space-y-4">
               <div className="text-center">
-                <div className="text-sm text-gray-400 mb-2">Current Level</div>
-                <div className="text-5xl font-bold text-white mb-1">{lev.level}</div>
-                <div className="text-sm text-gray-300">{points} Total XP</div>
+                <div className="text-sm text-gray-500 mb-2">Current Level</div>
+                <div className="text-5xl font-bold text-gray-800 mb-1">{lev.level}</div>
+                <div className="text-sm text-gray-600">{points} Total XP</div>
               </div>
               {lev.level < 100 && (
                 <>
-                  <div className="w-full bg-gray-800 rounded-full h-3 overflow-hidden">
+                  <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                     <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-3 transition-all duration-500" style={{ width: `${pct * 100}%` }} />
                   </div>
-                  <div className="text-center text-sm text-gray-400">
+                  <div className="text-center text-sm text-gray-500">
                     {Math.max(0, deltaXp(lev.level + 1) - xpIntoLevel)} XP to Level {lev.level + 1}
                   </div>
                 </>
@@ -104,39 +104,39 @@ export default function LevelsPage() {
 
         {/* Current and Next Titles */}
         <div className="grid md:grid-cols-2 gap-8">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-8">
-            <h2 className="text-xl font-semibold mb-4">Current Title</h2>
+          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-lg">
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">Current Title</h2>
             <div className="flex items-center gap-6">
-              <div className="w-48 h-48 rounded-2xl overflow-hidden ring-2 ring-white/20 bg-white/10 flex items-center justify-center">
+              <div className="w-48 h-48 rounded-2xl overflow-hidden ring-2 ring-gray-300 bg-gray-100 flex items-center justify-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={currentTitle.image || '/assets/wizard/wizard_novice.png'} alt={currentTitle.title || 'Current'} className="w-full h-full object-cover" />
               </div>
               <div>
-                <div className="text-sm text-gray-300 mb-1">Level {lev.level}</div>
-                <div className="text-2xl font-bold">{currentTitle.title || 'Novice Learner'}</div>
-                {currentTitle.description && <div className="text-sm text-gray-300 mt-2 max-w-sm">{currentTitle.description}</div>}
+                <div className="text-sm text-gray-500 mb-1">Level {lev.level}</div>
+                <div className="text-2xl font-bold text-gray-800">{currentTitle.title || 'Novice Learner'}</div>
+                {currentTitle.description && <div className="text-sm text-gray-600 mt-2 max-w-sm">{currentTitle.description}</div>}
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-8">
-            <h2 className="text-xl font-semibold mb-4">Next Title</h2>
+          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-lg">
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">Next Title</h2>
             <div className="flex items-center gap-6">
-              <div className="w-48 h-48 rounded-2xl overflow-hidden ring-2 ring-white/20 bg-white/10 flex items-center justify-center">
+              <div className="w-48 h-48 rounded-2xl overflow-hidden ring-2 ring-gray-300 bg-gray-100 flex items-center justify-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={(nextMilestone?.image) || '/assets/wizard/wizard_novice.png'} alt={(nextMilestone?.title) || 'Next'} className="w-full h-full object-cover" />
               </div>
               <div>
                 {nextMilestone ? (
                   <>
-                    <div className="text-sm text-gray-300 mb-1">Unlocks at Level {nextMilestone.at}</div>
-                    <div className="text-2xl font-bold">{nextMilestone.title}</div>
-                    {nextMilestone.description && <div className="text-sm text-gray-300 mt-2 max-w-sm">{nextMilestone.description}</div>}
+                    <div className="text-sm text-gray-500 mb-1">Unlocks at Level {nextMilestone.at}</div>
+                    <div className="text-2xl font-bold text-gray-800">{nextMilestone.title}</div>
+                    {nextMilestone.description && <div className="text-sm text-gray-600 mt-2 max-w-sm">{nextMilestone.description}</div>}
                   </>
                 ) : (
                   <>
-                    <div className="text-sm text-gray-300 mb-1">All titles unlocked</div>
-                    <div className="text-2xl font-bold">Maxed Out</div>
+                    <div className="text-sm text-gray-500 mb-1">All titles unlocked</div>
+                    <div className="text-2xl font-bold text-gray-800">Maxed Out</div>
                   </>
                 )}
               </div>
@@ -145,7 +145,7 @@ export default function LevelsPage() {
         </div>
 
         {message && (
-          <div className="p-3 rounded bg-white/10 border border-white/10 text-sm">{message}</div>
+          <div className="p-3 rounded bg-red-50 border border-red-200 text-sm text-red-700">{message}</div>
         )}
       </div>
     </div>

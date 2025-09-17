@@ -134,22 +134,10 @@ export default function TypingChallenge({ words, onClose, onScoreUpdate, trackin
     }
   }
 
-  const skipWord = () => {
-    setStreak(0)
-    setTotalAttempts(totalAttempts + 1)
-    void logWordAttempt({ word: currentWord, correct: false, gameType: 'typing', context: trackingContext })
-    
-    if (currentWordIndex < wordList.length - 1) {
-      setCurrentWordIndex(currentWordIndex + 1)
-      setUserInput('')
-    } else {
-      finishGame()
-    }
-  }
 
   const finishGame = async () => {
-    // New rule: points = remaining time * 2, no diminishing
-    const points = Math.max(0, Math.round(timeLeft * 2))
+    // New rule: points = correct answers * 1, regardless of time
+    const points = Math.max(0, correctAnswers * 1)
     setAwardedPoints(points)
     const newTotal = await updateStudentProgress(points, 'typing', trackingContext)
     onScoreUpdate(points, newTotal)
@@ -290,13 +278,6 @@ export default function TypingChallenge({ words, onClose, onScoreUpdate, trackin
               className="bg-gradient-to-r from-orange-600 to-red-600 text-white py-3 px-6 rounded-lg font-medium hover:from-orange-700 hover:to-red-700 transition-colors shadow-lg"
             >
               Submit
-            </button>
-            <button
-              type="button"
-              onClick={skipWord}
-              className="bg-gray-100 border border-gray-300 text-gray-800 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-            >
-              Skip
             </button>
           </div>
         </form>

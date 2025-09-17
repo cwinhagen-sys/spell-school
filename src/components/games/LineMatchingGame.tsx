@@ -252,12 +252,12 @@ export default function LineMatchingGame({ words, translations, onClose, onScore
   if (left.length === 0 || right.length === 0) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-        <div className="rounded-2xl p-8 max-w-md w-full text-center shadow-2xl relative bg-gray-900 text-white border border-white/10">
+        <div className="rounded-2xl p-8 max-w-md w-full text-center shadow-2xl relative bg-white text-gray-800 border border-gray-200">
           <div className="text-6xl mb-4">⏳</div>
           <h2 className="text-2xl font-bold mb-2">Preparing words...</h2>
-          <p className="text-gray-300">No words available for this set yet.</p>
+          <p className="text-gray-600">No words available for this set yet.</p>
           <div className="mt-6">
-            <button onClick={onClose} className="bg-white/10 border border-white/10 text-white py-2 px-4 rounded-lg font-medium hover:bg-white/15 transition-colors">Back</button>
+            <button onClick={onClose} className="bg-gray-100 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors">Back</button>
           </div>
         </div>
       </div>
@@ -266,7 +266,7 @@ export default function LineMatchingGame({ words, translations, onClose, onScore
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-      <div className="rounded-2xl p-6 md:p-8 max-w-3xl w-full max-h-[85vh] overflow-auto shadow-2xl relative bg-gray-900 text-white border border-white/10">
+      <div className="rounded-2xl p-6 md:p-8 max-w-3xl w-full max-h-[85vh] overflow-auto shadow-2xl relative bg-white text-gray-800 border border-gray-200">
         {themeColor && <div className="h-1 rounded-md mb-4" style={{ backgroundColor: themeColor }}></div>}
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -274,26 +274,26 @@ export default function LineMatchingGame({ words, translations, onClose, onScore
             <Link2 className="w-6 h-6 mr-2 text-emerald-400" />
             Matching Pairs
           </h2>
-          <button onClick={onClose} className="text-gray-300 hover:text-white text-2xl transition-colors">×</button>
+          <button onClick={onClose} className="text-gray-600 hover:text-gray-800 text-2xl transition-colors">×</button>
         </div>
 
         {/* Sticky HUD + Actions to avoid scrolling for controls */}
-        <div className="sticky top-0 z-10 bg-gray-900 pb-3">
+        <div className="sticky top-0 z-10 bg-white pb-3">
           {/* HUD: Streak and Timer */}
           <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3 text-gray-300">
+            <div className="flex items-center gap-3 text-gray-600">
               <span className="font-semibold">Streak:</span>
-              <span className="text-emerald-300 font-bold">{streak}</span>
+              <span className="text-emerald-600 font-bold">{streak}</span>
               <span className="text-gray-500">(Max {maxStreak})</span>
             </div>
             <div className="text-right">
               <div className="text-sm text-gray-500">Time</div>
-              <div className="text-lg font-semibold text-white">{Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, '0')}</div>
+              <div className="text-lg font-semibold text-gray-800">{Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, '0')}</div>
             </div>
           </div>
 
           <div className="flex items-center justify-center gap-3">
-            <button onClick={restartGame} className="bg-white/10 border border-white/10 text-white py-2 px-4 rounded-lg font-medium hover:bg-white/15 transition-colors flex items-center space-x-2">
+            <button onClick={restartGame} className="bg-gray-100 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center space-x-2">
               <RotateCcw className="w-4 h-4" />
               <span>Restart</span>
             </button>
@@ -306,20 +306,25 @@ export default function LineMatchingGame({ words, translations, onClose, onScore
         {/* Two Columns */}
         <div className="grid grid-cols-2 gap-8">
           <div>
-            <h3 className="text-gray-300 font-semibold mb-2">Swedish</h3>
+            <h3 className="text-gray-700 font-semibold mb-2">Swedish</h3>
             <div className="space-y-2">
               {left.map((w, idx) => (
                 <button
                   key={`${w}-${idx}`}
                   onClick={() => !isLeftUsed(w) && selectLeft(w)}
                   disabled={isLeftUsed(w)}
-                  className={`w-full text-left px-4 py-3 rounded-lg border whitespace-normal break-words ${
+                  className={`w-full text-left px-4 py-3 rounded-lg border ${
                     isLeftUsed(w)
-                      ? 'border-emerald-400 bg-emerald-600/10 text-emerald-200 cursor-not-allowed'
+                      ? 'border-emerald-400 bg-emerald-100 text-emerald-800 cursor-not-allowed'
                       : selectedLeft === w
-                        ? 'border-emerald-400 bg-emerald-600/10 text-white'
-                        : 'border-white/10 hover:bg-white/10 text-white'
+                        ? 'border-emerald-500 bg-emerald-100 text-emerald-800'
+                        : 'border-gray-300 hover:bg-gray-50 text-gray-800'
                   }`}
+                  style={{ 
+                    wordBreak: 'keep-all',
+                    overflowWrap: 'break-word',
+                    hyphens: 'none'
+                  }}
                 >
                   {w?.trim() || '—'}
                 </button>
@@ -327,20 +332,25 @@ export default function LineMatchingGame({ words, translations, onClose, onScore
             </div>
           </div>
           <div>
-            <h3 className="text-gray-300 font-semibold mb-2">English</h3>
+            <h3 className="text-gray-700 font-semibold mb-2">English</h3>
             <div className="space-y-2">
               {right.map((w, idx) => (
                 <button
                   key={`${w}-${idx}`}
                   onClick={() => !isRightUsed(w) && selectRight(w)}
                   disabled={isRightUsed(w)}
-                  className={`w-full text-left px-4 py-3 rounded-lg border whitespace-normal break-words ${
+                  className={`w-full text-left px-4 py-3 rounded-lg border ${
                     isRightUsed(w)
-                      ? 'border-emerald-400 bg-emerald-600/10 text-emerald-200 cursor-not-allowed'
+                      ? 'border-emerald-400 bg-emerald-100 text-emerald-800 cursor-not-allowed'
                       : selectedRight === w
-                        ? 'border-emerald-400 bg-emerald-600/10 text-white'
-                        : 'border-white/10 hover:bg-white/10 text-white'
+                        ? 'border-emerald-500 bg-emerald-100 text-emerald-800'
+                        : 'border-gray-300 hover:bg-gray-50 text-gray-800'
                   }`}
+                  style={{ 
+                    wordBreak: 'keep-all',
+                    overflowWrap: 'break-word',
+                    hyphens: 'none'
+                  }}
                 >
                   {w?.trim() || '—'}
                 </button>

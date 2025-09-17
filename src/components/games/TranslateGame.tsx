@@ -114,8 +114,8 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
     setShowFeedback(true)
 
     if (isAnswerCorrect) {
-      // +1 for correct (display score only)
-      setScore(score + 1)
+      // +2 for correct (display score only)
+      setScore(score + 2)
       setCorrectCount(prev => prev + 1)
       void logWordAttempt({ 
         word: currentPair.original, 
@@ -180,11 +180,11 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
   }
 
   const finishGame = async (finalCorrectOverride?: number) => {
-    // New rule: +1 per correct, -1 per wrong click, no diminishing
+    // New rule: +2 per correct, -1 per wrong click, no diminishing
     const total = Math.max(1, wordPairs.length || totalWords)
     const finalCorrect = typeof finalCorrectOverride === 'number' ? finalCorrectOverride : correctCount
     const wrong = Math.max(0, wrongClicks)
-    const basePoints = (finalCorrect * 1) - (wrong * 1)
+    const basePoints = (finalCorrect * 2) - (wrong * 1)
     const points = Math.max(0, Math.round(basePoints))
 
     setAwardedPoints(points)

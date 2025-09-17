@@ -5,21 +5,21 @@ import Link from 'next/link'
 export default function SignupPage() {
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center px-6 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800 flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-4xl">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-white mb-4">Welcome to Spell School!</h1>
-          <p className="text-lg text-gray-300">Choose your path to magical learning</p>
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">Welcome to Spell School!</h1>
+          <p className="text-lg text-gray-600">Choose your path to magical learning</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 mb-8">
           {/* Student Option */}
           <Link href="/signup/student">
             <div
-              className="p-8 rounded-2xl border cursor-pointer transition-all duration-300 border-white/10 bg-white/5 hover:bg-white/10 hover:scale-102"
+              className="p-8 rounded-2xl border cursor-pointer transition-all duration-300 border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 hover:scale-105 shadow-lg hover:shadow-xl"
             >
             <div className="text-center">
-              <div className="w-32 h-32 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-600 overflow-hidden">
+              <div className="w-32 h-32 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6 border border-blue-200 overflow-hidden">
                 <img 
                   src="/assets/wizard/wizard_novice.png" 
                   alt="Apprentice Wizard" 
@@ -31,9 +31,9 @@ export default function SignupPage() {
                   }}
                 />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-3">Student</h3>
-              <p className="text-gray-300 text-lg">Learn with interactive games and magical adventures</p>
-              <div className="mt-4 text-sm text-gray-400">
+              <h3 className="text-2xl font-bold text-gray-800 mb-3">Student</h3>
+              <p className="text-gray-600 text-lg">Learn with interactive games and magical adventures</p>
+              <div className="mt-4 text-sm text-gray-500">
                 • Play educational games<br/>
                 • Earn points and level up<br/>
                 • Join your teacher's class
@@ -45,10 +45,10 @@ export default function SignupPage() {
           {/* Teacher Option */}
           <Link href="/signup/teacher">
             <div
-              className="p-8 rounded-2xl border cursor-pointer transition-all duration-300 border-white/10 bg-white/5 hover:bg-white/10 hover:scale-102"
+              className="p-8 rounded-2xl border cursor-pointer transition-all duration-300 border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 hover:scale-105 shadow-lg hover:shadow-xl"
             >
             <div className="text-center">
-              <div className="w-32 h-32 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-600 overflow-hidden">
+              <div className="w-32 h-32 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-200 overflow-hidden">
                 <img 
                   src="/assets/wizard/wizard_powerful.png" 
                   alt="Master Wizard" 
@@ -60,9 +60,9 @@ export default function SignupPage() {
                   }}
                 />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-3">Teacher</h3>
-              <p className="text-gray-300 text-lg">Create assignments and guide your students' journey</p>
-              <div className="mt-4 text-sm text-gray-400">
+              <h3 className="text-2xl font-bold text-gray-800 mb-3">Teacher</h3>
+              <p className="text-gray-600 text-lg">Create assignments and guide your students' journey</p>
+              <div className="mt-4 text-sm text-gray-500">
                 • Create word sets and assignments<br/>
                 • Track student progress<br/>
                 • Manage your classes
@@ -73,9 +73,9 @@ export default function SignupPage() {
         </div>
 
         <div className="text-center mt-8">
-          <p className="text-gray-400">
+          <p className="text-gray-600">
             Already have an account?{' '}
-            <Link href="/" className="text-indigo-400 hover:text-indigo-300 font-medium">
+            <Link href="/" className="text-indigo-600 hover:text-indigo-700 font-medium">
               Sign in here
             </Link>
           </p>

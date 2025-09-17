@@ -127,10 +127,10 @@ export default function MultipleChoiceGame({ words, translations = {}, onClose, 
                   disabled={locked}
                   className={[
                     'w-full text-left px-4 py-3 rounded-lg border transition-transform',
-                    'bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-800',
-                    locked && feedbackIdx !== i ? 'opacity-60' : '',
-                    locked && feedbackIdx === i && feedbackType === 'correct' ? 'bg-emerald-100 border-emerald-400 text-emerald-800 animate-hop' : '',
-                    locked && feedbackIdx === i && feedbackType === 'wrong' ? 'bg-red-100 border-red-400 text-red-800 animate-burr' : ''
+                    locked && feedbackIdx === i && feedbackType === 'correct' ? 'bg-emerald-100 border-emerald-500 text-gray-800 animate-hop' : '',
+                    locked && feedbackIdx === i && feedbackType === 'wrong' ? 'bg-red-100 border-red-500 text-gray-800 animate-burr' : '',
+                    !locked || feedbackIdx !== i ? 'bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-800' : '',
+                    locked && feedbackIdx !== i ? 'opacity-60' : ''
                   ].join(' ')}
                 >
                   {opt}

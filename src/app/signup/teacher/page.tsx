@@ -60,12 +60,22 @@ export default function TeacherSignupPage() {
 
       if (profileError) throw profileError
 
-      setMessage('Account created successfully! Please check your email to verify your account.')
+      // Check if we're in development mode
+      const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost'
       
-      // Redirect to login after a short delay
-      setTimeout(() => {
-        router.push('/')
-      }, 3000)
+      if (isDevelopment) {
+        setMessage('Account created successfully! In development mode, email verification is skipped. You can now log in.')
+        // Redirect to login after a short delay
+        setTimeout(() => {
+          router.push('/')
+        }, 2000)
+      } else {
+        setMessage('Account created successfully! Please check your email to verify your account.')
+        // Redirect to login after a short delay
+        setTimeout(() => {
+          router.push('/')
+        }, 3000)
+      }
 
     } catch (error: any) {
       setMessage(`Error: ${error.message}`)
@@ -82,12 +92,12 @@ export default function TeacherSignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center px-6 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800 flex items-center justify-center px-6 py-12">
       <div className="max-w-6xl w-full">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left Side - Image and Text */}
           <div className="text-center lg:text-left">
-            <div className="w-48 h-48 bg-gray-700 rounded-full flex items-center justify-center mx-auto lg:mx-0 mb-8 border border-gray-600 overflow-hidden">
+            <div className="w-48 h-48 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center mx-auto lg:mx-0 mb-8 border border-green-200 overflow-hidden">
               <img 
                 src="/assets/wizard/wizard_powerful.png" 
                 alt="Teacher Wizard" 
@@ -99,9 +109,9 @@ export default function TeacherSignupPage() {
                 }}
               />
             </div>
-            <h1 className="text-4xl font-bold text-white mb-4">Teacher Sign Up</h1>
-            <p className="text-xl text-gray-300 mb-6">Start your magical teaching journey!</p>
-            <div className="text-gray-400 space-y-2">
+            <h1 className="text-4xl font-bold text-gray-800 mb-4">Teacher Sign Up</h1>
+            <p className="text-xl text-gray-600 mb-6">Start your magical teaching journey!</p>
+            <div className="text-gray-500 space-y-2">
               <p>• Create word sets and assignments</p>
               <p>• Track student progress</p>
               <p>• Manage your classes</p>
@@ -109,12 +119,12 @@ export default function TeacherSignupPage() {
           </div>
 
           {/* Right Side - Form */}
-          <div className="bg-white/10 rounded-2xl border border-white/20 p-8 backdrop-blur-sm">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 p-8 shadow-lg">
             {/* Google Sign Up - Separate Box */}
-            <div className="mb-8 p-4 bg-white/5 rounded-lg border border-white/10">
+            <div className="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <button 
                 onClick={handleGoogleSignup}
-                className="w-full bg-white/10 hover:bg-white/15 rounded-lg px-4 py-3 text-white border border-white/20 transition-all duration-200"
+                className="w-full bg-white hover:bg-gray-50 rounded-lg px-4 py-3 text-gray-700 border border-gray-300 hover:border-gray-400 transition-all duration-200 shadow-sm"
               >
                 Continue with Google
               </button>
@@ -122,17 +132,17 @@ export default function TeacherSignupPage() {
 
             <div className="relative mb-8">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+                <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 text-gray-400">Or create account with email</span>
+                <span className="px-4 text-gray-500 bg-white">Or create account with email</span>
               </div>
             </div>
 
             {/* Teacher Sign Up Form */}
             <form onSubmit={handleEmailSignup} className="space-y-6">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-white mb-3">
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-3">
                   Full Name *
                 </label>
                 <input
@@ -142,13 +152,13 @@ export default function TeacherSignupPage() {
                   value={formData.name}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 rounded-lg bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   placeholder="Enter your full name"
                 />
               </div>
 
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-white mb-3">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-3">
                   Email Address *
                 </label>
                 <input
@@ -158,13 +168,13 @@ export default function TeacherSignupPage() {
                   value={formData.email}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 rounded-lg bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   placeholder="Enter your email address"
                 />
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-white mb-3">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-3">
                   Password *
                 </label>
                 <input
@@ -175,7 +185,7 @@ export default function TeacherSignupPage() {
                   onChange={handleInputChange}
                   required
                   minLength={6}
-                  className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 rounded-lg bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   placeholder="Create a password (min 6 characters)"
                 />
               </div>
@@ -183,7 +193,7 @@ export default function TeacherSignupPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 transition-all duration-200"
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-indigo-700 hover:to-purple-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 transition-all duration-200 shadow-md"
               >
                 {loading ? 'Creating Account...' : 'Create Teacher Account'}
               </button>
@@ -192,17 +202,17 @@ export default function TeacherSignupPage() {
             {message && (
               <div className={`mt-4 p-3 rounded-lg text-center ${
                 message.includes('Error') 
-                  ? 'bg-red-500/20 text-red-200 border border-red-500/30' 
-                  : 'bg-green-500/20 text-green-200 border border-green-500/30'
+                  ? 'bg-red-50 text-red-700 border border-red-200' 
+                  : 'bg-green-50 text-green-700 border border-green-200'
               }`}>
                 {message}
               </div>
             )}
 
             <div className="mt-6 text-center">
-              <p className="text-gray-400">
+              <p className="text-gray-600">
                 Already have an account?{' '}
-                <Link href="/" className="text-indigo-400 hover:text-indigo-300 font-medium">
+                <Link href="/" className="text-indigo-600 hover:text-indigo-700 font-medium">
                   Sign in here
                 </Link>
               </p>
@@ -214,7 +224,7 @@ export default function TeacherSignupPage() {
         <div className="text-center mt-8">
           <Link 
             href="/signup" 
-            className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

@@ -176,3 +176,4 @@ $$ LANGUAGE plpgsql;
 SELECT 'Remaining profiles count' as description, COUNT(*) as count FROM profiles;
 SELECT 'Remaining auth users count' as description, COUNT(*) as count FROM auth.users;
 
+

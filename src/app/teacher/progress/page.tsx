@@ -153,10 +153,24 @@ export default function TeacherProgressPage() {
           return null
         })()
 
-        // Fetch sessions for those students (for aggregates)
+        // Fetch student progress data (using same source as student dashboard)
+        const { data: progressData, error: progressError } = await supabase
+          .from('student_progress')
+          .select('student_id, total_points, games_played, last_played_at')
+          .in('student_id', studentIds)
+          .is('word_set_id', null) // Global progress records only
+          .is('homework_id', null)
+        
+        console.log('Progress DEBUG → student_progress query result:', { 
+          progressCount: progressData?.length || 0, 
+          progressError,
+          studentIdsCount: studentIds.length
+        })
+
+        // Also fetch sessions for accuracy and activity data (but not for points)
         let q = supabase
           .from('game_sessions')
-          .select('student_id, score, accuracy_pct, finished_at')
+          .select('student_id, accuracy_pct, finished_at')
           .in('student_id', studentIds)
           .not('finished_at', 'is', null)
         if (since) q = q.gte('finished_at', since)
@@ -166,17 +180,27 @@ export default function TeacherProgressPage() {
           sessionsCount: sessions?.length || 0, 
           sessionsError,
           timeFilter,
-          since: since ? new Date(since).toISOString() : 'none',
-          studentIdsCount: studentIds.length
+          since: since ? new Date(since).toISOString() : 'none'
         })
 
         const byStudent: Record<string, { points: number; count: number; accSum: number; lastActive: string | null }> = {}
         for (const id of studentIds) byStudent[id] = { points: 0, count: 0, accSum: 0, lastActive: null }
+        
+        // Set points from student_progress (global records)
+        for (const p of (progressData as any[] || [])) {
+          const sid = p.student_id as string
+          const slot = byStudent[sid] || (byStudent[sid] = { points: 0, count: 0, accSum: 0, lastActive: null })
+          slot.points = p.total_points || 0
+          slot.count = p.games_played || 0
+          if (p.last_played_at) {
+            slot.lastActive = p.last_played_at
+          }
+        }
+        
+        // Add accuracy data from sessions
         for (const s of (sessions as any[] || [])) {
           const sid = s.student_id as string
           const slot = byStudent[sid] || (byStudent[sid] = { points: 0, count: 0, accSum: 0, lastActive: null })
-          slot.points += (s.score ?? 0)
-          slot.count += 1
           if (typeof s.accuracy_pct === 'number') slot.accSum += s.accuracy_pct
           const ts = s.finished_at as string | null
           if (ts) {

@@ -51,6 +51,7 @@ export default function StudentDashboard() {
   // Track user activity for better "Playing" status
   useActivityTracking()
   
+  const [user, setUser] = useState<any>(null)
   const [homeworks, setHomeworks] = useState<Homework[]>([])
   const [points, setPoints] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -97,13 +98,25 @@ export default function StudentDashboard() {
     loadStudentData()
   }, [])
 
+  // Debug: Log when homeworks state changes
+  useEffect(() => {
+    console.log('homeworks state changed to:', homeworks.length, 'items')
+  }, [homeworks])
+
 
   const loadStudentData = async () => {
     try {
       setLoading(true)
       
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setUser(user)
+      }
+      
       // Load assigned word sets
       await fetchHomeworks()
+      console.log('After fetchHomeworks, homeworks.length:', homeworks.length)
       
       // Load permanent progress data
       const total = await loadStudentProgress()
@@ -228,6 +241,7 @@ export default function StudentDashboard() {
           .from('assigned_word_sets')
           .select('id, created_at, due_date, quiz_unlocked, word_sets ( id, title, words, color )')
           .in('class_id', classIds)
+          .is('student_id', null) // Only get class assignments, not individual ones
         
         if (classAssignError) {
           console.error('Error fetching class assignments:', classAssignError)
@@ -259,6 +273,8 @@ export default function StudentDashboard() {
       const unique = Array.from(byWordSetId.values())
 
       console.log('Unique word sets:', unique)
+      console.log('First unique item:', unique[0])
+      console.log('First unique item word_sets:', unique[0]?.word_sets)
 
       // No per-set flags applied
 
@@ -294,28 +310,60 @@ export default function StudentDashboard() {
       }
 
       // Map to Homework shape used by games
-      const mapped: Homework[] = unique.map((rec: any) => ({
-        id: rec.word_sets.id,
-        title: rec.word_sets.title,
-        description: 'Vocabulary set',
-        due_date: rec.due_date ? new Date(rec.due_date).toISOString() : (rec.created_at || new Date().toISOString()),
-        vocabulary_words: extractEnglishWords(rec.word_sets.words), // Keep for backward compatibility
-        words: rec.word_sets.words || [], // New field with full word objects
-        teacher_id: '' as any,
-        created_at: rec.created_at || new Date().toISOString(), // Use actual created_at for sorting
-        translations: extractTranslations(rec.word_sets.words), // Add translations
-        color: rec.word_sets.color || undefined,
-      }))
+      console.log('Starting mapping of', unique.length, 'unique items')
+      const mapped: Homework[] = unique.map((rec: any, index: number) => {
+        console.log(`Mapping item ${index}:`, rec)
+        console.log(`Item ${index} word_sets:`, rec.word_sets)
+        console.log(`Item ${index} due_date:`, rec.due_date)
+        console.log(`Item ${index} created_at:`, rec.created_at)
+        const result = {
+          id: rec.word_sets.id,
+          title: rec.word_sets.title,
+          description: 'Vocabulary set',
+          due_date: rec.due_date ? new Date(rec.due_date).toISOString() : null, // Only set due_date if it exists
+          vocabulary_words: extractEnglishWords(rec.word_sets.words), // Keep for backward compatibility
+          words: rec.word_sets.words || [], // New field with full word objects
+          teacher_id: '' as any,
+          created_at: rec.created_at || new Date().toISOString(), // Use actual created_at for sorting
+          translations: extractTranslations(rec.word_sets.words), // Add translations
+          color: rec.word_sets.color || undefined,
+        }
+        console.log(`Mapped item ${index} result:`, result)
+        return result
+      })
+
+      // Filter out assignments that are past due date
+      const today = new Date()
+      today.setHours(23, 59, 59, 999) // End of today
+      
+      console.log('Before filtering, mapped.length:', mapped.length)
+      console.log('Today:', today)
+      
+      const filtered = mapped.filter(homework => {
+        console.log('Filtering homework:', homework.title, 'due_date:', homework.due_date)
+        if (!homework.due_date) {
+          console.log('No due date, keeping:', homework.title)
+          return true // Keep assignments without due date
+        }
+        const dueDate = new Date(homework.due_date)
+        const isNotPastDue = dueDate >= today
+        console.log('Due date check:', homework.title, 'dueDate:', dueDate, 'isNotPastDue:', isNotPastDue)
+        return isNotPastDue // Only keep assignments that are not past due
+      })
+      
+      console.log('After filtering, filtered.length:', filtered.length)
 
       // Sort by created_at (newest first) for dashboard display
-      const sorted = mapped.sort((a, b) => {
+      const sorted = filtered.sort((a, b) => {
         const dateA = new Date(a.created_at).getTime()
         const dateB = new Date(b.created_at).getTime()
         return dateB - dateA // Newest first
       })
 
       console.log('Mapped homeworks (sorted by newest):', sorted)
+      console.log('Setting homeworks to:', sorted.length, 'items')
       setHomeworks(sorted)
+      console.log('setHomeworks called with:', sorted.length, 'items')
     } catch (error) {
       console.error('Error fetching assigned word sets:', error)
     }
@@ -721,7 +769,9 @@ export default function StudentDashboard() {
           <div className="lg:col-span-1 flex flex-col gap-6">
             {/* Welcome Section */}
             <div className="relative overflow-hidden rounded-3xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-lg p-6">
-              <h2 className="text-2xl font-extrabold mb-2 text-gray-800">Welcome back!</h2>
+              <h2 className="text-2xl font-extrabold mb-2 text-gray-800">
+                Welcome back, {user?.user_metadata?.username || user?.email?.split('@')[0] || 'Student'}!
+              </h2>
               <p className="text-gray-600 mb-6">Keep casting spells and leveling up your vocabulary.</p>
               
               <div className="mt-6 flex flex-col gap-3">
@@ -912,200 +962,228 @@ export default function StudentDashboard() {
 
 
 
-        {/* Games Section */}
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-8">
-          <h2 className="text-xl font-bold mb-6 flex items-center">
-            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center mr-3">
-              {/* <Gamepad2 className="w-5 h-5" /> */}
+        {/* Games Section - Tiered Structure */}
+        <div className="space-y-8">
+          {/* Tier 1: Foundation Games */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-lg">
+            <div className="flex items-center mb-6">
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center mr-4">
+                <span className="text-white text-lg font-bold">1</span>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">Foundation Games</h2>
+                <p className="text-sm text-gray-600">Start here to build your vocabulary foundation</p>
+              </div>
             </div>
-            Practice Games
-          </h2>
-          
-          {/* Row 1: Training games with mixed colors */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            {/* Flashcards (blue) */}
-            <GameCard
-              title="Flashcards"
-              color="blue"
-              icon={<span className="text-3xl">🃏</span>}
-              onClick={() => {
-                if (homeworks.length === 0) {
-                  setMessage('No vocabulary sets available. Please wait for your teacher to assign vocabulary.')
-                  return
-                }
-                if (homeworks.length === 1) {
-                  setSelectedHomework(homeworks[0])
-                  setShowFlashcardGame(true)
-                } else {
-                  setPendingGame('flashcards')
-                  setShowHomeworkSelection(true)
-                }
-              }}
-            />
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Flashcards (blue) */}
+              <GameCard
+                title="Flashcards"
+                color="blue"
+                icon={<span className="text-3xl">🃏</span>}
+                onClick={() => {
+                  console.log('Flashcard game clicked, homeworks.length:', homeworks.length)
+                  if (homeworks.length === 0) {
+                    setMessage('No vocabulary sets available. Please wait for your teacher to assign vocabulary.')
+                    return
+                  }
+                  if (homeworks.length === 1) {
+                    setSelectedHomework(homeworks[0])
+                    setShowFlashcardGame(true)
+                  } else {
+                    setPendingGame('flashcards')
+                    setShowHomeworkSelection(true)
+                  }
+                }}
+              />
 
-            {/* Multiple Choice (green) */}
-            <GameCard
-              title="Multiple Choice"
-              color="green"
-              icon={<span className="text-3xl">✅</span>}
-              locked={false}
-              onClick={() => {
-                if (homeworks.length === 0) {
-                  alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
-                  return
-                }
-                if (homeworks.length === 1) {
-                  setSelectedHomework(homeworks[0])
+              {/* Multiple Choice (green) */}
+              <GameCard
+                title="Multiple Choice"
+                color="green"
+                icon={<span className="text-3xl">✅</span>}
+                locked={false}
+                onClick={() => {
+                  if (homeworks.length === 0) {
+                    alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
+                    return
+                  }
+                  if (homeworks.length === 1) {
+                    setSelectedHomework(homeworks[0])
+                    setShowChoice(true)
+                    return
+                  }
+                  if (!selectedHomework) {
+                    setPendingGame('choice')
+                    setShowHomeworkSelection(true)
+                    return
+                  }
                   setShowChoice(true)
-                  return
-                }
-                if (!selectedHomework) {
-                  setPendingGame('choice')
-                  setShowHomeworkSelection(true)
-                  return
-                }
-                setShowChoice(true)
-              }}
-            />
+                }}
+              />
 
-            {/* Memory Game (orange) */}
-            <GameCard
-              title="Memory Game"
-              color="orange"
-              icon={<span className="text-3xl">🧠</span>}
-              onClick={startWordMatchingGame}
-            />
+              {/* Memory Game (orange) */}
+              <GameCard
+                title="Memory Game"
+                color="orange"
+                icon={<span className="text-3xl">🧠</span>}
+                onClick={startWordMatchingGame}
+              />
 
-            {/* Matching Pairs (purple) */}
-            <GameCard
-              title="Matching Pairs"
-              color="purple"
-              icon={<span className="text-3xl">🔗</span>}
-              onClick={() => {
-                if (homeworks.length === 0) {
-                  alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
-                  return
-                }
-                if (homeworks.length > 1) {
-                  setPendingGame('connect')
-                  setShowHomeworkSelection(true)
-                  return
-                }
-                const only = homeworks[0]
-                if (!selectedHomework) setSelectedHomework(only)
-                setShowLineMatchingGame(true)
-              }}
-            />
-
+              {/* Matching Pairs (purple) */}
+              <GameCard
+                title="Matching Pairs"
+                color="purple"
+                icon={<span className="text-3xl">🔗</span>}
+                onClick={() => {
+                  if (homeworks.length === 0) {
+                    alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
+                    return
+                  }
+                  if (homeworks.length > 1) {
+                    setPendingGame('connect')
+                    setShowHomeworkSelection(true)
+                    return
+                  }
+                  const only = homeworks[0]
+                  if (!selectedHomework) setSelectedHomework(only)
+                  setShowLineMatchingGame(true)
+                }}
+              />
+            </div>
           </div>
 
-          {/* Row 2: More training games with mixed colors */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <GameCard
-              title="Translate"
-              color="yellow"
-              icon={<span className="text-3xl">🌐</span>}
-              onClick={() => {
-                if (homeworks.length === 0) {
-                  alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
-                  return
-                }
-                if (homeworks.length === 1) {
-                  setSelectedHomework(homeworks[0])
-                  setShowTranslateGame(true)
-                } else {
-                  setPendingGame('translate')
-                  setShowHomeworkSelection(true)
-                }
-              }}
-            />
-            {/* Typing Challenge (pink) */}
-            <GameCard
-              title="Typing Challenge"
-              color="pink"
-              icon={<span className="text-3xl">⌨️</span>}
-              onClick={() => {
-                if (homeworks.length === 0) {
-                  alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
-                  return
-                }
-                if (homeworks.length === 1) {
-                  setSelectedHomework(homeworks[0])
-                  setShowTypingChallenge(true)
-                } else {
-                  setPendingGame('typing')
-                  setShowHomeworkSelection(true)
-                }
-              }}
-            />
-            {/* Sentence Gap (teal) */}
-            <GameCard
-              title="Sentence Gap"
-              color="teal"
-              icon={<span className="text-3xl">📖</span>}
-              onClick={() => {
-                if (homeworks.length === 0) {
-                  alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
-                  return
-                }
-                if (homeworks.length === 1) {
-                  setSelectedHomework(homeworks[0])
-                  setShowStoryGap(true)
-                } else {
-                  setPendingGame('storygap')
-                  setShowHomeworkSelection(true)
-                }
-              }}
-            />
+          {/* Tier 2: Advanced Games */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-lg">
+            <div className="flex items-center mb-6">
+              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mr-4">
+                <span className="text-white text-lg font-bold">2</span>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">Advanced Games</h2>
+                <p className="text-sm text-gray-600">Challenge yourself with more complex exercises</p>
+              </div>
+            </div>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <GameCard
+                title="Translate"
+                color="yellow"
+                icon={<span className="text-3xl">🌐</span>}
+                onClick={() => {
+                  if (homeworks.length === 0) {
+                    alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
+                    return
+                  }
+                  if (homeworks.length === 1) {
+                    setSelectedHomework(homeworks[0])
+                    setShowTranslateGame(true)
+                  } else {
+                    setPendingGame('translate')
+                    setShowHomeworkSelection(true)
+                  }
+                }}
+              />
+              {/* Typing Challenge (pink) */}
+              <GameCard
+                title="Typing Challenge"
+                color="pink"
+                icon={<span className="text-3xl">⌨️</span>}
+                onClick={() => {
+                  if (homeworks.length === 0) {
+                    alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
+                    return
+                  }
+                  if (homeworks.length === 1) {
+                    setSelectedHomework(homeworks[0])
+                    setShowTypingChallenge(true)
+                  } else {
+                    setPendingGame('typing')
+                    setShowHomeworkSelection(true)
+                  }
+                }}
+              />
+              {/* Sentence Gap (teal) */}
+              <GameCard
+                title="Sentence Gap"
+                color="teal"
+                icon={<span className="text-3xl">📖</span>}
+                onClick={() => {
+                  if (homeworks.length === 0) {
+                    alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
+                    return
+                  }
+                  if (homeworks.length === 1) {
+                    setSelectedHomework(homeworks[0])
+                    setShowStoryGap(true)
+                  } else {
+                    setPendingGame('storygap')
+                    setShowHomeworkSelection(true)
+                  }
+                }}
+              />
 
-            {/* Roulette Game (red) */}
-            <GameCard
-              title="Roulette"
-              color="red"
-              icon={<span className="text-3xl">🎰</span>}
-              onClick={() => {
-                if (homeworks.length === 0) {
-                  alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
-                  return
-                }
-                if (homeworks.length > 1) {
-                  setPendingGame('roulette')
-                  setShowHomeworkSelection(true)
-                  return
-                }
-                const only = homeworks[0]
-                if (!selectedHomework) setSelectedHomework(only)
-                setShowRoulette(true)
-              }}
-            />
-
+              {/* Roulette Game (red) */}
+              <GameCard
+                title="Roulette"
+                color="red"
+                icon={<span className="text-3xl">🎰</span>}
+                onClick={() => {
+                  if (homeworks.length === 0) {
+                    alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
+                    return
+                  }
+                  if (homeworks.length > 1) {
+                    setPendingGame('roulette')
+                    setShowHomeworkSelection(true)
+                    return
+                  }
+                  const only = homeworks[0]
+                  if (!selectedHomework) setSelectedHomework(only)
+                  setShowRoulette(true)
+                }}
+              />
+            </div>
           </div>
 
-          {/* Row 3: Quiz */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Quiz (purple) */}
-            <GameCard
-              title="Quiz"
-              color="purple"
-              icon={<span className="text-3xl">📝</span>}
-              locked={false}
-              onClick={async () => {
-                if (homeworks.length === 0) {
-                  alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
-                  return
-                }
-                if (homeworks.length > 1) {
-                  setPendingGame('quiz')
-                  setShowHomeworkSelection(true)
-                  return
-                }
-                const only = homeworks[0]
-                if (!selectedHomework) setSelectedHomework(only)
-                setShowQuiz(true)
-              }}
-            />
+          {/* Quiz Section - Special */}
+          <div className="rounded-2xl border border-gray-200 bg-gradient-to-r from-purple-50 to-pink-50 p-8 shadow-lg">
+            <div className="flex items-center mb-6">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center mr-4">
+                <span className="text-white text-lg font-bold">📝</span>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">Quiz</h2>
+                <p className="text-sm text-gray-600">Test your knowledge with comprehensive quizzes</p>
+              </div>
+            </div>
+            
+            <div className="flex justify-center">
+              <div className="w-full max-w-sm">
+                <GameCard
+                  title="Quiz"
+                  color="purple"
+                  icon={<span className="text-3xl">📝</span>}
+                  locked={false}
+                  onClick={async () => {
+                    if (homeworks.length === 0) {
+                      alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
+                      return
+                    }
+                    if (homeworks.length > 1) {
+                      setPendingGame('quiz')
+                      setShowHomeworkSelection(true)
+                      return
+                    }
+                    const only = homeworks[0]
+                    if (!selectedHomework) setSelectedHomework(only)
+                    setShowQuiz(true)
+                  }}
+                />
+              </div>
+            </div>
           </div>
-
         </div>
 
         {/* Message Display */}

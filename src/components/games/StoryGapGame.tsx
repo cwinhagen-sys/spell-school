@@ -85,7 +85,7 @@ export default function StoryGapGame({ words, onClose, trackingContext, themeCol
         setLoading(true)
         setError(null)
         const controller = new AbortController()
-        const timeoutId = window.setTimeout(() => controller.abort(), 30000)
+        const timeoutId = window.setTimeout(() => controller.abort(), 60000)
         const res = await fetch('/api/story-gap', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -286,12 +286,9 @@ export default function StoryGapGame({ words, onClose, trackingContext, themeCol
   if (loading && difficulty) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-        <div className="rounded-2xl p-8 max-w-md w-full shadow-2xl relative bg-white text-gray-800 border border-gray-200 text-center">
-          <div className="mx-auto mb-4 w-24 h-24 rounded-2xl bg-gray-100 border border-gray-200 flex items-center justify-center animate-pulse">
-            <img src="/assets/wizard/wizard_book.png" alt="Loading" className="w-16 h-16 animate-bounce" />
-          </div>
-          <div className="text-lg text-gray-800">Conjuring your story…</div>
-          <div className="mt-2 text-sm text-gray-600">Shuffling words and crafting gaps</div>
+        <div className="rounded-2xl p-8 max-w-md w-full shadow-2xl relative bg-white text-gray-800 border-2 border-indigo-300 animate-pulse text-center">
+          <div className="text-lg text-gray-800 font-semibold">Generating gap-sentences...</div>
+          <div className="mt-2 text-sm text-gray-600">Please wait while we create your story</div>
         </div>
       </div>
     )
@@ -356,25 +353,7 @@ export default function StoryGapGame({ words, onClose, trackingContext, themeCol
 
         <div className="mb-4 flex items-center justify-between gap-4">
           <div className="text-sm text-gray-600">
-            {difficulty ? '' : 'Välj svårighetsgrad för att generera meningarna.'}
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-600">Level:</span>
-            <button
-              className={`px-2 py-1 rounded ${difficulty==='green'?'bg-emerald-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-              onClick={() => setDifficulty('green')}
-              title="Simple, student-friendly"
-            >Green</button>
-            <button
-              className={`px-2 py-1 rounded ${difficulty==='yellow'?'bg-amber-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-              onClick={() => setDifficulty('yellow')}
-              title="Moderate complexity"
-            >Yellow</button>
-            <button
-              className={`px-2 py-1 rounded ${difficulty==='red'?'bg-rose-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-              onClick={() => setDifficulty('red')}
-              title="More advanced"
-            >Red</button>
+            {difficulty ? `Current level: ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}` : 'Välj svårighetsgrad för att generera meningarna.'}
           </div>
         </div>
 
@@ -397,7 +376,7 @@ export default function StoryGapGame({ words, onClose, trackingContext, themeCol
                   return (
                     <span
                       key={`${w}-${i}`}
-                      className={`select-none px-3 py-1 rounded-full border text-sm ${isUsed ? 'bg-blue-600 border-blue-500 text-white' : 'bg-white/10 border-white/20 text-white'}`}
+                      className={`select-none px-3 py-1 rounded-full border text-sm ${isUsed ? 'bg-blue-600 border-blue-500 text-white' : 'bg-white border-gray-300 text-gray-800 hover:bg-gray-50'}`}
                       title={isUsed ? 'Used in a blank' : 'Not used yet'}
                     >
                       {w}
@@ -411,16 +390,16 @@ export default function StoryGapGame({ words, onClose, trackingContext, themeCol
         </div>
 
         <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-300">Blanks: {blanks} • Filled: {Object.values(answers).filter(v => String(v || '').trim()).length}</div>
+          <div className="text-sm text-gray-600">Blanks: {blanks} • Filled: {Object.values(answers).filter(v => String(v || '').trim()).length}</div>
           <div className="flex gap-2">
-            <button onClick={checkAnswersVisual} disabled={!allAnswered || submitted} className="px-4 py-2 bg-white/10 border border-white/10 rounded-lg disabled:bg-gray-600">Check</button>
-            <button onClick={submit} disabled={!allCorrect || submitted} className="px-4 py-2 bg-blue-600 rounded-lg disabled:bg-gray-600">Submit</button>
-            <button onClick={onClose} className="px-4 py-2 bg-white/10 border border-white/10 rounded-lg">Close</button>
+            <button onClick={checkAnswersVisual} disabled={!allAnswered || submitted} className="px-4 py-2 bg-gray-100 border border-gray-300 text-gray-800 rounded-lg hover:bg-gray-200 disabled:bg-gray-300 disabled:text-gray-500">Check</button>
+            <button onClick={submit} disabled={!allCorrect || submitted} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500">Submit</button>
+            <button onClick={onClose} className="px-4 py-2 bg-gray-100 border border-gray-300 text-gray-800 rounded-lg hover:bg-gray-200">Close</button>
           </div>
         </div>
 
         {submitted && (
-          <div className="mt-4 text-right text-gray-200">Rätt: {Math.floor(score / 2)} / {blanks} • Poäng: {score} / {blanks * 2}</div>
+          <div className="mt-4 text-right text-gray-600">Rätt: {Math.floor(score / 2)} / {blanks} • Poäng: {score} / {blanks * 2}</div>
         )}
 
         {/* Facit removed per requirements */}

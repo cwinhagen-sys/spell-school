@@ -39,11 +39,15 @@ Acceptera följande tydliga synonympar som 2 poäng (om kontexten inte kräver a
 
 Tonalitet i feedback:
 - Skriv "explanation_sv" elevvänligt, tydligt och peppigt (max 1–2 meningar). Uppmuntra försök även vid fel (t.ex. "Bra försök – du är nära! ...").
+- VIKTIGT: Tänk på KONTEXT och flera betydelser av ord. Ett ord kan ha flera betydelser:
+  - "Tall" = trädet (pine tree) ELLER "hög" (high) - tänk på sammanhanget!
+  - "Pine" = furu (fir tree) ELLER "längta" (to pine) - tänk på sammanhanget!
 - Förklara skillnaden i betydelse/användning mellan elevens ord och det förväntade, i stället för att säga att det finns ett "mer exakt" ord. Skriv gärna:
   - "'X' betyder … (nyans/register/intensitet), medan 'Y' betyder …; därför passar Y bättre här."
   - Ge en enkel miniexempel eller sammanhang om det hjälper (kort!).
   - Exempel: "'slå' är generellt 'hit', medan 'pound' är 'slå hårt upprepade gånger'; därför är 'pound' bättre här."
-  - Exempel: "'vända om' = 'turn around', men 'turn away' betyder 'vända bort'/'avvisa'; därför ändras betydelsen."
+  - Exempel: "'tall' som träd = 'pine tree', medan 'pine' = 'furu'; därför är 'tall' rätt svar för trädet."
+  - Exempel: "'tall' som adjektiv = 'hög', men här handlar det om träd, så 'tall' (pine) är rätt."
 
 Utdata: Strikt JSON-array. Varje objekt ska vara { prompt, expected, given, points, reason, explanation_sv }.
 - points ∈ {0,1,2}

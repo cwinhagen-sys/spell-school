@@ -232,7 +232,7 @@ export default function TeacherWordSetsPage() {
           </div>
           <div className="space-y-4 mb-4">
             {rows.map((r, i) => (
-              <div key={i} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
+              <div key={i} data-word-index={i} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <input value={r.en} onPaste={handleCreatePasteEn} onChange={e=>{
                     const copy=[...rows]; copy[i]={...copy[i], en:e.target.value}; setRows(copy)
@@ -244,8 +244,8 @@ export default function TeacherWordSetsPage() {
                     <button onClick={()=>removeRow(i)} className="px-3 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300">-</button>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-600">Image:</span>
+                <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
+                  <span className="text-sm font-medium text-gray-700">Image:</span>
                   <ImageSelector
                     value={r.image_url}
                     onChange={(imageUrl) => {
@@ -259,12 +259,8 @@ export default function TeacherWordSetsPage() {
                       setRows(copy)
                     }}
                     word={r.en || 'word'}
+                    wordIndex={i}
                   />
-                  {r.en && !r.image_url && (
-                    <span className="text-xs text-blue-600">
-                      💡 Type a word above, then click "Add image" for auto-suggestions
-                    </span>
-                  )}
                 </div>
               </div>
             ))}
@@ -289,7 +285,7 @@ export default function TeacherWordSetsPage() {
                     <ColorSelect value={editColor} onChange={setEditColor} options={colorOptions} />
                     <div className="space-y-4">
                       {editRows.map((r, i) => (
-                        <div key={i} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
+                        <div key={i} data-word-index={i} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
                           <div className="grid grid-cols-2 gap-3 mb-3">
                             <input
                               value={r.en}
@@ -309,8 +305,8 @@ export default function TeacherWordSetsPage() {
                               <button onClick={()=>removeEditRowAt(i)} className="px-3 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300">-</button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm text-gray-600">Image:</span>
+                          <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
+                            <span className="text-sm font-medium text-gray-700">Image:</span>
                             <ImageSelector
                               value={r.image_url}
                               onChange={(imageUrl) => {
@@ -324,12 +320,8 @@ export default function TeacherWordSetsPage() {
                                 setEditRows(copy)
                               }}
                               word={r.en || 'word'}
+                              wordIndex={i}
                             />
-                            {r.en && !r.image_url && (
-                              <span className="text-xs text-blue-600">
-                                💡 Type a word above, then click "Add image" for auto-suggestions
-                              </span>
-                            )}
                           </div>
                         </div>
                       ))}
@@ -348,7 +340,7 @@ export default function TeacherWordSetsPage() {
                       }} className="w-full bg-transparent text-gray-800 font-medium outline-none border-b border-gray-300 focus:border-indigo-500" />
                       <div className="text-gray-600 text-sm flex items-center gap-2">
                         <span>{ws.words.length} words</span>
-                        {ws.color && <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ backgroundColor: ws.color }}></span><span className="text-gray-500">{ws.color}</span></span>}
+                        {ws.color && <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ backgroundColor: ws.color }}></span></span>}
                       </div>
                     </div>
                     <div className="flex items-center gap-3">

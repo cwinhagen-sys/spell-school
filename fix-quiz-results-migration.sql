@@ -49,3 +49,4 @@ FROM information_schema.columns
 WHERE table_name = 'student_progress' 
 ORDER BY ordinal_position;
 
+
