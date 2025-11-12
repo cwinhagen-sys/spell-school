@@ -47,3 +47,15 @@ SELECT auth.uid() as current_user_id;
 --      FROM class_students 
 --      WHERE student_id = 'REPLACE_WITH_STUDENT_ID'
 --    );
+
+
+
+
+
+
+
+
+
+
+
+

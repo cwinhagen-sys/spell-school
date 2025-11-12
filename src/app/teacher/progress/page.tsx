@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Trophy, Target, Clock3, Gamepad2, Filter, ChevronDown, BarChart3, RefreshCw } from 'lucide-react'
+import { Trophy, Target, Clock3, Gamepad2, Filter, ChevronDown, BarChart3 } from 'lucide-react'
 
 type StudentRow = {
   id: string
@@ -375,14 +375,6 @@ export default function TeacherProgressPage() {
             <BarChart3 className="w-6 h-6 text-indigo-600" />
             Student Progress
           </h1>
-          <button
-            onClick={() => setRefreshTrigger(prev => prev + 1)}
-            className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 rounded text-sm transition-colors shadow-md"
-            disabled={loading}
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
           <div className="flex items-center gap-4 text-sm">
             {(() => {
               const activeStudents = rows.filter(s => s.lastActive && formatLastActive(s.lastActive).isPlaying).length

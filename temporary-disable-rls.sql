@@ -8,3 +8,15 @@ ALTER TABLE student_progress DISABLE ROW LEVEL SECURITY;
 COMMENT ON TABLE student_progress IS 'RLS temporarily disabled for testing - RE-ENABLE AFTER TESTING!';
 
 
+
+
+
+
+
+
+
+
+
+
+
+

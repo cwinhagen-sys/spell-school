@@ -17,3 +17,15 @@ WHERE last_active IS NULL;
 COMMENT ON COLUMN profiles.last_active IS 'Tracks when the user was last active (logged in or performed an action)';
 
 
+
+
+
+
+
+
+
+
+
+
+
+

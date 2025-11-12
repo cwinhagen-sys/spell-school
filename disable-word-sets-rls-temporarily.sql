@@ -22,3 +22,15 @@ WHERE tablename = 'word_sets';
 
 -- 4. Test that we can access word sets
 SELECT 'Word sets RLS disabled - student assignments should work now' as status;
+
+
+
+
+
+
+
+
+
+
+
+

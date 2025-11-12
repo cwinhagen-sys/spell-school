@@ -54,3 +54,15 @@ CREATE POLICY "word_sets_student_simple" ON word_sets
 
 -- 5. Verify
 SELECT 'RLS policies created successfully' as status;
+
+
+
+
+
+
+
+
+
+
+
+

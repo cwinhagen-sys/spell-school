@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import GridConfigModal, { GridConfig } from '@/components/GridConfigModal'
 
-type WordSet = { id: string; title: string; color?: string }
+type WordSet = { id: string; title: string; color?: string; words?: Array<{ en: string; sv: string }> }
 type Class = { id: string; name: string }
 type Student = { id: string; email: string; role: string; display?: string }
-type Assignment = { id: string; word_set_title: string; word_set_color?: string; class_name?: string; student_email?: string }
+type Assignment = { id: string; word_set_title: string; word_set_color?: string; class_name?: string; student_name?: string }
 
 export default function AssignWordSetsPage() {
   const [wordSets, setWordSets] = useState<WordSet[]>([])
@@ -17,10 +18,15 @@ export default function AssignWordSetsPage() {
   const [selectedWordSet, setSelectedWordSet] = useState<string>('')
   const [targetClass, setTargetClass] = useState<string>('')
   const [targetStudent, setTargetStudent] = useState<string>('')
+  const [selectedClasses, setSelectedClasses] = useState<string[]>([])
   const [dueDate, setDueDate] = useState<string>('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [assignments, setAssignments] = useState<Assignment[]>([])
+  const [showClassDropdown, setShowClassDropdown] = useState(false)
+  const [showGridConfig, setShowGridConfig] = useState(false)
+  const [wordSetForConfig, setWordSetForConfig] = useState<WordSet | null>(null)
+  const [gridConfigs, setGridConfigs] = useState<Record<string, GridConfig[]>>({}) // word_set_id -> grids
 
   useEffect(() => {
     const init = async () => {
@@ -53,7 +59,18 @@ export default function AssignWordSetsPage() {
       }
     }
     init()
-  }, [])
+
+    // Close dropdown when clicking outside
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (showClassDropdown && !target.closest('.class-dropdown-container')) {
+        setShowClassDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showClassDropdown])
 
   // (Removed debug exposure)
 
@@ -80,13 +97,14 @@ export default function AssignWordSetsPage() {
         if (ids.length > 0) {
           const { data: profs } = await supabase
             .from('profiles')
-            .select('id,email,role,display_alias')
+            .select('id,email,role,username')
             .in('id', ids)
           list = (profs || []).map((p: any) => ({
             id: p.id,
             email: p.email,
             role: p.role,
-            display: ((p.display_alias || (p.email ? String(p.email).split('@')[0] : undefined)) as string | undefined)
+            display: p.username || 'Student',
+            username: p.username
           }))
           // If profiles are unreadable due to RLS or missing, still show raw IDs
           if ((!profs || profs.length === 0) && ids.length > 0) {
@@ -110,13 +128,14 @@ export default function AssignWordSetsPage() {
             if (altIds.length > 0) {
               const { data: profs2 } = await supabase
                 .from('profiles')
-                .select('id,email,role,display_alias')
+                .select('id,email,role,username')
                 .in('id', altIds)
               const mapped = (profs2 || []).map((p: any) => ({
                 id: p.id,
                 email: p.email,
                 role: p.role,
-                display: ((p.display_alias || (p.email ? String(p.email).split('@')[0] : undefined)) as string | undefined)
+                display: p.username || 'Student',
+                username: p.username
               }))
               list = mapped.length > 0 ? mapped : altIds.map((sid: string) => ({ id: sid, email: '', role: '', display: undefined }))
             }
@@ -136,13 +155,14 @@ export default function AssignWordSetsPage() {
             if (studentIds.length > 0) {
               const { data: profs } = await supabase
                 .from('profiles')
-                .select('id,email,role,display_alias')
+                .select('id,email,role,username')
                 .in('id', studentIds)
               list = (profs || []).map((p: any) => ({
                 id: p.id,
                 email: p.email,
                 role: p.role,
-                display: (p.display_alias || (p.email ? String(p.email).split('@')[0] : undefined)) as string | undefined
+                display: p.username || 'Student',
+                username: p.username
               }))
             }
           } catch (_) {
@@ -156,14 +176,14 @@ export default function AssignWordSetsPage() {
           try {
             const { data: joined } = await supabase
               .from('class_students')
-              .select('student_id, profiles!inner(id,email,role,display_alias), classes!inner(id,teacher_id)')
+              .select('student_id, profiles!inner(id,email,role,username), classes!inner(id,teacher_id)')
               .eq('classes.teacher_id', user.id)
               .eq('class_id', targetClass)
             const byId: Record<string, any> = {}
             for (const row of (joined as any[] || [])) {
               const prof = row.profiles || {}
-              const disp = (prof.display_alias || (prof.email ? String(prof.email).split('@')[0] : undefined)) as string | undefined
-              byId[row.student_id] = { email: prof.email as string | undefined, display: disp }
+              const disp = prof.username || 'Student'
+              byId[row.student_id] = { email: prof.email as string | undefined, display: disp, username: prof.username }
             }
             list = list.map(s => {
               const info = byId[s.id]
@@ -172,6 +192,7 @@ export default function AssignWordSetsPage() {
                 ...s,
                 email: s.email || info.email || '',
                 display: s.display || info.display,
+                username: (s as any).username || info.username
               }
             })
           } catch (_) {
@@ -189,13 +210,35 @@ export default function AssignWordSetsPage() {
     try {
       const { data, error } = await supabase
         .from('word_sets')
-        .select('id, title, color')
+        .select('id, title, color, words')
         .eq('teacher_id', (await supabase.auth.getUser()).data.user?.id)
         .order('created_at', { ascending: false })
       
       if (error) throw error
       
-      setWordSets(data || [])
+      const sets = (data || []).map(ws => ({
+        id: ws.id,
+        title: ws.title,
+        color: ws.color,
+        words: ws.words || []
+      }))
+      
+      setWordSets(sets)
+      
+      // Load existing grid configurations if they exist
+      const configs: Record<string, GridConfig[]> = {}
+      for (const ws of sets) {
+        const { data: configData } = await supabase
+          .from('word_sets')
+          .select('grid_config')
+          .eq('id', ws.id)
+          .single()
+        
+        if (configData?.grid_config) {
+          configs[ws.id] = configData.grid_config
+        }
+      }
+      setGridConfigs(configs)
     } catch (error) {
       console.error('Error loading word sets:', error)
       setMessage('Failed to load word sets')
@@ -208,6 +251,7 @@ export default function AssignWordSetsPage() {
         .from('classes')
         .select('id, name')
         .eq('teacher_id', (await supabase.auth.getUser()).data.user?.id)
+        .is('deleted_at', null) // Only get non-deleted classes
         .order('created_at', { ascending: false })
       
       if (error) throw error
@@ -271,7 +315,7 @@ export default function AssignWordSetsPage() {
           student_id,
           word_sets!inner(title, color),
           classes(name),
-          profiles(email)
+          profiles(username)
         `)
         .order('created_at', { ascending: false })
       
@@ -282,7 +326,7 @@ export default function AssignWordSetsPage() {
         word_set_title: item.word_sets?.title || 'Unknown',
         word_set_color: item.word_sets?.color,
         class_name: item.class_id ? item.classes?.name : 'Individual Assignment',
-        student_email: item.student_id ? item.profiles?.email : undefined
+        student_name: item.student_id ? item.profiles?.username : undefined
       }))
       
       setAssignments(formattedAssignments)
@@ -291,6 +335,28 @@ export default function AssignWordSetsPage() {
       setMessage('Failed to load assignments')
     }
   }
+
+  const handleGridConfigSave = async (wordSetId: string, grids: GridConfig[]) => {
+    try {
+      // Save grid configuration to word_sets table
+      const { error } = await supabase
+        .from('word_sets')
+        .update({ grid_config: grids })
+        .eq('id', wordSetId)
+
+      if (error) throw error
+
+      // Update local state
+      setGridConfigs(prev => ({ ...prev, [wordSetId]: grids }))
+      setShowGridConfig(false)
+      setWordSetForConfig(null)
+      setMessage('Grid configuration saved!')
+    } catch (error) {
+      console.error('Error saving grid config:', error)
+      setMessage('Failed to save grid configuration')
+    }
+  }
+
 
   const assignToClass = async () => {
     if (!selectedWordSet || !targetClass) {
@@ -302,6 +368,25 @@ export default function AssignWordSetsPage() {
     setMessage('')
 
     try {
+      // Check if assignment already exists
+      const { data: existing, error: checkError } = await supabase
+        .from('assigned_word_sets')
+        .select('id')
+        .eq('word_set_id', selectedWordSet)
+        .eq('class_id', targetClass)
+        .is('student_id', null)
+        .single()
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError
+      }
+
+      if (existing) {
+        setMessage('This word set is already assigned to this class!')
+        setLoading(false)
+        return
+      }
+
       // Create a single class assignment (not individual student assignments)
       const { error } = await supabase
         .from('assigned_word_sets')
@@ -327,6 +412,88 @@ export default function AssignWordSetsPage() {
     }
   }
 
+  const assignToSelectedClasses = async () => {
+    if (!selectedWordSet || selectedClasses.length === 0) {
+      setMessage('Please select word set and at least one class')
+      return
+    }
+
+    setLoading(true)
+    setMessage('')
+
+    try {
+      let successCount = 0
+      let skippedCount = 0
+      const errors: string[] = []
+
+      // Process each selected class
+      for (const classId of selectedClasses) {
+        try {
+          // Check if assignment already exists
+          const { data: existing, error: checkError } = await supabase
+            .from('assigned_word_sets')
+            .select('id')
+            .eq('word_set_id', selectedWordSet)
+            .eq('class_id', classId)
+            .is('student_id', null)
+            .single()
+
+          if (checkError && checkError.code !== 'PGRST116') {
+            throw checkError
+          }
+
+          if (existing) {
+            skippedCount++
+            continue
+          }
+
+          // Create assignment for this class
+          const { error } = await supabase
+            .from('assigned_word_sets')
+            .insert({ 
+              word_set_id: selectedWordSet, 
+              class_id: classId,
+              student_id: null, // Must be null due to constraint
+              due_date: dueDate || null,
+              quiz_unlocked: true
+            })
+
+          if (error) throw error
+          successCount++
+        } catch (error) {
+          console.error(`Error assigning to class ${classId}:`, error)
+          errors.push(`Class ${classId}: ${error}`)
+        }
+      }
+
+      // Set appropriate message
+      if (successCount > 0) {
+        let message = `Successfully assigned to ${successCount} class${successCount !== 1 ? 'es' : ''}!`
+        if (skippedCount > 0) {
+          message += ` (${skippedCount} already assigned)`
+        }
+        setMessage(message)
+      } else {
+        setMessage('No assignments created. All selected classes already have this word set.')
+      }
+
+      if (errors.length > 0) {
+        setMessage(`Partial success: ${successCount} assigned, ${errors.length} errors`)
+      }
+
+      // Clear only class selections and due date, keep word set selected
+      setSelectedClasses([])
+      setDueDate('')
+      setShowClassDropdown(false)
+      await loadAssignments()
+    } catch (error) {
+      console.error('Error in batch assignment:', error)
+      setMessage('Failed to assign to classes')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const assignToStudent = async () => {
     if (!selectedWordSet || !targetStudent) {
       setMessage('Please select both word set and student')
@@ -337,6 +504,25 @@ export default function AssignWordSetsPage() {
     setMessage('')
 
     try {
+      // Check if assignment already exists
+      const { data: existing, error: checkError } = await supabase
+        .from('assigned_word_sets')
+        .select('id')
+        .eq('word_set_id', selectedWordSet)
+        .eq('student_id', targetStudent)
+        .is('class_id', null)
+        .single()
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError
+      }
+
+      if (existing) {
+        setMessage('This word set is already assigned to this student!')
+        setLoading(false)
+        return
+      }
+
       const { error } = await supabase
         .from('assigned_word_sets')
         .insert({ 
@@ -349,8 +535,8 @@ export default function AssignWordSetsPage() {
 
       if (error) throw error
       setMessage('Successfully assigned to student!')
-      setSelectedWordSet('')
       setTargetStudent('')
+      setTargetClass('')
       setDueDate('')
       await loadAssignments()
     } catch (error) {
@@ -415,38 +601,120 @@ export default function AssignWordSetsPage() {
             </div>
 
             {/* Class Assignment */}
+            <div className="space-y-2 relative">
+              <div className="font-medium text-gray-600">Assign to Classes</div>
+              {classes.length > 0 ? (
+                <div className="flex gap-2 items-center">
+                  <div className="flex-1 relative class-dropdown-container">
+                    <button
+                      type="button"
+                      onClick={() => setShowClassDropdown(!showClassDropdown)}
+                      className="w-full h-10 px-3 text-sm rounded bg-white text-gray-800 border border-gray-300 shadow-sm text-left cursor-pointer hover:bg-gray-50"
+                    >
+                      {selectedClasses.length === 0 
+                        ? "Select classes..." 
+                        : `${selectedClasses.length} class${selectedClasses.length !== 1 ? 'es' : ''} selected`
+                      }
+                    </button>
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                      <svg className={`w-4 h-4 text-gray-400 transition-transform ${showClassDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                    
+                    {/* Simple dropdown with checkboxes */}
+                    {showClassDropdown && (
+                      <div className="absolute z-[9999] w-full mt-1 bg-white border border-gray-300 rounded-md shadow-xl max-h-32 overflow-y-auto">
+                        {classes.length > 1 && (
+                          <div className="px-3 py-2 border-b border-gray-200 bg-gray-50 flex gap-2">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setSelectedClasses(classes.map(c => c.id))
+                              }}
+                              className="text-xs px-2 py-1 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-100 rounded"
+                            >
+                              Select All
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setSelectedClasses([])
+                              }}
+                              className="text-xs px-2 py-1 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded"
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        )}
+                        {classes.map(c => (
+                          <label key={c.id} className="flex items-center space-x-3 px-3 py-2 hover:bg-gray-50 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedClasses.includes(c.id)}
+                              onChange={(e) => {
+                                e.stopPropagation()
+                                if (e.target.checked) {
+                                  setSelectedClasses([...selectedClasses, c.id])
+                                } else {
+                                  setSelectedClasses(selectedClasses.filter(id => id !== c.id))
+                                }
+                              }}
+                              className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <span className="text-sm text-gray-700">{c.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                <button 
+                  onClick={async () => {
+                    // Check if grid config exists
+                    if (!gridConfigs[selectedWordSet]) {
+                      const ws = wordSets.find(w => w.id === selectedWordSet)
+                      if (ws && ws.words) {
+                        setWordSetForConfig(ws)
+                        setShowGridConfig(true)
+                        return
+                      }
+                    }
+                    await assignToSelectedClasses()
+                  }}
+                  disabled={loading || !selectedWordSet || selectedClasses.length === 0}
+                  className="h-10 px-3 text-sm rounded bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:bg-gray-400 text-white shadow-md whitespace-nowrap"
+                >
+                  Assign
+                </button>
+                </div>
+              ) : (
+                <div className="text-sm text-gray-500 italic">No classes available</div>
+              )}
+            </div>
+
+            {/* Student Assignment */}
             <div className="space-y-2">
-              <div className="font-medium text-gray-600">Assign to Class</div>
+              <div className="font-medium text-gray-600">Assign to Individual Student</div>
               <div className="flex gap-2">
                 <select 
                   value={targetClass} 
                   onChange={e => setTargetClass(e.target.value)}
                   className="flex-1 h-10 px-3 text-sm rounded bg-white text-gray-800 border border-gray-300 shadow-sm"
+                  style={{ maxHeight: '80px', overflowY: 'auto' }}
                 >
                   <option value="">Select class</option>
                   {classes.map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
-                <button 
-                  onClick={assignToClass}
-                  disabled={loading || !selectedWordSet || !targetClass}
-                  className="h-10 px-3 text-sm rounded bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:bg-gray-400 text-white shadow-md"
-                >
-                  Assign
-                </button>
-              </div>
-            </div>
-
-            {/* Student Assignment */}
-            <div className="space-y-2">
-              <div className="font-medium text-gray-600">Assign to Student</div>
-              <div className="flex gap-2">
                 <select 
                   value={targetStudent} 
                   onChange={e => setTargetStudent(e.target.value)}
                   disabled={!targetClass}
                   className="flex-1 h-10 px-3 text-sm rounded bg-white text-gray-800 border border-gray-300 disabled:bg-gray-200 disabled:text-gray-500 shadow-sm"
+                  style={{ maxHeight: '80px', overflowY: 'auto' }}
                 >
                   {!targetClass ? (
                     <option value="">Select class first</option>
@@ -454,21 +722,32 @@ export default function AssignWordSetsPage() {
                     <>
                       <option value="">Select student</option>
                       {classStudentsForSelected.length === 0 ? (
-                        <option value="" disabled>(No students found in this class)</option>
+                        <option value="" disabled>No students</option>
                       ) : (
                         classStudentsForSelected.map(s => (
-                          <option key={s.id} value={s.id}>{s.display || (s.email ? s.email.split('@')[0] : s.id)}</option>
+                          <option key={s.id} value={s.id}>{s.display || (s as any).username || 'Student'}</option>
                         ))
                       )}
                     </>
                   )}
                 </select>
                 <button 
-                  onClick={assignToStudent}
-                  disabled={loading || !selectedWordSet || !targetStudent}
+                  onClick={async () => {
+                    // Check if grid config exists
+                    if (!gridConfigs[selectedWordSet]) {
+                      const ws = wordSets.find(w => w.id === selectedWordSet)
+                      if (ws && ws.words) {
+                        setWordSetForConfig(ws)
+                        setShowGridConfig(true)
+                        return
+                      }
+                    }
+                    await assignToStudent()
+                  }}
+                  disabled={loading || !selectedWordSet || !targetClass || !targetStudent}
                   className="h-10 px-3 text-sm rounded bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 disabled:bg-gray-400 text-white shadow-md"
                 >
-                  Assign to student
+                  Assign
                 </button>
               </div>
               {/* Debug info removed */}
@@ -476,12 +755,18 @@ export default function AssignWordSetsPage() {
           </div>
         </div>
 
+        {/* Extra space after Assign Word Sets for dropdown */}
+        <div className="mb-12"></div>
+
         {/* Message Display */}
         {message && (
           <div className="mb-6 p-3 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
             {message}
           </div>
         )}
+
+        {/* Extra space for dropdown visibility - increased significantly */}
+        <div className="mb-24"></div>
 
         {/* Existing Assignments */}
         <div className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-lg p-6">
@@ -501,8 +786,8 @@ export default function AssignWordSetsPage() {
                     ></span>
                     <span className="font-medium">{assignment.word_set_title}</span>
                     <span className="mx-2 text-gray-400">→</span>
-                    {assignment.student_email ? (
-                      <span className="text-green-600 font-medium">Individual: {assignment.student_email}</span>
+                    {assignment.student_name ? (
+                      <span className="text-green-600 font-medium">Individual: {assignment.student_name}</span>
                     ) : assignment.class_name && assignment.class_name !== 'Individual Assignment' ? (
                       <span className="text-blue-600 font-medium">Class: {assignment.class_name}</span>
                     ) : (
@@ -521,6 +806,34 @@ export default function AssignWordSetsPage() {
           )}
         </div>
       </div>
+
+      {/* Grid Configuration Modal */}
+      {showGridConfig && wordSetForConfig && wordSetForConfig.words && (
+        <GridConfigModal
+          wordSet={{
+            id: wordSetForConfig.id,
+            title: wordSetForConfig.title,
+            words: wordSetForConfig.words
+          }}
+          existingGrids={gridConfigs[wordSetForConfig.id]}
+          onSave={(grids) => {
+            handleGridConfigSave(wordSetForConfig.id, grids)
+            // After saving config, proceed with assignment
+            if (targetClass) {
+              assignToClass()
+            } else if (selectedClasses.length > 0) {
+              assignToSelectedClasses()
+            } else if (targetStudent) {
+              assignToStudent()
+            }
+          }}
+          onClose={() => {
+            setShowGridConfig(false)
+            setWordSetForConfig(null)
+          }}
+        />
+      )}
+
     </div>
   )
 }

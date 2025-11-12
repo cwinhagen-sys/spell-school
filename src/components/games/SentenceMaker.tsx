@@ -52,10 +52,8 @@ export default function SentenceMaker({ words, onClose, onScoreUpdate, trackingC
   // start tracking session on mount (inside component)
   useEffect(() => {
     startedAtRef.current = Date.now()
-    ;(async () => {
-      const session = await startGameSession('story', trackingContext)
-      setSessionId(session?.id ?? null)
-    })()
+    console.log('🎮 Sentence Maker: Game started (session will be created server-side)')
+    setSessionId(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -910,8 +908,8 @@ export default function SentenceMaker({ words, onClose, onScoreUpdate, trackingC
     // Send the diminished score to the parent component for display
     onScoreUpdate(diminished)
     
-    // Update permanent student progress (server also applies diminishing)
-    void updateStudentProgress(scaledScore, 'story', trackingContext)
+    // NOTE: Database sync handled by handleScoreUpdate in student dashboard via onScoreUpdate
+    // No need to call updateStudentProgress here to avoid duplicate sessions
     
     setGameFinished(true)
     
@@ -946,10 +944,8 @@ export default function SentenceMaker({ words, onClose, onScoreUpdate, trackingC
     setShowHint(false)
     setGameFinished(false)
     startedAtRef.current = Date.now()
-    ;(async () => {
-      const session = await startGameSession('story', trackingContext)
-      setSessionId(session?.id ?? null)
-    })()
+    console.log('🎮 Sentence Maker: Game restarted (session will be created server-side)')
+    setSessionId(null)
   }
 
   // Don't render until sentences are generated

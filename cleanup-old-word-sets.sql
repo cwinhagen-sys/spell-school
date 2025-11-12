@@ -104,3 +104,15 @@ DELETE FROM assigned_word_sets
 WHERE word_set_id NOT IN (SELECT id FROM word_sets);
 
 SELECT 'Old word sets cleanup completed' as status;
+
+
+
+
+
+
+
+
+
+
+
+

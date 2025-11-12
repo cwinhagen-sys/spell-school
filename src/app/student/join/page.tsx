@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { ArrowLeft, Users, BookOpen } from 'lucide-react'
 
 export default function JoinClassPage() {
   const [code, setCode] = useState('')
@@ -47,31 +48,64 @@ export default function JoinClassPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-white/5 rounded-2xl border border-white/10 p-8">
-        <h1 className="text-2xl font-bold text-white mb-2">Join a Class</h1>
-        <p className="text-gray-300 mb-6">Enter the 6‑character class code from your teacher.</p>
-        <form onSubmit={join} className="space-y-4">
-          <input
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder="e.g. AB3D7K"
-            className="w-full px-4 py-3 rounded-lg tracking-widest uppercase font-mono bg-white/5 border border-white/10 text-white placeholder:text-gray-400"
-            maxLength={8}
-          />
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50"
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800 flex items-start justify-center px-4 pt-20">
+      <div className="max-w-lg w-full">
+        {/* Back button */}
+        <div className="mb-8">
+          <a 
+            href="/student" 
+            className="inline-flex items-center text-violet-600 hover:text-violet-700 font-medium transition-colors"
           >
-            {submitting ? 'Joining…' : 'Join Class'}
-          </button>
-        </form>
-        {message && (
-          <div className={`mt-4 p-3 rounded-lg text-sm ${message.includes('✅') ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-400/30' : 'bg-red-500/20 text-red-200 border border-red-400/30'}`}>
-            {message}
-          </div>
-        )}
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </a>
+        </div>
+
+        {/* Main form */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg p-10">
+          <h1 className="text-4xl font-bold text-gray-900 text-center mb-10">Enter Class Code</h1>
+          
+          <form onSubmit={join} className="space-y-8">
+            <div>
+              <input
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="AB3D7K"
+                className="w-full px-8 py-6 text-5xl tracking-widest uppercase font-mono bg-gray-50 border-2 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all text-center rounded-xl"
+                maxLength={8}
+                autoFocus
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white py-5 rounded-xl font-semibold hover:from-violet-700 hover:to-fuchsia-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:-translate-y-0.5 hover:shadow-lg text-xl"
+            >
+              {submitting ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-2"></div>
+                  Joining...
+                </div>
+              ) : (
+                'Join Class'
+              )}
+            </button>
+          </form>
+
+          {message && (
+            <div className={`mt-8 p-5 rounded-xl text-center font-medium ${
+              message.includes('✅') 
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                : 'bg-red-50 text-red-700 border border-red-200'
+            }`}>
+              <div className="flex items-center justify-center">
+                <span className="text-2xl mr-2">{message.includes('✅') ? '✅' : '❌'}</span>
+                {message.replace(/[✅❌]/g, '').trim()}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

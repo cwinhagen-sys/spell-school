@@ -56,3 +56,15 @@ SELECT
   COUNT(*) as count
 FROM assigned_word_sets
 GROUP BY assignment_type;
+
+
+
+
+
+
+
+
+
+
+
+

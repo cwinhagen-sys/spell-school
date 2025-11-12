@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Badge Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .error { color: red; background: #ffe6e6; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .success { color: green; background: #e6ffe6; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .info { color: blue; background: #e6f3ff; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        button { padding: 10px 20px; margin: 10px 5px; }
+        input { padding: 8px; margin: 5px; width: 300px; }
+    </style>
+</head>
+<body>
+    <h1>Simple Badge Test</h1>
+    
+    <div id="results"></div>
+    
+    <h2>Test Badge System</h2>
+    <p>Testa badge-systemet direkt med inloggning:</p>
+    
+    <input type="email" id="email" placeholder="Email" value="trial@gmail.com">
+    <input type="password" id="password" placeholder="Lösenord">
+    <button onclick="loginAndTest()">Logga in och testa</button>
+    
+    <h2>Test Results</h2>
+    <div id="testResults"></div>
+    
+    <script>
+        const supabaseUrl = 'https://edbbestqdwldryxuxkma.supabase.co'
+        const supabaseKey = 'sb_publishable_bx81qdFnpcX79ovYbCL98Q_eirRtByp'
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
+        
+        async function loginAndTest() {
+            const email = document.getElementById('email').value
+            const password = document.getElementById('password').value
+            
+            if (!email || !password) {
+                addResult('❌ Ange email och lösenord', 'error')
+                return
+            }
+            
+            addResult('=== LOGGA IN OCH TESTA ===', 'info')
+            
+            try {
+                // Try to sign in
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                })
+                
+                if (error) {
+                    addResult('❌ Inloggning misslyckades: ' + JSON.stringify(error, null, 2), 'error')
+                    return
+                }
+                
+                addResult('✅ Inloggning lyckades: ' + data.user.email, 'success')
+                
+                // Now test the badge system
+                await testBadgeSystem(data.user)
+                
+            } catch (error) {
+                addResult('❌ Fel: ' + error.message, 'error')
+            }
+        }
+        
+        async function testBadgeSystem(user) {
+            addResult('=== TESTA BADGE-SYSTEMET ===', 'info')
+            
+            try {
+                // 1. Load all badges
+                addResult('1. Laddar badges...', 'info')
+                const { data: badges, error: badgeError } = await supabase
+                    .from('badges')
+                    .select('*')
+                    .order('created_at', { ascending: true })
+                
+                if (badgeError) {
+                    addResult('❌ Fel vid laddning av badges: ' + JSON.stringify(badgeError, null, 2), 'error')
+                    return
+                }
+                
+                addResult('✅ Laddade ' + badges.length + ' badges', 'success')
+                
+                // 2. Load user's badges
+                addResult('2. Laddar användarens badges...', 'info')
+                const { data: userBadges, error: userBadgeError } = await supabase
+                    .from('user_badges')
+                    .select(`
+                        *,
+                        badges (
+                            name,
+                            description,
+                            icon,
+                            category,
+                            rarity
+                        )
+                    `)
+                    .eq('user_id', user.id)
+                    .order('unlocked_at', { ascending: false })
+                
+                if (userBadgeError) {
+                    addResult('❌ Fel vid laddning av användarens badges: ' + JSON.stringify(userBadgeError, null, 2), 'error')
+                    return
+                }
+                
+                addResult('✅ Laddade ' + userBadges.length + ' användarens badges', 'success')
+                
+                // 3. Show user's badges
+                if (userBadges.length === 0) {
+                    addResult('ℹ️ Användaren har inga badges än', 'info')
+                } else {
+                    addResult('Användarens badges:', 'info')
+                    userBadges.forEach(ub => {
+                        addResult(`- ${ub.badges.name} (${ub.badges.category}) - ${new Date(ub.unlocked_at).toLocaleDateString('sv-SE')}`, 'info')
+                    })
+                }
+                
+                // 4. Test awarding a new badge
+                addResult('3. Testar att tjäna en ny badge...', 'info')
+                
+                // Find a badge the user doesn't have
+                const userBadgeIds = userBadges.map(ub => ub.badge_id)
+                const availableBadge = badges.find(badge => !userBadgeIds.includes(badge.id))
+                
+                if (!availableBadge) {
+                    addResult('ℹ️ Användaren har redan alla badges', 'info')
+                    return
+                }
+                
+                addResult('Försöker tjäna badge: ' + availableBadge.name, 'info')
+                
+                const { data: insertData, error: insertError } = await supabase
+                    .from('user_badges')
+                    .insert({
+                        user_id: user.id,
+                        badge_id: availableBadge.id,
+                        unlocked_at: new Date().toISOString(),
+                        progress: 1
+                    })
+                    .select()
+                
+                if (insertError) {
+                    addResult('❌ Fel vid tjäna badge: ' + JSON.stringify(insertError, null, 2), 'error')
+                } else {
+                    addResult('✅ Badge tjänad framgångsrikt: ' + availableBadge.name, 'success')
+                    addResult('Insert data: ' + JSON.stringify(insertData, null, 2), 'info')
+                    
+                    // 5. Reload user badges to verify
+                    addResult('4. Verifierar att badge sparades...', 'info')
+                    const { data: newUserBadges, error: reloadError } = await supabase
+                        .from('user_badges')
+                        .select(`
+                            *,
+                            badges (
+                                name,
+                                description,
+                                icon,
+                                category,
+                                rarity
+                            )
+                        `)
+                        .eq('user_id', user.id)
+                        .order('unlocked_at', { ascending: false })
+                    
+                    if (reloadError) {
+                        addResult('❌ Fel vid omladdning: ' + JSON.stringify(reloadError, null, 2), 'error')
+                    } else {
+                        addResult('✅ Verifierat: ' + newUserBadges.length + ' badges total', 'success')
+                        addResult('Senaste badge: ' + newUserBadges[0].badges.name, 'info')
+                    }
+                }
+                
+            } catch (error) {
+                addResult('❌ Fel: ' + error.message, 'error')
+            }
+        }
+        
+        function addResult(message, type) {
+            const div = document.createElement('div')
+            div.className = type
+            div.innerHTML = message
+            document.getElementById('testResults').appendChild(div)
+        }
+        
+        // Initialize
+        addResult('Test redo. Ange email och lösenord för ett elevkonto.', 'info')
+    </script>
+</body>
+</html>
+
+
+

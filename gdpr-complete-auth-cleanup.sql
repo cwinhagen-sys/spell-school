@@ -42,3 +42,15 @@ SELECT 'auth.factors', COUNT(*) FROM auth.factors;
 
 -- All counts should be 0
 
+
+
+
+
+
+
+
+
+
+
+
+

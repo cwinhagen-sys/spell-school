@@ -23,3 +23,15 @@ COMMENT ON POLICY "profiles_simple" ON profiles IS 'Users can only access their 
 
 -- 6. Verify
 SELECT 'Profiles RLS fixed - no more recursion' as status;
+
+
+
+
+
+
+
+
+
+
+
+

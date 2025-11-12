@@ -177,3 +177,15 @@ SELECT 'Remaining profiles count' as description, COUNT(*) as count FROM profile
 SELECT 'Remaining auth users count' as description, COUNT(*) as count FROM auth.users;
 
 
+
+
+
+
+
+
+
+
+
+
+
+

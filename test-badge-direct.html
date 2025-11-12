@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direct Badge Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .error { color: red; background: #ffe6e6; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .success { color: green; background: #e6ffe6; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .info { color: blue; background: #e6f3ff; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        button { padding: 10px 20px; margin: 10px 5px; }
+        input { padding: 8px; margin: 5px; width: 300px; }
+    </style>
+</head>
+<body>
+    <h1>Direct Badge Test</h1>
+    
+    <div id="results"></div>
+    
+    <h2>Test med specifik användare</h2>
+    <p>Använd denna test med en användare som vi vet finns:</p>
+    <button onclick="testWithKnownUser()">Testa med känd användare</button>
+    
+    <h2>Test med egen användare</h2>
+    <p>Eller logga in här direkt:</p>
+    <input type="email" id="email" placeholder="Email" value="trial@gmail.com">
+    <input type="password" id="password" placeholder="Lösenord">
+    <button onclick="loginAndTest()">Logga in och testa</button>
+    
+    <script>
+        const supabaseUrl = 'https://edbbestqdwldryxuxkma.supabase.co'
+        const supabaseKey = 'sb_publishable_bx81qdFnpcX79ovYbCL98Q_eirRtByp'
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
+        
+        async function testWithKnownUser() {
+            addResult('=== TEST MED KÄND ANVÄNDARE ===', 'info')
+            
+            try {
+                // Use the user ID we know exists
+                const userId = '05edc16a-699d-486a-9a87-a9ca4b8b7874'
+                
+                addResult('Testar med användare: ' + userId, 'info')
+                
+                // Get a different badge (not First Steps)
+                const { data: badges, error: badgeError } = await supabase
+                    .from('badges')
+                    .select('id, name')
+                    .neq('name', 'First Steps')
+                    .limit(1)
+                
+                if (badgeError) {
+                    addResult('❌ Fel vid hämtning av badge: ' + JSON.stringify(badgeError, null, 2), 'error')
+                    return
+                }
+                
+                if (!badges || badges.length === 0) {
+                    addResult('❌ Ingen badge hittad', 'error')
+                    return
+                }
+                
+                const badge = badges[0]
+                addResult('✅ Badge hittad: ' + badge.name, 'success')
+                
+                // Try to insert badge directly (this should work from SQL Editor)
+                addResult('Försöker inserta badge direkt...', 'info')
+                
+                const { data: insertData, error: insertError } = await supabase
+                    .from('user_badges')
+                    .insert({
+                        user_id: userId,
+                        badge_id: badge.id,
+                        unlocked_at: new Date().toISOString(),
+                        progress: 1
+                    })
+                    .select()
+                
+                if (insertError) {
+                    addResult('❌ Insert misslyckades: ' + JSON.stringify(insertError, null, 2), 'error')
+                } else {
+                    addResult('✅ Badge insertad framgångsrikt!', 'success')
+                    addResult('Insert data: ' + JSON.stringify(insertData, null, 2), 'info')
+                }
+                
+            } catch (error) {
+                addResult('❌ Fel: ' + error.message, 'error')
+            }
+        }
+        
+        async function loginAndTest() {
+            addResult('=== LOGGA IN OCH TESTA ===', 'info')
+            
+            const email = document.getElementById('email').value
+            const password = document.getElementById('password').value
+            
+            if (!email || !password) {
+                addResult('❌ Ange email och lösenord', 'error')
+                return
+            }
+            
+            try {
+                // Try to sign in
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                })
+                
+                if (error) {
+                    addResult('❌ Inloggning misslyckades: ' + JSON.stringify(error, null, 2), 'error')
+                    return
+                }
+                
+                addResult('✅ Inloggning lyckades: ' + data.user.email, 'success')
+                
+                // Now test badge insertion
+                await testBadgeInsertion(data.user)
+                
+            } catch (error) {
+                addResult('❌ Fel: ' + error.message, 'error')
+            }
+        }
+        
+        async function testBadgeInsertion(user) {
+            try {
+                // Get a badge
+                const { data: badges, error: badgeError } = await supabase
+                    .from('badges')
+                    .select('id, name')
+                    .eq('name', 'First Steps')
+                    .limit(1)
+                
+                if (badgeError) {
+                    addResult('❌ Fel vid hämtning av badge: ' + JSON.stringify(badgeError, null, 2), 'error')
+                    return
+                }
+                
+                const badge = badges[0]
+                addResult('✅ Badge hittad: ' + badge.name, 'success')
+                
+                // Try to insert badge
+                const { data: insertData, error: insertError } = await supabase
+                    .from('user_badges')
+                    .insert({
+                        user_id: user.id,
+                        badge_id: badge.id,
+                        unlocked_at: new Date().toISOString(),
+                        progress: 1
+                    })
+                    .select()
+                
+                if (insertError) {
+                    addResult('❌ Insert misslyckades: ' + JSON.stringify(insertError, null, 2), 'error')
+                } else {
+                    addResult('✅ Badge insertad framgångsrikt!', 'success')
+                    addResult('Insert data: ' + JSON.stringify(insertData, null, 2), 'info')
+                }
+                
+            } catch (error) {
+                addResult('❌ Fel: ' + error.message, 'error')
+            }
+        }
+        
+        function addResult(message, type) {
+            const div = document.createElement('div')
+            div.className = type
+            div.innerHTML = message
+            document.getElementById('results').appendChild(div)
+        }
+        
+        // Initialize
+        addResult('Test redo. Prova båda metoderna.', 'info')
+    </script>
+</body>
+</html>

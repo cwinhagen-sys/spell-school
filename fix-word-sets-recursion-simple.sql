@@ -35,3 +35,15 @@ ORDER BY policyname;
 
 -- 5. Test
 SELECT 'Word sets recursion fixed with simple policies' as status;
+
+
+
+
+
+
+
+
+
+
+
+

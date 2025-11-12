@@ -110,3 +110,15 @@ ORDER BY tablename, policyname;
 
 -- 12. Test data isolation
 SELECT 'Data isolation fix completed successfully' as status;
+
+
+
+
+
+
+
+
+
+
+
+

@@ -22,3 +22,15 @@ WHERE tablename = 'assigned_word_sets';
 
 -- 4. Test that we can access assignments
 SELECT 'Assigned word sets RLS disabled - assignments should work now' as status;
+
+
+
+
+
+
+
+
+
+
+
+

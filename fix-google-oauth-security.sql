@@ -66,3 +66,15 @@ FROM pg_policies
 WHERE tablename IN ('classes', 'word_sets')
 ORDER BY tablename, policyname;
 
+
+
+
+
+
+
+
+
+
+
+
+

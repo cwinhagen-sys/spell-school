@@ -1,0 +1,126 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+
+/**
+ * XP Sync API Endpoint
+ * 
+ * Accepts batches of XP events and processes them atomically.
+ * Uses the ingest_xp_events RPC function for idempotent, transactional processing.
+ * 
+ * Request body:
+ * {
+ *   "events": [
+ *     {
+ *       "id": "uuid",
+ *       "student_id": "uuid",
+ *       "kind": "typing",
+ *       "delta": 10,
+ *       "word_set_id": "uuid" | null,
+ *       "homework_id": "uuid" | null,
+ *       "created_at": "2024-01-01T00:00:00Z",
+ *       "metadata": {}
+ *     }
+ *   ]
+ * }
+ * 
+ * Response:
+ * {
+ *   "success": true,
+ *   "accepted_ids": ["uuid1", "uuid2", ...],
+ *   "total_xp": 1234,
+ *   "games_played": 56
+ * }
+ */
+export async function POST(request: NextRequest) {
+  try {
+    // Get authorization header
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+
+    // Create Supabase client with the user's token
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      }
+    )
+
+    // Verify the user is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      console.error('XP Sync: Auth error:', authError)
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Parse request body
+    const body = await request.json()
+    const { events } = body
+
+    if (!Array.isArray(events) || events.length === 0) {
+      return NextResponse.json({ error: 'No events provided' }, { status: 400 })
+    }
+
+    console.log(`XP Sync: Processing ${events.length} events for user ${user.id}`)
+
+    // Validate all events belong to the authenticated user
+    const invalidEvents = events.filter(e => e.student_id !== user.id)
+    if (invalidEvents.length > 0) {
+      console.error('XP Sync: Invalid events (wrong student_id):', invalidEvents)
+      return NextResponse.json({ 
+        error: 'Invalid events: student_id mismatch' 
+      }, { status: 403 })
+    }
+
+    // Call the batch ingest RPC function
+    console.log('XP Sync: Calling ingest_xp_events with events:', JSON.stringify(events))
+    
+    const { data, error } = await supabase
+      .rpc('ingest_xp_events', { events })
+
+    if (error) {
+      console.error('XP Sync: RPC error:', error)
+      console.error('XP Sync: RPC error details:', JSON.stringify(error, null, 2))
+      return NextResponse.json({ 
+        error: 'Failed to process events',
+        details: error.message,
+        hint: error.hint,
+        code: error.code
+      }, { status: 500 })
+    }
+
+    console.log('XP Sync: RPC returned data:', data)
+
+    // Handle response - RPC returns array of records
+    const result = Array.isArray(data) ? data[0] : data
+    const acceptedIds = result?.accepted_ids || []
+    const totalXP = result?.total_xp || 0
+    const gamesPlayed = result?.games_played || 0
+
+    console.log(`XP Sync: Successfully processed ${acceptedIds.length} events`)
+    console.log(`XP Sync: Total XP: ${totalXP}, Games: ${gamesPlayed}`)
+
+    return NextResponse.json({
+      success: true,
+      accepted_ids: acceptedIds,
+      total_xp: totalXP,
+      games_played: gamesPlayed
+    })
+
+  } catch (error) {
+    console.error('XP Sync: Unexpected error:', error)
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
+  }
+}
+

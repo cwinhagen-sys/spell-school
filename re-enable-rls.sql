@@ -51,3 +51,15 @@ COMMENT ON POLICY "students_and_teachers_can_insert_progress" ON student_progres
 COMMENT ON POLICY "teachers_can_view_student_progress" ON student_progress IS 'Teachers can see progress of students in their classes';
 
 
+
+
+
+
+
+
+
+
+
+
+
+

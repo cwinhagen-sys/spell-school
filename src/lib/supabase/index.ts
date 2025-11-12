@@ -1,0 +1,8 @@
+export { supabase } from './client'
+
+
+
+
+
+
+

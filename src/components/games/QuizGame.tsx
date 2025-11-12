@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { startGameSession, endGameSession, logWordAttempt, type TrackingContext } from '@/lib/tracking'
 import { supabase } from '@/lib/supabase'
+import ColorGridSelector, { COLOR_GRIDS, GridConfig } from '@/components/ColorGridSelector'
+import QuizFeedbackModal from '@/components/QuizFeedbackModal'
 
 interface QuizGameProps {
   words: string[]
@@ -10,14 +12,20 @@ interface QuizGameProps {
   onClose: () => void
   trackingContext?: TrackingContext
   themeColor?: string
-  onSubmitScore: (score: number) => Promise<void> | void
+  onSubmitScore: (score: number, total: number, evaluations: Evaluation[]) => Promise<void> | void
+  gridConfig?: GridConfig[]
 }
 
-type QuizItem = { prompt: string; answer: string }
-type Verdict = 'correct' | 'partial' | 'wrong'
+type QuizItem = { prompt: string; answer: string; direction: 'en-to-sv' | 'sv-to-en' }
+type Verdict = 'correct' | 'partial' | 'wrong' | 'empty'
 type Evaluation = { prompt: string; expected: string; given: string; verdict: Verdict }
+type SelectedGrid = {
+  words: string[]
+  translations: Record<string, string>
+  colorScheme: typeof COLOR_GRIDS[number]
+}
 
-export default function QuizGame({ words, translations = {}, onClose, trackingContext, themeColor, onSubmitScore }: QuizGameProps) {
+export default function QuizGame({ words, translations = {}, onClose, trackingContext, themeColor, onSubmitScore, gridConfig }: QuizGameProps) {
   const [items, setItems] = useState<QuizItem[]>([])
   const [answers, setAnswers] = useState<string[]>([])
   const [submitted, setSubmitted] = useState(false)
@@ -27,48 +35,150 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
   const startedAtRef = useRef<number | null>(null)
   const [evaluations, setEvaluations] = useState<Evaluation[]>([])
   const [aiExplanations, setAiExplanations] = useState<Record<string, string>>({})
-  const [openExplainKey, setOpenExplainKey] = useState<string | null>(null)
-  const autoSubmittedRef = useRef(false)
   const [aiTotal, setAiTotal] = useState<number | null>(null)
   const [aiLoading, setAiLoading] = useState(false)
   const [loadingProgress, setLoadingProgress] = useState(0)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
+  const [selectedDirection, setSelectedDirection] = useState<'both' | 'en-to-sv' | 'sv-to-en'>('both')
+  const [selectedLanguageOrder, setSelectedLanguageOrder] = useState<'sv-en' | 'en-sv' | null>(null)
+  const [currentBlock, setCurrentBlock] = useState(0)
+  const [blocks, setBlocks] = useState<QuizItem[][]>([])
+  const [blockColorSchemes, setBlockColorSchemes] = useState<Array<typeof COLOR_GRIDS[number]>>([])
+  const [selectedGrids, setSelectedGrids] = useState<SelectedGrid[]>([])
+  const [showGridSelector, setShowGridSelector] = useState(true)
+  const [showLanguageSelection, setShowLanguageSelection] = useState(false)
+  const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false)
+
+  const totalSelectedWords = useMemo(
+    () => selectedGrids.reduce((sum, grid) => sum + grid.words.length, 0),
+    [selectedGrids]
+  )
+
+  const pairLookup = useMemo(() => {
+    const map = new Map<string, { en: string; sv: string }>()
+
+    const addPair = (enWord?: string | null, svWord?: string | null) => {
+      if (!enWord || !svWord) return
+      const pair = { en: enWord, sv: svWord }
+      map.set(enWord.toLowerCase(), pair)
+      map.set(svWord.toLowerCase(), pair)
+    }
+
+    Object.entries(translations || {}).forEach(([enWord, svWord]) => {
+      if (typeof svWord === 'string') {
+        addPair(enWord, svWord)
+      }
+    })
+
+    if (gridConfig) {
+      gridConfig.forEach(config => {
+        config.words.forEach(word => {
+          if (typeof word === 'object' && word.en && word.sv) {
+            addPair(word.en, word.sv)
+          }
+        })
+      })
+    }
+
+    return map
+  }, [translations, gridConfig])
 
   const fallbackExplanation = (e: Evaluation): string => {
-    if (e.verdict === 'correct') return 'Bra! Ditt svar uttrycker samma betydelse. Full poäng.'
-    if (e.verdict === 'partial') return 'Nästan rätt: betydelsen stämmer i stort, men det är en liten miss (stavning, form eller nyans).'
-    return 'Inte riktigt: betydelsen skiljer sig från det förväntade. Jämför med rätt svar och försök igen.'
+    // All feedback text has been removed - always return empty string
+    return ''
   }
 
   const norm = (s: unknown) => String(s ?? '').toLowerCase().trim()
   const makeKey = (prompt: string, given: string, expected: string) => `${norm(prompt)}||${norm(given)}||${norm(expected)}`
 
   useEffect(() => {
-    // Randomize direction and cap total prompts to 20
-    const shuffledWords = [...(words || [])].sort(() => Math.random() - 0.5)
-    const cap = Math.min(20, shuffledWords.length)
-    const minQuizSize = Math.min(5, cap) // ensure at least a few items if available
-    const base = shuffledWords.slice(0, Math.max(minQuizSize, cap))
-    const quiz: QuizItem[] = []
-    for (const w of base) {
-      const tr = translations[w?.toLowerCase?.()] || ''
-      if (!w || !tr) continue
-      const flip = Math.random() < 0.5
-      if (flip) {
-        quiz.push({ prompt: w, answer: tr }) // en -> sv
-      } else {
-        quiz.push({ prompt: tr, answer: w }) // sv -> en
+    if (!selectedLanguageOrder || selectedGrids.length === 0) return
+
+    const pairMap = new Map(pairLookup)
+    const newBlocks: QuizItem[][] = []
+    const newBlockColorSchemes: Array<typeof COLOR_GRIDS[number]> = []
+    const allItems: QuizItem[] = []
+
+    selectedGrids.forEach((grid) => {
+      const blockItems: QuizItem[] = []
+      const blockPairKeys = new Set<string>()
+
+      grid.words.forEach(word => {
+        if (!word) return
+        const normalized = word.toLowerCase()
+
+        let pair = pairMap.get(normalized)
+
+        if (!pair) {
+          const gridTranslation = grid.translations?.[normalized]
+          if (gridTranslation) {
+            const translationLower = gridTranslation.toLowerCase()
+            pair = pairMap.get(translationLower)
+
+            if (!pair) {
+              pair = { en: word, sv: gridTranslation }
+              pairMap.set(word.toLowerCase(), pair)
+              pairMap.set(gridTranslation.toLowerCase(), pair)
+            }
+          }
+        }
+
+        if (!pair) return
+
+        const pairKey = `${pair.en.toLowerCase()}||${pair.sv.toLowerCase()}`
+        if (blockPairKeys.has(pairKey)) return
+        blockPairKeys.add(pairKey)
+
+        const pushItem = (prompt: string, answer: string, direction: 'en-to-sv' | 'sv-to-en') => {
+          const item = { prompt, answer, direction }
+          blockItems.push(item)
+          allItems.push(item)
+        }
+
+        if (selectedDirection === 'both' || selectedDirection === 'sv-to-en') {
+          // Student writes Swedish (first language)
+          pushItem(pair.en, pair.sv, 'sv-to-en')
+        }
+        if (selectedDirection === 'both' || selectedDirection === 'en-to-sv') {
+          // Student writes English (first language)
+          pushItem(pair.sv, pair.en, 'en-to-sv')
+        }
+      })
+
+      if (blockItems.length > 0) {
+        newBlocks.push(blockItems)
+        newBlockColorSchemes.push(grid.colorScheme)
+      }
+    })
+
+    setBlocks(newBlocks)
+    setBlockColorSchemes(newBlockColorSchemes)
+    setItems(allItems)
+    setAnswers(new Array(allItems.length).fill(''))
+    setCurrentBlock(0)
+  }, [selectedLanguageOrder, selectedDirection, selectedGrids, pairLookup])
+
+  // Start game session when quiz starts (after language selection)
+  useEffect(() => {
+    if (!selectedLanguageOrder || selectedGrids.length === 0) return
+    
+    const startSession = async () => {
+      const session = await startGameSession('quiz', trackingContext)
+      if (session) {
+        setSessionId(session.id)
+        startedAtRef.current = Date.now()
       }
     }
-    setItems(quiz)
-    setAnswers(new Array(quiz.length).fill(''))
-  }, [words, translations])
+    startSession()
+  }, [selectedLanguageOrder, selectedGrids.length, trackingContext])
 
   useEffect(() => {
-    startedAtRef.current = Date.now()
-    // Quiz doesn't use game sessions - results are logged separately
-  }, [trackingContext])
+    if (!showLanguageSelection && !showGridSelector && selectedLanguageOrder) {
+      startedAtRef.current = Date.now()
+    }
+  }, [trackingContext, showLanguageSelection, showGridSelector, selectedLanguageOrder])
 
-  // Animate loading bar to take ~10s to reach ~95%, then complete to 100% when AI is done
+  // Animate loading bar
   useEffect(() => {
     let rafId: number | null = null
     let startTime = 0
@@ -84,9 +194,7 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
       }
       rafId = window.requestAnimationFrame(tick)
     } else {
-      // Complete the bar when AI finishes
       setLoadingProgress(100)
-      // Optional reset a moment later so next run starts from 0
       window.setTimeout(() => setLoadingProgress(0), 400)
     }
     return () => {
@@ -105,10 +213,41 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
     return () => window.removeEventListener('beforeunload', handler)
   }, [submitted])
 
-  // Removed auto-submit to prevent premature finish while typing last answer
-
   const handleChange = (idx: number, val: string) => {
     setAnswers(prev => prev.map((a, i) => (i === idx ? val : a)))
+  }
+
+  // Get the global index for a word in the current block
+  const getGlobalIndex = (blockIdx: number, wordIdx: number): number => {
+    let globalIdx = 0
+    for (let i = 0; i < blockIdx; i++) {
+      globalIdx += blocks[i]?.length || 0
+    }
+    return globalIdx + wordIdx
+  }
+
+  // Get block color based on block index - enhanced stronger colors
+  const getBlockColor = (blockIdx: number) => {
+    return COLOR_GRIDS[blockIdx % COLOR_GRIDS.length]
+  }
+
+  // Navigation functions
+  const goToNextBlock = () => {
+    if (currentBlock < blocks.length - 1) {
+      setCurrentBlock(currentBlock + 1)
+    }
+  }
+
+  const goToPreviousBlock = () => {
+    if (currentBlock > 0) {
+      setCurrentBlock(currentBlock - 1)
+    }
+  }
+
+  const goToBlock = (blockIdx: number) => {
+    if (blockIdx >= 0 && blockIdx < blocks.length) {
+      setCurrentBlock(blockIdx)
+    }
   }
 
   // Levenshtein distance for partial credit
@@ -142,246 +281,569 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
     return lowered.split(' ').filter(Boolean).filter(t => !stopwords.has(t)).map(roughStem)
   }
 
-  const submitQuiz = async () => {
-    const evals: Evaluation[] = []
+  const calculateScore = (items: QuizItem[], answers: string[]): { score: number; evaluations: Evaluation[] } => {
     let total = 0
-    items.forEach((q, i) => {
-      const given = (answers[i] || '').trim()
-      const aRaw = given.toLowerCase()
-      const expected = (q.answer || '').trim().toLowerCase()
-      let gained = 0
-      let verdict: Verdict = 'wrong'
-      if (aRaw.length > 0) {
-        if (aRaw === expected) {
-          gained = 2
-          verdict = 'correct'
-        } else {
-          const isSingleExpected = expected.split(' ').length === 1
-          const isSingleGiven = aRaw.split(' ').length === 1
-          // Token-based comparison for multi-word paraphrases
-          if (!(isSingleExpected && isSingleGiven)) {
-            const gTokens = normalizeTokens(given)
-            const eTokens = normalizeTokens(q.answer)
-            if (gTokens.length > 0 && eTokens.length > 0) {
-              const gSet = new Set(gTokens)
-              const eSet = new Set(eTokens)
-              const intersection = [...gSet].filter(t => eSet.has(t))
-              const sameSets = gSet.size === eSet.size && intersection.length === gSet.size
-              const overlapRatio = intersection.length / Math.max(1, eSet.size)
-              if (sameSets) {
-                gained = 2
-                verdict = 'correct'
-              } else if (intersection.length >= 2 || overlapRatio >= 0.6) {
-                gained = 1
-                verdict = 'partial'
-              }
-            }
-          }
-          // Fallback to edit distance for single-word cases
-          if (gained === 0) {
-            // Make short single words strict: length <= 3 -> no partial credit unless exact
-            const shortSingleStrict = (isSingleExpected && isSingleGiven && expected.length <= 3)
-            if (!shortSingleStrict) {
-              const dist = levenshtein(aRaw, expected)
-              const threshold = Math.max(1, Math.round(expected.length * 0.2))
-              if (dist <= threshold) {
-                gained = 1
-                verdict = 'partial'
-              }
-            }
-          }
-        }
+    const evals: Evaluation[] = []
+    
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      const given = norm(answers[i] || '')
+      const expected = norm(item.answer)
+      
+      if (!given) {
+        evals.push({ prompt: item.prompt, expected: item.answer, given: '', verdict: 'empty' })
+        continue
       }
-      total += gained
-      const correctAny = gained > 0
-      evals.push({ prompt: q.prompt, expected: q.answer, given, verdict })
-      void logWordAttempt({ word: q.prompt, correct: correctAny, gameType: 'quiz', context: trackingContext })
-    })
-    setEvaluations(evals)
-    setScore(total)
-    setSubmitted(true)
-    // Start AI grading immediately using the freshly computed evaluations (avoids stale state)
-    void finalizeSubmission(true, evals, total)
+      
+      const tokensGiven = normalizeTokens(given)
+      const tokensExpected = normalizeTokens(expected)
+      
+      // Exact match
+      if (given === expected) {
+        total += 2
+        evals.push({ prompt: item.prompt, expected: item.answer, given: answers[i], verdict: 'correct' })
+        continue
+      }
+      
+      // Check for synonym/paraphrase using token overlap
+      const overlap = tokensGiven.filter(t => tokensExpected.includes(t)).length
+      const totalTokens = Math.max(tokensGiven.length, tokensExpected.length)
+      const overlapRatio = overlap / totalTokens
+      
+      if (overlapRatio >= 0.7) {
+        total += 2
+        evals.push({ prompt: item.prompt, expected: item.answer, given: answers[i], verdict: 'correct' })
+        continue
+      }
+      
+      // Partial credit using Levenshtein distance
+      const distance = levenshtein(given, expected)
+      const maxLen = Math.max(given.length, expected.length)
+      const similarity = maxLen === 0 ? 1 : 1 - (distance / maxLen)
+      
+      if (similarity >= 0.8) {
+        total += 2
+        evals.push({ prompt: item.prompt, expected: item.answer, given: answers[i], verdict: 'correct' })
+      } else if (similarity >= 0.6) {
+        total += 1
+        evals.push({ prompt: item.prompt, expected: item.answer, given: answers[i], verdict: 'partial' })
+      } else {
+        evals.push({ prompt: item.prompt, expected: item.answer, given: answers[i], verdict: 'wrong' })
+      }
+    }
+    
+    return { score: total, evaluations: evals }
   }
 
-  const finalizeSubmission = async (silent?: boolean, evalOverride?: Evaluation[], baseScore?: number) => {
-    // Try AI grading first; fallback to local score if it fails
-    let finalScore = typeof baseScore === 'number' ? baseScore : score
+  const finalizeSubmission = async () => {
+    if (finalized) return
+    
+    setFinalized(true)
+    setAiLoading(true)
+    
+    const { score: calculatedScore, evaluations: calculatedEvaluations } = calculateScore(items, answers)
+    
+    console.log('📊 calculateScore result:', {
+      items_count: items.length,
+      answers_count: answers.length,
+      calculatedScore,
+      calculatedEvaluations_count: calculatedEvaluations.length,
+      calculatedEvaluations_sample: calculatedEvaluations[0] || null
+    })
+    
+    setScore(calculatedScore)
+    setEvaluations(calculatedEvaluations)
+    
+    // Keep track of final evaluations to save (will be updated by AI if available)
+    let finalEvaluations = calculatedEvaluations
+    
+    // AI grading
     try {
-      setAiLoading(true)
-      const payload = {
-        items: (evalOverride ?? evaluations).map(e => ({ prompt: e.prompt, expected: e.expected, given: e.given })),
-        sourceLanguage: 'auto',
-        targetLanguage: 'auto'
-      }
-      const res = await fetch('/api/quiz-grade', {
+      const response = await fetch('/api/quiz-grade', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          items: items.map((item, idx) => ({
+            prompt: item.prompt,
+            expected: item.answer,
+            given: answers[idx] || ''
+          })),
+          sourceLanguage: selectedDirection === 'sv-to-en' ? 'en' : selectedDirection === 'en-to-sv' ? 'sv' : 'en',
+          targetLanguage: selectedDirection === 'sv-to-en' ? 'sv' : selectedDirection === 'en-to-sv' ? 'en' : 'sv'
+        })
       })
-      if (res.ok) {
-        const data = await res.json()
-        if (typeof data?.total === 'number') {
-          finalScore = data.total
-          setAiTotal(data.total)
-        }
-        if (Array.isArray(data?.results)) {
-          const m: Record<string, string> = {}
-          const pts: Record<string, number> = {}
-          for (const r of data.results) {
-            if (r?.prompt && r?.given !== undefined && r?.expected !== undefined && r?.explanation_sv) {
-              const k = makeKey(r.prompt, r.given, r.expected)
-              m[k] = String(r.explanation_sv)
-            }
-            if (r?.prompt && r?.given !== undefined && r?.expected !== undefined && typeof r?.points === 'number') {
-              const k2 = makeKey(r.prompt, r.given, r.expected)
-              pts[k2] = Math.max(0, Math.min(2, Number(r.points)))
-            }
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('🎯 Quiz API Response:', data)
+        
+        // Update evaluations with API results
+        const apiEvaluations = data.results || []
+        const newEvaluations = apiEvaluations.map((result: any) => ({
+          prompt: result.prompt,
+          expected: result.expected,
+          given: result.given,
+          verdict: result.verdict || 'wrong',
+          points: result.points || 0,
+          reason: result.reason,
+          explanation_sv: result.explanation_sv,
+          category: result.category
+        }))
+        
+        // Update finalEvaluations to use AI results
+        finalEvaluations = newEvaluations
+        console.log('📊 AI grading updated evaluations:', {
+          newEvaluations_count: newEvaluations.length,
+          newEvaluations_sample: newEvaluations[0] || null
+        })
+        setEvaluations(newEvaluations)
+        setAiTotal(data.total)
+        
+        // Create explanations map
+        const explanations: Record<string, string> = {}
+        apiEvaluations.forEach((result: any) => {
+          const key = `${result.prompt}||${result.given}||${result.expected}`
+          if (result.explanation_sv) {
+            explanations[key] = result.explanation_sv
           }
-          setAiExplanations(m)
-          // Rebuild verdicts based on AI points so list-kolumner speglar AI‑bedömningen
-          const rebuilt = (evalOverride ?? evaluations).map(e => {
-            const k = makeKey(e.prompt, e.given, e.expected)
-            const p = pts[k]
-            if (p === 2) return { ...e, verdict: 'correct' as const }
-            if (p === 1) return { ...e, verdict: 'partial' as const }
-            if (p === 0) return { ...e, verdict: 'wrong' as const }
-            return e
-          })
-          setEvaluations(rebuilt)
-        }
+        })
+        setAiExplanations(explanations)
       }
-    } catch (_) {
-      // keep local score
-    }
-    finally {
+    } catch (error) {
+      console.error('AI grading failed:', error)
+    } finally {
       setAiLoading(false)
     }
-    setScore(finalScore)
-    await Promise.resolve(onSubmitScore(finalScore))
-    // Upsert latest quiz score in student_progress (only per word set, not global)
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user && trackingContext?.wordSetId) {
-        const now = new Date().toISOString()
-        // Only save per word set, not globally
-        await supabase.from('student_progress').upsert({
-          student_id: user.id,
-          word_set_id: trackingContext.wordSetId,
-          homework_id: trackingContext?.homeworkId ?? null,
-          last_quiz_score: finalScore,
-          last_quiz_at: now,
-          last_quiz_total: items.length * 2, // Total possible points (2 points per word)
-        }, { onConflict: 'student_id,word_set_id,homework_id' })
-      }
-    } catch (e) {
-      // non-critical
+    
+    // End game session with evaluations in details
+    const finalScore = aiTotal ?? calculatedScore
+    const totalPossible = items.length * 2 // 2 points per item
+    const durationSec = startedAtRef.current ? Math.floor((Date.now() - startedAtRef.current) / 1000) : 0
+    const accuracyPct = totalPossible > 0 ? Math.round((finalScore / totalPossible) * 100) : 0
+    
+    // Ensure we have evaluations - use finalEvaluations (from AI or calculated)
+    // Create a fresh copy of the array to avoid any reference issues
+    const evaluationsToSave = finalEvaluations && finalEvaluations.length > 0 
+      ? [...finalEvaluations] 
+      : (calculatedEvaluations && calculatedEvaluations.length > 0 
+          ? [...calculatedEvaluations] 
+          : [])
+    
+    console.log('📊 QuizGame: Before saving, checking evaluations:', {
+      finalEvaluations_length: finalEvaluations?.length || 0,
+      calculatedEvaluations_length: calculatedEvaluations?.length || 0,
+      evaluationsToSave_length: evaluationsToSave.length,
+      evaluationsToSave_sample: evaluationsToSave[0] || null
+    })
+    
+    // Save session with evaluations in details
+    const sessionDetails = {
+      evaluations: evaluationsToSave,
+      total_possible: totalPossible,
+      quiz_completed: true,
+      started_at: startedAtRef.current ? new Date(startedAtRef.current).toISOString() : undefined
     }
-    // Quiz results are logged separately in student_progress, not as game sessions
-    // No need to log to game_sessions for quiz
-    if (!silent) setFinalized(true)
+    
+    console.log('📊 QuizGame: Saving session with evaluations:', {
+      sessionId,
+      evaluations_count: evaluationsToSave.length,
+      evaluations_sample: evaluationsToSave[0] || null,
+      details: sessionDetails,
+      details_evaluations_count: sessionDetails.evaluations.length,
+      details_evaluations_is_array: Array.isArray(sessionDetails.evaluations),
+      details_stringified: JSON.stringify(sessionDetails).substring(0, 500)
+    })
+    
+    // Log what we're about to send
+    const metricsToSend = {
+      score: finalScore,
+      durationSec,
+      accuracyPct,
+      details: sessionDetails
+    }
+    
+    console.log('📊 QuizGame: About to call endGameSession with:', {
+      metrics_details_type: typeof metricsToSend.details,
+      metrics_details_evaluations_count: metricsToSend.details?.evaluations?.length || 0,
+      metrics_details_evaluations_is_array: Array.isArray(metricsToSend.details?.evaluations),
+      metrics_details_keys: Object.keys(metricsToSend.details || {})
+    })
+    
+    await endGameSession(sessionId, 'quiz', metricsToSend, trackingContext)
+    
+    // Submit score with total and evaluations (for student_progress)
+    await onSubmitScore(finalScore, totalPossible, evaluations)
+    
+    // Show feedback modal after quiz is complete
+    setShowFeedbackModal(true)
+  }
+
+  const handleSubmit = () => {
+    if (submitted) return
+    setSubmitted(true)
+    finalizeSubmission()
+  }
+
+  // Get current block data
+  const currentBlockData = blocks[currentBlock] || []
+  const blockColorScheme = blockColorSchemes[currentBlock] || getBlockColor(currentBlock)
+  const answerLanguageLabel =
+    selectedDirection === 'both'
+      ? 'Answer in Swedish & English'
+      : selectedDirection === 'sv-to-en'
+        ? 'Answer in Swedish'
+        : 'Answer in English'
+
+  if (showGridSelector) {
+    return (
+      <ColorGridSelector
+        words={words}
+        translations={translations}
+        onSelect={(grids) => {
+          setSelectedGrids(grids)
+          setShowGridSelector(false)
+          setShowLanguageSelection(true)
+          setSelectedLanguageOrder(null)
+          setSelectedDirection('both')
+          setBlocks([])
+          setBlockColorSchemes([])
+          setItems([])
+          setAnswers([])
+        }}
+        onClose={onClose}
+        minGrids={1}
+        maxGrids={undefined}
+        wordsPerGrid={6}
+        title="Select Color Blocks"
+        description="Choose which color blocks you want to use in the quiz"
+        gridConfig={gridConfig}
+      />
+    )
+  }
+
+  // Language selection screen
+  if (showLanguageSelection) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+        <div className="rounded-2xl p-8 max-w-4xl w-full text-center shadow-2xl relative bg-white text-gray-800 border border-gray-200">
+          {/* Top Progress Bar */}
+          <div className="h-1 rounded-md mb-6 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+          
+          {/* Header */}
+          <div className="mb-8">
+            <div className="text-6xl mb-4">🌍</div>
+            <h2 className="text-2xl font-bold mb-2">Choose Translation Direction</h2>
+            <p className="text-gray-600 text-sm">
+              You have selected {selectedGrids.length} color block{selectedGrids.length !== 1 ? 's' : ''} with {totalSelectedWords} word{totalSelectedWords !== 1 ? 's' : ''}. Choose which direction you want to translate.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            {/* Swedish to English */}
+            <button
+              onClick={() => {
+                setSelectedLanguageOrder('sv-en')
+                setSelectedDirection('sv-to-en')
+                setShowLanguageSelection(false)
+              }}
+              className="group p-6 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-all duration-300 hover:scale-105 hover:shadow-xl"
+            >
+              <div className="text-5xl mb-3">🇸🇪</div>
+              <h3 className="text-xl font-bold mb-2">Swedish → English</h3>
+              <p className="text-gray-600 text-sm mb-3">Translate Swedish words to English</p>
+              <div className="text-2xl text-blue-600 group-hover:scale-110 transition-transform duration-300">→</div>
+            </button>
+            
+            {/* English to Swedish */}
+            <button
+              onClick={() => {
+                setSelectedLanguageOrder('en-sv')
+                setSelectedDirection('en-to-sv')
+                setShowLanguageSelection(false)
+              }}
+              className="group p-6 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-all duration-300 hover:scale-105 hover:shadow-xl"
+            >
+              <div className="text-5xl mb-3">🇬🇧</div>
+              <h3 className="text-xl font-bold mb-2">English → Swedish</h3>
+              <p className="text-gray-600 text-sm mb-3">Translate English words to Swedish</p>
+              <div className="text-2xl text-green-600 group-hover:scale-110 transition-transform duration-300">→</div>
+            </button>
+          </div>
+          
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={onClose}
+              className="px-6 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Quiz setup screen (if no language order selected)
+  if (items.length === 0) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center">
+          <div className="text-6xl mb-4">📚</div>
+          <h2 className="text-2xl font-bold mb-4">Quiz Setup</h2>
+          <p className="text-gray-600 mb-6">Choose translation direction:</p>
+          
+          <div className="space-y-3">
+            <button
+              onClick={() => setSelectedDirection('both')}
+              className={`w-full p-4 rounded-xl border-2 transition-all ${
+                selectedDirection === 'both' 
+                  ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <div className="font-semibold">Both Directions</div>
+              <div className="text-sm text-gray-600">English ↔ Swedish</div>
+            </button>
+            
+            <button
+              onClick={() => setSelectedDirection('en-to-sv')}
+              className={`w-full p-4 rounded-xl border-2 transition-all ${
+                selectedDirection === 'en-to-sv' 
+                  ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <div className="font-semibold">English → Swedish</div>
+              <div className="text-sm text-gray-600">Translate to Swedish</div>
+            </button>
+            
+            <button
+              onClick={() => setSelectedDirection('sv-to-en')}
+              className={`w-full p-4 rounded-xl border-2 transition-all ${
+                selectedDirection === 'sv-to-en' 
+                  ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <div className="font-semibold">Swedish → English</div>
+              <div className="text-sm text-gray-600">Translate to English</div>
+            </button>
+          </div>
+          
+          <div className="mt-6 flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {/* Items will be generated automatically */}}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Start Quiz
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[1000]">
-      <div className="rounded-2xl p-8 max-w-3xl w-full max-h-[90vh] overflow-auto shadow-2xl relative bg-white text-gray-800 border border-gray-200">
-        {themeColor && <div className="h-1 rounded-md mb-4" style={{ backgroundColor: themeColor }}></div>}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">Quiz</h2>
-          {submitted ? (
-            <span className="text-sm text-gray-600">Result registered</span>
-          ) : (
-            <span className="text-sm text-gray-600">Finish and submit to exit</span>
-          )}
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-xl p-6 max-w-7xl w-full max-h-[95vh] overflow-hidden flex flex-col border border-gray-200 shadow-xl">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200 flex-shrink-0">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Quiz</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              {items.length} ord • {answerLanguageLabel}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {/* Submit Button - Always visible in header */}
+            {!submitted && (
+              <button
+                onClick={() => setShowSubmitConfirmation(true)}
+                className="px-6 py-2 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-lg hover:from-red-700 hover:to-pink-700 shadow-md font-semibold text-sm transition-all hover:scale-105"
+              >
+                🎯 Submit Quiz
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 text-2xl transition-colors"
+            >
+              ×
+            </button>
+          </div>
         </div>
 
-        {!submitted ? (
-          <div className="space-y-4">
-            {items.map((q, idx) => (
-              <div key={idx} className="p-4 rounded-xl bg-gray-50 border border-gray-200">
-                <div className="text-sm text-gray-600 mb-2">Translate:</div>
-                <div className="text-xl font-semibold mb-3 text-gray-800">{q.prompt}</div>
-                <input
-                  value={answers[idx]}
-                  onChange={(e) => handleChange(idx, e.target.value)}
-                  placeholder="Type your translation..."
-                  className="w-full px-4 py-2 rounded bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                />
-              </div>
-            ))}
-            <div className="flex justify-end gap-3">
-              <button onClick={submitQuiz} className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-lg hover:from-indigo-700 hover:to-purple-700 shadow-md">Submit Quiz</button>
+        {/* Quiz Content */}
+        <div className="flex-1 overflow-hidden min-h-0">
+          {!submitted ? (
+            <div className="h-full grid lg:grid-cols-[140px_1fr] gap-6">
+              <aside className="flex flex-col items-center gap-3 py-4 overflow-y-auto">
+                {blocks.map((_, idx) => {
+                  const colorScheme = blockColorSchemes[idx] || COLOR_GRIDS[idx % COLOR_GRIDS.length]
+                  const isActive = idx === currentBlock
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => goToBlock(idx)}
+                      className={`w-12 h-12 rounded-2xl transition-transform ${
+                        isActive ? 'ring-4 ring-gray-900 scale-110' : 'ring-2 ring-transparent hover:scale-105'
+                      }`}
+                      style={{ backgroundColor: colorScheme.hex }}
+                      aria-label={`Block ${idx + 1}`}
+                    />
+                  )
+                })}
+              </aside>
+
+              <section className="flex flex-col min-h-0 bg-white border border-gray-200 rounded-3xl shadow-sm">
+                <header className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                  <span className="text-sm text-gray-500">
+                    Block {currentBlock + 1} of {blocks.length}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={goToPreviousBlock}
+                      disabled={currentBlock === 0}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+                        currentBlock === 0
+                          ? 'text-gray-300 cursor-not-allowed'
+                          : 'text-gray-600 hover:bg-gray-100 transition-colors'
+                      }`}
+                    >
+                      ←
+                    </button>
+                    <button
+                      onClick={goToNextBlock}
+                      disabled={currentBlock === blocks.length - 1}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+                        currentBlock === blocks.length - 1
+                          ? 'text-gray-300 cursor-not-allowed'
+                          : 'text-gray-600 hover:bg-gray-100 transition-colors'
+                      }`}
+                    >
+                      →
+                    </button>
+                  </div>
+                </header>
+
+                {blocks.length === 0 ? (
+                  <div className="flex-1 flex items-center justify-center text-gray-500">
+                    No words found for the selected blocks.
+                  </div>
+                ) : (
+                  <div className="flex-1 overflow-y-auto px-6 py-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {currentBlockData.map((item, wordIdx) => {
+                        const globalIdx = getGlobalIndex(currentBlock, wordIdx)
+                        return (
+                          <article
+                            key={globalIdx}
+                            className="flex flex-col gap-4 p-4 rounded-2xl border border-gray-200 shadow-sm"
+                          >
+                            <h4 className="text-lg font-semibold text-gray-900 leading-tight">{item.prompt}</h4>
+                            <input
+                              type="text"
+                              value={answers[globalIdx] || ''}
+                              onChange={(e) => handleChange(globalIdx, e.target.value)}
+                              placeholder={
+                                item.direction === 'sv-to-en'
+                                  ? 'Write in Swedish...'
+                                  : item.direction === 'en-to-sv'
+                                    ? 'Write in English...'
+                                    : 'Write your answer...'
+                              }
+                              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent transition"
+                              autoComplete="off"
+                              disabled={submitted}
+                            />
+                          </article>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </section>
             </div>
-          </div>
-        ) : !finalized ? (
-          <div className="space-y-4">
-            {aiLoading ? (
-              <div className="rounded-xl bg-blue-50 border border-blue-200 p-4">
-                <div className="text-sm text-blue-700">Rättar och genererar feedback…</div>
-                <div className="mt-3 h-2 w-full bg-gray-200 rounded overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-blue-400 via-blue-500 to-blue-400 rounded"
-                       style={{ width: `${loadingProgress}%`, transition: 'width 0.08s linear' }} />
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="rounded-xl bg-gray-50 border border-gray-200 p-4">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-800">Dina svar</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                    {evaluations.map((e, i) => {
-                      const k = makeKey(e.prompt, e.given, e.expected)
-                      const explanation = aiExplanations[k] ?? fallbackExplanation(e)
-                      const open = openExplainKey === k
-                      const colorBase = e.verdict === 'correct' ? 'emerald' : e.verdict === 'partial' ? 'amber' : 'red'
-                      const boxClasses =
-                        colorBase === 'emerald'
-                          ? 'bg-emerald-500/15 border-emerald-400/30 hover:bg-emerald-500/20'
-                          : colorBase === 'amber'
-                            ? 'bg-amber-500/15 border-amber-400/30 hover:bg-amber-500/20'
-                            : 'bg-red-500/15 border-red-400/30 hover:bg-red-500/20'
-                      const textColor =
-                        colorBase === 'emerald' ? 'text-emerald-800' : colorBase === 'amber' ? 'text-amber-800' : 'text-red-800'
-                      return (
-                        <div key={i}
-                             className={`rounded-xl border p-4 cursor-pointer transition-colors ${boxClasses}`}
-                             onClick={() => setOpenExplainKey(open ? null : k)}
-                        >
-                          <div className={`text-sm opacity-80 mb-1 ${textColor}`}>{e.prompt}</div>
-                          <div className={`text-base font-semibold ${textColor}`}>{e.given || '—'}</div>
-                          {open && (
-                            <div className="mt-3 text-xs text-gray-700 bg-white border border-gray-200 rounded p-2">
-                              <div>{explanation}</div>
-                              {e.verdict !== 'correct' && (
-                                <div className="mt-2">
-                                  <span className="opacity-80">Rätt svar: </span>
-                                  <span className="font-semibold">{e.expected}</span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
+          ) : (
+            <div className="text-center flex items-center justify-center h-full">
+              {aiLoading ? (
+                <div className="space-y-4">
+                  <div className="text-4xl mb-4">🤖</div>
+                  <h3 className="text-xl font-bold text-gray-800">Analyzing quiz...</h3>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div 
+                      className="bg-gradient-to-r from-blue-400 via-blue-500 to-blue-400 rounded-full h-3 transition-all duration-300"
+                      style={{ width: `${loadingProgress}%` }}
+                    />
                   </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="text-gray-600">Total points: <span className="font-semibold text-gray-800">{aiTotal ?? score}</span> / {items.length * 2}</div>
-                  <button onClick={onClose} className="px-4 py-2 rounded bg-gray-100 border border-gray-300 hover:bg-gray-200 text-gray-800">Fortsätt</button>
-                </div>
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="text-center">
-            <div className="text-6xl mb-4">✅</div>
-            <h3 className="text-xl font-bold mb-2 text-gray-800">Quiz submitted!</h3>
-            <p className="text-gray-600 mb-6">Your score: {score} / {items.length * 2}</p>
-            <button onClick={onClose} className="bg-gray-100 border border-gray-300 text-gray-800 px-6 py-3 rounded-lg hover:bg-gray-200">Close</button>
-          </div>
-        )}
+              ) : null}
+            </div>
+          )}
+                        </div>
+
       </div>
+      
+      {/* Submit Confirmation Modal */}
+      {showSubmitConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">Are you sure?</h2>
+            <p className="text-gray-600 mb-6">
+              You're about to submit your quiz. Make sure you've answered all questions you want to answer.
+            </p>
+            
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
+              <div className="text-sm text-yellow-800">
+                <strong>Progress:</strong> {answers.filter(a => a.trim()).length} / {items.length} questions answered
+              </div>
+            </div>
+            
+            <div className="flex gap-4 justify-center">
+              <button
+                onClick={() => setShowSubmitConfirmation(false)}
+                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-semibold"
+              >
+                Go Back
+              </button>
+              <button
+                onClick={() => {
+                  setShowSubmitConfirmation(false)
+                  handleSubmit()
+                }}
+                className="px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 font-semibold"
+              >
+                Yes, Submit Quiz
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Feedback Modal */}
+      {showFeedbackModal && (
+        <QuizFeedbackModal
+          evaluations={evaluations}
+          aiExplanations={aiExplanations}
+          totalScore={aiTotal ?? score}
+          maxScore={items.length * 2}
+          totalWords={items.length}
+          onClose={() => {
+            setShowFeedbackModal(false)
+            onClose() // Close quiz modal and return to dashboard
+          }}
+          onWordClick={(word) => {
+            console.log('Word clicked:', word)
+          }}
+        />
+      )}
     </div>
   )
 }
-
-

@@ -60,3 +60,15 @@ ALTER TABLE word_sets ENABLE ROW LEVEL SECURITY;
 
 -- 6. Test query
 SELECT 'RLS policies updated successfully' as status;
+
+
+
+
+
+
+
+
+
+
+
+

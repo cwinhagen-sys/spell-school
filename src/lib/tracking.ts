@@ -1,7 +1,8 @@
 
 import { supabase } from '@/lib/supabase'
+import { persistentLog } from '@/lib/errorLogger'
 
-export type GameType = 'flashcards' | 'match' | 'typing' | 'story' | 'translate' | 'connect' | 'quiz' | 'choice' | 'roulette' | 'story_gap'
+export type GameType = 'flashcards' | 'match' | 'typing' | 'story' | 'translate' | 'connect' | 'quiz' | 'choice' | 'roulette' | 'story_gap' | 'spellslinger' | 'daily_quest'
 
 export interface TrackingContext {
   wordSetId?: string
@@ -11,6 +12,34 @@ export interface TrackingContext {
 
 export interface GameSession {
   id: string
+}
+
+// ===== GRACEFUL SHUTDOWN TRACKING =====
+// Track ongoing DB operations for graceful shutdown on logout
+const ongoingOperations = new Set<Promise<any>>()
+
+function trackOperation<T>(promise: Promise<T>): Promise<T> {
+  ongoingOperations.add(promise)
+  promise.finally(() => ongoingOperations.delete(promise))
+  return promise
+}
+
+export async function waitForOngoingOperations(): Promise<void> {
+  if (ongoingOperations.size === 0) {
+    console.log('✅ No ongoing operations to wait for')
+    return
+  }
+  
+  console.log(`⏳ Waiting for ${ongoingOperations.size} ongoing DB operations to complete...`)
+  try {
+    await Promise.race([
+      Promise.all(Array.from(ongoingOperations)),
+      new Promise(resolve => setTimeout(resolve, 5000)) // Max 5 seconds
+    ])
+    console.log('✅ All ongoing operations completed or timeout reached')
+  } catch (error) {
+    console.error('⚠️ Some operations failed, but continuing:', error)
+  }
 }
 
 /**
@@ -88,8 +117,16 @@ export async function getDiminishingMeta(gameType: GameType, context?: TrackingC
 
 export async function startGameSession(gameType: GameType, context?: TrackingContext): Promise<GameSession | null> {
   try {
+    console.log('🎮 startGameSession CALLED:', { gameType, context })
+    
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return null
+    if (!user) {
+      persistentLog('warn', `startGameSession: No user found for ${gameType}`)
+      console.warn('⚠️ startGameSession: No user found - session will not be created!')
+      return null
+    }
+    
+    console.log('✅ User found for game session:', user.id)
 
     // Update last_active in profiles when starting a game
     await supabase
@@ -97,6 +134,7 @@ export async function startGameSession(gameType: GameType, context?: TrackingCon
       .update({ last_active: new Date().toISOString() })
       .eq('id', user.id)
 
+    console.log('💾 Inserting game session into database...')
     const { data, error } = await supabase
       .from('game_sessions')
       .insert({
@@ -109,9 +147,29 @@ export async function startGameSession(gameType: GameType, context?: TrackingCon
       .select('id')
       .single()
 
-    if (error) throw error
+    if (error) {
+      persistentLog('error', `Failed to start game session: ${error.message}`, {
+        gameType,
+        error: error.message,
+        code: error.code,
+        details: error.details
+      })
+      console.error('❌ Failed to start game session:', error)
+      console.error('❌ Error details:', JSON.stringify(error, null, 2))
+      throw error
+    }
+    
+    persistentLog('info', `Game session started: ${gameType}`, { sessionId: data.id, gameType })
+    console.log('✅ Game session started successfully! Session ID:', data.id)
+    console.log('✅ Returning session object:', data)
+    
     return data as unknown as GameSession
-  } catch (_) {
+  } catch (error: any) {
+    persistentLog('error', `Error in startGameSession: ${error?.message || 'Unknown'}`, {
+      gameType,
+      error: error?.message
+    })
+    console.error('❌ Error in startGameSession:', error)
     return null
   }
 }
@@ -121,22 +179,311 @@ export async function endGameSession(sessionId: string | null, gameType: GameTyp
   durationSec?: number
   accuracyPct?: number
   details?: Record<string, unknown>
-}): Promise<void> {
-  try {
-    if (!sessionId) return
+}, context?: TrackingContext): Promise<void> {
+  const operation = (async () => {
+    try {
+      console.log('🎮 endGameSession CALLED:', { sessionId, gameType, metrics })
+    
+    if (!sessionId) {
+      // No client-side sessionId - create session now with proper metrics
+      console.log('ℹ️ No sessionId - creating session directly with accurate metrics')
+      
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        console.warn('⚠️ No user found, cannot create game session')
+        return
+      }
+      
+      persistentLog('info', `Creating game session: ${gameType}`, { metrics })
+      
+      // Use started_at from details if available (typical case for Typing Challenge)
+      // Otherwise use current time minus duration to reconstruct start time
+      let startedAt = new Date()
+      if (metrics.details && typeof metrics.details.started_at === 'string') {
+        startedAt = new Date(metrics.details.started_at as string)
+      } else if (metrics.durationSec) {
+        // Calculate start time by subtracting duration from now
+        startedAt = new Date(Date.now() - (metrics.durationSec * 1000))
+      }
+      
+      // Ensure details is properly serialized if it's an object
+      let detailsToSave = metrics.details ?? null
+      if (detailsToSave && typeof detailsToSave === 'object') {
+        // Supabase handles JSONB automatically, but we ensure it's a plain object
+        detailsToSave = JSON.parse(JSON.stringify(detailsToSave))
+      }
+      
+      console.log('📊 endGameSession INSERT: Saving details:', {
+        gameType,
+        details_type: typeof detailsToSave,
+        details_is_null: detailsToSave === null,
+        has_evaluations: detailsToSave && typeof detailsToSave === 'object' 
+          ? !!(detailsToSave as any).evaluations 
+          : false,
+        evaluations_count: detailsToSave && typeof detailsToSave === 'object' && (detailsToSave as any).evaluations
+          ? (detailsToSave as any).evaluations.length 
+          : 0
+      })
+      
+      const sessionData: any = {
+        student_id: user.id,
+        game_type: gameType,
+        started_at: startedAt.toISOString(),
+        finished_at: new Date().toISOString(),
+        score: metrics.score ?? null,
+        duration_sec: metrics.durationSec ?? null,
+        accuracy_pct: metrics.accuracyPct ?? null,
+        details: detailsToSave,
+      }
+      
+      // Add word_set_id and homework_id from context if available
+      if (context?.wordSetId) {
+        sessionData.word_set_id = context.wordSetId
+      }
+      if (context?.homeworkId) {
+        sessionData.homework_id = context.homeworkId
+      }
+      
+      console.log('📊 INSERTING game session with accuracy:', {
+        gameType,
+        accuracy_pct: sessionData.accuracy_pct,
+        score: sessionData.score,
+        metrics_received: metrics
+      })
+      
+      const { error: insertError } = await supabase
+        .from('game_sessions')
+        .insert(sessionData)
+      
+      if (insertError) {
+        console.error('❌ Failed to create game session:', insertError)
+        persistentLog('error', `Failed to create game session: ${insertError.message}`, { gameType, metrics })
+      } else {
+        console.log('✅ Game session created successfully with accuracy:', sessionData.accuracy_pct)
+        persistentLog('info', `Game session created: ${gameType}`, { metrics })
+      }
+      return
+    }
+    
+    persistentLog('info', `Ending game session: ${gameType}`, { sessionId, metrics })
+    console.log('💾 Ending game session:', { sessionId, gameType, metrics })
+    
+    // Ensure details is properly serialized if it's an object
+    let detailsToSave = metrics.details ?? null
+    if (detailsToSave && typeof detailsToSave === 'object') {
+      // Deep clone to ensure we have a clean object
+      detailsToSave = JSON.parse(JSON.stringify(detailsToSave))
+    }
+    
+    console.log('📊 endGameSession UPDATE: Saving details:', {
+      sessionId,
+      details_type: typeof detailsToSave,
+      details_is_null: detailsToSave === null,
+      has_evaluations: detailsToSave && typeof detailsToSave === 'object' 
+        ? !!(detailsToSave as any).evaluations 
+        : false,
+      evaluations_count: detailsToSave && typeof detailsToSave === 'object' && (detailsToSave as any).evaluations
+        ? (detailsToSave as any).evaluations.length 
+        : 0,
+      details_keys: detailsToSave && typeof detailsToSave === 'object' 
+        ? Object.keys(detailsToSave) 
+        : [],
+      details_evaluations_preview: detailsToSave && typeof detailsToSave === 'object' && (detailsToSave as any).evaluations
+        ? {
+            length: (detailsToSave as any).evaluations.length,
+            is_array: Array.isArray((detailsToSave as any).evaluations),
+            first_item: (detailsToSave as any).evaluations[0] || null
+          }
+        : null
+    })
+    
+    // Final check before saving
+    console.log('📊 endGameSession UPDATE: Final check before DB update:', {
+      detailsToSave_type: typeof detailsToSave,
+      detailsToSave_is_null: detailsToSave === null,
+      detailsToSave_evaluations_count: detailsToSave && typeof detailsToSave === 'object' && (detailsToSave as any).evaluations
+        ? (detailsToSave as any).evaluations.length 
+        : 0,
+      detailsToSave_stringified_length: detailsToSave ? JSON.stringify(detailsToSave).length : 0
+    })
+    
     const { error } = await supabase
       .from('game_sessions')
       .update({
         score: metrics.score ?? null,
         duration_sec: metrics.durationSec ?? null,
         accuracy_pct: metrics.accuracyPct ?? null,
-        details: metrics.details ?? null,
+        details: detailsToSave,
         finished_at: new Date().toISOString(),
       })
       .eq('id', sessionId)
-    if (error) throw error
-  } catch (_) {
-    // no-op
+      
+    if (error) {
+      console.error('📊 endGameSession UPDATE ERROR:', {
+        error_message: error.message,
+        error_code: error.code,
+        error_details: error.details,
+        detailsToSave_preview: detailsToSave ? JSON.stringify(detailsToSave).substring(0, 200) : null
+      })
+      persistentLog('error', `Failed to end game session: ${error.message}`, { 
+        sessionId, 
+        gameType, 
+        error: error.message,
+        code: error.code,
+        details: error.details 
+      })
+      console.error('❌ Failed to end game session:', error)
+      
+      // Store in localStorage as backup for retry
+      const backup = {
+        sessionId,
+        gameType,
+        metrics,
+        timestamp: Date.now()
+      }
+      const backupKey = `pendingSession_${sessionId}`
+      localStorage.setItem(backupKey, JSON.stringify(backup))
+      persistentLog('info', 'Game session backed up to localStorage for retry', { sessionId })
+      console.log('📦 Game session backed up to localStorage for retry')
+      
+      throw error
+    }
+    
+    // Verify what was actually saved by reading it back
+    const { data: savedSession, error: readError } = await supabase
+      .from('game_sessions')
+      .select('id, details')
+      .eq('id', sessionId)
+      .single()
+    
+    if (!readError && savedSession) {
+      let savedDetails: any = null
+      if (savedSession.details) {
+        if (typeof savedSession.details === 'string') {
+          try {
+            savedDetails = JSON.parse(savedSession.details)
+          } catch (e) {
+            savedDetails = null
+          }
+        } else {
+          savedDetails = savedSession.details
+        }
+      }
+      
+      console.log('📊 endGameSession UPDATE: Verified saved data:', {
+        sessionId,
+        saved_details_type: typeof savedDetails,
+        saved_evaluations_count: savedDetails?.evaluations?.length || 0,
+        saved_evaluations_is_array: Array.isArray(savedDetails?.evaluations),
+        saved_details_keys: savedDetails ? Object.keys(savedDetails) : []
+      })
+    } else if (readError) {
+      console.error('📊 endGameSession UPDATE: Failed to verify saved data:', readError)
+    }
+    
+    persistentLog('info', `Game session ended successfully: ${gameType}`, { sessionId })
+    console.log('✅ Game session ended successfully')
+    
+    // Clean up any backup
+    const backupKey = `pendingSession_${sessionId}`
+    localStorage.removeItem(backupKey)
+    
+  } catch (error: any) {
+    persistentLog('error', `Error in endGameSession: ${error?.message || 'Unknown error'}`, { 
+      sessionId, 
+      gameType,
+      error: error?.message,
+      stack: error?.stack 
+    })
+    console.error('❌ Error in endGameSession:', error)
+    
+      // DON'T throw - games use `void` so they won't handle it
+      // Instead, the backup mechanism will retry later
+      // This prevents unhandled promise rejections
+    }
+  })()
+  
+  // Track this operation for graceful shutdown
+  return trackOperation(operation)
+}
+
+/**
+ * Retry any pending game sessions that failed to save
+ * Call this on app startup to recover from crashes/quick logouts
+ */
+export async function retryPendingGameSessions(): Promise<void> {
+  try {
+    const pendingKeys = Object.keys(localStorage).filter(key => 
+      key.startsWith('pendingSession_')
+    )
+    
+    if (pendingKeys.length === 0) {
+      console.log('📦 No pending game sessions to retry')
+      return
+    }
+    
+    console.log(`🔄 Retrying ${pendingKeys.length} pending game sessions...`)
+    
+    for (const key of pendingKeys) {
+      try {
+        const backup = JSON.parse(localStorage.getItem(key) || '{}')
+        const { sessionId, gameType, metrics } = backup
+        
+        if (!sessionId) {
+          localStorage.removeItem(key)
+          continue
+        }
+        
+        // Try to save again
+        await endGameSession(sessionId, gameType, metrics)
+        console.log(`✅ Successfully retried session: ${sessionId}`)
+        
+      } catch (error) {
+        console.error(`❌ Failed to retry session from ${key}:`, error)
+        // Keep in localStorage for next retry
+      }
+    }
+  } catch (error) {
+    console.error('Error retrying pending sessions:', error)
+  }
+}
+
+/**
+ * Sync all pending data before logout
+ * Returns true if all data was synced successfully
+ */
+export async function syncBeforeLogout(): Promise<boolean> {
+  try {
+    persistentLog('info', 'Starting sync before logout')
+    console.log('🔄 Syncing all pending game data before logout...')
+    
+    // CRITICAL: Wait for ongoing database operations to complete
+    console.log('⏳ Step 1: Waiting for ongoing operations...')
+    await waitForOngoingOperations()
+    
+    // Wait a bit more for any operations that just started
+    console.log('⏳ Step 2: Safety delay for race conditions...')
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    // Wait again for operations that might have started during delay
+    await waitForOngoingOperations()
+    
+    // Retry any pending sessions from previous failures
+    console.log('⏳ Step 3: Retrying pending sessions...')
+    await retryPendingGameSessions()
+    
+    // Final wait for retries to complete
+    console.log('⏳ Step 4: Final wait...')
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    persistentLog('info', 'Sync before logout completed successfully')
+    console.log('✅ All data synced before logout')
+    return true
+    
+  } catch (error: any) {
+    persistentLog('error', `Error syncing before logout: ${error?.message}`, { error: error?.message })
+    console.error('❌ Error syncing before logout:', error)
+    return false
   }
 }
 
@@ -200,16 +547,43 @@ export async function logWordAttempt(params: {
 
 // IMPORTANT: `score` must already be the final points to add (scaled if you use multipliers in the game UI)
 export async function updateStudentProgress(score: number, gameType: GameType, context?: TrackingContext): Promise<number> {
-  try {
-    console.log('Debug - updateStudentProgress called with:', { score, gameType, context })
+  const operation = (async () => {
+    try {
+      // Emit sync start event for save status indicator
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('xp-sync-start'))
+      }
+      
+      persistentLog('info', `updateStudentProgress called: ${gameType}, score: ${score}`, { score, gameType, context })
+      console.log('🔥🔥🔥 tracking.ts updateStudentProgress called with:', { score, gameType, context })
     
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError) {
+      persistentLog('error', `Auth error in updateStudentProgress: ${authError.message}`, { authError })
+      console.error('❌ Auth error in updateStudentProgress:', authError)
+      
+      // Emit sync error event for save status indicator
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('xp-sync-error', {
+          detail: { error: authError.message, gameType }
+        }))
+      }
+      return 0
+    }
     if (!user) {
-      console.log('Debug - No user found')
+      persistentLog('warn', 'No user found in updateStudentProgress')
+      console.log('❌ No user found in updateStudentProgress')
+      
+      // Emit sync error event for save status indicator
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('xp-sync-error', {
+          detail: { error: 'No user found', gameType }
+        }))
+      }
       return 0
     }
     
-    console.log('Debug - User ID:', user.id)
+    console.log('✅ User authenticated in tracking.ts:', user.id)
     const studentId = user!.id
     
     // Update last_active in profiles when updating progress
@@ -271,26 +645,122 @@ export async function updateStudentProgress(score: number, gameType: GameType, c
     let newTotalPointsForReturn = pointsToAdd
     if (globalRecord?.id) {
       // Update existing global record
-      console.log('Debug - Updating global record with new score:', (globalRecord.total_points ?? 0) + pointsToAdd)
-      const { error } = await supabase
-        .from('student_progress')
-        .update({
-          total_points: (globalRecord.total_points ?? 0) + pointsToAdd,
-          games_played: (globalRecord.games_played ?? 0) + 1,
-          last_played_at: new Date().toISOString(),
-          last_game_type: gameType,
+      const newTotalPoints = (globalRecord.total_points ?? 0) + pointsToAdd
+      const newGamesPlayed = (globalRecord.games_played ?? 0) + 1
+      console.log('🔥 Updating global record:', { 
+        recordId: globalRecord.id,
+        oldPoints: globalRecord.total_points,
+        pointsToAdd,
+        newTotalPoints,
+        oldGames: globalRecord.games_played,
+        newGames: newGamesPlayed
+      })
+      
+      console.log('📊 Updating existing global record in database...')
+      console.log('📊 Update query params:', { 
+        recordId: globalRecord.id, 
+        newTotalPoints, 
+        newGamesPlayed, 
+        gameType 
+      })
+      
+      let updateData, updateError
+      try {
+        console.log('📊 Attempting DB UPDATE:', { 
+          recordId: globalRecord.id,
+          oldPoints: globalRecord.total_points,
+          newPoints: newTotalPoints,
+          pointsToAdd,
+          gameType
         })
-        .eq('id', globalRecord.id)
-      if (error) {
-        console.log('Debug - Update error:', error)
-        throw error
+        
+        const result = await supabase
+          .from('student_progress')
+          .update({
+            total_points: newTotalPoints,
+            games_played: newGamesPlayed,
+            last_played_at: new Date().toISOString(),
+            last_game_type: gameType,
+          })
+          .eq('id', globalRecord.id)
+          .select()
+        
+        updateData = result.data
+        updateError = result.error
+        
+        console.log('📊 Update query completed:', { 
+          hasError: !!updateError, 
+          dataLength: updateData?.length,
+          errorCode: updateError?.code,
+          data: updateData
+        })
+      } catch (e) {
+        console.error('❌ EXCEPTION during update query:', e)
+        persistentLog('error', `DB UPDATE exception: ${e}`, { error: String(e), gameType })
+        
+        // Check if it's a network error
+        const isNetworkError = e instanceof TypeError && e.message.includes('Failed to fetch')
+        if (isNetworkError) {
+          console.error('🌐 Network error detected - XP will be retried later')
+          persistentLog('error', `Network error during DB update: ${e.message}`, { 
+            error: e.message, 
+            gameType,
+            pointsToAdd,
+            willRetry: true
+          })
+        }
+        
+        // Emit error event for save status indicator
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('xp-sync-error', {
+            detail: { 
+              error: e instanceof Error ? e.message : String(e), 
+              gameType,
+              isNetworkError
+            }
+          }))
+        }
+        
+        throw e
       }
-      console.log('Debug - Global record updated successfully')
-      newTotalPointsForReturn = (globalRecord.total_points ?? 0) + pointsToAdd
+      
+      if (updateError) {
+        console.error('❌ CRITICAL: Update error - XP will NOT be saved!', updateError)
+        console.error('❌ Update error details:', JSON.stringify(updateError, null, 2))
+        console.error('❌ Update error code:', updateError.code)
+        console.error('❌ This means localStorage will be higher than DB!')
+        persistentLog('error', `Update failed: ${updateError.message}`, {
+          error: updateError.message,
+          code: updateError.code,
+          gameType,
+          pointsToAdd
+        })
+        
+        // Emit error event for save status indicator
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('xp-sync-error', {
+            detail: { error: updateError.message, gameType }
+          }))
+        }
+        
+        // KRITISKT: Returnera 0 så localStorage inte uppdateras!
+        return 0
+      }
+      
+      console.log('✅✅✅ Global record updated successfully!')
+      console.log('✅ Database now has:', { totalXP: newTotalPoints, gamesPlayed: newGamesPlayed })
+      console.log('✅ Update response data:', updateData)
+      console.log('✅ DB write confirmed - safe to update localStorage')
+      persistentLog('info', `XP updated in DB: ${newTotalPoints} total XP`, { newTotalPoints, newGamesPlayed })
+      newTotalPointsForReturn = pointsToAdd  // Return points ADDED, not total
+      
+      // NOTE: Game sessions are created client-side by games using endGameSession()
+      // This includes ACCURATE accuracy_pct, duration, and other metrics
+      // Server-side session creation REMOVED to prevent duplicate/incorrect accuracy data
     } else {
-      // Create new global record
-      console.log('Debug - Creating new global record with score:', pointsToAdd)
-      const { error } = await supabase
+      // Create new global record using insert (not upsert, since this is first game)
+      console.log('🔥 Creating NEW global record:', { studentId, pointsToAdd, gameType })
+      const { data: insertData, error: insertError } = await supabase
         .from('student_progress')
         .insert({
           student_id: studentId,
@@ -301,12 +771,51 @@ export async function updateStudentProgress(score: number, gameType: GameType, c
           last_played_at: new Date().toISOString(),
           last_game_type: gameType,
         })
-      if (error) {
-        console.log('Debug - Insert error:', error)
-        throw error
+        .select()
+      
+      if (insertError) {
+        // If insert failed due to conflict, it means record exists - try update instead
+        console.log('⚠️ Insert failed (record may exist), trying update...', insertError.code)
+        const { data: updateData, error: updateError } = await supabase
+          .from('student_progress')
+          .update({
+            total_points: pointsToAdd,
+            games_played: 1,
+            last_played_at: new Date().toISOString(),
+            last_game_type: gameType,
+          })
+          .eq('student_id', studentId)
+          .is('word_set_id', null)
+          .is('homework_id', null)
+          .select()
+        
+        if (updateError) {
+          console.error('❌ Update error after insert conflict:', updateError)
+          persistentLog('error', `Insert fallback UPDATE failed: ${updateError.message}`, {
+            error: updateError.message,
+            code: updateError.code
+          })
+          
+          // Emit error event for save status indicator
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('xp-sync-error', {
+              detail: { error: updateError.message, gameType }
+            }))
+          }
+          
+          // KRITISKT: Returnera 0 så localStorage inte uppdateras!
+          return 0
+        }
+        console.log('✅ Global record updated after conflict:', updateData)
+        persistentLog('info', `XP updated in DB: ${pointsToAdd} total XP`, { total: pointsToAdd, games: 1 })
+      } else {
+        console.log('✅ New global record created successfully:', insertData)
+        persistentLog('info', `XP created in DB: ${pointsToAdd} total XP`, { total: pointsToAdd, games: 1 })
       }
-      console.log('Debug - New global record created successfully')
       newTotalPointsForReturn = pointsToAdd
+      
+      // NOTE: Game sessions are created client-side by games using endGameSession()
+      // This ensures accurate accuracy_pct, duration, and other game-specific metrics
     }
 
     // OPTIONAL: Also keep the specific word set record for detailed tracking
@@ -355,11 +864,48 @@ export async function updateStudentProgress(score: number, gameType: GameType, c
         console.log('Debug - Specific word set tracking failed (non-critical):', specificError)
       }
     }
-    return newTotalPointsForReturn
-  } catch (error) {
-    console.error('Error updating student progress:', error)
-    return 0
-  }
+    
+    console.log('🎉 updateStudentProgress COMPLETED successfully!')
+    console.log('🎉 Returning total points added:', newTotalPointsForReturn)
+    persistentLog('info', `XP updated successfully: +${newTotalPointsForReturn} XP for ${gameType}`, {
+      pointsAdded: newTotalPointsForReturn,
+      gameType,
+      context
+    })
+    
+    // Emit sync complete event for save status indicator ONLY if we actually saved something
+    if (typeof window !== 'undefined' && newTotalPointsForReturn > 0) {
+      window.dispatchEvent(new CustomEvent('xp-synced', {
+        detail: { pointsAdded: newTotalPointsForReturn, gameType }
+      }))
+    }
+    
+      return newTotalPointsForReturn
+    } catch (error: any) {
+      persistentLog('error', `CRITICAL ERROR updating student progress: ${error?.message || 'Unknown'}`, {
+        error: error?.message,
+        gameType,
+        score,
+        context,
+        stack: error?.stack
+      })
+      console.error('❌❌❌ CRITICAL ERROR updating student progress:', error)
+      console.error('Error details:', JSON.stringify(error, null, 2))
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+      
+      // Emit error event for save status indicator
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('xp-sync-error', {
+          detail: { error: error?.message || 'Unknown error', gameType }
+        }))
+      }
+      
+      return 0
+    }
+  })()
+  
+  // Track this operation for graceful shutdown
+  return trackOperation(operation)
 }
 
 /**

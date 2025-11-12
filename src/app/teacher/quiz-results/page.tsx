@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { FileText, Users, BookOpen, Filter, Calendar, Star, Target, Clock } from 'lucide-react'
+import { FileText, Users, BookOpen, Filter, Calendar, Star, Target, Clock, ChevronDown, ChevronUp, Eye } from 'lucide-react'
 
 type QuizResult = {
   id: string
@@ -16,6 +16,13 @@ type QuizResult = {
   class_id: string | null
   class_name: string | null
   total_questions: number
+}
+
+type WordDetail = {
+  prompt: string
+  expected: string
+  given: string
+  verdict: 'correct' | 'partial' | 'wrong' | 'empty'
 }
 
 type Class = {
@@ -38,6 +45,9 @@ export default function QuizResultsPage() {
   const [results, setResults] = useState<QuizResult[]>([])
   const [sortKey, setSortKey] = useState<'student' | 'score' | 'date' | 'wordSet'>('date')
   const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc')
+  const [expandedQuiz, setExpandedQuiz] = useState<string | null>(null)
+  const [quizDetails, setQuizDetails] = useState<Record<string, WordDetail[]>>({})
+  const [loadingDetails, setLoadingDetails] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     ;(async () => {
@@ -268,6 +278,95 @@ export default function QuizResultsPage() {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
 
+  const fetchQuizDetails = async (result: QuizResult) => {
+    const quizKey = result.id
+    if (quizDetails[quizKey]) {
+      // Already loaded, just toggle
+      setExpandedQuiz(expandedQuiz === quizKey ? null : quizKey)
+      return
+    }
+
+    setLoadingDetails(prev => ({ ...prev, [quizKey]: true }))
+    try {
+      // Find matching game session with detailed evaluations
+      const { data: quizSessions, error } = await supabase
+        .from('game_sessions')
+        .select('id, word_set_id, homework_id, score, accuracy_pct, finished_at, details')
+        .eq('student_id', result.student_id)
+        .eq('game_type', 'quiz')
+        .not('finished_at', 'is', null)
+        .order('finished_at', { ascending: false })
+        .limit(50) // Get recent sessions to find matching one
+
+      if (error) {
+        console.error('Error fetching quiz sessions:', error)
+        setLoadingDetails(prev => ({ ...prev, [quizKey]: false }))
+        return
+      }
+
+      // Find matching session by word_set_id and time
+      const matchingSession = quizSessions?.find(s => {
+        const timeDiff = Math.abs(new Date(s.finished_at).getTime() - new Date(result.last_quiz_at).getTime())
+        const withinTimeWindow = timeDiff < 300000 // Within 5 minutes
+        
+        if (result.word_set_id && s.word_set_id) {
+          return s.word_set_id === result.word_set_id && withinTimeWindow
+        }
+        
+        // Fallback: match by time only
+        return withinTimeWindow
+      })
+
+      let wordDetails: WordDetail[] = []
+      
+      if (matchingSession?.details) {
+        let details: any = null
+        
+        // Handle different detail formats (object or JSON string)
+        if (typeof matchingSession.details === 'string') {
+          try {
+            details = JSON.parse(matchingSession.details)
+          } catch (e) {
+            console.error('Failed to parse details JSON:', e)
+          }
+        } else if (typeof matchingSession.details === 'object') {
+          details = matchingSession.details
+        }
+        
+        if (details && details.evaluations && Array.isArray(details.evaluations)) {
+          wordDetails = details.evaluations.map((e: any) => ({
+            prompt: e.prompt || '',
+            expected: e.expected || '',
+            given: e.given || '',
+            verdict: !e.given || (typeof e.given === 'string' && e.given.trim() === '') 
+              ? 'empty' 
+              : (e.verdict || 'wrong')
+          }))
+        }
+      }
+
+      setQuizDetails(prev => ({ ...prev, [quizKey]: wordDetails }))
+      setExpandedQuiz(quizKey)
+    } catch (error) {
+      console.error('Error fetching quiz details:', error)
+    } finally {
+      setLoadingDetails(prev => ({ ...prev, [quizKey]: false }))
+    }
+  }
+
+  const getWordDetails = (result: QuizResult): WordDetail[] => {
+    return quizDetails[result.id] || []
+  }
+
+  const getWordCounts = (wordDetails: WordDetail[]) => {
+    return {
+      correct: wordDetails.filter(w => w.verdict === 'correct').length,
+      partial: wordDetails.filter(w => w.verdict === 'partial').length,
+      wrong: wordDetails.filter(w => w.verdict === 'wrong').length,
+      empty: wordDetails.filter(w => w.verdict === 'empty').length
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800">
       <div className="max-w-6xl mx-auto p-6">
@@ -358,69 +457,191 @@ export default function QuizResultsPage() {
                       )}
                     </div>
                   </th>
+                  <th className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <Eye className="w-4 h-4 text-indigo-600" />
+                      <span className="font-medium">Details</span>
+                    </div>
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {sorted.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-gray-400">
+                    <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
                       <div className="flex flex-col items-center gap-2">
                         <FileText className="w-8 h-8 opacity-50" />
                         <span>No quiz results found</span>
                       </div>
                     </td>
                   </tr>
-                ) : sorted.map((result, index) => (
-                  <tr key={result.id} className="bg-white hover:bg-gray-50 border-b border-gray-200">
-                    <td className="px-6 py-4 font-medium">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-xs font-medium text-white">
-                          {result.student_display.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-700">{result.student_display}</div>
-                          {result.class_name !== 'No Class' && (
-                            <div className="text-xs text-gray-500">{result.class_name}</div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-base text-gray-800">
-                          {result.last_quiz_score}/{result.total_questions || '?'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        {result.total_questions && result.total_questions > 0 ? (
-                          <>
-                            <span className={`font-medium text-base ${getScoreColor(Math.round((result.last_quiz_score / result.total_questions) * 100))}`}>
-                              {Math.round((result.last_quiz_score / result.total_questions) * 100)}%
+                ) : sorted.map((result, index) => {
+                  const isExpanded = expandedQuiz === result.id
+                  const wordDetails = getWordDetails(result)
+                  const hasDetails = wordDetails.length > 0
+                  const counts = hasDetails ? getWordCounts(wordDetails) : null
+                  
+                  return (
+                    <>
+                      <tr key={result.id} className="bg-white hover:bg-gray-50 border-b border-gray-200">
+                        <td className="px-6 py-4 font-medium">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-xs font-medium text-white">
+                              {result.student_display.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-700">{result.student_display}</div>
+                              {result.class_name !== 'No Class' && (
+                                <div className="text-xs text-gray-500">{result.class_name}</div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-base text-gray-800">
+                              {result.last_quiz_score}/{result.total_questions || '?'}
                             </span>
-                          </>
-                        ) : (
-                          <span className="font-medium text-base text-gray-500">
-                            N/A
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm text-gray-700">{result.word_set_title}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm text-gray-700">{formatDate(result.last_quiz_at)}</span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            {result.total_questions && result.total_questions > 0 ? (
+                              <>
+                                <span className={`font-medium text-base ${getScoreColor(Math.round((result.last_quiz_score / result.total_questions) * 100))}`}>
+                                  {Math.round((result.last_quiz_score / result.total_questions) * 100)}%
+                                </span>
+                              </>
+                            ) : (
+                              <span className="font-medium text-base text-gray-500">
+                                N/A
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <BookOpen className="w-4 h-4 text-gray-500" />
+                            <span className="text-sm text-gray-700">{result.word_set_title}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-gray-500" />
+                            <span className="text-sm text-gray-700">{formatDate(result.last_quiz_at)}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => fetchQuizDetails(result)}
+                            disabled={loadingDetails[result.id]}
+                            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-indigo-700 hover:text-indigo-900 hover:bg-indigo-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {loadingDetails[result.id] ? (
+                              <span>Loading...</span>
+                            ) : (
+                              <>
+                                {isExpanded ? (
+                                  <>
+                                    <ChevronUp className="w-4 h-4" />
+                                    <span>Dölj detaljer</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <ChevronDown className="w-4 h-4" />
+                                    <span>Visa detaljer</span>
+                                  </>
+                                )}
+                              </>
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                      {isExpanded && hasDetails && (
+                        <tr key={`${result.id}-details`} className="bg-gray-50">
+                          <td colSpan={6} className="px-6 py-4">
+                            <div className="bg-white rounded-lg border-2 border-indigo-200 p-5">
+                              <h4 className="text-lg font-semibold text-gray-900 mb-4">Detaljer per ord</h4>
+                              
+                              {/* Summary Stats */}
+                              {counts && (
+                                <div className="grid grid-cols-4 gap-3 mb-4">
+                                  <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
+                                    <div className="text-2xl font-bold text-green-700">{counts.correct}</div>
+                                    <div className="text-xs text-green-600">Rätt</div>
+                                  </div>
+                                  <div className="text-center p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                                    <div className="text-2xl font-bold text-yellow-700">{counts.partial}</div>
+                                    <div className="text-xs text-yellow-600">Nästan rätt</div>
+                                  </div>
+                                  <div className="text-center p-3 bg-red-50 rounded-lg border border-red-200">
+                                    <div className="text-2xl font-bold text-red-700">{counts.wrong}</div>
+                                    <div className="text-xs text-red-600">Fel</div>
+                                  </div>
+                                  <div className="text-center p-3 bg-gray-100 rounded-lg border border-gray-300">
+                                    <div className="text-2xl font-bold text-gray-700">{counts.empty}</div>
+                                    <div className="text-xs text-gray-600">Tomt</div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Word-by-word List */}
+                              <div className="space-y-2 max-h-96 overflow-y-auto">
+                                {wordDetails.map((word, wordIndex) => (
+                                  <div
+                                    key={wordIndex}
+                                    className={`p-3 rounded-lg border-2 ${
+                                      word.verdict === 'correct' ? 'bg-green-50 border-green-200' :
+                                      word.verdict === 'partial' ? 'bg-yellow-50 border-yellow-200' :
+                                      word.verdict === 'wrong' ? 'bg-red-50 border-red-200' :
+                                      'bg-gray-50 border-gray-300'
+                                    }`}
+                                  >
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="flex-1">
+                                        <div className="font-semibold text-gray-900 mb-1">{word.prompt}</div>
+                                        <div className="text-sm text-gray-600 mb-1">
+                                          <span className="font-medium">Förväntat: </span>
+                                          <span className="text-gray-900">{word.expected}</span>
+                                        </div>
+                                        <div className="text-sm text-gray-600">
+                                          <span className="font-medium">Svar: </span>
+                                          <span className={word.given ? 'text-gray-900' : 'text-gray-400 italic'}>
+                                            {word.given || '(tomt)'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div className={`text-xs font-semibold px-2 py-1 rounded ${
+                                        word.verdict === 'correct' ? 'bg-green-100 text-green-700' :
+                                        word.verdict === 'partial' ? 'bg-yellow-100 text-yellow-700' :
+                                        word.verdict === 'wrong' ? 'bg-red-100 text-red-700' :
+                                        'bg-gray-200 text-gray-700'
+                                      }`}>
+                                        {word.verdict === 'correct' ? 'Rätt' :
+                                         word.verdict === 'partial' ? 'Nästan' :
+                                         word.verdict === 'wrong' ? 'Fel' : 'Tomt'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      {isExpanded && !hasDetails && !loadingDetails[result.id] && (
+                        <tr key={`${result.id}-no-details`} className="bg-gray-50">
+                          <td colSpan={6} className="px-6 py-4">
+                            <div className="bg-white rounded-lg border-2 border-gray-200 p-5 text-center">
+                              <p className="text-gray-600">Ingen detaljerad information tillgänglig för detta quiz.</p>
+                              <p className="text-sm text-gray-500 mt-2">Detaljerad information sparas endast för quiz som slutförts efter denna funktion lades till.</p>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  )
+                })}
               </tbody>
             </table>
           </div>

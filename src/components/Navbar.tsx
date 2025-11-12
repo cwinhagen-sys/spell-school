@@ -6,6 +6,7 @@ import { LogOut } from 'lucide-react'
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { markUserAsLoggedOut } from '@/lib/activity'
+import { syncManager } from '@/lib/syncManager'
 
 export default function Navbar() {
   const pathname = usePathname()
@@ -27,13 +28,36 @@ export default function Navbar() {
       setIsLoggingOut(true)
       console.log('Logout button clicked')
       
-      // Try to mark as logged out first (but don't wait for it)
+      // 🔄 NEW: Final flush with SyncManager (faster, more reliable)
+      console.log('🔄 Final sync before logout...')
+      try {
+        await Promise.race([
+          syncManager.cleanup(),
+          new Promise(resolve => setTimeout(resolve, 3000)) // Max 3 seconds (faster than old 6s)
+        ])
+        console.log('✅ Sync completed successfully!')
+      } catch (error) {
+        console.error('❌ Error syncing before logout:', error)
+      }
+      
+      // Try to mark as logged out
       markUserAsLoggedOut().catch(err => console.log('Failed to mark as logged out:', err))
       
-      // Clear any stored auth data immediately
+      // Clear any stored auth data (but preserve persistent logs for debugging)
       console.log('Clearing auth data...')
+      
+      // Save persistent logs before clearing
+      const persistentLogs = localStorage.getItem('persistentLogs')
+      
       localStorage.clear()
       sessionStorage.clear()
+      
+      // Restore persistent logs for post-logout debugging
+      if (persistentLogs) {
+        localStorage.setItem('persistentLogs', persistentLogs)
+        console.log('📋 Preserved persistent logs for debugging'
+)
+      }
       
       // Set a timeout to force redirect regardless of Supabase response
       const forceRedirect = setTimeout(() => {
@@ -66,12 +90,11 @@ export default function Navbar() {
     }
   }
   
-  if (pathname === '/' || pathname === '/login' || pathname === '/signup') return null
+  if (pathname === '/' || pathname === '/login' || pathname === '/signup' || pathname?.startsWith('/signup/')) return null
   return (
     <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 shadow-sm">
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 text-gray-800">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 grid place-items-center font-bold text-white">SS</div>
           <span className="text-lg font-bold">Spell School</span>
         </Link>
         <nav className="flex items-center gap-4">
@@ -99,10 +122,10 @@ export default function Navbar() {
             }`}
           >
             <LogOut className={`w-4 h-4 ${isLoggingOut ? 'animate-spin' : ''}`} />
-            <span>{isLoggingOut ? 'Signing out...' : 'Sign Out'}</span>
+            <span>{isLoggingOut ? 'Saving data...' : 'Sign Out'}</span>
             {isLoggingOut && (
               <div className="text-xs text-gray-400 ml-1">
-                (max 2s)
+                (please wait)
               </div>
             )}
           </button>

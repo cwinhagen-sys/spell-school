@@ -3,15 +3,19 @@
 import { useEffect, useRef, useState } from 'react'
 import { RotateCcw, ArrowLeft, Star, CheckCircle, XCircle, Send } from 'lucide-react'
 import { startGameSession, endGameSession, updateStudentProgress, type TrackingContext } from '@/lib/tracking'
-import GameCompleteModal from '@/components/GameCompleteModal'
+import UniversalGameCompleteModal from '@/components/UniversalGameCompleteModal'
+import { calculateRouletteScore } from '@/lib/gameScoring'
+import { supabase } from '@/lib/supabase'
+import ColorGridSelector, { COLOR_GRIDS, GridConfig } from '@/components/ColorGridSelector'
 
 interface RouletteGameProps {
   words: string[]
   translations: { [key: string]: string }
   onClose: () => void
-  onScoreUpdate: (score: number, newTotal?: number) => void
+  onScoreUpdate: (score: number, newTotal?: number, gameType?: string) => void
   trackingContext?: TrackingContext
   themeColor?: string
+  gridConfig?: GridConfig[]
 }
 
 type SpinMode = 1 | 2 | 3
@@ -21,12 +25,19 @@ interface SpunWord {
   translation: string
 }
 
-export default function RouletteGame({ words, translations, onClose, onScoreUpdate, trackingContext, themeColor }: RouletteGameProps) {
+export default function RouletteGame({ words, translations, onClose, onScoreUpdate, trackingContext, themeColor, gridConfig }: RouletteGameProps) {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const startedAtRef = useRef<number | null>(null)
   const [gameFinished, setGameFinished] = useState(false)
   const [elapsedSec, setElapsedSec] = useState(0)
   const [awardedPoints, setAwardedPoints] = useState(0)
+  
+  // Grid selector state
+  const [showGridSelector, setShowGridSelector] = useState(true)
+  const [selectedGrids, setSelectedGrids] = useState<Array<{ words: string[]; translations: { [key: string]: string }; colorScheme: typeof COLOR_GRIDS[0] }>>([])
+  const [gameWords, setGameWords] = useState<string[]>([]) // Swedish words (for matching)
+  const [gameEnglishWords, setGameEnglishWords] = useState<string[]>([]) // English words (for display)
+  const [gameTranslations, setGameTranslations] = useState<{ [key: string]: string }>({})
   
   // Game state
   const [spinMode, setSpinMode] = useState<SpinMode | null>(null)
@@ -45,8 +56,49 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
   const [selectedWordIndex, setSelectedWordIndex] = useState(-1)
   const wheelRef = useRef<HTMLCanvasElement>(null)
 
+  // Initialize words and translations from selected grids
+  useEffect(() => {
+    if (showGridSelector || selectedGrids.length === 0) {
+      setGameWords([])
+      setGameEnglishWords([])
+      setGameTranslations({})
+      return
+    }
+    
+    console.log('🎰 Roulette: Building word list from', selectedGrids.length, 'grids')
+    
+    // Combine words and translations from selected grids
+    const allWords: string[] = [] // Swedish words
+    const allEnglishWords: string[] = [] // English words for display
+    const allTranslations: { [key: string]: string } = {}
+    
+    selectedGrids.forEach((grid) => {
+      allWords.push(...grid.words) // Swedish words
+      Object.assign(allTranslations, grid.translations)
+      
+      // Convert Swedish words to English for display
+      grid.words.forEach((swedishWord) => {
+        const englishWord = grid.translations[swedishWord.toLowerCase()] || translations[swedishWord.toLowerCase()]
+        if (englishWord && englishWord !== `[${swedishWord}]`) {
+          allEnglishWords.push(englishWord)
+        } else {
+          // Fallback: assume word is already English
+          allEnglishWords.push(swedishWord)
+        }
+      })
+    })
+    
+    setGameWords(allWords) // Keep Swedish for matching
+    setGameEnglishWords(allEnglishWords) // English for display
+    setGameTranslations({ ...translations, ...allTranslations })
+    console.log('🎰 Roulette: Initialized with', allWords.length, 'words (Swedish) and', allEnglishWords.length, 'words (English)')
+  }, [selectedGrids, showGridSelector, translations])
+
   // Get translation for a word
   const getTranslation = (word: string) => {
+    if (gameTranslations && Object.keys(gameTranslations).length > 0) {
+      return gameTranslations[word.toLowerCase()] || translations[word.toLowerCase()] || word
+    }
     return translations[word.toLowerCase()] || word
   }
 
@@ -66,12 +118,11 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
 
   // Initialize game session
   useEffect(() => {
+    if (showGridSelector) return
     startedAtRef.current = Date.now()
-    ;(async () => {
-            const session = await startGameSession('roulette' as any, trackingContext)
-      setSessionId(session?.id ?? null)
-    })()
-  }, [trackingContext])
+    console.log('🎮 Roulette: Game started (session will be created server-side)')
+    setSessionId(null)
+  }, [trackingContext, showGridSelector])
 
   // Timer
   useEffect(() => {
@@ -86,6 +137,8 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
 
   // Draw wheel on canvas
   useEffect(() => {
+    if (showGridSelector) return
+    
     const drawWheel = () => {
       const canvas = wheelRef.current
       if (!canvas) {
@@ -99,22 +152,25 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
         return false
       }
 
-      console.log('Drawing wheel with', words.length, 'words:', words)
+      // Use English words for display on the wheel
+      const wordsToUse = gameEnglishWords.length > 0 ? gameEnglishWords : (gameWords.length > 0 ? gameWords.map(w => getTranslation(w)) : words)
+      console.log('Drawing wheel with', wordsToUse.length, 'words (English):', wordsToUse)
 
       const colors = [
         '#f39c12', '#27ae60', '#2980b9', '#8e44ad', '#e67e22', '#16a085', '#c0392b', '#2ecc71',
         '#e74c3c', '#9b59b6', '#1abc9c', '#34495e', '#f1c40f', '#e67e22', '#95a5a6', '#2c3e50'
       ]
-      const arc = (2 * Math.PI) / words.length
+      const arc = (2 * Math.PI) / wordsToUse.length
 
       // Clear canvas
       ctx.clearRect(0, 0, 400, 400)
 
       // Draw segments - start from 3 o'clock (0 degrees) and go clockwise
-      for (let i = 0; i < words.length; i++) {
+      for (let i = 0; i < wordsToUse.length; i++) {
         const angle = i * arc // Start from 3 o'clock (0 degrees)
         const isSelected = selectedWordIndex === i && !isSpinning
-        const isUsed = spunWords.some(spun => spun.word.toLowerCase() === words[i].toLowerCase())
+        // Check if this English word has been used
+        const isUsed = spunWords.some(spun => spun.word.toLowerCase() === wordsToUse[i].toLowerCase())
         
         // Draw segment
         ctx.beginPath()
@@ -174,7 +230,7 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
         ctx.shadowOffsetX = 0
         ctx.shadowOffsetY = 0
         
-        const displayText = words[i].length > 12 ? words[i].substring(0, 12) + '...' : words[i]
+        const displayText = wordsToUse[i].length > 12 ? wordsToUse[i].substring(0, 12) + '...' : wordsToUse[i]
         ctx.fillText(displayText, 170, 0)
         ctx.restore() 
       }
@@ -192,7 +248,7 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
 
     // Start trying to draw
     tryDraw()
-  }, [words, selectedWordIndex, isSpinning, spunWords])
+  }, [gameWords, gameEnglishWords, words, selectedWordIndex, isSpinning, spunWords, showGridSelector])
 
   // Validate sentence
   const validateSentence = (sentence: string): boolean => {
@@ -210,25 +266,27 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
   const containsRequiredWords = (sentence: string): boolean => {
     const lowerSentence = sentence.toLowerCase()
     return spunWords.every(spun => {
-      const word = spun.word.toLowerCase()
-      const translation = spun.translation.toLowerCase()
+      // spun.word is now the English word (from the wheel)
+      // spun.translation is the Swedish word (for reference)
+      const englishWord = spun.word.toLowerCase()
+      const swedishWord = spun.translation.toLowerCase()
       
-      // Check for exact word match
-      if (lowerSentence.includes(word) || lowerSentence.includes(translation)) {
+      // Check for exact word match (English word is primary since it's on the wheel)
+      if (lowerSentence.includes(englishWord) || lowerSentence.includes(swedishWord)) {
         return true
       }
       
       // Check for word with quotes around it
-      if (lowerSentence.includes(`"${word}"`) || lowerSentence.includes(`"${translation}"`)) {
+      if (lowerSentence.includes(`"${englishWord}"`) || lowerSentence.includes(`"${swedishWord}"`)) {
         return true
       }
       
       // Check for common inflections (basic word variations)
-      const wordVariations = getWordVariations(word)
-      const translationVariations = getWordVariations(translation)
+      const englishVariations = getWordVariations(englishWord)
+      const swedishVariations = getWordVariations(swedishWord)
       
-      return wordVariations.some(variation => lowerSentence.includes(variation)) ||
-             translationVariations.some(variation => lowerSentence.includes(variation))
+      return englishVariations.some(variation => lowerSentence.includes(variation)) ||
+             swedishVariations.some(variation => lowerSentence.includes(variation))
     })
   }
 
@@ -270,7 +328,9 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
   // Spin wheel to specific index
   const spinWheelToIndex = (idx: number, opts: { spins?: number, duration?: number, jitterRatio?: number } = {}) => {
     const { spins = 5, duration = 4500, jitterRatio = 0.25 } = opts
-    const n = words.length
+    // Use English words for wheel display (same length as Swedish words)
+    const wordsToUse = gameEnglishWords.length > 0 ? gameEnglishWords : (gameWords.length > 0 ? gameWords.map(w => getTranslation(w)) : words)
+    const n = wordsToUse.length
     const SEG_ANGLE = 360 / n
     const DRAW_OFFSET = 0 // Canvas standard 0° (3 o'clock)
     const POINTER_ANGLE = -90 // Pointer at 12 o'clock
@@ -314,9 +374,12 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
     setIsSpinning(true)
     setFeedback(null)
     
-    // Get available words (not already selected)
+    // Use English words for selection (they're displayed on the wheel)
+    const wordsToUse = gameEnglishWords.length > 0 ? gameEnglishWords : (gameWords.length > 0 ? gameWords.map(w => getTranslation(w)) : words)
+    
+    // Get available words (not already selected) - use English words
     const usedWords = spunWords.map(spun => spun.word.toLowerCase())
-    const availableWords = words.filter(word => !usedWords.includes(word.toLowerCase()))
+    const availableWords = wordsToUse.filter(word => !usedWords.includes(word.toLowerCase()))
     
     // If no more words available, don't spin
     if (availableWords.length === 0) {
@@ -324,22 +387,28 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
       return
     }
     
-    // Random word selection from available words
+    // Random word selection from available English words
     const randomAvailableIndex = Math.floor(Math.random() * availableWords.length)
-    const selectedWord = availableWords[randomAvailableIndex]
-    const translation = getTranslation(selectedWord)
+    const selectedEnglishWord = availableWords[randomAvailableIndex]
     
-    // Find the original index of the selected word
-    const originalIndex = words.findIndex(word => word.toLowerCase() === selectedWord.toLowerCase())
+    // Find the index in the English words array (this is what's displayed on the wheel)
+    const englishIndex = wordsToUse.findIndex(word => word.toLowerCase() === selectedEnglishWord.toLowerCase())
     
-    setSelectedWordIndex(originalIndex)
+    // Find corresponding Swedish word for matching (if we have Swedish words)
+    let selectedSwedishWord = selectedEnglishWord
+    if (gameWords.length > 0 && englishIndex >= 0 && englishIndex < gameWords.length) {
+      selectedSwedishWord = gameWords[englishIndex]
+    }
+    
+    setSelectedWordIndex(englishIndex)
     
     // Spin to the selected index with consistent speed
-    spinWheelToIndex(originalIndex, { spins: 5, duration: 4500, jitterRatio: 0.25 })
+    spinWheelToIndex(englishIndex, { spins: 5, duration: 4500, jitterRatio: 0.25 })
     
     // Wait for animation to complete
     setTimeout(() => {
-      const newSpunWord: SpunWord = { word: selectedWord, translation }
+      // Store English word (what's displayed) and its translation
+      const newSpunWord: SpunWord = { word: selectedEnglishWord, translation: selectedSwedishWord }
       setSpunWords(prev => [...prev, newSpunWord])
       setSpinsRemaining(prev => prev - 1)
       setIsSpinning(false)
@@ -397,31 +466,36 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
       
       const result = await response.json()
       
-      // Calculate score based on new rule: Points = number of words in sentence (if grammatically correct)
-      let score = 0
-      if (result.quality === 0) {
-        score = 0 // No points for inappropriate words or just writing words without sentences
-      } else if (result.quality >= 0.8) {
-        // Grammatically correct sentence - points = number of words
-        const wordCount = currentSentence.trim().split(/\s+/).length
-        console.log('DEBUG: Sentence:', JSON.stringify(currentSentence))
-        console.log('DEBUG: Word count:', wordCount)
-        console.log('DEBUG: Split result:', currentSentence.trim().split(/\s+/))
-        score = wordCount
-      } else {
-        // Grammatically incorrect but still a sentence - half points
-        const wordCount = currentSentence.trim().split(/\s+/).length
-        console.log('DEBUG: Sentence (incorrect):', JSON.stringify(currentSentence))
-        console.log('DEBUG: Word count (incorrect):', wordCount)
-        score = Math.max(1, Math.floor(wordCount / 2))
+      // Use the new universal scoring system: Points based on sentence quality and word count
+      const wordCount = currentSentence.trim().split(/\s+/).length
+      const scoreResult = calculateRouletteScore(wordCount, result.quality, 0)
+      
+      setTotalScore(scoreResult.pointsAwarded)
+      setAwardedPoints(scoreResult.pointsAwarded)
+      
+      // Store word count in localStorage for quest tracking BEFORE calling onScoreUpdate
+      // CRITICAL: This must happen BEFORE onScoreUpdate to ensure quest system can read the data
+      const today = new Date().toDateString()
+      
+      // Get user ID to match the quest system's localStorage key format
+      const { data: { user } } = await supabase.auth.getUser()
+      const userId = user?.id || 'anonymous'
+      const rouletteWordCountKey = `roulette_word_count_${today}_${userId}`
+      
+      const rouletteData = {
+        wordCount,
+        timestamp: Date.now(),
+        isPerfect: result.color === 'green'
       }
+      localStorage.setItem(rouletteWordCountKey, JSON.stringify(rouletteData))
+      console.log('📝 Saved roulette data to localStorage:', { key: rouletteWordCountKey, data: rouletteData })
       
-      setTotalScore(score)
-      setAwardedPoints(score)
+      // INSTANT UI UPDATE: Send points to parent for immediate UI update
+      onScoreUpdate(scoreResult.accuracy, scoreResult.pointsAwarded, 'roulette')
       
-      // Update progress
-         const newTotal = await updateStudentProgress(score, 'roulette' as any, trackingContext)
-      onScoreUpdate(score, newTotal)
+      // BACKGROUND SYNC: Update database in background (non-blocking)
+      // NOTE: Database sync handled by handleScoreUpdate in student dashboard via onScoreUpdate
+      // No need to call updateStudentProgress here to avoid duplicate sessions
       
       // Determine feedback type based on color
       let feedbackType = 'success'
@@ -433,7 +507,7 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
       
          setFeedback({ 
      type: feedbackType as 'success' | 'error' | 'info', 
-     message: score === 0 ? result.feedback : `Great! You earned ${score} points. ${result.feedback}` 
+     message: scoreResult.pointsAwarded === 0 ? result.feedback : `Great! You earned ${scoreResult.pointsAwarded} points. ${result.feedback}` 
    })
       
       // Mark as submitted and show finish button
@@ -452,13 +526,8 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
       setTotalScore(fallbackScore)
       setAwardedPoints(fallbackScore)
       
-      // Update progress with fallback score
-      try {
-        const newTotal = await updateStudentProgress(fallbackScore, 'roulette', trackingContext)
-        onScoreUpdate(fallbackScore, newTotal)
-      } catch (progressError) {
-        console.error('Error updating progress:', progressError)
-      }
+      // INSTANT UI UPDATE: Send fallback points to parent for immediate UI update
+      onScoreUpdate(50, fallbackScore, 'roulette') // 50% quest score for fallback
       
       setShowFinishButton(true)
     } finally {
@@ -468,6 +537,9 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
 
   // Finish game
   const finishGame = async () => {
+    // NOTE: Database sync handled by handleScoreUpdate in student dashboard via onScoreUpdate
+    // No need to call updateStudentProgress here to avoid duplicate sessions
+    
     const started = startedAtRef.current
     if (started) {
       const durationSec = Math.max(1, Math.floor((Date.now() - started) / 1000))
@@ -497,6 +569,7 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
 
   // Restart game
   const restartGame = () => {
+    setShowGridSelector(true)
     setSpinMode(null)
     setSpinsRemaining(0)
     setSpunWords([])
@@ -513,10 +586,30 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
     setHasSubmitted(false)
     setElapsedSec(0)
     startedAtRef.current = Date.now()
-    ;(async () => {
-      const session = await startGameSession('roulette', trackingContext)
-      setSessionId(session?.id ?? null)
-    })()
+    console.log('🎮 Roulette: Game restarted (session will be created server-side)')
+    setSessionId(null)
+  }
+
+  // Grid selector
+  if (showGridSelector) {
+    return (
+      <ColorGridSelector
+        words={words}
+        translations={translations || {}}
+        onSelect={(grids) => {
+          console.log('✅ Roulette: Grids selected', grids.length)
+          setSelectedGrids(grids)
+          setShowGridSelector(false)
+        }}
+        onClose={onClose}
+        minGrids={1}
+        maxGrids={undefined}
+        wordsPerGrid={6}
+        title="Select Color Grids"
+        description="Choose any number of color grids to practice with"
+        gridConfig={gridConfig}
+      />
+    )
   }
 
   // Game complete modal
@@ -527,9 +620,15 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
       return `${mins}:${secs.toString().padStart(2, '0')}`
     }
 
+    // Calculate score for display
+    const wordCount = currentSentence.trim().split(/\s+/).length
+    const scoreResult = calculateRouletteScore(wordCount, 1, 0) // Assume perfect quality for display
+
     return (
-      <GameCompleteModal
+      <UniversalGameCompleteModal
         score={awardedPoints}
+        pointsAwarded={awardedPoints}
+        gameType="roulette"
         accuracy={100} // Always 100% if they complete the sentence
         time={formatTime(elapsedSec)}
         details={{
@@ -539,7 +638,6 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
         }}
         onPlayAgain={restartGame}
         onBackToDashboard={onClose}
-        gameType="roulette"
         themeColor={themeColor}
       />
     )
@@ -548,29 +646,48 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
   // Mode selection screen
   if (!spinMode) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-        <div className="rounded-2xl p-8 max-w-md w-full text-center shadow-2xl relative bg-white text-gray-800 border border-gray-200">
-          {themeColor && <div className="h-1 rounded-md mb-4" style={{ backgroundColor: themeColor }}></div>}
-          
-          <div className="text-6xl mb-4">🎰</div>
-          <h2 className="text-2xl font-bold mb-4">Roulette Game</h2>
-          <p className="text-gray-600 mb-6">
-            Spin the wheel and write a sentence using the selected words!
-          </p>
-          
-          <div className="space-y-3 mb-6">
+      <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div className="bg-white rounded-3xl p-6 w-full max-w-2xl shadow-2xl border border-gray-100 relative my-4 text-center">
+          {/* Header */}
+          <div className="flex items-center justify-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center">
+              <span className="text-white text-3xl">🎰</span>
+            </div>
+            <div className="ml-4">
+              <h2 className="text-3xl font-bold text-gray-800">Word Roulette</h2>
+              <p className="text-sm text-gray-600">Spin and create sentences!</p>
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <p className="text-lg text-gray-700 mb-6">
+              Spin the wheel and write a sentence using the selected words!
+            </p>
+            
+            <div className="bg-gradient-to-r from-blue-100 to-indigo-100 rounded-2xl p-6 mb-6 border border-blue-200">
+              <div className="text-sm font-medium text-blue-800 mb-2">🎯 How it works:</div>
+              <div className="text-sm text-blue-700">
+                • Click the wheel to spin<br/>
+                • Use all selected words in a sentence<br/>
+                • Points = Number of words in your sentence
+              </div>
+            </div>
+            
             <button
               onClick={() => {
                 setSpinMode(1)
                 setSpinsRemaining(1)
               }}
-              className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white py-4 px-8 rounded-2xl font-bold text-lg transition-all shadow-lg hover:shadow-xl"
             >
-              Start Game (Points = Number of words in sentence)
+              🎰 Start Game
             </button>
           </div>
           
-          <button onClick={onClose} className="text-gray-600 hover:text-gray-800 transition-colors">
+          <button 
+            onClick={onClose} 
+            className="text-gray-600 hover:text-gray-800 font-medium transition-colors"
+          >
             Back to Dashboard
           </button>
         </div>
@@ -580,29 +697,28 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
 
   // Main game screen
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-      <div className="rounded-2xl p-6 md:p-8 max-w-4xl w-full max-h-[90vh] overflow-auto shadow-2xl relative bg-white text-gray-800 border border-gray-200">
-        {themeColor && <div className="h-1 rounded-md mb-4" style={{ backgroundColor: themeColor }}></div>}
-        
+    <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 p-4 z-50 overflow-y-auto">
+      <div className="bg-white rounded-3xl p-6 w-full max-w-5xl shadow-2xl border border-gray-100 relative my-8 mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold flex items-center">
-            <span className="text-3xl mr-2">🎰</span>
-            Roulette Game
-          </h2>
-          <button onClick={onClose} className="text-gray-600 hover:text-gray-800 text-2xl transition-colors">×</button>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center">
+              <span className="text-white text-2xl">🎰</span>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">Word Roulette</h2>
+              <p className="text-sm text-gray-600">Spin and create sentences!</p>
+            </div>
+          </div>
+          <button 
+            onClick={onClose} 
+            className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-colors"
+          >
+            <span className="text-gray-600 text-xl">×</span>
+          </button>
         </div>
 
-        {/* Game Stats */}
-        <div className="flex items-center justify-between mb-6 p-4 bg-gray-100 rounded-lg">
-          <div className="flex items-center gap-4">
-            <div className="text-sm text-gray-600">Spins Remaining</div>
-            <div className="text-xl font-bold text-blue-600">{spinsRemaining}</div>
-          </div>
-          <div className="text-sm text-gray-600">
-            Time: {Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, '0')}
-          </div>
-        </div>
+
 
                  {/* Wheel */}
          <div className="flex justify-center mb-8">
@@ -648,11 +764,14 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
 
         {/* Spun Words Display */}
         {spunWords.length > 0 && (
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-            <h3 className="text-lg font-semibold mb-2">Selected Words:</h3>
-            <div className="flex flex-wrap gap-2">
+          <div className="mb-8 p-6 bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl border border-purple-200">
+            <h3 className="text-lg font-bold mb-4 text-gray-800 flex items-center">
+              <span className="mr-2">🎯</span>
+              Selected Words:
+            </h3>
+            <div className="flex flex-wrap gap-3">
               {spunWords.map((spun, index) => (
-                <div key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                <div key={index} className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-2xl text-sm font-semibold shadow-lg">
                   {spun.word}
                 </div>
               ))}
@@ -662,76 +781,90 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
 
         {/* Spin Instructions */}
         {spinsRemaining > 0 && (
-          <div className="text-center mb-6">
-            <p className="text-gray-600 text-sm">
-              {isSpinning ? 'Spinning...' : `Click the wheel to spin! (${spinsRemaining} spins left)`}
-            </p>
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-orange-100 to-red-100 px-6 py-3 rounded-2xl border border-orange-200">
+              <span className="text-orange-600">🎰</span>
+              <p className="text-orange-800 font-medium">
+                {isSpinning ? 'Spinning...' : 'Click the wheel to spin!'}
+              </p>
+            </div>
           </div>
         )}
 
         {/* Sentence Input */}
         {spinsRemaining === 0 && (
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-3">Write a sentence using all the words:</h3>
-            <div className="space-y-3">
-              <textarea
-                value={currentSentence}
-                onChange={(e) => setCurrentSentence(e.target.value)}
-                placeholder="Write your sentence here..."
-                className="w-full p-4 bg-white border border-gray-300 rounded-lg text-gray-800 placeholder-gray-500 resize-none"
-                rows={3}
-              />
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600">
-                  {containsInappropriateWords(currentSentence) ? (
-                    <span className="text-red-600">Please use appropriate language</span>
-                  ) : (
-                    "Must start with capital letter and end with . ! or ?"
-                  )}
+          <div className="mb-8">
+            <div className="bg-gradient-to-r from-green-100 to-emerald-100 rounded-2xl p-6 border border-green-200">
+              <h3 className="text-xl font-bold mb-4 text-gray-800 flex items-center">
+                <span className="mr-2">✍️</span>
+                Write a sentence using all the words:
+              </h3>
+              <div className="space-y-4">
+                <textarea
+                  value={currentSentence}
+                  onChange={(e) => setCurrentSentence(e.target.value)}
+                  placeholder="Write your sentence here..."
+                  className="w-full p-4 bg-white border-2 border-gray-300 rounded-2xl text-gray-800 placeholder-gray-500 resize-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                  rows={3}
+                />
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-medium">
+                    {containsInappropriateWords(currentSentence) ? (
+                      <span className="text-red-600 flex items-center">
+                        <span className="mr-1">⚠️</span>
+                        Please use appropriate language
+                      </span>
+                    ) : (
+                      <span className="text-gray-600 flex items-center">
+                        <span className="mr-1">💡</span>
+                        Must start with capital letter and end with . ! or ?
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={submitSentence}
+                    disabled={!validateSentence(currentSentence) || isSubmitting || hasSubmitted || containsInappropriateWords(currentSentence)}
+                    className={`px-6 py-3 rounded-2xl font-semibold transition-all flex items-center gap-2 shadow-lg ${
+                      !validateSentence(currentSentence) || isSubmitting || hasSubmitted || containsInappropriateWords(currentSentence)
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl'
+                    }`}
+                  >
+                    <Send className="w-4 h-4" />
+                    {isSubmitting ? 'Analyzing...' : hasSubmitted ? 'Submitted' : 'Submit'}
+                  </button>
                 </div>
-                <button
-                  onClick={submitSentence}
-                  disabled={!validateSentence(currentSentence) || isSubmitting || hasSubmitted || containsInappropriateWords(currentSentence)}
-                  className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
-                    !validateSentence(currentSentence) || isSubmitting || hasSubmitted || containsInappropriateWords(currentSentence)
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
-                >
-                  <Send className="w-4 h-4" />
-                  {isSubmitting ? 'Analyzing...' : hasSubmitted ? 'Submitted' : 'Submit'}
-                </button>
               </div>
             </div>
           </div>
         )}
 
-                 {/* Feedback */}
-         {feedback && (
-           <div className={`p-4 rounded-lg mb-4 ${
-             feedback.type === 'success' ? 'bg-green-100 text-green-800 border border-green-300' :
-             feedback.type === 'error' ? 'bg-red-100 text-red-800 border border-red-300' :
-             'bg-blue-100 text-blue-800 border border-blue-300'
-           }`}>
-             <div className="mb-3">{feedback.message}</div>
-             {showFinishButton && (
-               <div className="text-center">
-                 <button
-                   onClick={finishGame}
-                   className="bg-green-600 text-white py-2 px-6 rounded-lg font-medium hover:bg-green-700 transition-colors"
-                 >
-                   Finish Game
-                 </button>
-               </div>
-             )}
-           </div>
-         )}
+        {/* Feedback */}
+        {feedback && (
+          <div className={`p-6 rounded-2xl mb-8 border-2 ${
+            feedback.type === 'success' ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-300' :
+            feedback.type === 'error' ? 'bg-gradient-to-r from-red-100 to-rose-100 text-red-800 border-red-300' :
+            'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border-blue-300'
+          }`}>
+            <div className="mb-4 text-lg font-medium">{feedback.message}</div>
+            {showFinishButton && (
+              <div className="text-center">
+                <button
+                  onClick={finishGame}
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-8 rounded-2xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl"
+                >
+                  🎉 Finish Game
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Actions */}
-        <div className="flex justify-center gap-3">
+        <div className="flex justify-center gap-4">
           <button 
             onClick={restartGame} 
-            className="bg-gray-100 border border-gray-300 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center gap-2"
+            className="bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-800 py-3 px-6 rounded-2xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
           >
             <RotateCcw className="w-4 h-4" />
             Restart

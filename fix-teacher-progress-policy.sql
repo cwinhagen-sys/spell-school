@@ -24,3 +24,15 @@ COMMENT ON POLICY "students_and_teachers_can_insert_progress" ON student_progres
 IS 'Students can create their own progress, teachers can create progress for students in their classes';
 
 
+
+
+
+
+
+
+
+
+
+
+
+

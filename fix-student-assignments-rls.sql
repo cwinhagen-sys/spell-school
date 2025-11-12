@@ -53,3 +53,15 @@ ORDER BY policyname;
 
 -- 7. Test query that students should be able to run
 SELECT 'Student assignments RLS policies updated' as status;
+
+
+
+
+
+
+
+
+
+
+
+

@@ -19,16 +19,11 @@ export default function SignupPage() {
               className="p-8 rounded-2xl border cursor-pointer transition-all duration-300 border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 hover:scale-105 shadow-lg hover:shadow-xl"
             >
             <div className="text-center">
-              <div className="w-32 h-32 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6 border border-blue-200 overflow-hidden">
+              <div className="w-32 h-32 rounded-2xl flex items-center justify-center mx-auto mb-6 border-2 border-gray-200 overflow-hidden shadow-lg">
                 <img 
-                  src="/assets/wizard/wizard_novice.png" 
-                  alt="Apprentice Wizard" 
-                  className="w-28 h-28 object-cover rounded-full"
-                  style={{
-                    filter: 'drop-shadow(0 0 20px rgba(59, 130, 246, 0.3))',
-                    maskImage: 'radial-gradient(circle, black 60%, transparent 100%)',
-                    WebkitMaskImage: 'radial-gradient(circle, black 60%, transparent 100%)'
-                  }}
+                  src="/images/student-signup.png" 
+                  alt="Student studying" 
+                  className="w-full h-full object-cover"
                 />
               </div>
               <h3 className="text-2xl font-bold text-gray-800 mb-3">Student</h3>
@@ -48,16 +43,11 @@ export default function SignupPage() {
               className="p-8 rounded-2xl border cursor-pointer transition-all duration-300 border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 hover:scale-105 shadow-lg hover:shadow-xl"
             >
             <div className="text-center">
-              <div className="w-32 h-32 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-200 overflow-hidden">
+              <div className="w-32 h-32 rounded-2xl flex items-center justify-center mx-auto mb-6 border-2 border-gray-200 overflow-hidden shadow-lg">
                 <img 
-                  src="/assets/wizard/wizard_powerful.png" 
-                  alt="Master Wizard" 
-                  className="w-28 h-28 object-cover rounded-full"
-                  style={{
-                    filter: 'drop-shadow(0 0 20px rgba(16, 185, 129, 0.3))',
-                    maskImage: 'radial-gradient(circle, black 60%, transparent 100%)',
-                    WebkitMaskImage: 'radial-gradient(circle, black 60%, transparent 100%)'
-                  }}
+                  src="/images/teacher-signup.png" 
+                  alt="Wizard casting spell" 
+                  className="w-full h-full object-cover"
                 />
               </div>
               <h3 className="text-2xl font-bold text-gray-800 mb-3">Teacher</h3>

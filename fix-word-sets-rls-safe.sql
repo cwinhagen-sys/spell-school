@@ -58,3 +58,15 @@ ORDER BY policyname;
 
 -- 6. Test query that students should be able to run
 SELECT 'Word sets RLS policies updated for students' as status;
+
+
+
+
+
+
+
+
+
+
+
+

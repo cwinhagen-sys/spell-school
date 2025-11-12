@@ -31,3 +31,15 @@ SELECT
   COUNT(*) - COUNT(last_active) as students_without_last_active
 FROM profiles 
 WHERE role = 'student';
+
+
+
+
+
+
+
+
+
+
+
+

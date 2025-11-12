@@ -20,3 +20,15 @@ DROP POLICY IF EXISTS "word_sets_student_simple" ON word_sets;
 
 -- 4. Verify
 SELECT 'RLS temporarily disabled - system should work now' as status;
+
+
+
+
+
+
+
+
+
+
+
+

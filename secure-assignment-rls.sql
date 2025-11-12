@@ -88,3 +88,15 @@ ORDER BY tablename, policyname;
 
 -- 9. Test data isolation
 SELECT 'Secure RLS policies created - data isolation restored' as status;
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Test Student</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .error { color: red; background: #ffe6e6; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .success { color: green; background: #e6ffe6; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .info { color: blue; background: #e6f3ff; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        button { padding: 10px 20px; margin: 10px 5px; }
+        input { padding: 8px; margin: 5px; width: 300px; }
+    </style>
+</head>
+<body>
+    <h1>Create Test Student</h1>
+    
+    <div id="results"></div>
+    
+    <h2>Create Student Account</h2>
+    <p>Skapa ett test-elevkonto för att testa badges:</p>
+    
+    <input type="email" id="email" placeholder="Email" value="teststudent@example.com">
+    <input type="password" id="password" placeholder="Lösenord" value="testpassword123">
+    <button onclick="createStudent()">Skapa Elevkonto</button>
+    
+    <h2>Test Badge System</h2>
+    <p>Efter att ha skapat kontot, testa badge-systemet:</p>
+    
+    <button onclick="testBadgeSystem()">Testa Badge-Systemet</button>
+    
+    <script>
+        const supabaseUrl = 'https://edbbestqdwldryxuxkma.supabase.co'
+        const supabaseKey = 'sb_publishable_bx81qdFnpcX79ovYbCL98Q_eirRtByp'
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
+        
+        let currentUser = null
+        
+        async function createStudent() {
+            const email = document.getElementById('email').value
+            const password = document.getElementById('password').value
+            
+            if (!email || !password) {
+                addResult('❌ Ange email och lösenord', 'error')
+                return
+            }
+            
+            addResult('=== SKAPA ELEVKONTO ===', 'info')
+            
+            try {
+                // Create user account
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email: email,
+                    password: password
+                })
+                
+                if (authError) {
+                    addResult('❌ Fel vid skapande av konto: ' + JSON.stringify(authError, null, 2), 'error')
+                    return
+                }
+                
+                addResult('✅ Konto skapat: ' + email, 'success')
+                
+                // Wait a moment for the user to be created
+                await new Promise(resolve => setTimeout(resolve, 1000))
+                
+                // Sign in
+                const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                })
+                
+                if (signInError) {
+                    addResult('❌ Fel vid inloggning: ' + JSON.stringify(signInError, null, 2), 'error')
+                    return
+                }
+                
+                currentUser = signInData.user
+                addResult('✅ Inloggad som: ' + currentUser.email, 'success')
+                
+                // Create profile as student
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .insert({
+                        id: currentUser.id,
+                        email: currentUser.email,
+                        role: 'student',
+                        created_at: new Date().toISOString()
+                    })
+                
+                if (profileError) {
+                    addResult('❌ Fel vid skapande av profil: ' + JSON.stringify(profileError, null, 2), 'error')
+                    return
+                }
+                
+                addResult('✅ Profil skapad som elev', 'success')
+                addResult('Konto redo för badge-test!', 'info')
+                
+            } catch (error) {
+                addResult('❌ Fel: ' + error.message, 'error')
+            }
+        }
+        
+        async function testBadgeSystem() {
+            if (!currentUser) {
+                addResult('❌ Ingen användare inloggad. Skapa konto först.', 'error')
+                return
+            }
+            
+            addResult('=== TESTA BADGE-SYSTEMET ===', 'info')
+            
+            try {
+                // Load user's badges
+                const { data: userBadges, error: userBadgeError } = await supabase
+                    .from('user_badges')
+                    .select(`
+                        *,
+                        badges (
+                            name,
+                            description,
+                            icon,
+                            category,
+                            rarity
+                        )
+                    `)
+                    .eq('user_id', currentUser.id)
+                    .order('unlocked_at', { ascending: false })
+                
+                if (userBadgeError) {
+                    addResult('❌ Fel vid laddning av badges: ' + JSON.stringify(userBadgeError, null, 2), 'error')
+                    return
+                }
+                
+                addResult('✅ Laddade ' + userBadges.length + ' användarens badges', 'success')
+                
+                if (userBadges.length === 0) {
+                    addResult('ℹ️ Användaren har inga badges än', 'info')
+                } else {
+                    addResult('Användarens badges:', 'info')
+                    userBadges.forEach(ub => {
+                        addResult(`- ${ub.badges.name} (${ub.badges.category})`, 'info')
+                    })
+                }
+                
+                // Test awarding a badge
+                addResult('Testar att tjäna en badge...', 'info')
+                
+                // Get a badge
+                const { data: badges, error: badgeError } = await supabase
+                    .from('badges')
+                    .select('*')
+                    .limit(1)
+                
+                if (badgeError) {
+                    addResult('❌ Fel vid hämtning av badge: ' + JSON.stringify(badgeError, null, 2), 'error')
+                    return
+                }
+                
+                const badge = badges[0]
+                addResult('Försöker tjäna badge: ' + badge.name, 'info')
+                
+                const { data: insertData, error: insertError } = await supabase
+                    .from('user_badges')
+                    .insert({
+                        user_id: currentUser.id,
+                        badge_id: badge.id,
+                        unlocked_at: new Date().toISOString(),
+                        progress: 1
+                    })
+                    .select()
+                
+                if (insertError) {
+                    addResult('❌ Fel vid tjäna badge: ' + JSON.stringify(insertError, null, 2), 'error')
+                } else {
+                    addResult('✅ Badge tjänad framgångsrikt: ' + badge.name, 'success')
+                    addResult('Badge-systemet fungerar!', 'success')
+                }
+                
+            } catch (error) {
+                addResult('❌ Fel: ' + error.message, 'error')
+            }
+        }
+        
+        function addResult(message, type) {
+            const div = document.createElement('div')
+            div.className = type
+            div.innerHTML = message
+            document.getElementById('results').appendChild(div)
+        }
+        
+        // Initialize
+        addResult('Test redo. Skapa ett elevkonto först.', 'info')
+    </script>
+</body>
+</html>
+
+
+

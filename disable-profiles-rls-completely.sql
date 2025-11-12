@@ -23,3 +23,15 @@ WHERE tablename = 'profiles';
 
 -- 4. Test that we can access profiles
 SELECT 'Profiles RLS completely disabled - login should work now' as status;
+
+
+
+
+
+
+
+
+
+
+
+
