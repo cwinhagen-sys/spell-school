@@ -55,10 +55,17 @@ interface StudentDetailedStats {
   quiz_results: Array<{
     quiz_id: string
     word_set_title: string
+    word_set_id: string | null
     score: number
     total: number
     accuracy: number
     completed_at: string
+    word_details?: Array<{
+      prompt: string
+      expected: string
+      given: string
+      verdict: 'correct' | 'partial' | 'wrong' | 'empty'
+    }>
   }>
   missed_words: Array<{
     word: string
