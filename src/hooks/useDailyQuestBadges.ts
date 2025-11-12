@@ -270,6 +270,20 @@ export function useDailyQuestBadges() {
             earned: false
           }
         }
+        
+        // Ensure badge is defined before using it
+        if (!badge) {
+          badge = {
+            id: `temp-${questId}`,
+            name: `Quest Badge`,
+            description: `Badge for completing ${questId}`,
+            icon: '🏆',
+            category: 'daily',
+            rarity: 'common' as const,
+            quest_id: questId,
+            earned: false
+          }
+        }
       }
       
       console.log('🎖️ Badge to award:', badge.name, badge.icon)
