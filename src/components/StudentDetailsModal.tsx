@@ -307,10 +307,10 @@ export default function StudentDetailsModal({
                         }
                         
                         // Categorize words
-                        const correctWords = hasDetails ? quiz.word_details.filter(w => w.verdict === 'correct') : []
-                        const partialWords = hasDetails ? quiz.word_details.filter(w => w.verdict === 'partial') : []
-                        const wrongWords = hasDetails ? quiz.word_details.filter(w => w.verdict === 'wrong') : []
-                        const emptyWords = hasDetails ? quiz.word_details.filter(w => w.verdict === 'empty') : []
+                        const correctWords = hasDetails && quiz.word_details ? quiz.word_details.filter(w => w.verdict === 'correct') : []
+                        const partialWords = hasDetails && quiz.word_details ? quiz.word_details.filter(w => w.verdict === 'partial') : []
+                        const wrongWords = hasDetails && quiz.word_details ? quiz.word_details.filter(w => w.verdict === 'wrong') : []
+                        const emptyWords = hasDetails && quiz.word_details ? quiz.word_details.filter(w => w.verdict === 'empty') : []
                         
                         return (
                           <div
