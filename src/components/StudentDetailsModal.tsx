@@ -374,7 +374,7 @@ export default function StudentDetailsModal({
                             </div>
                             
                             {/* Expanded Word Details */}
-                            {isExpanded && hasDetails && (
+                            {isExpanded && hasDetails && quiz.word_details && (
                               <div className="border-t-2 border-indigo-100 p-5 bg-gray-50">
                                 {/* Summary Stats */}
                                 <div className="grid grid-cols-4 gap-3 mb-4">
