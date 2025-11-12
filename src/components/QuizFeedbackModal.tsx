@@ -26,7 +26,7 @@ interface QuizFeedbackModalProps {
 
 type Category = 'perfect' | 'almost_there' | 'good_try' | 'remaining' | 'all'
 
-interface CategorizedEvaluation extends Evaluation {
+interface CategorizedEvaluation extends Omit<Evaluation, 'category'> {
   category: Category
   points: number
   explanation: string
