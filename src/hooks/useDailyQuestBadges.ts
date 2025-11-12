@@ -235,13 +235,14 @@ export function useDailyQuestBadges() {
           
           if (!error && badgeData) {
             console.log('🎖️ Found badge in database:', badgeData)
-            badge = {
+            const newBadge: DailyQuestBadge = {
               ...badgeData,
               earned: false
             }
+            badge = newBadge
             
             // Add to cache
-            currentBadges = [...currentBadges, badge]
+            currentBadges = [...currentBadges, newBadge]
             setBadges(currentBadges)
             localStorage.setItem('daily_quest_badges', JSON.stringify(currentBadges))
           } else {
