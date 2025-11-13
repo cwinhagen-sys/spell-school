@@ -125,7 +125,29 @@ export default function AddStudentsPage() {
 
       if (!response.ok) {
         const errorText = result?.error || 'Failed to create students'
-        setMessage({ type: 'error', text: errorText })
+        console.error('❌ API Error Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: result?.error,
+          debug: result?.debug
+        })
+        
+        // Show detailed error message
+        let errorMessage = errorText
+        if (result?.debug) {
+          const debug = result.debug
+          const missingKeys = []
+          if (!debug.hasSupabaseUrl) missingKeys.push('NEXT_PUBLIC_SUPABASE_URL')
+          if (!debug.hasServiceRoleKey) missingKeys.push('SUPABASE_SERVICE_ROLE_KEY')
+          
+          if (missingKeys.length > 0) {
+            errorMessage += `\n\nMissing environment variables: ${missingKeys.join(', ')}`
+            errorMessage += `\n\nPlease check Vercel Dashboard → Settings → Environment Variables`
+            errorMessage += `\n\nAvailable Supabase keys: ${debug.allSupabaseKeys?.join(', ') || 'none'}`
+          }
+        }
+        
+        setMessage({ type: 'error', text: errorMessage })
         return
       }
 

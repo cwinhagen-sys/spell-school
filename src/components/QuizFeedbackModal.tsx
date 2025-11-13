@@ -54,13 +54,24 @@ export default function QuizFeedbackModal({
     const explanation = aiExplanations[key] || getFallbackExplanation(evaluation)
     
     // Use API's category if available, otherwise fallback to local logic
-    let category: Category
+    let category: Category | undefined = undefined
     let points: number = evaluation.points || 0
     
     if (evaluation.category) {
-      category = evaluation.category as Category
-      console.log(`🎯 Using API category for "${evaluation.prompt}": ${category} (${points} points)`)
-    } else {
+      // Only use API category if it's not 'remaining' for answered questions
+      // If user gave an answer but API says 'remaining', that's wrong
+      const hasAnswer = evaluation.given && evaluation.given.trim() !== '' && evaluation.verdict !== 'empty'
+      if (evaluation.category === 'remaining' && hasAnswer) {
+        // API incorrectly marked answered question as remaining - use fallback logic instead
+        console.warn(`⚠️ API incorrectly marked answered question as 'remaining': "${evaluation.prompt}" with answer "${evaluation.given}"`)
+      } else {
+        category = evaluation.category as Category
+        console.log(`🎯 Using API category for "${evaluation.prompt}": ${category} (${points} points)`)
+      }
+    }
+    
+    // If category wasn't set from API (or was incorrectly 'remaining'), use fallback
+    if (category === undefined) {
       // Fallback local categorization based on verdict and points
       // First check if empty/unanswered - these should always be 'remaining'
       if (evaluation.verdict === 'empty' || !evaluation.given || evaluation.given.trim() === '') {
@@ -72,7 +83,8 @@ export default function QuizFeedbackModal({
       } else if (evaluation.verdict === 'wrong' && evaluation.given && evaluation.given.trim() !== '') {
         category = 'good_try'
       } else {
-        category = 'remaining' // Default to remaining if unclear
+        // If verdict is not empty but unclear, don't mark as remaining - mark as good_try instead
+        category = 'good_try'
       }
       console.log(`🔄 Fallback category for "${evaluation.prompt}": ${category} (verdict: ${evaluation.verdict}, points: ${points}, given: "${evaluation.given}")`)
     }

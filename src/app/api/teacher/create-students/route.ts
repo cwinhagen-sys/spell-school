@@ -11,10 +11,26 @@ export async function POST(request: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
+    // Enhanced debugging
+    const envDebug = {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasServiceRoleKey: !!serviceRoleKey,
+      supabaseUrlLength: supabaseUrl?.length || 0,
+      serviceRoleKeyLength: serviceRoleKey?.length || 0,
+      supabaseUrlPreview: supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : 'missing',
+      allSupabaseKeys: Object.keys(process.env).filter(k => k.includes('SUPABASE')),
+      nodeEnv: process.env.NODE_ENV
+    }
+    
+    console.error('🔍 Create Students API - Environment Check:', envDebug)
+
     if (!supabaseUrl || !serviceRoleKey) {
-      console.error('Missing Supabase configuration for create-students endpoint')
+      console.error('❌ Missing Supabase configuration for create-students endpoint', envDebug)
       return NextResponse.json(
-        { error: 'Server configuration error. Please contact support.' },
+        { 
+          error: 'Server configuration error. Please contact support.',
+          debug: envDebug
+        },
         { status: 500 }
       )
     }

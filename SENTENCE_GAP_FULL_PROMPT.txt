@@ -1,0 +1,87 @@
+========================================
+SENTENCE GAP - FULL API PROMPT
+========================================
+
+This document shows the complete prompt sent to OpenAI API for each Sentence Gap session.
+
+MODEL: gpt-4o-mini
+TEMPERATURE: 0.85
+TOP_P: 0.9
+PRESENCE_PENALTY: 0.4
+MAX_TOKENS: 
+  - Green: 1000-1200 (depending on word count)
+  - Yellow: 1500
+  - Red: 2000
+
+========================================
+SYSTEM PROMPT
+========================================
+
+Generate sentence-gap exercise. Output JSON directly. Minimize reasoning.
+
+Rules:
+- One line = one sentence. N lines for gap_text, N for solution_text (same order as wordSet).
+- gap_text and solution_text must be STRINGS (not arrays). Separate lines with \n.
+- Each line: one target wordSet[i], replace with "______" in gap_text only.
+- Duplicate words in wordSet are allowed (e.g., "told" can appear twice for different grammatical forms).
+- If a word appears multiple times, use it in different contexts/meanings for each occurrence.
+- No placeholders ("The word is...", "This is a...").
+- No component overlap between multi-word targets.
+- Exact surface form from wordSet[i] in solution_text[i] (case-insensitive).
+- One "______" per gap line. End with period.
+- Vary structure/context/topic.
+- gaps_meta: [{index: 1, correct: "word1"}, {index: 2, correct: "word2"}, ...]
+- notes: [] (empty array, not a string)
+
+[DYNAMIC DIFFICULTY GUIDANCE]
+- GREEN: Max 8 words. Simple present/past. Basic vocab only. Examples: "The cat sits." "I see a dog."
+- YELLOW: Moderate language (A2-B1), clear cues.
+- RED: Advanced language (B1-B2), nuanced cues.
+
+[DYNAMIC ANIMAL GUIDANCE - Only if wordSet contains animal words]
+ANIMALS: Make each uniquely identifiable via habitat/behavior/features. Use strong cues. Example: "The owl hooted from the tall tree at midnight." NOT "The owl is a bird."
+
+Output JSON only: gap_text, solution_text, used_words, gaps_meta, notes (must be array).
+
+========================================
+USER PROMPT
+========================================
+
+Generate unique sentences.
+sig=[timestamp]-[UUID]-a[attempt]
+difficulty=[green|yellow|red]
+wordSet=[JSON array of words]
+
+Example:
+sig=1704067200000-abc123-def456-a0
+difficulty=green
+wordSet=["cat","dog","bird"]
+
+========================================
+EXPECTED JSON RESPONSE FORMAT
+========================================
+
+{
+  "gap_text": "The ______ sleeps.\nI see a ______.\nThe ______ flies.",
+  "solution_text": "The cat sleeps.\nI see a dog.\nThe bird flies.",
+  "used_words": ["cat", "dog", "bird"],
+  "gaps_meta": [
+    {"index": 1, "correct": "cat"},
+    {"index": 2, "correct": "dog"},
+    {"index": 3, "correct": "bird"}
+  ],
+  "notes": []
+}
+
+========================================
+NOTES
+========================================
+
+- The prompt is optimized for speed (minimize reasoning)
+- Duplicate words are handled explicitly
+- Animal words get special guidance for uniqueness
+- Difficulty level affects sentence complexity
+- All validation happens server-side after generation
+- Cache system stores successful generations for reuse
+
+========================================

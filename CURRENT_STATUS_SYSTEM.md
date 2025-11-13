@@ -118,3 +118,4 @@ console.log('📊 updateQuestProgressSync called:', {gameType, score})
 
 
 
+

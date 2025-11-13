@@ -136,12 +136,12 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
         }
 
         if (selectedDirection === 'both' || selectedDirection === 'sv-to-en') {
-          // Student writes Swedish (first language)
-          pushItem(pair.en, pair.sv, 'sv-to-en')
+          // Swedish to English: Show Swedish word, student writes English translation
+          pushItem(pair.sv, pair.en, 'sv-to-en')
         }
         if (selectedDirection === 'both' || selectedDirection === 'en-to-sv') {
-          // Student writes English (first language)
-          pushItem(pair.sv, pair.en, 'en-to-sv')
+          // English to Swedish: Show English word, student writes Swedish translation
+          pushItem(pair.en, pair.sv, 'en-to-sv')
         }
       })
 
@@ -368,8 +368,8 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
             expected: item.answer,
             given: answers[idx] || ''
           })),
-          sourceLanguage: selectedDirection === 'sv-to-en' ? 'en' : selectedDirection === 'en-to-sv' ? 'sv' : 'en',
-          targetLanguage: selectedDirection === 'sv-to-en' ? 'sv' : selectedDirection === 'en-to-sv' ? 'en' : 'sv'
+          sourceLanguage: selectedDirection === 'sv-to-en' ? 'sv' : selectedDirection === 'en-to-sv' ? 'en' : 'en',
+          targetLanguage: selectedDirection === 'sv-to-en' ? 'en' : selectedDirection === 'en-to-sv' ? 'sv' : 'sv'
         })
       })
       
@@ -491,8 +491,8 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
     selectedDirection === 'both'
       ? 'Answer in Swedish & English'
       : selectedDirection === 'sv-to-en'
-        ? 'Answer in Swedish'
-        : 'Answer in English'
+        ? 'Answer in English'
+        : 'Answer in Swedish'
 
   if (showGridSelector) {
     return (
@@ -753,9 +753,9 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
                               onChange={(e) => handleChange(globalIdx, e.target.value)}
                               placeholder={
                                 item.direction === 'sv-to-en'
-                                  ? 'Write in Swedish...'
+                                  ? 'Write in English...'
                                   : item.direction === 'en-to-sv'
-                                    ? 'Write in English...'
+                                    ? 'Write in Swedish...'
                                     : 'Write your answer...'
                               }
                               className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent transition"

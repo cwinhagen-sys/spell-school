@@ -569,8 +569,9 @@ export default function LineMatchingGame({ words, translations, onClose, onScore
               >
                 <div
                   className={`
-                    w-40 px-3 py-2.5 rounded-xl border-2 font-medium text-center shadow-md text-sm
+                    w-40 px-3 py-2.5 rounded-xl border-2 font-medium shadow-md text-sm
                     transition-all duration-200 hover:scale-105 hover:shadow-xl relative
+                    flex items-center justify-center
                     ${isSelected
                       ? 'bg-gradient-to-br from-blue-400 to-purple-500 border-blue-500 text-white scale-110 shadow-2xl'
                       : word.matched
@@ -592,11 +593,9 @@ export default function LineMatchingGame({ words, translations, onClose, onScore
                       <Check className="w-6 h-6 text-white" />
                     </div>
                   )}
-                  <div className="flex items-center justify-center h-full">
-                    <span className={`font-bold text-sm leading-tight ${isSelected || word.matched ? 'text-white' : ''}`} style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}>
-                      {word.word}
-                    </span>
-                  </div>
+                  <span className={`font-bold text-sm leading-tight text-center ${isSelected || word.matched ? 'text-white' : ''}`} style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}>
+                    {word.word}
+                  </span>
             </div>
           </div>
             )

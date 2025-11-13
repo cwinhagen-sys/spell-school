@@ -651,7 +651,6 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
           {/* Header */}
           <div className="flex items-center justify-center mb-8">
             <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center">
-              <span className="text-white text-3xl">🎰</span>
             </div>
             <div className="ml-4">
               <h2 className="text-3xl font-bold text-gray-800">Word Roulette</h2>
@@ -665,7 +664,7 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
             </p>
             
             <div className="bg-gradient-to-r from-blue-100 to-indigo-100 rounded-2xl p-6 mb-6 border border-blue-200">
-              <div className="text-sm font-medium text-blue-800 mb-2">🎯 How it works:</div>
+              <div className="text-sm font-medium text-blue-800 mb-2">How it works:</div>
               <div className="text-sm text-blue-700">
                 • Click the wheel to spin<br/>
                 • Use all selected words in a sentence<br/>
@@ -680,7 +679,7 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
               }}
               className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white py-4 px-8 rounded-2xl font-bold text-lg transition-all shadow-lg hover:shadow-xl"
             >
-              🎰 Start Game
+              Start Game
             </button>
           </div>
           
@@ -703,7 +702,6 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center">
-              <span className="text-white text-2xl">🎰</span>
             </div>
             <div>
               <h2 className="text-2xl font-bold text-gray-800">Word Roulette</h2>
@@ -766,7 +764,6 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
         {spunWords.length > 0 && (
           <div className="mb-8 p-6 bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl border border-purple-200">
             <h3 className="text-lg font-bold mb-4 text-gray-800 flex items-center">
-              <span className="mr-2">🎯</span>
               Selected Words:
             </h3>
             <div className="flex flex-wrap gap-3">
@@ -783,7 +780,6 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
         {spinsRemaining > 0 && (
           <div className="text-center mb-8">
             <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-orange-100 to-red-100 px-6 py-3 rounded-2xl border border-orange-200">
-              <span className="text-orange-600">🎰</span>
               <p className="text-orange-800 font-medium">
                 {isSpinning ? 'Spinning...' : 'Click the wheel to spin!'}
               </p>

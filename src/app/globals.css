@@ -29,3 +29,60 @@
 .rotate-y-180 {
   transform: rotateY(180deg);
 }
+
+/* Magical Progress Bar Animations */
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-60px) scale(0);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(192, 132, 252, 0.6), 0 0 40px rgba(139, 92, 246, 0.4);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 30px rgba(192, 132, 252, 0.8), 0 0 60px rgba(139, 92, 246, 0.6);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.magical-float-up {
+  animation: floatUp 2s ease-out infinite;
+}
+
+.magical-pulse {
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.magical-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.magical-shimmer {
+  animation: shimmer 2s infinite;
+}
