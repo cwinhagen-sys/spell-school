@@ -257,7 +257,6 @@ export default function PronunciationGame({
     return (
       <GameCompleteModal
         score={score}
-        total={selectedWords.length * 10}
         onPlayAgain={() => {
           setGameFinished(false)
           setCurrentWordIndex(0)
