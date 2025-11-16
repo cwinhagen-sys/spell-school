@@ -1386,26 +1386,29 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                     )}
                     
                     {/* Pronunciation result indicator */}
-                    {pronunciationMode === 'training' && getPronunciationStatus() && !isRecording && !isProcessing && (
-                      <div className="mt-4">
-                        <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg ${
-                          getPronunciationStatus()?.isCorrect && getPronunciationStatus()?.accuracyScore >= 85
-                            ? 'bg-green-100 text-green-700'
-                            : getPronunciationStatus()?.accuracyScore >= 70
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-red-100 text-red-700'
-                        }`}>
-                          {getPronunciationStatus()?.isCorrect && getPronunciationStatus()?.accuracyScore >= 85 ? (
-                            <CheckCircle2 className="w-5 h-5" />
-                          ) : getPronunciationStatus()?.accuracyScore >= 70 ? (
-                            <AlertCircle className="w-5 h-5" />
-                          ) : (
-                            <XCircle className="w-5 h-5" />
-                          )}
-                          <span className="text-sm font-medium">{getPronunciationStatus()?.feedback}</span>
+                    {(() => {
+                      const status = getPronunciationStatus()
+                      return pronunciationMode === 'training' && status && !isRecording && !isProcessing && (
+                        <div className="mt-4">
+                          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg ${
+                            status.isCorrect && status.accuracyScore >= 85
+                              ? 'bg-green-100 text-green-700'
+                              : status.accuracyScore >= 70
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-red-100 text-red-700'
+                          }`}>
+                            {status.isCorrect && status.accuracyScore >= 85 ? (
+                              <CheckCircle2 className="w-5 h-5" />
+                            ) : status.accuracyScore >= 70 ? (
+                              <AlertCircle className="w-5 h-5" />
+                            ) : (
+                              <XCircle className="w-5 h-5" />
+                            )}
+                            <span className="text-sm font-medium">{status.feedback}</span>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )
+                    })()}
                   </div>
                 </div>
               </div>
@@ -1493,26 +1496,29 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                     )}
                     
                     {/* Pronunciation Test Mode - Show result when flipped to English side (isFlipped = false means English is showing) */}
-                    {pronunciationMode === 'test' && !isFlipped && getPronunciationStatus() && (
-                      <div className="mt-4">
-                        <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg ${
-                          getPronunciationStatus()?.isCorrect && getPronunciationStatus()?.accuracyScore >= 85
-                            ? 'bg-green-100 text-green-700'
-                            : getPronunciationStatus()?.accuracyScore >= 70
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-red-100 text-red-700'
-                        }`}>
-                          {getPronunciationStatus()?.isCorrect && getPronunciationStatus()?.accuracyScore >= 85 ? (
-                            <CheckCircle2 className="w-5 h-5" />
-                          ) : getPronunciationStatus()?.accuracyScore >= 70 ? (
-                            <AlertCircle className="w-5 h-5" />
-                          ) : (
-                            <XCircle className="w-5 h-5" />
-                          )}
-                          <span className="text-sm font-medium">{getPronunciationStatus()?.feedback}</span>
+                    {(() => {
+                      const status = getPronunciationStatus()
+                      return pronunciationMode === 'test' && !isFlipped && status && (
+                        <div className="mt-4">
+                          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg ${
+                            status.isCorrect && status.accuracyScore >= 85
+                              ? 'bg-green-100 text-green-700'
+                              : status.accuracyScore >= 70
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-red-100 text-red-700'
+                          }`}>
+                            {status.isCorrect && status.accuracyScore >= 85 ? (
+                              <CheckCircle2 className="w-5 h-5" />
+                            ) : status.accuracyScore >= 70 ? (
+                              <AlertCircle className="w-5 h-5" />
+                            ) : (
+                              <XCircle className="w-5 h-5" />
+                            )}
+                            <span className="text-sm font-medium">{status.feedback}</span>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )
+                    })()}
                   </div>
                 </div>
               </div>
