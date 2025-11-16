@@ -244,11 +244,9 @@ export default function PronunciationGame({
         <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
           <ColorGridSelector
             words={words}
-            wordObjects={wordObjects}
             translations={translations}
             onSelect={handleGridSelection}
             gridConfig={gridConfig}
-            themeColor={themeColor}
           />
         </div>
       </div>
