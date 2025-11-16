@@ -2,7 +2,7 @@
 import { supabase } from '@/lib/supabase'
 import { persistentLog } from '@/lib/errorLogger'
 
-export type GameType = 'flashcards' | 'match' | 'typing' | 'story' | 'translate' | 'connect' | 'quiz' | 'choice' | 'roulette' | 'story_gap' | 'spellslinger' | 'daily_quest'
+export type GameType = 'flashcards' | 'match' | 'typing' | 'story' | 'translate' | 'connect' | 'quiz' | 'choice' | 'roulette' | 'story_gap' | 'spellslinger' | 'daily_quest' | 'block_reading' | 'pronunciation'
 
 export interface TrackingContext {
   wordSetId?: string
@@ -271,41 +271,40 @@ export async function endGameSession(sessionId: string | null, gameType: GameTyp
     // Ensure details is properly serialized if it's an object
     let detailsToSave = metrics.details ?? null
     if (detailsToSave && typeof detailsToSave === 'object') {
-      // Deep clone to ensure we have a clean object
-      detailsToSave = JSON.parse(JSON.stringify(detailsToSave))
+      try {
+        // Deep clone to ensure we have a clean object
+        detailsToSave = JSON.parse(JSON.stringify(detailsToSave))
+      } catch (e) {
+        console.error('⚠️ Failed to serialize details:', e)
+        detailsToSave = null
+      }
     }
     
     console.log('📊 endGameSession UPDATE: Saving details:', {
       sessionId,
+      gameType,
       details_type: typeof detailsToSave,
       details_is_null: detailsToSave === null,
-      has_evaluations: detailsToSave && typeof detailsToSave === 'object' 
-        ? !!(detailsToSave as any).evaluations 
-        : false,
-      evaluations_count: detailsToSave && typeof detailsToSave === 'object' && (detailsToSave as any).evaluations
-        ? (detailsToSave as any).evaluations.length 
-        : 0,
       details_keys: detailsToSave && typeof detailsToSave === 'object' 
         ? Object.keys(detailsToSave) 
         : [],
-      details_evaluations_preview: detailsToSave && typeof detailsToSave === 'object' && (detailsToSave as any).evaluations
-        ? {
-            length: (detailsToSave as any).evaluations.length,
-            is_array: Array.isArray((detailsToSave as any).evaluations),
-            first_item: (detailsToSave as any).evaluations[0] || null
-          }
-        : null
+      details_stringified_length: detailsToSave ? JSON.stringify(detailsToSave).length : 0
     })
     
-    // Final check before saving
-    console.log('📊 endGameSession UPDATE: Final check before DB update:', {
-      detailsToSave_type: typeof detailsToSave,
-      detailsToSave_is_null: detailsToSave === null,
-      detailsToSave_evaluations_count: detailsToSave && typeof detailsToSave === 'object' && (detailsToSave as any).evaluations
-        ? (detailsToSave as any).evaluations.length 
-        : 0,
-      detailsToSave_stringified_length: detailsToSave ? JSON.stringify(detailsToSave).length : 0
-    })
+    // Verify session exists before updating
+    const { data: sessionCheck, error: checkError } = await supabase
+      .from('game_sessions')
+      .select('id, game_type')
+      .eq('id', sessionId)
+      .single()
+    
+    if (checkError || !sessionCheck) {
+      console.error('❌ Session not found or check failed:', { sessionId, checkError })
+      persistentLog('error', `Session not found: ${sessionId}`, { sessionId, gameType, checkError })
+      return
+    }
+    
+    console.log('✅ Session found:', { sessionId, existingGameType: sessionCheck.game_type })
     
     const { error } = await supabase
       .from('game_sessions')
@@ -320,17 +319,21 @@ export async function endGameSession(sessionId: string | null, gameType: GameTyp
       
     if (error) {
       console.error('📊 endGameSession UPDATE ERROR:', {
-        error_message: error.message,
-        error_code: error.code,
-        error_details: error.details,
+        error_message: error.message || 'Unknown error',
+        error_code: error.code || 'No code',
+        error_details: error.details || 'No details',
+        error_full: JSON.stringify(error),
+        sessionId,
+        gameType,
         detailsToSave_preview: detailsToSave ? JSON.stringify(detailsToSave).substring(0, 200) : null
       })
-      persistentLog('error', `Failed to end game session: ${error.message}`, { 
+      persistentLog('error', `Failed to end game session: ${error.message || 'Unknown error'}`, { 
         sessionId, 
         gameType, 
-        error: error.message,
-        code: error.code,
-        details: error.details 
+        error: error.message || String(error),
+        code: error.code || 'No code',
+        details: error.details || 'No details',
+        error_full: JSON.stringify(error)
       })
       console.error('❌ Failed to end game session:', error)
       

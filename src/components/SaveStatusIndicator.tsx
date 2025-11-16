@@ -136,17 +136,44 @@ Check browser console for database errors!
         const outboxPending = outboxStatus.pendingCount
 
         // Check localStorage for pending game sessions
+        // Also clean up old pending sessions (> 1 hour old)
         const pendingSessionKeys = Object.keys(localStorage).filter(key => 
           key.startsWith('pendingSession_')
         )
-        const sessionsPending = pendingSessionKeys.length
+        
+        // Clean up old pending sessions
+        let validSessions = 0
+        const now = Date.now()
+        const MAX_AGE_MS = 60 * 60 * 1000 // 1 hour
+        
+        for (const key of pendingSessionKeys) {
+          try {
+            const backup = JSON.parse(localStorage.getItem(key) || '{}')
+            const age = now - (backup.timestamp || 0)
+            
+            if (age > MAX_AGE_MS) {
+              // Session is too old, remove it
+              console.log(`SaveStatusIndicator: Removing old pending session: ${key} (age: ${Math.round(age / 1000 / 60)} minutes)`)
+              localStorage.removeItem(key)
+            } else {
+              validSessions++
+            }
+          } catch (e) {
+            // Invalid backup data, remove it
+            console.log(`SaveStatusIndicator: Removing invalid pending session: ${key}`)
+            localStorage.removeItem(key)
+          }
+        }
+        
+        const sessionsPending = validSessions
 
         const totalPending = outboxPending + sessionsPending
 
         console.log('SaveStatusIndicator: Pending operations:', {
           outbox: outboxPending,
           sessions: sessionsPending,
-          total: totalPending
+          total: totalPending,
+          cleaned: pendingSessionKeys.length - validSessions
         })
 
         setPendingCount(totalPending)

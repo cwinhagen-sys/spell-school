@@ -5,7 +5,8 @@ import { supabase } from '@/lib/supabase'
 import { useActivityTracking } from '@/hooks/useActivityTracking'
 import { markUserAsLoggedOut } from '@/lib/activity'
 import { syncManager } from '@/lib/syncManager'
-import { BookOpen, Target, Star, Users, ChevronDown, Calendar, LogOut } from 'lucide-react'
+import { BookOpen, Target, Star, Users, ChevronDown, Calendar, LogOut, Trophy } from 'lucide-react'
+import Link from 'next/link'
 import { levelForXp } from '@/lib/leveling'
 import { titleForLevel } from '@/lib/wizardTitles'
 import FlashcardGame from '@/components/games/FlashcardGame'
@@ -18,6 +19,8 @@ import StoryGapGame from '@/components/games/StoryGapGame'
 import QuizGame from '@/components/games/QuizGame'
 import MultipleChoiceGame from '@/components/games/MultipleChoiceGame'
 import RouletteGame from '@/components/games/RouletteGame'
+// Block Reading temporarily disabled - code preserved in src/components/games/BlockReadingGame.tsx
+// import BlockReadingGame from '@/components/games/BlockReadingGame'
 import { type TrackingContext, updateStudentProgress as addProgress } from '@/lib/tracking'
 import { enqueueQuestProgress, enqueueQuestComplete } from '@/lib/questOutbox'
 import { useDailyQuestBadges } from '@/hooks/useDailyQuestBadges'
@@ -82,6 +85,80 @@ type EnrichedLeaderboardPlayer = ClassLeaderboardPlayer & {
   wizardImage: string
 }
 
+// Dynamic Background Component - Changes based on time of day
+function DynamicBackground() {
+  const [bgIndex, setBgIndex] = useState(1)
+  const [imageLoaded, setImageLoaded] = useState(false)
+
+  // Get background index based on time of day
+  const getBackgroundIndex = () => {
+    const now = new Date()
+    const hour = now.getHours()
+    
+    // Morning/Forenoon: 6:00 - 11:59 (bild 1)
+    if (hour >= 6 && hour < 12) {
+      return 1
+    }
+    // Afternoon (after lunch): 12:00 - 15:59 (bild 2)
+    if (hour >= 12 && hour < 16) {
+      return 2
+    }
+    // Late afternoon: 16:00 - 19:59 (bild 3)
+    if (hour >= 16 && hour < 20) {
+      return 3
+    }
+    // Evening/Night: 20:00 - 5:59 (bild 4)
+    return 4
+  }
+
+  // Update background when time changes
+  useEffect(() => {
+    const updateBackground = () => {
+      const newIndex = getBackgroundIndex()
+      setBgIndex(newIndex)
+    }
+
+    // Set initial background
+    updateBackground()
+
+    // Check every minute if we need to change background (when hour changes)
+    const interval = setInterval(() => {
+      updateBackground()
+    }, 60000) // Check every minute
+
+    return () => clearInterval(interval)
+  }, [])
+
+  // Load image when bgIndex changes
+  useEffect(() => {
+    const imageUrl = `/assets/spell-school-bg-${bgIndex}.png`
+    const img = new Image()
+    img.onload = () => {
+      setImageLoaded(true)
+      console.log('✅ Background image loaded:', imageUrl, `(Time: ${new Date().getHours()}:${String(new Date().getMinutes()).padStart(2, '0')})`)
+    }
+    img.onerror = () => {
+      console.warn('⚠️ Background image not found:', imageUrl)
+      setImageLoaded(false)
+    }
+    img.src = imageUrl
+  }, [bgIndex])
+
+  const imageUrl = `/assets/spell-school-bg-${bgIndex}.png`
+
+  return (
+    <div 
+      className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 z-0"
+      style={{
+        backgroundImage: imageLoaded ? `url('${imageUrl}')` : 'none',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        opacity: imageLoaded ? 1 : 0
+      }}
+    />
+  )
+}
+
 export default function StudentDashboard() {
   // Track user activity for better "Playing" status
   useActivityTracking()
@@ -101,6 +178,8 @@ export default function StudentDashboard() {
   const [showQuiz, setShowQuiz] = useState(false)
   const [showChoice, setShowChoice] = useState(false)
   const [showRoulette, setShowRoulette] = useState(false)
+  const [showBlockReading, setShowBlockReading] = useState(false)
+  // Block Reading temporarily disabled
   const [pendingGame, setPendingGame] = useState<'flashcards' | 'match' | 'typing' | 'translate' | 'connect' | 'quiz' | 'choice' | 'storygap' | 'roulette' | null>(null)
   const [selectedHomework, setSelectedHomework] = useState<Homework | null>(null)
   const [showHomeworkSelection, setShowHomeworkSelection] = useState(false)
@@ -928,8 +1007,75 @@ export default function StudentDashboard() {
     try {
       const params = new URLSearchParams(window.location.search)
       setDevMode(params.get('dev') === '1')
+      
+      // Auto-start game from URL parameters
+      const gameType = params.get('game')
+      const homeworkId = params.get('homework')
+      const showHomeworkSelection = params.get('showHomeworkSelection') === 'true'
+      
+      if (gameType) {
+        if (showHomeworkSelection) {
+          // Show homework selection modal for this game
+          setPendingGame(gameType as any)
+          setShowHomeworkSelection(true)
+          // Clean up URL
+          window.history.replaceState({}, '', '/student')
+        } else if (homeworkId) {
+          // For flashcards, always start directly (color grid selection will handle word set selection)
+          if (gameType === 'flashcards') {
+            // Find homework or use first available
+            const homework = homeworks.find(h => h.id === homeworkId) || oldWordSets.find(h => h.id === homeworkId) || homeworks[0] || oldWordSets[0]
+            if (homework) {
+              setSelectedHomework(homework)
+              setTimeout(() => {
+                setShowFlashcardGame(true)
+                // Clean up URL
+                window.history.replaceState({}, '', '/student')
+              }, 100)
+            }
+          } else if (homeworks.length > 0) {
+            // For other games, require homework to be loaded
+            const homework = homeworks.find(h => h.id === homeworkId) || oldWordSets.find(h => h.id === homeworkId)
+            if (homework) {
+              setSelectedHomework(homework)
+              // Start the appropriate game
+              setTimeout(() => {
+                switch (gameType) {
+                  case 'match':
+                    setShowWordMatchingGame(true)
+                    break
+                  case 'typing':
+                    setShowTypingChallenge(true)
+                    break
+                  case 'translate':
+                    setShowTranslateGame(true)
+                    break
+                  case 'connect':
+                    setShowLineMatchingGame(true)
+                    break
+                  case 'storygap':
+                    setShowStoryGap(true)
+                    break
+                  case 'choice':
+                    setShowChoice(true)
+                    break
+                  case 'roulette':
+                    setShowRoulette(true)
+                    break
+                  // Block Reading temporarily disabled
+                  // case 'block_reading':
+                  //   setShowBlockReading(true)
+                  //   break
+                }
+                // Clean up URL
+                window.history.replaceState({}, '', '/student')
+              }, 100)
+            }
+          }
+        }
+      }
     } catch {}
-  }, [])
+  }, [homeworks, oldWordSets])
 
   // Debug: Log when homeworks state changes
   useEffect(() => {
@@ -956,23 +1102,30 @@ export default function StudentDashboard() {
 
   const leaderboardPlayers = useMemo<EnrichedLeaderboardPlayer[]>(() => {
     if (!leaderboardData?.players) return []
-    return leaderboardData.players.map(player => {
-      const totalPoints = player.totalPoints || 0
-      const levelInfo = levelForXp(totalPoints)
-      const wizard = titleForLevel(levelInfo.level)
-      const displayName = player.displayName || player.username || player.name || 'Elev'
-      return {
-        ...player,
-        displayName,
-        totalPoints,
-        level: levelInfo.level,
-        wizardImage: wizard?.image || '/assets/wizard/wizard_novice.png',
-        badgeCount: player.badgeCount || 0,
-        longestStreak: player.longestStreak || 0,
-        bestKpm: player.bestKpm || 0,
-        averageAccuracy: player.averageAccuracy || 0
-      }
-    })
+    return leaderboardData.players
+      .filter(player => {
+        // Only show players who have played at least one session
+        const sessionCount = player.sessionCount || 0
+        return sessionCount > 0
+      })
+      .map(player => {
+        const totalPoints = player.totalPoints || 0
+        const levelInfo = levelForXp(totalPoints)
+        const wizard = titleForLevel(levelInfo.level)
+        const displayName = player.displayName || player.username || player.name || 'Elev'
+        return {
+          ...player,
+          displayName,
+          totalPoints,
+          level: levelInfo.level,
+          wizardImage: wizard?.image || '/assets/wizard/wizard_novice.png',
+          badgeCount: player.badgeCount || 0,
+          longestStreak: player.longestStreak || 0,
+          bestKpm: player.bestKpm || 0,
+          averageAccuracy: player.averageAccuracy || 0,
+          sessionCount: player.sessionCount || 0
+        }
+      })
   }, [leaderboardData])
 
   // Handle badge notification dismissal
@@ -1337,12 +1490,12 @@ export default function StudentDashboard() {
       setMessage('No vocabulary sets available. Please wait for your teacher to assign vocabulary.')
       return
     }
-    if (homeworks.length === 1 && oldWordSets.length === 0) {
-      setSelectedHomework(homeworks[0])
+    // For flashcards, always start directly - color grid selection will handle word set selection
+    // Use first available homework or old word set
+    const homework = homeworks[0] || oldWordSets[0]
+    if (homework) {
+      setSelectedHomework(homework)
       setShowFlashcardGame(true)
-    } else {
-      setPendingGame('flashcards')
-      setShowHomeworkSelection(true)
     }
   }
 
@@ -1482,7 +1635,7 @@ export default function StudentDashboard() {
     
     // OPTIMISTIC UI UPDATE: Handle points based on game type
     if (typeof newTotal === 'number' && Number.isFinite(newTotal)) {
-      if (gameType === 'choice' || gameType === 'match' || gameType === 'translate' || gameType === 'connect' || gameType === 'story_gap' || gameType === 'roulette' || gameType === 'typing') {
+      if (gameType === 'choice' || gameType === 'match' || gameType === 'translate' || gameType === 'connect' || gameType === 'story_gap' || gameType === 'roulette' || gameType === 'typing' || gameType === 'flashcards') {
         // For games using new scoring system, newTotal represents points to ADD, not total points
         const currentPoints = points
         const totalAfterGame = currentPoints + newTotal
@@ -1960,313 +2113,198 @@ export default function StudentDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800">
       <LogoutHandler />
       <SaveStatusIndicator />
-      
-      
-      {/* Professional Header */}
-      <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6">
-          <nav className="flex items-center justify-between py-4">
-            {/* Logo Section */}
-            <div className="flex items-center">
-              <img 
-                src="/assets/spell-school-logo.png"
-                alt="Spell School"
-                className="w-auto"
-                style={{ height: '120px', maxHeight: 'none' }}
-              />
-            </div>
-            
-            {/* Welcome Info Box */}
-            <div className="flex-1 flex justify-center">
-              <div className="bg-gray-50 border border-gray-200 rounded-lg px-6 py-3 shadow-sm">
-                <div className="flex items-center space-x-4 text-sm">
-                  <div>
-                    <span className="text-gray-600 font-medium">Welcome back, </span>
-                    <span className="text-gray-900 font-semibold">{user?.user_metadata?.username || user?.email?.split('@')[0] || 'Student'}</span>
-                  </div>
-                  {teacherInfo && (
-                    <>
-                      <span className="text-gray-400">•</span>
-                      <div>
-                        <span className="text-gray-600">Teacher: </span>
-                        <span className="text-gray-900 font-semibold">{teacherInfo.name}</span>
-                      </div>
-                    </>
-                  )}
-                  {classInfo && (
-                    <>
-                      <span className="text-gray-400">•</span>
-                      <div>
-                        <span className="text-gray-600">Class: </span>
-                        <span className="text-gray-900 font-semibold">{classInfo.name}</span>
-                      </div>
-                    </>
-                  )}
-                </div>
+
+      <div className="container mx-auto px-6 py-8 max-w-7xl">
+        {/* Hero Section - Welcome & Summary */}
+        <div className="mb-8">
+          <div className="relative rounded-2xl p-8 text-white shadow-xl overflow-hidden">
+            {/* Dynamic Background Image - Changes every minute */}
+            <DynamicBackground />
+            {/* Very subtle dark overlay only for text readability if needed */}
+            <div className="absolute inset-0 bg-black/10 z-0" />
+            <div className="relative z-10">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div className="flex-1">
+                <h1 className="text-3xl md:text-4xl font-bold mb-2">
+                  Welcome back, {user?.user_metadata?.username || user?.email?.split('@')[0] || 'Student'}!
+                </h1>
+                <p className="text-purple-100 text-lg">
+                  {wizardTitle?.title || 'Novice Learner'} • Level {leveling.level}
+                </p>
+                {teacherInfo && classInfo && (
+                  <p className="text-purple-100 text-sm mt-2">
+                    {teacherInfo.name} • {classInfo.name}
+                  </p>
+                )}
               </div>
-            </div>
-            
-            {/* Sign Out Button */}
-            <div className="flex items-center">
-              <button
-                onClick={handleSignOut}
-                disabled={isLoggingOut}
-                className={`flex items-center space-x-2 px-4 py-2 text-sm font-semibold text-gray-700 hover:text-white hover:bg-purple-600 rounded-lg border border-gray-300 hover:border-purple-600 transition-all duration-200 ${
-                  isLoggingOut ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                <LogOut className={`w-4 h-4 ${isLoggingOut ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">{isLoggingOut ? 'Sparar...' : 'Sign Out'}</span>
-              </button>
-            </div>
-          </nav>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-6 py-8">
-        {/* First row: Wizard Profile & Level */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          
-          {/* Block 1: Wizard Profile & Titles */}
-          <div 
-            className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow"
-            onClick={() => window.location.href = '/student/levels'}
-          >
-            <div className="flex items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">Wizard Profile</h2>
+              <div className="flex items-center gap-4">
+                <div className="text-center">
+                  <div className="text-3xl font-bold">{points.toLocaleString()}</div>
+                  <div className="text-sm text-purple-100">Total XP</div>
                 </div>
-            <div className="space-y-6">
-              <div className="flex items-center space-x-4">
-            <div 
-              className="w-20 h-20 rounded-full border-4 border-purple-300 bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center overflow-hidden cursor-pointer hover:border-purple-400 transition-colors"
-              onClick={(e) => {
-                e.stopPropagation() // Prevent navigation to Level & Titles page
-                setShowWizardModal(true)
-              }}
-            >
-              {wizardTitle.image ? (
-                <img src={wizardTitle.image} alt={wizardTitle.title} className="w-16 h-16 rounded-full object-cover" />
-              ) : (
-                <Star className="w-8 h-8 text-purple-500" />
-              )}
-            </div>
-                  <div className="flex-1">
-                  <div className="text-lg font-bold text-gray-800">{wizardTitle.title || 'Novice Learner'}</div>
-                  <div className="text-sm text-gray-600">Current Title</div>
-                  {wizardTitle.description && (
-                    <div className="text-xs text-gray-500 italic mt-1 leading-relaxed">
-                      {wizardTitle.description}
-                        </div>
-                  )}
-                        </div>
-                      </div>
-              <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200">
-                <div className="text-sm text-purple-700 font-medium mb-3">Available Wizard Titles</div>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { level: 10, title: 'Spark Initiate', description: 'A young wizard holding a glowing torch, symbolizing the first steps in magical learning', image: '/assets/wizard/wizard_torch.png' },
-                    { level: 20, title: 'Apprentice of Embers', description: 'A wizard surrounded by glowing magical orbs with symbols, representing growing magical knowledge', image: '/assets/wizard/wizard_orbs.png' },
-                    { level: 30, title: 'Rune Adept', description: 'A wizard reading a glowing book under a magical star, symbolizing mastery of magical texts', image: '/assets/wizard/wizard_book.png' },
-                    { level: 40, title: 'Arcane Scholar', description: 'A wizard casting spells with a pentagram, representing advanced magical studies', image: '/assets/wizard/wizard_pentagram.png' },
-                    { level: 50, title: 'Spellblade', description: 'A wizard wielding a glowing magical sword with runes, symbolizing combat magic mastery', image: '/assets/wizard/wizard_sword.png' },
-                    { level: 60, title: 'Master of Sigils', description: 'A wizard with glowing eyes and magical staff, representing mastery of magical symbols', image: '/assets/wizard/wizard_staff.png' },
-                    { level: 70, title: 'Archmage', description: 'A powerful wizard with glowing eyes and magical aura, symbolizing great magical power', image: '/assets/wizard/wizard_powerful.png' },
-                    { level: 80, title: 'Void Conjurer', description: 'A wizard surrounded by magical energy and stars, representing mastery of space and time magic', image: '/assets/wizard/wizard_energy.png' },
-                    { level: 90, title: 'Grand Archon', description: 'A wizard with a star-topped staff and magical aura, representing supreme magical authority', image: '/assets/wizard/wizard_powerful.png' },
-                    { level: 100, title: 'Elder Chronomancer', description: 'A time-wizard surrounded by clocks and hourglasses, representing mastery over time itself', image: '/assets/wizard/wizard_time.png' }
-                  ].map((wizard, index) => (
-                    <div key={wizard.level} className="relative group">
-                      <div className="w-10 h-10 bg-purple-200 rounded-full flex items-center justify-center cursor-pointer hover:bg-purple-300 transition-colors overflow-hidden">
-                        <img src={wizard.image} alt={wizard.title} className="w-8 h-8 rounded-full object-cover" />
-                  </div>
-                      <div className="text-xs text-gray-600 text-center mt-1">Lv.{wizard.level}</div>
-                      
-                      {/* Hover tooltip */}
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
-                        <div className="bg-gray-900 text-white rounded-lg p-3 shadow-lg min-w-[200px]">
-                          <div className="flex items-center space-x-3 mb-2">
-                            <div className="w-12 h-12 bg-purple-300 rounded-full flex items-center justify-center overflow-hidden">
-                              <img src={wizard.image} alt={wizard.title} className="w-10 h-10 rounded-full object-cover" />
-                  </div>
-                            <div>
-                              <div className="font-semibold text-sm">{wizard.title}</div>
-                              <div className="text-xs text-gray-300">Level {wizard.level}</div>
-                </div>
-            </div>
-                          <div className="text-xs text-gray-300 italic">{wizard.description}</div>
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
-          </div>
-                        </div>
-                      </div>
-                  ))}
+                {currentStreak > 0 && (
+                  <>
+                    <div className="w-px h-12 bg-white/30"></div>
+                    <div className="text-center">
+                      <div className="text-3xl font-bold">🔥 {currentStreak}</div>
+                      <div className="text-sm text-purple-100">Day Streak</div>
                     </div>
-                        </div>
-                      </div>
-                </div>
-
-          {/* Block 2: Level & XP */}
-          <div className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-lg p-8 relative">
-            <div className="flex items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">Level & XP</h2>
-                    </div>
-            
-            {/* Wizard Profile Picture in corner */}
-            <div className="absolute top-4 right-4">
-              <div className="w-16 h-16 rounded-full border-3 border-purple-300 bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center overflow-hidden shadow-lg">
-                {wizardTitle.image ? (
-                  <img 
-                    src={wizardTitle.image} 
-                    alt={wizardTitle.title} 
-                    className="w-14 h-14 rounded-full object-cover cursor-pointer hover:scale-105 transition-transform duration-200" 
-                    onClick={() => setShowWizardModal(true)}
-                    title={`${wizardTitle.title} - Level ${leveling.level}`}
-                  />
-                ) : (
-                  <Star className="w-8 h-8 text-purple-500" />
+                  </>
                 )}
               </div>
             </div>
-            <div className="space-y-4">
-                      <div className="text-center">
-                <div className="text-4xl font-bold text-gray-800 mb-2">Level {leveling.level}</div>
-                <div className="text-sm text-gray-600">{leveling.nextDelta > 0 ? `${Math.round(leveling.progressToNext * leveling.nextDelta)} / ${leveling.nextDelta} XP` : 'Max level reached!'}</div>
-                        </div>
-              <div className="relative">
-                <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all duration-1000 ease-out" 
-                    style={{ width: `${leveling.progressToNext * 100}%` }}
-                  ></div>
-                      </div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-xs font-bold text-white drop-shadow-sm">
-                    {Math.round(leveling.progressToNext * 100)}%
-                  </span>
-                    </div>
-                </div>
-              <div className="text-center text-sm text-gray-600">
-                {leveling.nextDelta > 0 ? `${leveling.nextDelta - Math.round(leveling.progressToNext * leveling.nextDelta)} XP to next level` : 'Congratulations!'}
+            
+            {/* XP Progress Bar */}
+            <div className="mt-6">
+              <div className="flex items-center justify-between text-sm mb-2">
+                <span className="text-purple-100">Progress to Level {leveling.level + 1}</span>
+                <span className="font-semibold">
+                  {leveling.nextDelta > 0 
+                    ? `${Math.round(leveling.progressToNext * leveling.nextDelta)} / ${leveling.nextDelta} XP`
+                    : 'Max level reached!'
+                  }
+                </span>
               </div>
-              {currentStreak > 0 && (
-                <div className="text-center mt-3">
-                  <div className="inline-flex items-center px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">
-                    🔥 {currentStreak} day streak
+              <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-white rounded-full transition-all duration-1000 ease-out shadow-lg"
+                  style={{ width: `${leveling.progressToNext * 100}%` }}
+                />
+              </div>
+              {leveling.nextDelta > 0 && (
+                <div className="text-xs text-purple-100 mt-1 text-right">
+                  {leveling.nextDelta - Math.round(leveling.progressToNext * leveling.nextDelta)} XP to next level
+                </div>
+              )}
+            </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Daily Quest Highlight */}
+          <div className="lg:col-span-2 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <Target className="w-5 h-5 text-purple-600" />
+                Today's Focus
+              </h2>
+              <Link 
+                href="/student/quests"
+                className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+              >
+                View all →
+              </Link>
+            </div>
+            <div className="space-y-3">
+              {dailyQuests.slice(0, 2).map((quest, index) => {
+                const difficulty = index === 0 ? 'easy' : index === 1 ? 'medium' : 'hard'
+                const progressPercent = (quest.progress / quest.target) * 100
+                const isCompleted = quest.completed
+                
+                return (
+                  <div
+                    key={quest.id}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      isCompleted
+                        ? 'bg-green-50 border-green-300'
+                        : 'bg-gray-50 border-gray-200 hover:border-purple-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{quest.icon}</span>
+                        <div>
+                          <div className="font-semibold text-gray-800">{quest.title}</div>
+                          <div className="text-xs text-gray-600">{quest.description}</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        {isCompleted ? (
+                          <span className="text-green-600 font-bold">✓</span>
+                        ) : (
+                          <span className="text-sm font-semibold text-purple-600">+{quest.xp} XP</span>
+                        )}
+                      </div>
+                    </div>
+                    {!isCompleted && (
+                      <div className="mt-2">
+                        <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                          <span>Progress: {quest.progress}/{quest.target}</span>
+                          <span className="capitalize">{difficulty}</span>
+                        </div>
+                        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              difficulty === 'easy'
+                                ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                                : difficulty === 'medium'
+                                ? 'bg-gradient-to-r from-yellow-500 to-orange-500'
+                                : 'bg-gradient-to-r from-red-500 to-pink-500'
+                            }`}
+                            style={{ width: `${progressPercent}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+              {dailyQuests.every(q => q.completed) && (
+                <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-300 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">🏆</span>
+                    <div>
+                      <div className="font-bold text-purple-800">All Quests Complete!</div>
+                      <div className="text-sm text-purple-600">+100 XP Bonus earned</div>
+                    </div>
                   </div>
                 </div>
               )}
-                    </div>
-                      </div>
-                  </div>
-                  
-        {/* Second row: Daily Quest & Badges */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          
-          {/* Block 3: Daily Quest */}
-          <div className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-lg p-8">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center">
-                <h2 className="text-2xl font-bold text-gray-800">Daily Quests</h2>
-              </div>
-            {devMode && (
-              <div className="flex items-center gap-2">
-                <button
-                  className="px-3 py-1 text-xs rounded-md bg-emerald-100 text-emerald-700 border border-emerald-300 hover:bg-emerald-200"
-                  onClick={() => {
-                    console.log('[DEV] Simulate perfect Translate -> quest 100 score')
-                    handleScoreUpdate(100, undefined, 'translate')
-                  }}
-                  title="Simulate a perfect Translate round"
-                >
-                  Simulate perfect Translate
-                </button>
-                <button
-                  className="px-3 py-1 text-xs rounded-md bg-indigo-100 text-indigo-700 border border-indigo-300 hover:bg-indigo-200"
-                  onClick={() => {
-                    console.log('[DEV] Simulate perfect Choice -> quest 100 score')
-                    handleScoreUpdate(100, undefined, 'choice')
-                  }}
-                  title="Simulate a perfect Multiple Choice round"
-                >
-                  Simulate perfect Choice
-                </button>
-              </div>
-            )}
             </div>
-                <div className="space-y-4">
-                  {dailyQuests.map((quest, index) => {
-                    const difficulty = index === 0 ? 'easy' : index === 1 ? 'medium' : 'hard'
-                    const difficultyColors = {
-                      easy: 'from-green-50 to-emerald-50 border-green-200 text-green-700',
-                      medium: 'from-yellow-50 to-orange-50 border-yellow-200 text-yellow-700',
-                      hard: 'from-red-50 to-pink-50 border-red-200 text-red-700'
-                    }
-                    const progressPercent = (quest.progress / quest.target) * 100
-                    
-                    return (
-                      <div key={quest.id} className={`bg-gradient-to-r ${difficultyColors[difficulty]} rounded-lg p-4 border ${quest.completed ? 'ring-2 ring-green-400' : ''}`}>
-                    <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg">{quest.icon}</span>
-                            <div className="text-sm font-medium">{quest.title}</div>
-                            {quest.completed && <span className="text-green-600">✓</span>}
-                          </div>
-                          <div className="text-sm font-bold text-gray-600">+{quest.xp} XP</div>
-                        </div>
-                        <div className="text-sm text-gray-600 mb-2">{quest.description}</div>
-                        <div className="flex items-center justify-between">
-                      <div className="text-sm text-gray-600">
-                            Progress: {quest.progress}/{quest.target}
-                      </div>
-                          <div className="text-xs text-gray-500 capitalize">{difficulty}</div>
-                    </div>
-                        <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className={`h-2 rounded-full transition-all duration-500 ${
-                              quest.completed 
-                                ? 'bg-gradient-to-r from-green-500 to-emerald-500' 
-                                : difficulty === 'easy' 
-                                  ? 'bg-gradient-to-r from-green-500 to-emerald-500'
-                                  : difficulty === 'medium'
-                                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500'
-                                    : 'bg-gradient-to-r from-red-500 to-pink-500'
-                            }`}
-                            style={{ width: `${progressPercent}%` }}
-                          ></div>
-                    </div>
-                      </div>
-                    )
-                  })}
-                  
-                  {/* All Quests Complete Bonus */}
-                  {dailyQuests.every(quest => quest.completed) && (
-                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-300 rounded-lg p-4 ring-2 ring-purple-400">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-2xl">🏆</span>
-                          <div className="text-lg font-bold text-purple-800">All Quests Complete!</div>
-                  </div>
-                        <div className="text-lg font-bold text-purple-600">+100 XP Bonus!</div>
-                      </div>
-                      <div className="text-sm text-purple-700">
-                        Congratulations! You've completed all daily quests and earned a bonus!
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="text-xs text-gray-500 italic text-center">New quests available tomorrow!</div>
-                      </div>
-                    </div>
-                    
-          {/* Block 4: Recent Badges */}
-          <BadgeGrid maxItems={6} showTitle={true} showStats={true} highlightedBadgeId={highlightedBadgeId} />
+          </div>
+
+          {/* Progress Snapshot */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg p-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-purple-600" />
+              Progress Snapshot
+            </h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                <span className="text-sm text-gray-700">Badges Earned</span>
+                <span className="text-lg font-bold text-purple-600">{badgeStats?.earned || 0}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-indigo-50 rounded-lg">
+                <span className="text-sm text-gray-700">Total Badges</span>
+                <span className="text-lg font-bold text-indigo-600">{badgeStats?.total || 0}</span>
+              </div>
+              <Link
+                href="/student/badges"
+                className="block w-full text-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+              >
+                View Collection →
+              </Link>
+            </div>
+          </div>
         </div>
                       
-        {/* Third row: Assignments (full width) */}
+        {/* Active Assignments */}
         <div className="mb-8">
-          <div className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-lg p-8">
-            <div className="flex items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">Your Assignments</h2>
-                        </div>
+          <div className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-lg p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-purple-600" />
+                Active Assignments
+              </h2>
+              <Link 
+                href="/student/word-sets"
+                className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+              >
+                View all →
+              </Link>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {(() => {
                 // Filter out past due assignments for the assignments section
@@ -2321,54 +2359,160 @@ export default function StudentDashboard() {
           </div>
         </div>
 
-        {/* Fourth row: Old Word Sets (past due assignments) */}
-        {oldWordSets.length > 0 && (
-          <div className="mb-8">
-            <div className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-lg p-8">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-gradient-to-br from-gray-500 to-slate-600 rounded-xl flex items-center justify-center mr-4">
-                    <BookOpen className="w-6 h-6 text-white" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-gray-800">Old Word Sets</h2>
-                </div>
-                {oldWordSets.length > 10 && (
-                  <a href="/student/word-sets" className="text-sm text-gray-500 hover:text-gray-700 underline">
-                    View all ({oldWordSets.length})
-                  </a>
-                )}
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {oldWordSets.slice(0, 10).map((homework) => (
-                  <div 
-                    key={homework.id} 
-                    className="border border-gray-200 bg-white/60 rounded-lg p-4 hover:bg-white/80 transition-colors cursor-pointer opacity-90"
-                    onClick={() => {
-                      console.log('Clicked old word set:', homework)
-                      setSelectedWordSet(homework)
-                      setShowWordSetModal(true)
-                    }}
-                  >
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className="w-4 h-4 rounded-full" style={{ backgroundColor: homework.color || '#6b7280' }} />
-                      <span className="text-sm font-semibold text-gray-800 truncate">{homework.title}</span>
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Past due: {homework.due_date ? new Date(homework.due_date).toLocaleDateString('en-US') : 'No due date'}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {oldWordSets.length > 10 && (
-                <div className="text-center pt-4">
-                  <a href="/student/word-sets" className="text-sm text-gray-600 hover:text-gray-800 underline">
-                    View all old word sets ({oldWordSets.length})
-                  </a>
-                </div>
-              )}
+        {/* Games Recommendation & Leaderboard */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Games Recommendation */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <span className="text-2xl">🎮</span>
+                Practice Games
+              </h2>
+              <Link 
+                href="/student/games"
+                className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+              >
+                View all →
+              </Link>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Ready to practice? Choose a game to improve your vocabulary skills.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <GameCard
+                title="Flashcards"
+                color="blue"
+                icon={<span className="text-2xl">🃏</span>}
+                onClick={startFlashcardGame}
+              />
+              <GameCard
+                title="Memory"
+                color="orange"
+                icon={<span className="text-2xl">🧠</span>}
+                onClick={startWordMatchingGame}
+              />
             </div>
           </div>
-        )}
+
+          {/* Leaderboard Snippet - Level Leaderboard Grid */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <Users className="w-5 h-5 text-purple-600" />
+                Leaderboard
+              </h2>
+              <Link 
+                href="/student/leaderboard"
+                className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+              >
+                View all →
+              </Link>
+            </div>
+            {leaderboardPlayers && leaderboardPlayers.length > 0 ? (
+              <div className="rounded-2xl border border-gray-100 bg-gradient-to-br from-white via-white to-gray-50 p-4 shadow-sm">
+                <div className="mb-3">
+                  <h3 className="text-lg font-semibold text-gray-800">Highest Level</h3>
+                  <p className="text-xs text-gray-500">Total XP levels</p>
+                </div>
+                <div className="space-y-2">
+                  {leaderboardPlayers
+                    .slice()
+                    .sort((a, b) => (b.level || 0) - (a.level || 0))
+                    .slice(0, Math.min(5, leaderboardPlayers.length))
+                    .map((player, index) => {
+                      const rank = index + 1
+                      const isTopThree = rank <= 3
+                      const isCurrentUser = player.id === leaderboardData?.currentUserId
+                      
+                      // Medal colors and styles
+                      const medalStyles = {
+                        1: {
+                          badge: 'bg-gradient-to-br from-yellow-400 to-yellow-600 border-yellow-500 text-white shadow-lg shadow-yellow-500/50',
+                          border: 'border-yellow-300',
+                          bg: 'bg-gradient-to-r from-yellow-50/80 to-yellow-100/40',
+                          glow: 'shadow-lg shadow-yellow-500/30'
+                        },
+                        2: {
+                          badge: 'bg-gradient-to-br from-gray-300 to-gray-500 border-gray-400 text-white shadow-lg shadow-gray-400/50',
+                          border: 'border-gray-300',
+                          bg: 'bg-gradient-to-r from-gray-50/80 to-gray-100/40',
+                          glow: 'shadow-lg shadow-gray-400/30'
+                        },
+                        3: {
+                          badge: 'bg-gradient-to-br from-amber-600 to-amber-800 border-amber-700 text-white shadow-lg shadow-amber-600/50',
+                          border: 'border-amber-400',
+                          bg: 'bg-gradient-to-r from-amber-50/80 to-amber-100/40',
+                          glow: 'shadow-lg shadow-amber-500/30'
+                        }
+                      }
+                      
+                      const medalStyle = isTopThree ? medalStyles[rank as 1 | 2 | 3] : null
+                      
+                      return (
+                        <div
+                          key={`level-${player.id}`}
+                          className={`flex items-center justify-between rounded-xl border px-3 py-2 transition-all ${
+                            isCurrentUser
+                              ? isTopThree
+                                ? `${medalStyle?.border} ${medalStyle?.bg} ${medalStyle?.glow}`
+                                : 'border-indigo-200 bg-indigo-50/60'
+                              : isTopThree
+                                ? `${medalStyle?.border} ${medalStyle?.bg} ${medalStyle?.glow}`
+                                : 'border-gray-200 bg-white'
+                          } ${isTopThree ? 'shadow-md' : 'shadow-sm'}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="relative">
+                              <img
+                                src={player.wizardImage}
+                                alt={player.displayName || 'Student'}
+                                className={`w-10 h-10 rounded-full object-cover border-2 shadow ${
+                                  isTopThree ? 'border-white shadow-lg' : 'border-white'
+                                }`}
+                              />
+                              <div className={`absolute -top-1 -left-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                isTopThree 
+                                  ? medalStyle?.badge 
+                                  : 'bg-white border border-gray-200 text-gray-600'
+                              }`}>
+                                {rank}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                                {player.displayName || 'Student'}
+                                {isCurrentUser && (
+                                  <span className="text-xs font-semibold text-indigo-500 bg-indigo-100 px-2 py-0.5 rounded-full">
+                                    You
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {player.totalPoints.toLocaleString()} XP
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className={`text-sm font-bold ${
+                              isTopThree ? 'text-gray-900' : 'text-gray-900'
+                            }`}>
+                              Lv {player.level}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Users className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">No leaderboard data yet</p>
+                <p className="text-xs text-gray-400 mt-1">Start playing to appear on the leaderboard!</p>
+              </div>
+            )}
+          </div>
+        </div>
 
 
 
@@ -2389,20 +2533,7 @@ export default function StudentDashboard() {
                 title="Flashcards"
                 color="blue"
                 icon={<span className="text-3xl">🃏</span>}
-                onClick={() => {
-                  console.log('Flashcard game clicked, homeworks.length:', homeworks.length)
-                  if (homeworks.length === 0 && oldWordSets.length === 0) {
-                    setMessage('No vocabulary sets available. Please wait for your teacher to assign vocabulary.')
-                    return
-                  }
-                  if (homeworks.length === 1 && oldWordSets.length === 0) {
-                    setSelectedHomework(homeworks[0])
-                    setShowFlashcardGame(true)
-                  } else {
-                    setPendingGame('flashcards')
-                    setShowHomeworkSelection(true)
-                  }
-                }}
+                onClick={startFlashcardGame}
               />
 
               {/* Multiple Choice (green) */}
@@ -2840,6 +2971,20 @@ export default function StudentDashboard() {
             gridConfig={getCurrentGameData()!.grid_config}
           />
         )}
+
+        {/* Block Reading temporarily disabled - code preserved in src/components/games/BlockReadingGame.tsx */}
+        {/* {showBlockReading && getCurrentGameData() && (
+          <BlockReadingGame
+            words={getCurrentGameData()!.words}
+            wordObjects={getCurrentGameData()!.wordObjects}
+            translations={getCurrentGameData()!.translations}
+            onClose={() => setShowBlockReading(false)}
+            onScoreUpdate={(score: number, total?: number) => handleScoreUpdate(score, total, 'block_reading')}
+            trackingContext={getTrackingContext()}
+            themeColor={getCurrentGameData()!.color}
+            gridConfig={getCurrentGameData()!.grid_config}
+          />
+        )} */}
 
         {showQuiz && getCurrentGameData() && (
           <QuizGame

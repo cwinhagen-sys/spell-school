@@ -184,3 +184,5 @@ Spela några spel och se om level up + streak fungerar smooth utan kollisioner! 
 
 
 
+
+

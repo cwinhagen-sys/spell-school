@@ -6,12 +6,13 @@ import Navbar from './Navbar'
 export default function ConditionalNavbar() {
   const pathname = usePathname()
   
-  // Don't show Navbar on student pages (they have their own top bar)
+  // Don't show Navbar on student pages (they have their own header in layout)
   if (pathname?.startsWith('/student')) {
     return null
   }
   
   return <Navbar />
 }
+
 
 

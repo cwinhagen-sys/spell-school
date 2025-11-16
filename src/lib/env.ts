@@ -5,3 +5,6 @@ export const requireEnv = (key: string): string => {
 }
 
 export const OPENAI_API_KEY = (): string => requireEnv('OPENAI_API_KEY')
+export const ELEVENLABS_API_KEY = (): string => requireEnv('ELEVENLABS_API_KEY')
+export const AZURE_SPEECH_KEY = (): string => requireEnv('AZURE_SPEECH_KEY')
+export const AZURE_SPEECH_REGION = (): string => requireEnv('AZURE_SPEECH_REGION')

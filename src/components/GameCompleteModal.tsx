@@ -1,6 +1,6 @@
 'use client'
 
-import { RotateCcw, ArrowLeft, Star, Trophy, Target, Clock, Gamepad2 } from 'lucide-react'
+import { RotateCcw, ArrowLeft, Star, Trophy, Target, Clock, Gamepad2, XCircle } from 'lucide-react'
 
 interface GameCompleteModalProps {
   score: number
@@ -14,9 +14,11 @@ interface GameCompleteModalProps {
     correctAnswers?: number
     totalAttempts?: number
     sessions?: number
+    failedWordsCount?: number
     [key: string]: any
   }
   onPlayAgain: () => void
+  onRedoFailed?: () => void
   onBackToDashboard: () => void
   gameType?: string
   themeColor?: string
@@ -28,6 +30,7 @@ export default function GameCompleteModal({
   time,
   details = {},
   onPlayAgain,
+  onRedoFailed,
   onBackToDashboard,
   gameType,
   themeColor
@@ -64,10 +67,16 @@ export default function GameCompleteModal({
         <div className="mb-6">
           <div className="text-6xl mb-4">{getTrophyIcon()}</div>
           <h2 className="text-2xl font-bold mb-2">
-            {gameType === 'flashcards' ? 'Training Complete!' : 'Game Complete!'}
+            {gameType === 'flashcards' && details.testMode 
+              ? 'Test Complete!' 
+              : gameType === 'flashcards' 
+              ? 'Training Complete!' 
+              : 'Game Complete!'}
           </h2>
           <p className="text-gray-300">
-            {gameType === 'flashcards' 
+            {gameType === 'flashcards' && details.testMode
+              ? `Du har klarat ${details.correctWords || 0} av ${details.totalWords || 0} ord!`
+              : gameType === 'flashcards' 
               ? `You've reviewed all ${details.wordsReviewed || 0} vocabulary words!`
               : `You scored ${score} points!`
             }
@@ -84,7 +93,18 @@ export default function GameCompleteModal({
           </div>
         )}
         
-        {gameType === 'flashcards' && (
+        {/* XP Earned Highlight for Test Mode */}
+        {gameType === 'flashcards' && details.testMode && details.xpEarned !== undefined && (
+          <div className="mb-6">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Star className="w-6 h-6 text-yellow-400" />
+              <span className="text-2xl font-bold text-yellow-400">{details.xpEarned} XP</span>
+            </div>
+            <p className="text-sm text-gray-400">2 XP per klarat ord</p>
+          </div>
+        )}
+        
+        {gameType === 'flashcards' && !details.testMode && (
           <div className="mb-6">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Star className="w-6 h-6 text-blue-500" />
@@ -145,6 +165,36 @@ export default function GameCompleteModal({
             </div>
           )}
 
+          {details.incorrectWords !== undefined && details.testMode && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <XCircle className="w-4 h-4 text-red-400" />
+                <span>Incorrect Words:</span>
+              </div>
+              <span className="text-red-400">{details.incorrectWords}</span>
+            </div>
+          )}
+
+          {details.blocksCompleted !== undefined && details.totalBlocks !== undefined && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Trophy className="w-4 h-4" />
+                <span>Blocks Completed:</span>
+              </div>
+              <span>{details.blocksCompleted}/{details.totalBlocks}</span>
+            </div>
+          )}
+
+          {details.xpEarned !== undefined && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Star className="w-4 h-4 text-yellow-400" />
+                <span>XP Earned:</span>
+              </div>
+              <span className="text-yellow-400 font-bold">{details.xpEarned} XP</span>
+            </div>
+          )}
+
           {details.finalScore !== undefined && details.finalScore !== score && (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -158,20 +208,41 @@ export default function GameCompleteModal({
 
         {/* Action Buttons */}
         <div className="space-y-3">
-                      <button
-              onClick={onPlayAgain}
-              className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 shadow-lg"
-            >
-              <RotateCcw className="w-4 h-4" />
-              <span>{gameType === 'flashcards' ? 'Practice Again' : 'Play Again'}</span>
-            </button>
-          <button
-            onClick={onBackToDashboard}
-            className="w-full bg-white/10 border border-white/10 text-white py-3 px-6 rounded-lg font-medium hover:bg-white/15 transition-colors flex items-center justify-center space-x-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Dashboard</span>
-          </button>
+          {gameType === 'flashcards' && details.testMode && details.failedWordsCount && details.failedWordsCount > 0 && onRedoFailed ? (
+            <>
+              <button
+                onClick={onRedoFailed}
+                className="w-full bg-orange-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2 shadow-lg"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>Gör om de {details.failedWordsCount} orden du inte klarade</span>
+              </button>
+              <button
+                onClick={onBackToDashboard}
+                className="w-full bg-white/10 border border-white/10 text-white py-3 px-6 rounded-lg font-medium hover:bg-white/15 transition-colors flex items-center justify-center space-x-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Gå tillbaka till dashboard</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={onPlayAgain}
+                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 shadow-lg"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>{gameType === 'flashcards' ? 'Practice Again' : 'Play Again'}</span>
+              </button>
+              <button
+                onClick={onBackToDashboard}
+                className="w-full bg-white/10 border border-white/10 text-white py-3 px-6 rounded-lg font-medium hover:bg-white/15 transition-colors flex items-center justify-center space-x-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to Dashboard</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -71,6 +71,17 @@
   }
 }
 
+@keyframes xpFloat {
+  0% {
+    transform: translate(-50%, -50%) translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) translateY(-80px) scale(1.2);
+    opacity: 0;
+  }
+}
+
 .magical-float-up {
   animation: floatUp 2s ease-out infinite;
 }
@@ -85,4 +96,8 @@
 
 .magical-shimmer {
   animation: shimmer 2s infinite;
+}
+
+.animate-xp-float {
+  animation: xpFloat 2s ease-out forwards;
 }

@@ -12,3 +12,5 @@ COMMENT ON COLUMN word_sets.grid_config IS 'Grid configuration array: [{words: s
 
 
 
+
+
