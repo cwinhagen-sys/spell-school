@@ -12,8 +12,8 @@ export default function PrivacyPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl mb-4">
             <Shield className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Privacy Policy</h1>
-          <p className="text-gray-600">Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Integritetspolicy</h1>
+          <p className="text-gray-600">Senast uppdaterad: {new Date().toLocaleDateString('sv-SE', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
 
         {/* Content */}
@@ -21,10 +21,10 @@ export default function PrivacyPage() {
           
           {/* Introduction */}
           <section>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Introduction</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Introduktion</h2>
             <p className="text-gray-700 leading-relaxed">
-              Welcome to Spell School. We are committed to protecting your privacy and ensuring a safe learning environment for students. 
-              This Privacy Policy explains how we collect, use, and protect your personal information when you use our educational platform.
+              Välkommen till Spell School. Vi är dedikerade till att skydda din integritet och säkerställa en säker lärmiljö för elever. 
+              Denna integritetspolicy förklarar hur vi samlar in, använder och skyddar din personliga information när du använder vår utbildningsplattform.
             </p>
           </section>
 
@@ -32,29 +32,29 @@ export default function PrivacyPage() {
           <section>
             <div className="flex items-center gap-3 mb-4">
               <Eye className="w-6 h-6 text-purple-600" />
-              <h2 className="text-2xl font-bold text-gray-900">Information We Collect</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Information vi samlar in</h2>
             </div>
             
             <div className="space-y-4">
               <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">For Students:</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">För elever:</h3>
                 <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
-                  <li><strong>Username:</strong> A chosen username for account identification</li>
-                  <li><strong>Class Code:</strong> Used to associate students with their class</li>
-                  <li><strong>Age:</strong> To ensure age-appropriate content</li>
-                  <li><strong>Learning Progress:</strong> Game scores, XP points, badges earned, and vocabulary progress</li>
-                  <li><strong>Activity Data:</strong> Games played, time spent learning, and performance metrics</li>
-                  <li><strong>No Real Email:</strong> Students use synthetic email addresses (format: username.classcode@local.local) to protect privacy</li>
+                  <li><strong>Användarnamn:</strong> Ett valt användarnamn för kontohantering</li>
+                  <li><strong>Klasskod:</strong> Används för att koppla elever till sin klass</li>
+                  <li><strong>Ålder:</strong> För att säkerställa ålderslämpligt innehåll</li>
+                  <li><strong>Lärframsteg:</strong> Spelresultat, XP-poäng, märken som tjänats in och ordförrådsframsteg</li>
+                  <li><strong>Aktivitetsdata:</strong> Spel som spelats, tid spenderad på lärande och prestationsmått</li>
+                  <li><strong>Ingen riktig e-post:</strong> Elever använder syntetiska e-postadresser (format: användarnamn.klasskod@local.local) för att skydda integriteten</li>
                 </ul>
               </div>
 
               <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">For Teachers:</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">För lärare:</h3>
                 <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
-                  <li><strong>Email Address:</strong> For account verification and communication</li>
-                  <li><strong>Name:</strong> To personalize your teaching experience</li>
-                  <li><strong>Class Information:</strong> Classes you create and manage</li>
-                  <li><strong>Student Progress Data:</strong> Aggregated progress reports for your students</li>
+                  <li><strong>E-postadress:</strong> För kontoverifiering och kommunikation</li>
+                  <li><strong>Namn:</strong> För att personalisera din undervisningsupplevelse</li>
+                  <li><strong>Klassinformation:</strong> Klasser du skapar och hanterar</li>
+                  <li><strong>Elevframstegsdata:</strong> Sammanställda framstegsrapporter för dina elever</li>
                 </ul>
               </div>
             </div>
@@ -64,15 +64,15 @@ export default function PrivacyPage() {
           <section>
             <div className="flex items-center gap-3 mb-4">
               <UserCheck className="w-6 h-6 text-purple-600" />
-              <h2 className="text-2xl font-bold text-gray-900">How We Use Your Information</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Hur vi använder din information</h2>
             </div>
             <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
-              <li>To provide and improve our educational services</li>
-              <li>To track student learning progress and provide feedback</li>
-              <li>To enable teachers to monitor and support student learning</li>
-              <li>To personalize the learning experience</li>
-              <li>To ensure platform security and prevent abuse</li>
-              <li>To communicate with teachers about their accounts and classes</li>
+              <li>För att tillhandahålla och förbättra våra utbildningstjänster</li>
+              <li>För att spåra elevers lärframsteg och ge feedback</li>
+              <li>För att möjliggöra för lärare att övervaka och stödja elevlärande</li>
+              <li>För att personalisera lärupplevelsen</li>
+              <li>För att säkerställa plattformssäkerhet och förhindra missbruk</li>
+              <li>För att kommunicera med lärare om deras konton och klasser</li>
             </ul>
           </section>
 
@@ -80,63 +80,63 @@ export default function PrivacyPage() {
           <section>
             <div className="flex items-center gap-3 mb-4">
               <Lock className="w-6 h-6 text-purple-600" />
-              <h2 className="text-2xl font-bold text-gray-900">Data Protection & Security</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Dataskydd & säkerhet</h2>
             </div>
             <p className="text-gray-700 leading-relaxed mb-4">
-              We take data security seriously and implement appropriate technical and organizational measures to protect your information:
+              Vi tar datasäkerhet på allvar och implementerar lämpliga tekniska och organisatoriska åtgärder för att skydda din information:
             </p>
             <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
-              <li>All data is encrypted in transit using HTTPS</li>
-              <li>Student accounts use synthetic email addresses to protect privacy</li>
-              <li>Access to student data is restricted to authorized teachers and administrators</li>
-              <li>We use secure authentication methods (password hashing, OAuth)</li>
-              <li>Regular security audits and updates</li>
+              <li>All data krypteras under överföring med HTTPS</li>
+              <li>Elevkonton använder syntetiska e-postadresser för att skydda integriteten</li>
+              <li>Tillgång till elevdata är begränsad till auktoriserade lärare och administratörer</li>
+              <li>Vi använder säkra autentiseringsmetoder (lösenordshashning, OAuth)</li>
+              <li>Regelbundna säkerhetsrevisioner och uppdateringar</li>
             </ul>
           </section>
 
           {/* Children's Privacy */}
           <section>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Children's Privacy (COPPA/GDPR)</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Barns integritet (COPPA/GDPR)</h2>
             <p className="text-gray-700 leading-relaxed mb-4">
-              Spell School is designed for educational use and complies with children's privacy regulations:
+              Spell School är designad för utbildningsbruk och följer integritetsregler för barn:
             </p>
             <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
-              <li>We do not collect real email addresses from students</li>
-              <li>Student data is only accessible to their authorized teachers</li>
-              <li>We do not share student data with third parties for marketing purposes</li>
-              <li>Parents and teachers can request access to or deletion of student data</li>
-              <li>We comply with GDPR requirements for EU users</li>
+              <li>Vi samlar inte in riktiga e-postadresser från elever</li>
+              <li>Elevdata är endast tillgänglig för deras auktoriserade lärare</li>
+              <li>Vi delar inte elevdata med tredje part för marknadsföringssyften</li>
+              <li>Föräldrar och lärare kan begära tillgång till eller radering av elevdata</li>
+              <li>Vi följer GDPR-krav för EU-användare</li>
             </ul>
           </section>
 
           {/* Data Sharing */}
           <section>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Data Sharing</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Datadelning</h2>
             <p className="text-gray-700 leading-relaxed">
-              We do not sell or rent your personal information. We may share data only in the following circumstances:
+              Vi säljer eller hyr inte ut din personliga information. Vi kan dela data endast under följande omständigheter:
             </p>
             <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4 mt-4">
-              <li><strong>With Teachers:</strong> Teachers can view progress data for students in their classes</li>
-              <li><strong>Service Providers:</strong> We use trusted third-party services (Supabase, hosting providers) that are bound by confidentiality agreements</li>
-              <li><strong>Legal Requirements:</strong> When required by law or to protect our rights</li>
+              <li><strong>Med lärare:</strong> Lärare kan se framstegsdata för elever i sina klasser</li>
+              <li><strong>Tjänsteleverantörer:</strong> Vi använder betrodda tredjepartstjänster (Supabase, hostingleverantörer) som är bundna av sekretessavtal</li>
+              <li><strong>Juridiska krav:</strong> När det krävs enligt lag eller för att skydda våra rättigheter</li>
             </ul>
           </section>
 
           {/* Your Rights */}
           <section>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Your Rights</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Dina rättigheter</h2>
             <p className="text-gray-700 leading-relaxed mb-4">
-              You have the right to:
+              Du har rätt att:
             </p>
             <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
-              <li>Access your personal data</li>
-              <li>Request correction of inaccurate data</li>
-              <li>Request deletion of your data</li>
-              <li>Object to processing of your data</li>
-              <li>Data portability (receive your data in a structured format)</li>
+              <li>Få tillgång till din personliga data</li>
+              <li>Begära korrigering av felaktig data</li>
+              <li>Begära radering av din data</li>
+              <li>Invända mot behandling av din data</li>
+              <li>Dataportabilitet (ta emot din data i ett strukturerat format)</li>
             </ul>
             <p className="text-gray-700 mt-4">
-              To exercise these rights, please contact us using the information below.
+              För att utöva dessa rättigheter, vänligen kontakta oss med informationen nedan.
             </p>
           </section>
 
@@ -144,31 +144,31 @@ export default function PrivacyPage() {
           <section>
             <div className="flex items-center gap-3 mb-4">
               <Calendar className="w-6 h-6 text-purple-600" />
-              <h2 className="text-2xl font-bold text-gray-900">Data Retention</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Databevarande</h2>
             </div>
             <p className="text-gray-700 leading-relaxed">
-              We retain your data for as long as your account is active or as needed to provide our services. 
-              When you delete your account, we will delete or anonymize your personal data within 30 days, 
-              except where we are required to retain it for legal purposes.
+              Vi behåller din data så länge ditt konto är aktivt eller så länge det behövs för att tillhandahålla våra tjänster. 
+              När du raderar ditt konto kommer vi att radera eller anonymisera din personliga data inom 30 dagar, 
+              utom där vi är skyldiga att behålla den av juridiska skäl.
             </p>
           </section>
 
           {/* Cookies */}
           <section>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Cookies & Tracking</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Cookies & spårning</h2>
             <p className="text-gray-700 leading-relaxed">
-              We use essential cookies and local storage to maintain your session and remember your preferences. 
-              We do not use tracking cookies or third-party advertising. You can control cookies through your browser settings.
+              Vi använder nödvändiga cookies och lokal lagring för att upprätthålla din session och komma ihåg dina inställningar. 
+              Vi använder inte spårningscookies eller tredjepartsreklam. Du kan kontrollera cookies genom dina webbläsarinställningar.
             </p>
           </section>
 
           {/* Changes to Policy */}
           <section>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Changes to This Policy</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Ändringar av denna policy</h2>
             <p className="text-gray-700 leading-relaxed">
-              We may update this Privacy Policy from time to time. We will notify you of any significant changes 
-              by posting the new policy on this page and updating the "Last updated" date. Your continued use of 
-              Spell School after changes become effective constitutes acceptance of the updated policy.
+              Vi kan uppdatera denna integritetspolicy från tid till annan. Vi kommer att meddela dig om betydande ändringar 
+              genom att publicera den nya policyn på denna sida och uppdatera datumet för "Senast uppdaterad". Ditt fortsatta användande av 
+              Spell School efter att ändringar trätt i kraft innebär acceptans av den uppdaterade policyn.
             </p>
           </section>
 
@@ -176,15 +176,15 @@ export default function PrivacyPage() {
           <section className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-6">
             <div className="flex items-center gap-3 mb-4">
               <Mail className="w-6 h-6 text-purple-600" />
-              <h2 className="text-2xl font-bold text-gray-900">Contact Us</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Kontakta oss</h2>
             </div>
             <p className="text-gray-700 leading-relaxed mb-4">
-              If you have questions about this Privacy Policy or wish to exercise your rights, please contact us:
+              Om du har frågor om denna integritetspolicy eller vill utöva dina rättigheter, vänligen kontakta oss:
             </p>
             <div className="space-y-2 text-gray-700">
-              <p><strong>Email:</strong> [Your contact email]</p>
-              <p><strong>For Teachers:</strong> Contact us through your teacher dashboard</p>
-              <p><strong>For Parents:</strong> Contact your child's teacher or school administrator</p>
+              <p><strong>E-post:</strong> [Din kontakt-e-post]</p>
+              <p><strong>För lärare:</strong> Kontakta oss via din lärardashboard</p>
+              <p><strong>För föräldrar:</strong> Kontakta ditt barns lärare eller skoladministratör</p>
             </div>
           </section>
 
@@ -194,7 +194,7 @@ export default function PrivacyPage() {
               href="/" 
               className="text-purple-600 hover:text-purple-700 font-medium transition-colors"
             >
-              ← Back to Home
+              ← Tillbaka till startsidan
             </Link>
           </div>
         </div>
@@ -202,4 +202,3 @@ export default function PrivacyPage() {
     </div>
   )
 }
-
