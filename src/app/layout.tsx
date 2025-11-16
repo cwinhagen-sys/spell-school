@@ -18,8 +18,10 @@ export const metadata: Metadata = {
   description: "Learn vocabulary through interactive games and engaging activities",
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/assets/spell-school-logo.png', type: 'image/png', sizes: '512x512' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-48.png', sizes: '48x48', type: 'image/png' },
     ],
     apple: [
       { url: '/assets/spell-school-logo.png', sizes: '180x180', type: 'image/png' },
