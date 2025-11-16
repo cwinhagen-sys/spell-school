@@ -52,9 +52,12 @@ export async function POST(request: NextRequest) {
       // Create push audio input stream
       const pushStream = sdk.AudioInputStream.createPushStream()
       
-      // Convert ArrayBuffer to Buffer for Node.js
+      // Convert ArrayBuffer to Buffer for Node.js, then to ArrayBuffer for Azure SDK
       const buffer = Buffer.from(audioBuffer)
-      pushStream.write(buffer)
+      // Azure SDK accepts Buffer, but TypeScript types expect ArrayBuffer
+      // Convert Buffer back to ArrayBuffer for type safety
+      const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
+      pushStream.write(arrayBuffer)
       pushStream.close()
 
       // Create audio config from stream
