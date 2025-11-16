@@ -119,9 +119,11 @@ export default function BlockReadingGame({
   // Start game session
   useEffect(() => {
     if (!showGridSelector && selectedGrids.length > 0 && !sessionId) {
-      startGameSession('block_reading', trackingContext).then(id => {
-        setSessionId(id)
-        startedAtRef.current = Date.now()
+      startGameSession('block_reading', trackingContext).then(session => {
+        if (session) {
+          setSessionId(session.id)
+          startedAtRef.current = Date.now()
+        }
       })
     }
   }, [showGridSelector, selectedGrids, sessionId, trackingContext])
