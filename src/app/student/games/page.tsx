@@ -79,7 +79,7 @@ export default function GamesPage() {
           id: rec.word_sets.id,
           title: rec.word_sets.title,
           color: rec.word_sets.color,
-          due_date: rec.due_date ? new Date(rec.due_date).toISOString() : null,
+          due_date: rec.due_date ? new Date(rec.due_date).toISOString() : undefined,
           words: rec.word_sets.words || []
         }))
 
