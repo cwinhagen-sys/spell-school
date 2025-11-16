@@ -17,7 +17,7 @@ interface FlashcardGameProps {
   wordObjects?: Word[] // New field for word objects with images
   translations?: { [key: string]: string } // Optional translations object
   onClose: () => void
-  onScoreUpdate: (score: number) => void
+  onScoreUpdate: (score: number, total?: number) => void
   trackingContext?: TrackingContext
   themeColor?: string
   gridConfig?: GridConfig[]
