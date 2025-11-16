@@ -2,7 +2,7 @@
 import { supabase } from '@/lib/supabase'
 import { persistentLog } from '@/lib/errorLogger'
 
-export type GameType = 'flashcards' | 'match' | 'typing' | 'story' | 'translate' | 'connect' | 'quiz' | 'choice' | 'roulette' | 'story_gap' | 'spellslinger' | 'daily_quest' | 'block_reading' | 'pronunciation'
+export type GameType = 'flashcards' | 'match' | 'typing' | 'story' | 'translate' | 'connect' | 'quiz' | 'choice' | 'roulette' | 'story_gap' | 'spellslinger' | 'daily_quest' | 'pronunciation'
 
 export interface TrackingContext {
   wordSetId?: string

@@ -19,8 +19,6 @@ import StoryGapGame from '@/components/games/StoryGapGame'
 import QuizGame from '@/components/games/QuizGame'
 import MultipleChoiceGame from '@/components/games/MultipleChoiceGame'
 import RouletteGame from '@/components/games/RouletteGame'
-// Block Reading temporarily disabled - code preserved in src/components/games/BlockReadingGame.tsx
-// import BlockReadingGame from '@/components/games/BlockReadingGame'
 import { type TrackingContext, updateStudentProgress as addProgress } from '@/lib/tracking'
 import { enqueueQuestProgress, enqueueQuestComplete } from '@/lib/questOutbox'
 import { useDailyQuestBadges } from '@/hooks/useDailyQuestBadges'
@@ -178,8 +176,6 @@ export default function StudentDashboard() {
   const [showQuiz, setShowQuiz] = useState(false)
   const [showChoice, setShowChoice] = useState(false)
   const [showRoulette, setShowRoulette] = useState(false)
-  const [showBlockReading, setShowBlockReading] = useState(false)
-  // Block Reading temporarily disabled
   const [pendingGame, setPendingGame] = useState<'flashcards' | 'match' | 'typing' | 'translate' | 'connect' | 'quiz' | 'choice' | 'storygap' | 'roulette' | null>(null)
   const [selectedHomework, setSelectedHomework] = useState<Homework | null>(null)
   const [showHomeworkSelection, setShowHomeworkSelection] = useState(false)
@@ -1062,10 +1058,6 @@ export default function StudentDashboard() {
                   case 'roulette':
                     setShowRoulette(true)
                     break
-                  // Block Reading temporarily disabled
-                  // case 'block_reading':
-                  //   setShowBlockReading(true)
-                  //   break
                 }
                 // Clean up URL
                 window.history.replaceState({}, '', '/student')
@@ -2972,19 +2964,6 @@ export default function StudentDashboard() {
           />
         )}
 
-        {/* Block Reading temporarily disabled - code preserved in src/components/games/BlockReadingGame.tsx */}
-        {/* {showBlockReading && getCurrentGameData() && (
-          <BlockReadingGame
-            words={getCurrentGameData()!.words}
-            wordObjects={getCurrentGameData()!.wordObjects}
-            translations={getCurrentGameData()!.translations}
-            onClose={() => setShowBlockReading(false)}
-            onScoreUpdate={(score: number, total?: number) => handleScoreUpdate(score, total, 'block_reading')}
-            trackingContext={getTrackingContext()}
-            themeColor={getCurrentGameData()!.color}
-            gridConfig={getCurrentGameData()!.grid_config}
-          />
-        )} */}
 
         {showQuiz && getCurrentGameData() && (
           <QuizGame

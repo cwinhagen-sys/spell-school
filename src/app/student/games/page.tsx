@@ -190,13 +190,6 @@ export default function GamesPage() {
                 icon={<span className="text-3xl">🎰</span>}
                 onClick={() => handleGameClick('roulette')}
               />
-              {/* Block Reading temporarily disabled - code preserved in src/components/games/BlockReadingGame.tsx */}
-              {/* <GameCard
-                title="Block Reading"
-                color="cyan"
-                icon={<span className="text-3xl">📚</span>}
-                onClick={() => handleGameClick('block_reading')}
-              /> */}
             </div>
 
             <div className="bg-white/60 rounded-lg p-4 text-center text-sm text-gray-600">

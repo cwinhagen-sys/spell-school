@@ -261,8 +261,6 @@ export default function StudentHeader() {
         { label: 'Translate', href: '#translate' },
         { label: 'Sentence Gap', href: '#storygap' },
         { label: 'Word Roulette', href: '#roulette' }
-        // Block Reading temporarily disabled - code preserved in src/components/games/BlockReadingGame.tsx
-        // { label: 'Block Reading', href: '#block_reading' }
       ]
     },
     {
