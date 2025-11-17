@@ -95,13 +95,21 @@ export function getGoogleOAuthOptions(role: 'student' | 'teacher' = 'student') {
     console.warn('   This might cause redirect to production. Check Supabase Dashboard settings.')
   }
   
+  // Supabase requires queryParams to be passed directly in options
+  // These will be forwarded to Google OAuth
+  // NOTE: Supabase may not forward all queryParams correctly
+  // If account picker doesn't show, check Supabase Dashboard configuration
   return {
     redirectTo: redirectUrl,
     queryParams: {
+      // Use 'consent' instead of 'select_account' - forces account picker AND consent screen
+      // 'select_account' alone might be ignored if user is already logged in
+      prompt: 'consent', // Forces account picker AND consent screen - more reliable than select_account alone
       hd: '*', // Allow all domains (including Workspace)
-      prompt: 'select_account', // Always show account picker
       access_type: 'offline', // Request refresh token
-    }
+      include_granted_scopes: 'true',
+    },
+    scopes: 'email profile',
   }
 }
 
