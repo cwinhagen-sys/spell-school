@@ -173,7 +173,11 @@ export default function TeacherDashboard() {
       }
       
       const studentIds = classStudents.map(cs => cs.student_id)
-      const classMap = new Map(classStudents.map(cs => [cs.student_id, cs.classes?.name]))
+      // Type assertion needed because Supabase join returns nested structure
+      const classMap = new Map(classStudents.map(cs => {
+        const classes = (cs as any).classes
+        return [cs.student_id, classes?.name]
+      }))
       
       const { data: sessions, error } = await supabase
         .from('game_sessions')
