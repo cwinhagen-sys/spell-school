@@ -112,9 +112,9 @@ export default function SpellSchoolLanding({
               Tilldela glosor till dina elever och låt dem lära sig genom magiska övningar. 
               Ett pedagogiskt verktyg som gör språkinlärning roligt och engagerande.
             </motion.p>
-            <motion.div
+        <motion.div
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
               className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
             >
@@ -146,15 +146,7 @@ export default function SpellSchoolLanding({
                 alt="Spell School student interface"
                 className="w-full h-auto object-cover"
               />
-              {/* Fade-out gradient masks on edges */}
-              <div className="absolute inset-0 bg-gradient-to-r from-white via-transparent to-white pointer-events-none opacity-60"></div>
-              <div className="absolute inset-0 bg-gradient-to-b from-white via-transparent to-white pointer-events-none opacity-40"></div>
-              {/* Decorative gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 pointer-events-none"></div>
             </div>
-            {/* Floating decoration elements */}
-            <div className="absolute -top-4 -right-4 w-24 h-24 bg-purple-200 rounded-full opacity-20 blur-2xl"></div>
-            <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-indigo-200 rounded-full opacity-20 blur-2xl"></div>
           </motion.div>
         </div>
       </section>

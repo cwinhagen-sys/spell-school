@@ -11,15 +11,87 @@ function AuthCallbackContent() {
   const [status, setStatus] = useState('Signing you in…')
 
   useEffect(() => {
+    let mounted = true
+    
     const run = async () => {
       try {
-        setStatus('Checking session…')
-        const { data: { session }, error } = await supabase.auth.getSession()
-        if (error || !session?.user) {
-          setStatus('No active session. Redirecting…')
-          router.replace('/')
+        setStatus('Processing OAuth callback…')
+        
+        // Log URL for debugging
+        console.log('🔐 Auth callback URL:', window.location.href)
+        console.log('🔐 URL hash:', window.location.hash)
+        console.log('🔐 URL search:', window.location.search)
+        
+        // Use onAuthStateChange to wait for the session to be ready
+        // This is more reliable than polling getSession()
+        const sessionPromise = new Promise<any>((resolve, reject) => {
+          let unsubscribe: any = null
+          
+          const timeout = setTimeout(() => {
+            if (unsubscribe) unsubscribe()
+            reject(new Error('Timeout waiting for OAuth session'))
+          }, 10000) // 10 second timeout
+          
+          unsubscribe = supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log('🔐 Auth state change:', event, session ? 'session found' : 'no session')
+            
+            if (event === 'SIGNED_IN' && session) {
+              clearTimeout(timeout)
+              if (unsubscribe) unsubscribe()
+              resolve(session)
+            } else if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+              // Continue waiting
+            } else if (event === 'USER_UPDATED' && session) {
+              clearTimeout(timeout)
+              if (unsubscribe) unsubscribe()
+              resolve(session)
+            }
+          })
+          
+          // Also try to get session immediately in case it's already available
+          supabase.auth.getSession().then(({ data, error }) => {
+            if (data.session && !error) {
+              clearTimeout(timeout)
+              if (unsubscribe) unsubscribe()
+              resolve(data.session)
+            }
+          })
+        })
+        
+        // Wait for session with timeout
+        let session: any = null
+        try {
+          session = await sessionPromise
+        } catch (error: any) {
+          console.error('❌ Error waiting for session:', error)
+          // Fallback: try getSession directly
+          const { data, error: sessionError } = await supabase.auth.getSession()
+          if (sessionError) {
+            throw sessionError
+          }
+          session = data.session
+        }
+        
+        if (!mounted) return
+        
+        if (!session?.user) {
+          console.error('❌ No active session found after OAuth callback')
+          console.error('   This might mean:')
+          console.error('   1. OAuth callback was not processed correctly')
+          console.error('   2. Redirect URL mismatch in Supabase Dashboard')
+          console.error('   3. PKCE code expired or invalid')
+          console.error('   4. Session expired or was cleared')
+          setStatus('No active session. Please try logging in again.')
+          setTimeout(() => router.replace('/'), 3000)
           return
         }
+        
+        console.log('✅ Session found:', {
+          userId: session.user.id,
+          email: session.user.email,
+          provider: session.user.app_metadata?.provider,
+          emailConfirmed: !!session.user.email_confirmed_at
+        })
 
         setStatus('Checking email verification…')
         // Check if email is verified (skip in development)
@@ -140,19 +212,37 @@ function AuthCallbackContent() {
           .single()
 
         if (profile?.role === 'teacher') {
+          console.log('✅ Redirecting to teacher dashboard')
           router.replace('/teacher')
         } else if (profile?.role === 'student') {
+          console.log('✅ Redirecting to student dashboard')
           router.replace('/student')
         } else {
+          console.log('⚠️ No role found, redirecting to role selection')
           router.replace('/select-role')
         }
         return
-      } catch (e) {
-        console.error('Auth callback error:', e)
-        router.replace('/')
+      } catch (e: any) {
+        console.error('❌ Auth callback error:', e)
+        console.error('   Error details:', {
+          message: e?.message,
+          status: e?.status,
+          code: e?.code
+        })
+        setStatus(`Error: ${e?.message || 'Unknown error'}. Redirecting...`)
+        setTimeout(() => {
+          if (mounted) {
+            router.replace('/')
+          }
+        }, 3000)
       }
     }
+    
     run()
+    
+    return () => {
+      mounted = false
+    }
   }, [router, searchParams])
 
   return (
