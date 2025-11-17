@@ -166,7 +166,16 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
       })
       
       if (!response.ok) {
-        throw new Error('Failed to generate speech')
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('❌ ElevenLabs TTS failed:', errorData)
+        
+        // Check if it's an environment variable issue
+        if (errorData.error?.includes('configuration missing') || errorData.error?.includes('env var')) {
+          console.error('⚠️ ElevenLabs API configuration missing in production. Check Vercel environment variables.')
+          // Fall through to browser TTS fallback
+        }
+        
+        throw new Error(errorData.error || 'Failed to generate speech')
       }
       
       // Create audio from blob
@@ -429,6 +438,13 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
             console.error('❌ Pronunciation assessment failed:', errorData)
+            
+            // Check if it's an environment variable issue
+            if (errorData.error?.includes('configuration missing') || errorData.error?.includes('env var')) {
+              console.error('⚠️ Azure Speech API configuration missing in production. Check Vercel environment variables.')
+              throw new Error('Pronunciation assessment is not configured. Please contact support.')
+            }
+            
             throw new Error(errorData.error || 'Failed to assess pronunciation')
           }
 

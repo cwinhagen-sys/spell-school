@@ -3,6 +3,22 @@ import { ELEVENLABS_API_KEY } from '@/lib/env'
 
 export async function POST(request: NextRequest) {
   try {
+    // Check environment variable first
+    if (!process.env.ELEVENLABS_API_KEY) {
+      console.error('ElevenLabs API key missing:', {
+        hasKey: !!process.env.ELEVENLABS_API_KEY,
+        nodeEnv: process.env.NODE_ENV,
+        vercel: !!process.env.VERCEL,
+      })
+      return NextResponse.json(
+        { 
+          error: 'ElevenLabs API configuration missing',
+          details: 'ELEVENLABS_API_KEY must be set in environment variables'
+        },
+        { status: 500 }
+      )
+    }
+
     const { text, voice_id = '21m00Tcm4TlvDq8ikWAM', stability = 0.5, similarity_boost = 0.75, speed = 1.0 } = await request.json()
 
     if (!text) {

@@ -16,6 +16,23 @@ import * as sdk from 'microsoft-cognitiveservices-speech-sdk'
 
 export async function POST(request: NextRequest) {
   try {
+    // Check environment variables first
+    if (!process.env.AZURE_SPEECH_KEY || !process.env.AZURE_SPEECH_REGION) {
+      console.error('Azure Speech environment variables missing:', {
+        hasKey: !!process.env.AZURE_SPEECH_KEY,
+        hasRegion: !!process.env.AZURE_SPEECH_REGION,
+        nodeEnv: process.env.NODE_ENV,
+        vercel: !!process.env.VERCEL,
+      })
+      return NextResponse.json(
+        { 
+          error: 'Azure Speech API configuration missing',
+          details: 'AZURE_SPEECH_KEY and AZURE_SPEECH_REGION must be set in environment variables'
+        },
+        { status: 500 }
+      )
+    }
+
     // Parse form data (audio file + word)
     const formData = await request.formData()
     const audioFile = formData.get('audio') as File
