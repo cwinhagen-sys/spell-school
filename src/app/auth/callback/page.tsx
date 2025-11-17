@@ -15,74 +15,25 @@ function AuthCallbackContent() {
     
     const run = async () => {
       try {
-        setStatus('Processing OAuth callback…')
+        setStatus('Checking session…')
         
-        // Log URL for debugging
-        console.log('🔐 Auth callback URL:', window.location.href)
-        console.log('🔐 URL hash:', window.location.hash)
-        console.log('🔐 URL search:', window.location.search)
+        // Wait a moment for Supabase to process the OAuth callback
+        await new Promise(resolve => setTimeout(resolve, 500))
         
-        // Use onAuthStateChange to wait for the session to be ready
-        // This is more reliable than polling getSession()
-        const sessionPromise = new Promise<any>((resolve, reject) => {
-          let unsubscribe: any = null
-          
-          const timeout = setTimeout(() => {
-            if (unsubscribe) unsubscribe()
-            reject(new Error('Timeout waiting for OAuth session'))
-          }, 10000) // 10 second timeout
-          
-          unsubscribe = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log('🔐 Auth state change:', event, session ? 'session found' : 'no session')
-            
-            if (event === 'SIGNED_IN' && session) {
-              clearTimeout(timeout)
-              if (unsubscribe) unsubscribe()
-              resolve(session)
-            } else if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
-              // Continue waiting
-            } else if (event === 'USER_UPDATED' && session) {
-              clearTimeout(timeout)
-              if (unsubscribe) unsubscribe()
-              resolve(session)
-            }
-          })
-          
-          // Also try to get session immediately in case it's already available
-          supabase.auth.getSession().then(({ data, error }) => {
-            if (data.session && !error) {
-              clearTimeout(timeout)
-              if (unsubscribe) unsubscribe()
-              resolve(data.session)
-            }
-          })
-        })
+        // Get session
+        const { data: { session }, error } = await supabase.auth.getSession()
         
-        // Wait for session with timeout
-        let session: any = null
-        try {
-          session = await sessionPromise
-        } catch (error: any) {
-          console.error('❌ Error waiting for session:', error)
-          // Fallback: try getSession directly
-          const { data, error: sessionError } = await supabase.auth.getSession()
-          if (sessionError) {
-            throw sessionError
-          }
-          session = data.session
+        if (error) {
+          console.error('Session error:', error)
+          setStatus(`Error: ${error.message}`)
+          setTimeout(() => router.replace('/'), 3000)
+          return
         }
         
-        if (!mounted) return
-        
         if (!session?.user) {
-          console.error('❌ No active session found after OAuth callback')
-          console.error('   This might mean:')
-          console.error('   1. OAuth callback was not processed correctly')
-          console.error('   2. Redirect URL mismatch in Supabase Dashboard')
-          console.error('   3. PKCE code expired or invalid')
-          console.error('   4. Session expired or was cleared')
-          setStatus('No active session. Please try logging in again.')
-          setTimeout(() => router.replace('/'), 3000)
+          console.error('No active session found')
+          setStatus('No active session. Redirecting…')
+          setTimeout(() => router.replace('/'), 2000)
           return
         }
         

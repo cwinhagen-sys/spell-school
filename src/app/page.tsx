@@ -86,52 +86,18 @@ export default function Home() {
       setLoading(true)
       setMessage('')
       
-      // Log current location for debugging
-      console.log('🔐 Google Login Initiated:')
-      console.log('  - Current URL:', window.location.href)
-      console.log('  - Current Origin:', window.location.origin)
-      
-      const oauthOptions = getGoogleOAuthOptions('student') // Default to student, will be determined in callback
-      console.log('  - OAuth Options:', JSON.stringify(oauthOptions, null, 2))
-      console.log('  - QueryParams:', JSON.stringify(oauthOptions.queryParams, null, 2))
-      
-      // Monitor network requests to see what URL is actually called
-      const originalFetch = window.fetch
-      window.fetch = function(...args) {
-        const url = args[0] as string
-        if (url.includes('supabase.co/auth') || url.includes('accounts.google.com')) {
-          console.log('🌐 OAuth Network Request:', url)
-          // Check if prompt=select_account is in the URL
-          if (url.includes('prompt=select_account')) {
-            console.log('✅ prompt=select_account found in URL')
-          } else {
-            console.warn('⚠️ prompt=select_account NOT found in URL!')
-            console.warn('   This might be why account picker is not showing')
-          }
-        }
-        return originalFetch.apply(this, args as any)
-      }
-      
-      const { error, data } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: oauthOptions
+        options: getGoogleOAuthOptions('student') // Default to student, will be determined in callback
       })
       
-      // Restore original fetch
-      window.fetch = originalFetch
-      
       if (error) {
-        console.error('❌ OAuth Error:', error)
         const errorMessage = getGoogleAuthErrorMessage(error)
         setMessage(errorMessage)
         setLoading(false)
-      } else {
-        console.log('✅ OAuth initiated, redirecting to Google...')
-        console.log('  - OAuth Response:', data)
-        // If successful, user will be redirected to OAuth flow
       }
+      // If successful, user will be redirected to OAuth flow
     } catch (error: any) {
-      console.error('❌ OAuth Exception:', error)
       const errorMessage = getGoogleAuthErrorMessage(error)
       setMessage(errorMessage)
       setLoading(false)
