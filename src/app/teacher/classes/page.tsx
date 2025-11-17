@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { AlertTriangle, X, Trash2 } from 'lucide-react'
+import { AlertTriangle, X, Trash2, Plus, Users, FileText, ChevronLeft, Check } from 'lucide-react'
+import Link from 'next/link'
 
 type ClassRow = {
   id: string
@@ -19,15 +20,28 @@ type ProfileRow = {
   displayName: string
 }
 
+interface StudentData {
+  username: string
+  password: string
+}
+
 export default function TeacherClassesPage() {
   const [loading, setLoading] = useState(true)
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
   const [classes, setClasses] = useState<ClassRow[]>([])
   const [newClassName, setNewClassName] = useState('')
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null)
   const [selectedClassStudents, setSelectedClassStudents] = useState<ProfileRow[]>([])
   const [showDeleteWarning, setShowDeleteWarning] = useState(false)
   const [classToDelete, setClassToDelete] = useState<ClassRow | null>(null)
+  
+  // Create class modal states
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [createMethod, setCreateMethod] = useState<'manual' | 'google'>('manual')
+  const [newClassStudents, setNewClassStudents] = useState<StudentData[]>([{ username: '', password: '' }])
+  const [pasteText, setPasteText] = useState('')
+  const [creatingClass, setCreatingClass] = useState(false)
+  const bottomButtonRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const init = async () => {
@@ -48,46 +62,224 @@ export default function TeacherClassesPage() {
   const fetchClasses = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        console.log('No user found')
-        return
-      }
-      console.log('Fetching classes for user:', user.id)
+      if (!user) return
       
       const { data, error } = await supabase
         .from('classes')
         .select('id, teacher_id, name, created_at, join_code')
         .eq('teacher_id', user.id)
-        .is('deleted_at', null) // GDPR: Visa bara icke-raderade klasser
+        .is('deleted_at', null)
         .order('created_at', { ascending: false })
       
-      console.log('Classes query result:', { data, error })
-      
-      if (error) {
-        console.error('Error fetching classes:', error)
-        throw error
-      }
+      if (error) throw error
       setClasses(data || [])
     } catch (e) {
       console.error('Failed to load classes:', e)
-      setMessage('Failed to load classes')
+      setMessage({ type: 'error', text: 'Kunde inte ladda klasser' })
     }
   }
 
-  const createClass = async () => {
-    if (!newClassName.trim()) return
+  const generateJoinCode = (length = 6) => {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+    let result = ''
+    for (let i = 0; i < length; i++) {
+      result += alphabet[Math.floor(Math.random() * alphabet.length)]
+    }
+    return result
+  }
+
+  const addStudentRow = () => {
+    setNewClassStudents([...newClassStudents, { username: '', password: '' }])
+  }
+
+  const removeStudentRow = (index: number) => {
+    if (newClassStudents.length > 1) {
+      setNewClassStudents(newClassStudents.filter((_, i) => i !== index))
+    }
+  }
+
+  const updateStudent = (index: number, field: keyof StudentData, value: string) => {
+    const updated = [...newClassStudents]
+    updated[index][field] = value
+    setNewClassStudents(updated)
+  }
+
+  const handlePasteStudents = () => {
+    if (!pasteText.trim()) {
+      setMessage({ type: 'error', text: 'Vänligen klistra in elevdata' })
+      return
+    }
+
+    try {
+      const lines = pasteText.split('\n').filter(line => line.trim())
+      const parsedStudents: StudentData[] = []
+
+      lines.forEach(line => {
+        const trimmed = line.trim()
+        if (!trimmed) return
+
+        let parts: string[] = []
+        if (trimmed.includes('\t')) {
+          parts = trimmed.split('\t').map(p => p.trim())
+        } else if (trimmed.includes(',')) {
+          parts = trimmed.split(',').map(p => p.trim())
+        } else {
+          parts = [trimmed, '']
+        }
+
+        if (parts.length >= 1 && parts[0]) {
+          parsedStudents.push({
+            username: parts[0],
+            password: parts[1] || `${parts[0]}123`
+          })
+        }
+      })
+
+      if (parsedStudents.length === 0) {
+        setMessage({ type: 'error', text: 'Ingen giltig elevdata hittades. Format: användarnamn,lösenord (en per rad)' })
+        return
+      }
+
+      setNewClassStudents([...newClassStudents, ...parsedStudents])
+      setPasteText('')
+      setMessage({ type: 'success', text: `Lade till ${parsedStudents.length} elev(ar) från klistring` })
+      
+      setTimeout(() => {
+        bottomButtonRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+      }, 100)
+    } catch (error: any) {
+      setMessage({ type: 'error', text: `Fel vid parsning av klistrad data: ${error.message}` })
+    }
+  }
+
+  const handleGoogleClassroomImport = async () => {
+    try {
+      setCreatingClass(true)
+      setMessage(null)
+
+      // Check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        setMessage({ type: 'error', text: 'Inte autentiserad. Vänligen logga in igen.' })
+        return
+      }
+
+      // Fetch available Google Classroom courses
+      const response = await fetch('/api/google-classroom/courses', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (data.configured === false) {
+          setMessage({ 
+            type: 'error', 
+            text: 'Google Classroom-integration är inte konfigurerad ännu. Kontakta support eller skapa klassen manuellt.' 
+          })
+        } else {
+          setMessage({ 
+            type: 'error', 
+            text: data.message || 'Kunde inte hämta Google Classroom-kurser. Kontrollera att din skola har godkänt Spell School.' 
+          })
+        }
+        return
+      }
+
+      if (data.error === 'Not implemented') {
+        setMessage({ 
+          type: 'error', 
+          text: 'Google Classroom-integration kommer snart! För nu kan du skapa klassen manuellt och importera elever via "Klistra in lista".' 
+        })
+        return
+      }
+
+      // If we get here, courses are available (future implementation)
+      setMessage({ 
+        type: 'error', 
+        text: 'Funktionen är under utveckling. Skapa klassen manuellt för nu.' 
+      })
+
+    } catch (error: any) {
+      setMessage({ 
+        type: 'error', 
+        text: `Fel: ${error.message || 'Kunde inte ansluta till Google Classroom'}` 
+      })
+    } finally {
+      setCreatingClass(false)
+    }
+  }
+
+  const createClassWithStudents = async () => {
+    if (!newClassName.trim()) {
+      setMessage({ type: 'error', text: 'Klassnamn krävs' })
+      return
+    }
+
+    setCreatingClass(true)
+    setMessage(null)
+
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      const join = generateJoinCode(6)
-      const { error } = await supabase
+      if (!user) {
+        setMessage({ type: 'error', text: 'Inte autentiserad' })
+        return
+      }
+
+      // Create class
+      const joinCode = generateJoinCode(6)
+      const { data: newClass, error: classError } = await supabase
         .from('classes')
-        .insert({ name: newClassName.trim(), teacher_id: user.id, join_code: join })
-      if (error) throw error
+        .insert({ name: newClassName.trim(), teacher_id: user.id, join_code: joinCode })
+        .select()
+        .single()
+
+      if (classError) throw classError
+
+      // Add students if any
+      const validStudents = newClassStudents.filter(s => s.username.trim() && s.password.trim())
+      if (validStudents.length > 0) {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session?.access_token) {
+          setMessage({ type: 'error', text: 'Inte autentiserad' })
+          return
+        }
+
+        const response = await fetch('/api/teacher/create-students', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({
+            classId: newClass.id,
+            students: validStudents.map(student => ({
+              username: student.username.trim(),
+              password: student.password
+            }))
+          })
+        })
+
+        const result = await response.json()
+        if (!response.ok) {
+          throw new Error(result?.error || 'Kunde inte skapa elever')
+        }
+      }
+
+      setMessage({ type: 'success', text: `Klass "${newClassName}" skapad${validStudents.length > 0 ? ` med ${validStudents.length} elev(ar)` : ''}!` })
       setNewClassName('')
-      fetchClasses()
-    } catch (e: any) {
-      setMessage(`Failed to create class${e?.message ? `: ${e.message}` : ''}`)
+      setNewClassStudents([{ username: '', password: '' }])
+      setShowCreateModal(false)
+      setCreateMethod('manual')
+      await fetchClasses()
+      setSelectedClassId(newClass.id)
+      await fetchClassStudents(newClass.id)
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Kunde inte skapa klass' })
+    } finally {
+      setCreatingClass(false)
     }
   }
 
@@ -103,7 +295,6 @@ export default function TeacherClassesPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       
-      // GDPR: Soft delete istället för hård radering
       const { error } = await supabase
         .from('classes')
         .update({ deleted_at: new Date().toISOString() })
@@ -115,9 +306,9 @@ export default function TeacherClassesPage() {
         setSelectedClassStudents([])
       }
       fetchClasses()
-      setMessage(`Class "${classToDelete.name}" has been deleted successfully`)
+      setMessage({ type: 'success', text: `Klass "${classToDelete.name}" har raderats` })
     } catch {
-      setMessage('Failed to delete class')
+      setMessage({ type: 'error', text: 'Kunde inte radera klass' })
     } finally {
       setShowDeleteWarning(false)
       setClassToDelete(null)
@@ -131,57 +322,36 @@ export default function TeacherClassesPage() {
 
   const openClass = async (id: string) => {
     setSelectedClassId(id)
-    setMessage('') // Clear any previous error messages
+    setMessage(null)
     await fetchClassStudents(id)
   }
 
   const fetchClassStudents = async (classId: string) => {
     try {
-      console.log('Debug - Fetching students for class:', classId)
-      
-      // First, get all class_students records for this class (excluding soft-deleted)
       const { data: classStudents, error: classError } = await supabase
         .from('class_students')
         .select('student_id')
         .eq('class_id', classId)
-        .is('deleted_at', null) // GDPR: Visa bara icke-raderade kopplingar
+        .is('deleted_at', null)
       
-      if (classError) {
-        console.error('Error fetching class students:', classError)
-        throw classError
-      }
-      
-      console.log('Debug - Class students found:', classStudents)
+      if (classError) throw classError
       
       if (!classStudents || classStudents.length === 0) {
         setSelectedClassStudents([])
         return
       }
       
-      // Then, get the profile information for each student
       const studentIds = classStudents.map(cs => cs.student_id)
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('*')  // Get all columns to see what's available
+        .select('*')
         .in('id', studentIds)
         .eq('role', 'student')
       
-      if (profilesError) {
-        console.error('Error fetching student profiles:', profilesError)
-        throw profilesError
-      }
-      
-      console.log('Debug - Student profiles loaded:', profiles)
-      console.log('Debug - Profile structure:', profiles?.[0] ? Object.keys(profiles[0]) : 'No profiles')
+      if (profilesError) throw profilesError
       
       const students: ProfileRow[] = (profiles || []).map(profile => {
-        // Try to find username from various possible column names
-        let username = null
-        if (profile.username) username = profile.username
-        else if (profile.name) username = profile.name
-        else if (profile.user_name) username = profile.user_name
-        
-        // Create a display name: username if available, otherwise email prefix (before first dot)
+        const username = profile.username || profile.name || profile.user_name
         const displayName = username || profile.email.split('.')[0] || profile.email
         
         return {
@@ -193,120 +363,367 @@ export default function TeacherClassesPage() {
       })
       
       setSelectedClassStudents(students)
-      setMessage('') // Clear any previous error messages
-      console.log('Debug - Final students array:', students)
     } catch (e: any) {
       console.error('Failed to load students', e)
-      setMessage(`Failed to load students${e?.message ? `: ${e.message}` : ''}`)
+      setMessage({ type: 'error', text: `Kunde inte ladda elever: ${e.message || ''}` })
       setSelectedClassStudents([])
     }
   }
 
-  const generateJoinCode = (length = 6) => {
-    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-    let result = ''
-    for (let i = 0; i < length; i++) {
-      result += alphabet[Math.floor(Math.random() * alphabet.length)]
-    }
-    return result
-  }
-
-
   const removeStudent = async (studentId: string) => {
     if (!selectedClassId) return
     try {
-      // GDPR: Soft delete istället för hård radering
       const { error } = await supabase
         .from('class_students')
         .update({ deleted_at: new Date().toISOString() })
         .match({ class_id: selectedClassId, student_id: studentId })
       if (error) throw error
       fetchClassStudents(selectedClassId)
+      setMessage({ type: 'success', text: 'Elev borttagen' })
     } catch {
-      setMessage('Failed to remove student (check permissions and that the relation exists)')
+      setMessage({ type: 'error', text: 'Kunde inte ta bort elev' })
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Link href="/teacher" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <ChevronLeft className="w-5 h-5 text-gray-600" />
+              </Link>
+              <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-800">Klasser</h1>
+                <p className="text-sm text-gray-600">Hantera dina klasser och elever</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition-colors shadow-md"
+            >
+              <Plus className="w-4 h-4" />
+              Skapa klass
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="container mx-auto px-6 py-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">Classes</h1>
-
-          <div className="bg-white rounded-2xl shadow-lg border-2 border-gray-200 p-6 mb-6">
-            <div className="flex gap-3">
-              <input
-                value={newClassName}
-                onChange={(e) => setNewClassName(e.target.value)}
-                placeholder="New class name"
-                className="flex-1 px-4 py-2 rounded-xl bg-white border-2 border-gray-200 text-gray-800 placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-              />
-              <button onClick={createClass} className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium hover:from-blue-600 hover:to-purple-600 shadow-lg transition-all border-2 border-blue-600">Create</button>
-            </div>
-          </div>
-
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl shadow-lg border-2 border-gray-200 p-6">
-            <h2 className="font-semibold text-gray-800 mb-4">Your Classes</h2>
-            <div className="space-y-3">
-              {classes.map((c) => (
-                <div key={c.id} className={`p-4 rounded-xl border-2 transition-all ${selectedClassId===c.id?'border-blue-500 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-md':'border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-blue-50 hover:to-indigo-50 hover:border-blue-300'}`}>
-                  <div className="flex items-center justify-between">
-                    <button onClick={() => openClass(c.id)} className="text-left font-medium text-gray-800 hover:text-blue-600 transition-colors">{c.name}</button>
-                    <button onClick={() => confirmDeleteClass(c)} className="text-red-500 hover:text-red-600 text-sm font-medium transition-colors">Delete</button>
-                  </div>
-                  <div className="mt-2 text-xs text-gray-600">
-                    Join code: <span className="font-mono font-semibold text-gray-800">{c.join_code ?? '—'}</span>
-                  </div>
-                </div>
-              ))}
-              {classes.length === 0 && <div className="text-gray-500">No classes yet.</div>}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-lg border-2 border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-gray-800">Class Students</h2>
-              {selectedClassId && (
-                <a 
-                  href={`/teacher/add-students?class=${selectedClassId}`}
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm font-medium hover:from-blue-600 hover:to-purple-600 shadow-lg transition-all border-2 border-blue-600"
-                >
-                  Add Students
-                </a>
+        {/* Message */}
+        {message && (
+          <div className={`mb-6 p-4 rounded-lg ${
+            message.type === 'success' 
+              ? 'bg-green-50 border border-green-200 text-green-700' 
+              : 'bg-red-50 border border-red-200 text-red-700'
+          }`}>
+            <div className="flex items-center gap-2">
+              {message.type === 'success' ? (
+                <Check className="w-5 h-5" />
+              ) : (
+                <X className="w-5 h-5" />
               )}
+              {message.text}
             </div>
-            {!selectedClassId && <div className="text-gray-500 text-sm">Select a class to view students.</div>}
-            {selectedClassId && (
+          </div>
+        )}
+
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Classes List */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Dina klasser</h2>
               <div className="space-y-2">
-                {selectedClassStudents.map(s => (
-                  <div key={s.id} className="p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border-2 border-gray-200 hover:from-blue-50 hover:to-indigo-50 hover:border-blue-300 transition-all flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-sm text-gray-800">{s.displayName}</div>
-                      {(!/@local\.local$/i.test(s.email)) && (
-                        <div className="text-gray-500 text-xs">{s.email}</div>
-                      )}
+                {classes.map((c) => (
+                  <div
+                    key={c.id}
+                    className={`w-full p-4 rounded-lg border-2 transition-all ${
+                      selectedClassId === c.id
+                        ? 'border-indigo-500 bg-indigo-50 shadow-md'
+                        : 'border-gray-200 bg-gray-50 hover:border-indigo-300 hover:bg-indigo-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <button
+                        onClick={() => openClass(c.id)}
+                        className="flex-1 text-left"
+                      >
+                        <div className="font-medium text-gray-800">{c.name}</div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          Join code: <span className="font-mono font-semibold">{c.join_code ?? '—'}</span>
+                        </div>
+                      </button>
+                      <button
+                        onClick={() => confirmDeleteClass(c)}
+                        className="p-1 text-red-400 hover:text-red-600 transition-colors flex-shrink-0"
+                        title="Radera klass"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
-                    <button 
-                      onClick={() => removeStudent(s.id)} 
-                      className="text-red-500 hover:text-red-600 text-sm font-medium transition-colors"
-                    >
-                      Remove
-                    </button>
                   </div>
                 ))}
-                {selectedClassStudents.length === 0 && (
-                  <div className="text-center py-6">
-                    <p className="text-sm text-gray-500">No students in this class.</p>
+                {classes.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Inga klasser ännu</p>
+                    <p className="text-xs mt-1">Klicka på "Skapa klass" för att börja</p>
                   </div>
                 )}
               </div>
-            )}
+            </div>
+          </div>
+
+          {/* Class Details */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-800">
+                  {selectedClassId ? 'Elever i klassen' : 'Välj en klass'}
+                </h2>
+                {selectedClassId && (
+                  <Link
+                    href={`/teacher/add-students?class=${selectedClassId}`}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Lägg till elever
+                  </Link>
+                )}
+              </div>
+              
+              {!selectedClassId ? (
+                <div className="text-center py-12 text-gray-500">
+                  <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <p>Välj en klass för att se elever</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {selectedClassStudents.map(s => (
+                    <div key={s.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-indigo-50 hover:border-indigo-300 transition-all">
+                      <div>
+                        <div className="font-medium text-sm text-gray-800">{s.displayName}</div>
+                        {(!/@local\.local$/i.test(s.email)) && (
+                          <div className="text-gray-500 text-xs">{s.email}</div>
+                        )}
+                      </div>
+                      <button 
+                        onClick={() => removeStudent(s.id)} 
+                        className="p-1 text-red-400 hover:text-red-600 transition-colors"
+                        title="Ta bort elev"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                  {selectedClassStudents.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">Inga elever i denna klass</p>
+                      <Link
+                        href={`/teacher/add-students?class=${selectedClassId}`}
+                        className="mt-4 inline-block px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                      >
+                        Lägg till elever
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-
-        {message && <div className="mt-6 p-3 rounded bg-blue-500/20 text-blue-200 border border-blue-400/30">{message}</div>}
-        {loading && <div className="mt-4 text-gray-400">Loading…</div>}
       </div>
+
+      {/* Create Class Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowCreateModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-800">Skapa ny klass</h2>
+                <button
+                  onClick={() => {
+                    setShowCreateModal(false)
+                    setNewClassName('')
+                    setNewClassStudents([{ username: '', password: '' }])
+                    setCreateMethod('manual')
+                    setPasteText('')
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Class Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Klassnamn *
+                </label>
+                <input
+                  type="text"
+                  value={newClassName}
+                  onChange={(e) => setNewClassName(e.target.value)}
+                  placeholder="t.ex. 5A, Engelska A, etc."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Import Method */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Lägg till elever (valfritt)
+                </label>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <button
+                    onClick={() => setCreateMethod('manual')}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      createMethod === 'manual'
+                        ? 'border-indigo-600 bg-indigo-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <Plus className="w-6 h-6 mx-auto mb-2 text-indigo-600" />
+                    <div className="font-medium text-gray-800 text-sm">Manuellt</div>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCreateMethod('google')
+                      handleGoogleClassroomImport()
+                    }}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      createMethod === 'google'
+                        ? 'border-indigo-600 bg-indigo-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <FileText className="w-6 h-6 mx-auto mb-2 text-indigo-600" />
+                    <div className="font-medium text-gray-800 text-sm">Google Classroom</div>
+                  </button>
+                </div>
+
+                {/* Paste Area */}
+                {createMethod === 'manual' && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Klistra in elevlista (format: användarnamn,lösenord - en per rad)
+                    </label>
+                    <textarea
+                      value={pasteText}
+                      onChange={(e) => setPasteText(e.target.value)}
+                      placeholder="alice,lösenord123&#10;bob,lösenord456&#10;charlie,lösenord789"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"
+                      rows={4}
+                    />
+                    <button
+                      onClick={handlePasteStudents}
+                      className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm"
+                    >
+                      Importera elever
+                    </button>
+                  </div>
+                )}
+
+                {/* Manual Entry */}
+                {createMethod === 'manual' && (
+                  <div className="mt-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Elever ({newClassStudents.length})
+                      </label>
+                      <button
+                        onClick={addStudentRow}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 transition-colors"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Lägg till
+                      </button>
+                    </div>
+
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {newClassStudents.map((student, index) => (
+                        <div key={index} className="grid grid-cols-2 gap-3">
+                          <input
+                            type="text"
+                            value={student.username}
+                            onChange={(e) => updateStudent(index, 'username', e.target.value)}
+                            placeholder="Användarnamn"
+                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                          />
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={student.password}
+                              onChange={(e) => updateStudent(index, 'password', e.target.value)}
+                              placeholder="Lösenord"
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                            />
+                            {newClassStudents.length > 1 && (
+                              <button
+                                onClick={() => removeStudentRow(index)}
+                                className="p-2 text-red-400 hover:text-red-600 transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Bottom Add Button */}
+                    <div ref={bottomButtonRef} className="mt-4 pt-4 border-t border-gray-200">
+                      <button
+                        onClick={() => {
+                          addStudentRow()
+                          setTimeout(() => {
+                            bottomButtonRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+                          }, 100)
+                        }}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors border-2 border-dashed border-indigo-300"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span className="font-medium text-sm">Lägg till fler elever</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    setShowCreateModal(false)
+                    setNewClassName('')
+                    setNewClassStudents([{ username: '', password: '' }])
+                    setCreateMethod('manual')
+                    setPasteText('')
+                  }}
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                >
+                  Avbryt
+                </button>
+                <button
+                  onClick={createClassWithStudents}
+                  disabled={creatingClass || !newClassName.trim()}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  {creatingClass ? 'Skapar...' : 'Skapa klass'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Warning Modal */}
       {showDeleteWarning && classToDelete && (
@@ -317,25 +734,25 @@ export default function TeacherClassesPage() {
                 <AlertTriangle className="w-6 h-6 text-red-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-800">Delete Class</h3>
-                <p className="text-sm text-gray-600">This action cannot be undone</p>
+                <h3 className="text-lg font-semibold text-gray-800">Radera klass</h3>
+                <p className="text-sm text-gray-600">Denna åtgärd kan inte ångras</p>
               </div>
             </div>
             
             <div className="mb-6">
               <p className="text-gray-700 mb-3">
-                Are you sure you want to delete the class <strong>"{classToDelete.name}"</strong>?
+                Är du säker på att du vill radera klassen <strong>"{classToDelete.name}"</strong>?
               </p>
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <h4 className="font-semibold text-red-800 mb-2 flex items-center gap-2">
                   <Trash2 className="w-4 h-4" />
-                  Warning: This will permanently delete:
+                  Varning: Detta kommer att radera:
                 </h4>
                 <ul className="text-sm text-red-700 space-y-1">
-                  <li>• All student progress and game scores</li>
-                  <li>• All assignments for this class</li>
-                  <li>• All student-class relationships</li>
-                  <li>• The class join code and settings</li>
+                  <li>• All elevframsteg och poäng</li>
+                  <li>• Alla tilldelningar för denna klass</li>
+                  <li>• Alla elev-klass-kopplingar</li>
+                  <li>• Klassens join-kod och inställningar</li>
                 </ul>
               </div>
             </div>
@@ -345,14 +762,14 @@ export default function TeacherClassesPage() {
                 onClick={cancelDelete}
                 className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                Avbryt
               </button>
               <button
                 onClick={deleteClass}
                 className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
               >
                 <Trash2 className="w-4 h-4" />
-                Delete Class
+                Radera klass
               </button>
             </div>
           </div>
@@ -361,5 +778,3 @@ export default function TeacherClassesPage() {
     </div>
   )
 }
-
-

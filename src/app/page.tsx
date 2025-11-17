@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import SpellSchoolLanding from '@/components/SpellSchoolLanding'
+import { getGoogleOAuthOptions, getGoogleAuthErrorMessage } from '@/lib/google-auth'
 
 export default function Home() {
   const [identifier, setIdentifier] = useState('')
@@ -81,7 +82,38 @@ export default function Home() {
   }
 
   const handleGoogle = async () => {
-    await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/auth/callback` } })
+    try {
+      setLoading(true)
+      setMessage('')
+      
+      // Log current location for debugging
+      console.log('🔐 Google Login Initiated:')
+      console.log('  - Current URL:', window.location.href)
+      console.log('  - Current Origin:', window.location.origin)
+      
+      const oauthOptions = getGoogleOAuthOptions('student') // Default to student, will be determined in callback
+      console.log('  - OAuth Options:', oauthOptions)
+      
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: oauthOptions
+      })
+      
+      if (error) {
+        console.error('❌ OAuth Error:', error)
+        const errorMessage = getGoogleAuthErrorMessage(error)
+        setMessage(errorMessage)
+        setLoading(false)
+      } else {
+        console.log('✅ OAuth initiated, redirecting to Google...')
+        // If successful, user will be redirected to OAuth flow
+      }
+    } catch (error: any) {
+      console.error('❌ OAuth Exception:', error)
+      const errorMessage = getGoogleAuthErrorMessage(error)
+      setMessage(errorMessage)
+      setLoading(false)
+    }
   }
 
   return (

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import SpellSchoolSignup from '@/components/SpellSchoolSignup'
+import { getGoogleOAuthOptions, getGoogleAuthErrorMessage } from '@/lib/google-auth'
 
 export default function TeacherSignupPage() {
   const [name, setName] = useState('')
@@ -15,15 +16,24 @@ export default function TeacherSignupPage() {
 
   const handleGoogleSignup = async () => {
     try {
+      setLoading(true)
+      setMessage('')
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`
-        }
+        options: getGoogleOAuthOptions('teacher')
       })
-      if (error) throw error
+      
+      if (error) {
+        const errorMessage = getGoogleAuthErrorMessage(error)
+        setMessage(errorMessage)
+        setLoading(false)
+      }
+      // If successful, user will be redirected to OAuth flow
     } catch (error: any) {
-      setMessage(`Error: ${error.message}`)
+      const errorMessage = getGoogleAuthErrorMessage(error)
+      setMessage(errorMessage)
+      setLoading(false)
     }
   }
 
@@ -99,8 +109,6 @@ export default function TeacherSignupPage() {
 
   return (
     <SpellSchoolSignup
-      logoUrl="/images/teacher-signup.png"
-      posterUrl="/images/teacher-signup.png"
       onGoogleSignup={handleGoogleSignup}
       onEmailSignup={handleEmailSignup}
       loading={loading}

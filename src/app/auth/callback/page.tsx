@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { isWorkspaceEmail, extractDomain } from '@/lib/google-auth'
 
 export default function AuthCallback() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [status, setStatus] = useState('Signing you in…')
 
   useEffect(() => {
@@ -22,9 +24,11 @@ export default function AuthCallback() {
         setStatus('Checking email verification…')
         // Check if email is verified (skip in development)
         const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost'
-        if (!session.user.email_confirmed_at && !isDevelopment) {
+        const isGoogleOAuth = session.user.app_metadata?.provider === 'google'
+        
+        // Google OAuth emails are auto-verified
+        if (!session.user.email_confirmed_at && !isDevelopment && !isGoogleOAuth) {
           setStatus('Please verify your email address first. Check your inbox.')
-          // Sign out the user since email is not verified
           await supabase.auth.signOut()
           router.replace('/?message=Please verify your email address before signing in.')
           return
@@ -36,13 +40,23 @@ export default function AuthCallback() {
           setStatus('Development mode: Skipping email verification…')
         }
 
-        setStatus('Ensuring your profile…')
-        // Only create profile if email is verified
-        const metaRole = (session.user.user_metadata?.role as string | undefined) || null
-        const metaName = (session.user.user_metadata?.username || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '').trim() || null
+        setStatus('Creating your profile…')
         
-        // For Google OAuth users, check if they already have a profile to determine role
-        let userRole = metaRole
+        // Extract Google OAuth data
+        const googleEmail = session.user.email
+        const googleName = session.user.user_metadata?.full_name || session.user.user_metadata?.name
+        const googleUserId = session.user.user_metadata?.sub || session.user.id
+        const googleProfilePicture = session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture
+        
+        // Check if it's a Workspace account
+        const isWorkspace = isWorkspaceEmail(googleEmail)
+        const workspaceDomain = isWorkspace ? extractDomain(googleEmail) : null
+        
+        // Get role from URL params (set during signup) or metadata
+        const requestedRole = searchParams.get('role') || session.user.user_metadata?.role || null
+        
+        // Check existing profile for role
+        let userRole = requestedRole
         if (!userRole) {
           const { data: existingProfile } = await supabase
             .from('profiles')
@@ -59,51 +73,87 @@ export default function AuthCallback() {
           return
         }
         
-        const { data: upserted, error: upsertError } = await supabase
+        // Prepare profile data
+        const profileData: any = {
+          id: session.user.id,
+          email: googleEmail || session.user.email,
+          role: userRole,
+          name: googleName || session.user.email?.split('@')[0] || undefined,
+        }
+        
+        // Add last_active if column exists
+        try {
+          profileData.last_active = new Date().toISOString()
+        } catch (e) {
+          // Column might not exist, continue without it
+        }
+        
+        // Add Google-specific fields if this is a Google sign-in
+        if (isGoogleOAuth) {
+          profileData.google_email = googleEmail
+          profileData.google_user_id = googleUserId
+          profileData.google_name = googleName
+          profileData.email_source = 'google'
+          if (googleProfilePicture) {
+            profileData.google_profile_picture = googleProfilePicture
+          }
+          if (workspaceDomain) {
+            profileData.workspace_domain = workspaceDomain
+          }
+        } else {
+          // For non-Google signups, determine email source
+          if (googleEmail?.includes('@local.local')) {
+            profileData.email_source = 'synthetic'
+          } else if (userRole === 'teacher') {
+            profileData.email_source = 'manual'
+          } else {
+            profileData.email_source = 'synthetic'
+          }
+        }
+        
+        // Upsert profile
+        const { error: upsertError } = await supabase
           .from('profiles')
-          .upsert({ 
-            id: session.user.id, 
-            email: session.user.email, 
-            role: userRole, 
-            name: metaName || undefined,
-            last_active: new Date().toISOString() // Track login time
-          }, { onConflict: 'id' })
+          .upsert(profileData, { onConflict: 'id' })
         
         if (upsertError) {
-          console.log('Profile upsert error (may be missing last_active column):', upsertError)
-          // Try without last_active if column doesn't exist
+          console.log('Profile upsert error:', upsertError)
+          // Try without optional fields if they don't exist
           if (upsertError.code === '42703') {
+            const basicProfileData: any = {
+              id: session.user.id,
+              email: googleEmail || session.user.email,
+              role: userRole,
+              name: googleName || undefined
+            }
             await supabase
               .from('profiles')
-              .upsert({ 
-                id: session.user.id, 
-                email: session.user.email, 
-                role: metaRole || undefined, 
-                name: metaName || undefined
-              }, { onConflict: 'id' })
+              .upsert(basicProfileData, { onConflict: 'id' })
           }
         }
 
-        setStatus('Checking your role…')
+        setStatus('Redirecting…')
         const { data: profile } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', session.user.id)
           .single()
 
-        if (profile?.role === 'teacher' || profile?.role === 'student') {
-          router.replace(profile.role === 'teacher' ? '/teacher' : '/student')
-          return
+        if (profile?.role === 'teacher') {
+          router.replace('/teacher')
+        } else if (profile?.role === 'student') {
+          router.replace('/student')
+        } else {
+          router.replace('/select-role')
         }
-        // Fallback to role select only if we still lack role
-        router.replace('/select-role')
         return
       } catch (e) {
+        console.error('Auth callback error:', e)
         router.replace('/')
       }
     }
     run()
-  }, [router])
+  }, [router, searchParams])
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6">

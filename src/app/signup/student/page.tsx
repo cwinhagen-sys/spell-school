@@ -4,15 +4,39 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import SpellSchoolSignup from '@/components/SpellSchoolSignup'
+import { getGoogleOAuthOptions, getGoogleAuthErrorMessage } from '@/lib/google-auth'
 
 export default function StudentSignupPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [age, setAge] = useState('')
-  const [classCode, setClassCode] = useState('')
+  const [classCode, setClassCode] = useState('') // Empty by default, no prefilled values
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const router = useRouter()
+
+  const handleGoogleSignup = async () => {
+    try {
+      setLoading(true)
+      setMessage('')
+      
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: getGoogleOAuthOptions('student')
+      })
+      
+      if (error) {
+        const errorMessage = getGoogleAuthErrorMessage(error)
+        setMessage(errorMessage)
+        setLoading(false)
+      }
+      // If successful, user will be redirected to OAuth flow
+    } catch (error: any) {
+      const errorMessage = getGoogleAuthErrorMessage(error)
+      setMessage(errorMessage)
+      setLoading(false)
+    }
+  }
 
   const handleEmailSignup = async (e: React.FormEvent<HTMLFormElement>, name: string, email: string, passwordValue: string) => {
     e.preventDefault()
@@ -97,9 +121,8 @@ export default function StudentSignupPage() {
 
   return (
     <SpellSchoolSignup
-      logoUrl="/images/student-signup.png"
-      posterUrl="/images/student-signup.png"
       onEmailSignup={handleEmailSignup}
+      onGoogleSignup={handleGoogleSignup}
       loading={loading}
       message={message}
       username={username}
@@ -111,7 +134,7 @@ export default function StudentSignupPage() {
       classCode={classCode}
       setClassCode={setClassCode}
       isStudent={true}
-      showGoogle={false}
+      showGoogle={true}
     />
   )
 }

@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import ColorSelect, { type ColorOption } from '@/components/ColorSelect'
 import ImageSelector from '@/components/ImageSelector'
+import { FileText, ChevronLeft } from 'lucide-react'
+import Link from 'next/link'
 
 type Word = { en: string; sv: string; image_url?: string }
 type WordSet = { id: string; title: string; words: Word[]; created_at: string; color?: string }
@@ -220,12 +222,31 @@ export default function TeacherWordSetsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800">
-      <div className="container mx-auto px-6 py-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">Word Sets</h1>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center space-x-4">
+            <a href="/teacher" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </a>
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
+              <FileText className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-800">Ordlistor</h1>
+              <p className="text-sm text-gray-600">Skapa och hantera glosor</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg p-6 mb-6">
-          <h2 className="font-semibold text-gray-800 mb-4">Create new</h2>
+      <div className="container mx-auto px-6 py-8">
+
+        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Skapa ny ordlista</h2>
           <div className="grid md:grid-cols-2 gap-4 mb-4">
             <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Title" className="px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm"/>
             <ColorSelect value={color} onChange={setColor} options={colorOptions} />
@@ -269,8 +290,8 @@ export default function TeacherWordSetsPage() {
           <button onClick={save} className="px-4 py-2 rounded bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-md">Save</button>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg p-6">
-          <h2 className="font-semibold text-gray-800 mb-4">Your Word Sets</h2>
+        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Dina ordlistor</h2>
           <div className="space-y-3">
             {wordSets.map(ws => (
               <div key={ws.id} className="p-4 border border-gray-200 bg-white rounded-lg shadow-sm">

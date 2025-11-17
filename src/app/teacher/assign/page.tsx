@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import GridConfigModal, { GridConfig } from '@/components/GridConfigModal'
+import { Calendar, ChevronLeft } from 'lucide-react'
+import Link from 'next/link'
 
 type WordSet = { id: string; title: string; color?: string; words?: Array<{ en: string; sv: string }> }
 type Class = { id: string; name: string }
@@ -564,12 +566,28 @@ export default function AssignWordSetsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800">
-      <div className="container mx-auto px-6 py-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">Assign Word Sets</h1>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center space-x-4">
+            <Link href="/teacher" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <ChevronLeft className="w-5 h-5 text-gray-600" />
+            </Link>
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-800">Tilldela ordlistor</h1>
+              <p className="text-sm text-gray-600">Tilldela glosor till klasser eller elever</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
+      <div className="container mx-auto px-6 py-8">
         {/* Assignment Form */}
-        <div className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-lg p-6 mb-6">
+        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-6">
           <div className="grid md:grid-cols-4 gap-4 items-start">
             {/* Word Set Selection */}
             <div className="space-y-2">
