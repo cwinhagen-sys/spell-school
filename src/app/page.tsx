@@ -14,6 +14,35 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [checkingAuth, setCheckingAuth] = useState(true)
 
+  // Check for OAuth code parameter and redirect to callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+    
+    // If there's a code parameter, this is an OAuth callback that went to the wrong URL
+    // Redirect to the proper callback handler, preserving all query parameters
+    if (code) {
+      // Preserve all existing query parameters
+      const callbackParams = new URLSearchParams()
+      callbackParams.set('code', code)
+      
+      // Copy all other parameters
+      params.forEach((value, key) => {
+        if (key !== 'code') {
+          callbackParams.set(key, value)
+        }
+      })
+      
+      // If no role is specified, default to teacher
+      if (!callbackParams.has('role')) {
+        callbackParams.set('role', 'teacher')
+      }
+      
+      router.replace(`/auth/callback?${callbackParams.toString()}`)
+      return
+    }
+  }, [router])
+
   // Check for message in URL params (from auth callback redirects)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -35,25 +64,40 @@ export default function Home() {
           return
         }
         
+        // Don't redirect if there's an OAuth code parameter (will be handled above)
+        const params = new URLSearchParams(window.location.search)
+        if (params.get('code')) {
+          setCheckingAuth(false)
+          return
+        }
+        
         const { data: { session } } = await supabase.auth.getSession()
         
+        // Only redirect if we have a valid session with a user
         if (session?.user) {
           // User is logged in, check their role and redirect
           const { data: profile } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', session.user.id)
-            .single()
+            .maybeSingle()
           
+          // Only redirect if we have a valid profile with a role
           if (profile?.role === 'teacher') {
             router.replace('/teacher')
           } else if (profile?.role === 'student') {
             router.replace('/student')
+          } else {
+            // No valid profile, show landing page
+            setCheckingAuth(false)
           }
+        } else {
+          // No session, show landing page
+          setCheckingAuth(false)
         }
       } catch (error) {
         console.error('Error checking auth:', error)
-      } finally {
+        // On error, show landing page
         setCheckingAuth(false)
       }
     }

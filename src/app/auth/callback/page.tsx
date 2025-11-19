@@ -34,6 +34,10 @@ function AuthCallbackContent() {
           return
         }
         
+        // Check for OAuth code parameter (PKCE flow)
+        // Supabase will automatically exchange this for tokens when we call getSession()
+        const code = hashParams.get('code') || queryParams.get('code')
+        
         // Check for tokens in URL (try to set session manually if found)
         const accessToken = hashParams.get('access_token') || queryParams.get('access_token')
         const refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token')
@@ -51,6 +55,14 @@ function AuthCallbackContent() {
           } catch (e) {
             // Ignore errors, will try getSession below
           }
+        }
+        
+        // If we have a code parameter, Supabase needs to exchange it
+        // This happens automatically when we call getSession(), but we should wait a bit
+        if (code) {
+          setStatus('Bearbetar OAuth-kod…')
+          // Give Supabase a moment to process the code
+          await new Promise(resolve => setTimeout(resolve, 1000))
         }
         
         // Wait for Supabase to process the OAuth callback
