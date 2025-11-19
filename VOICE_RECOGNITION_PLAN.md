@@ -244,3 +244,6 @@ mediaRecorder.onstop = async () => {
    - Azure kräver internetanslutning
 
 
+
+
+

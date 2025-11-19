@@ -224,3 +224,6 @@ Rekommendationer baserade på Spell Schools funktioner, konkurrenter (Quizlet, R
 - Konkurrenskraftiga priser för svenska marknaden
 - Flexibla priser för skolor baserat på behov
 
+
+
+

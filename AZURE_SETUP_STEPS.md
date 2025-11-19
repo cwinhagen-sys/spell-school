@@ -131,3 +131,6 @@ När du har följt dessa steg är Azure Speech Service redo att användas!
 **Nästa steg:** Testa pronunciation-spelet i applikationen och se hur det fungerar.
 
 
+
+
+

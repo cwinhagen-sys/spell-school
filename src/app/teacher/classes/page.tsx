@@ -42,6 +42,13 @@ export default function TeacherClassesPage() {
   const [pasteText, setPasteText] = useState('')
   const [creatingClass, setCreatingClass] = useState(false)
   const bottomButtonRef = useRef<HTMLDivElement>(null)
+  
+  // Google Classroom states
+  const [googleClassroomCourses, setGoogleClassroomCourses] = useState<any[]>([])
+  const [selectedGoogleCourse, setSelectedGoogleCourse] = useState<string | null>(null)
+  const [googleClassroomStudents, setGoogleClassroomStudents] = useState<any[]>([])
+  const [loadingGoogleCourses, setLoadingGoogleCourses] = useState(false)
+  const [googleClassroomConnected, setGoogleClassroomConnected] = useState(false)
 
   useEffect(() => {
     const init = async () => {
@@ -54,6 +61,22 @@ export default function TeacherClassesPage() {
         .single()
       if (!profile || profile.role !== 'teacher') { window.location.href = '/student'; return }
       await fetchClasses()
+      
+      // Check for Google Classroom callback messages
+      const urlParams = new URLSearchParams(window.location.search)
+      const googleClassroomConnected = urlParams.get('googleClassroomConnected')
+      const error = urlParams.get('error')
+      
+      if (googleClassroomConnected === 'true') {
+        setMessage({ type: 'success', text: 'Google Classroom anslutning lyckades!' })
+        // Clear URL params
+        window.history.replaceState({}, '', window.location.pathname)
+      } else if (error) {
+        setMessage({ type: 'error', text: decodeURIComponent(error) })
+        // Clear URL params
+        window.history.replaceState({}, '', window.location.pathname)
+      }
+      
       setLoading(false)
     }
     init()
@@ -152,19 +175,53 @@ export default function TeacherClassesPage() {
     }
   }
 
-  const handleGoogleClassroomImport = async () => {
+  const connectGoogleClassroom = async () => {
     try {
-      setCreatingClass(true)
-      setMessage(null)
-
-      // Check if user is authenticated
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.access_token) {
         setMessage({ type: 'error', text: 'Inte autentiserad. Vänligen logga in igen.' })
         return
       }
 
-      // Fetch available Google Classroom courses
+      const response = await fetch('/api/auth/google-classroom/authorize', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setMessage({ 
+          type: 'error', 
+          text: data.message || 'Kunde inte initiera Google Classroom-anslutning.' 
+        })
+        return
+      }
+
+      // Redirect to Google OAuth
+      if (data.authUrl) {
+        window.location.href = data.authUrl
+      }
+    } catch (error: any) {
+      setMessage({ 
+        type: 'error', 
+        text: `Fel: ${error.message || 'Kunde inte ansluta till Google Classroom'}` 
+      })
+    }
+  }
+
+  const loadGoogleClassroomCourses = async () => {
+    try {
+      setLoadingGoogleCourses(true)
+      setMessage(null)
+
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        setMessage({ type: 'error', text: 'Inte autentiserad. Vänligen logga in igen.' })
+        return
+      }
+
       const response = await fetch('/api/google-classroom/courses', {
         headers: {
           'Authorization': `Bearer ${session.access_token}`
@@ -177,39 +234,130 @@ export default function TeacherClassesPage() {
         if (data.configured === false) {
           setMessage({ 
             type: 'error', 
-            text: 'Google Classroom-integration är inte konfigurerad ännu. Kontakta support eller skapa klassen manuellt.' 
+            text: 'Google Classroom-integration är inte konfigurerad ännu. Kontakta support.' 
           })
+        } else if (data.connected === false) {
+          // Not connected, show connect button
+          setGoogleClassroomConnected(false)
+          setGoogleClassroomCourses([])
         } else {
           setMessage({ 
             type: 'error', 
-            text: data.message || 'Kunde inte hämta Google Classroom-kurser. Kontrollera att din skola har godkänt Spell School.' 
+            text: data.message || 'Kunde inte hämta Google Classroom-kurser.' 
           })
         }
         return
       }
 
-      if (data.error === 'Not implemented') {
-        setMessage({ 
-          type: 'error', 
-          text: 'Google Classroom-integration kommer snart! För nu kan du skapa klassen manuellt och importera elever via "Klistra in lista".' 
-        })
+      if (data.error === 'Not connected') {
+        setGoogleClassroomConnected(false)
+        setGoogleClassroomCourses([])
         return
       }
 
-      // If we get here, courses are available (future implementation)
-      setMessage({ 
-        type: 'error', 
-        text: 'Funktionen är under utveckling. Skapa klassen manuellt för nu.' 
-      })
+      setGoogleClassroomConnected(true)
+      setGoogleClassroomCourses(data.courses || [])
+
+      if (data.courses && data.courses.length === 0) {
+        setMessage({ 
+          type: 'error', 
+          text: 'Inga aktiva kurser hittades i Google Classroom.' 
+        })
+      }
 
     } catch (error: any) {
       setMessage({ 
         type: 'error', 
-        text: `Fel: ${error.message || 'Kunde inte ansluta till Google Classroom'}` 
+        text: `Fel: ${error.message || 'Kunde inte hämta Google Classroom-kurser'}` 
       })
     } finally {
-      setCreatingClass(false)
+      setLoadingGoogleCourses(false)
     }
+  }
+
+  const handleGoogleClassroomImport = async () => {
+    await loadGoogleClassroomCourses()
+  }
+
+  const selectGoogleCourse = async (courseId: string) => {
+    try {
+      setSelectedGoogleCourse(courseId)
+      setMessage(null)
+
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        setMessage({ type: 'error', text: 'Inte autentiserad. Vänligen logga in igen.' })
+        return
+      }
+
+      const response = await fetch(`/api/google-classroom/students?courseId=${courseId}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setMessage({ 
+          type: 'error', 
+          text: data.message || 'Kunde inte hämta elever från Google Classroom.' 
+        })
+        return
+      }
+
+      setGoogleClassroomStudents(data.students || [])
+
+      if (data.students && data.students.length === 0) {
+        setMessage({ 
+          type: 'error', 
+          text: 'Inga elever hittades i denna kurs.' 
+        })
+      }
+
+    } catch (error: any) {
+      setMessage({ 
+        type: 'error', 
+        text: `Fel: ${error.message || 'Kunde inte hämta elever'}` 
+      })
+    }
+  }
+
+  const importGoogleClassroomStudents = () => {
+    if (!selectedGoogleCourse || googleClassroomStudents.length === 0) {
+      setMessage({ type: 'error', text: 'Välj en kurs och vänta tills elever laddas.' })
+      return
+    }
+
+    // Convert Google Classroom students to StudentData format
+    const students: StudentData[] = googleClassroomStudents.map((student: any) => {
+      const email = student.profile?.emailAddress || ''
+      const name = student.profile?.name || ''
+      
+      // Generate username from email or name
+      let username = ''
+      if (email) {
+        username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '')
+      } else if (name) {
+        username = name.toLowerCase().replace(/[^a-z0-9]/g, '')
+      } else {
+        username = `student${student.userId.slice(0, 8)}`
+      }
+
+      // Generate password (can be changed later)
+      const password = `${username}123`
+
+      return { username, password }
+    })
+
+    // Add to newClassStudents
+    setNewClassStudents([...newClassStudents.filter(s => s.username.trim() && s.password.trim()), ...students])
+    setMessage({ type: 'success', text: `Importerade ${students.length} elev(ar) från Google Classroom.` })
+    
+    // Scroll to bottom
+    setTimeout(() => {
+      bottomButtonRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    }, 100)
   }
 
   const createClassWithStudents = async () => {
@@ -554,6 +702,10 @@ export default function TeacherClassesPage() {
                     setNewClassStudents([{ username: '', password: '' }])
                     setCreateMethod('manual')
                     setPasteText('')
+                    setGoogleClassroomCourses([])
+                    setSelectedGoogleCourse(null)
+                    setGoogleClassroomStudents([])
+                    setGoogleClassroomConnected(false)
                   }}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
@@ -597,6 +749,9 @@ export default function TeacherClassesPage() {
                   <button
                     onClick={() => {
                       setCreateMethod('google')
+                      setGoogleClassroomCourses([])
+                      setSelectedGoogleCourse(null)
+                      setGoogleClassroomStudents([])
                       handleGoogleClassroomImport()
                     }}
                     className={`p-4 rounded-lg border-2 transition-all ${
@@ -629,6 +784,84 @@ export default function TeacherClassesPage() {
                     >
                       Importera elever
                     </button>
+                  </div>
+                )}
+
+                {/* Google Classroom Import */}
+                {createMethod === 'google' && (
+                  <div className="mt-4 space-y-4">
+                    {!googleClassroomConnected ? (
+                      <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded-lg">
+                        <FileText className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                        <p className="text-sm text-gray-600 mb-4">
+                          Anslut ditt Google Classroom-konto för att importera elever
+                        </p>
+                        <button
+                          onClick={connectGoogleClassroom}
+                          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+                        >
+                          Anslut Google Classroom
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <label className="block text-sm font-medium text-gray-700">
+                            Välj Google Classroom-kurs
+                          </label>
+                          <button
+                            onClick={loadGoogleClassroomCourses}
+                            disabled={loadingGoogleCourses}
+                            className="text-sm text-indigo-600 hover:text-indigo-700 disabled:opacity-50"
+                          >
+                            {loadingGoogleCourses ? 'Laddar...' : 'Uppdatera'}
+                          </button>
+                        </div>
+                        
+                        {loadingGoogleCourses ? (
+                          <div className="text-center py-4 text-gray-500">
+                            <p>Laddar kurser...</p>
+                          </div>
+                        ) : googleClassroomCourses.length === 0 ? (
+                          <div className="text-center py-4 text-gray-500">
+                            <p>Inga kurser hittades</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2 max-h-48 overflow-y-auto">
+                            {googleClassroomCourses.map((course: any) => (
+                              <button
+                                key={course.id}
+                                onClick={() => selectGoogleCourse(course.id)}
+                                className={`w-full p-3 text-left rounded-lg border-2 transition-all ${
+                                  selectedGoogleCourse === course.id
+                                    ? 'border-indigo-500 bg-indigo-50'
+                                    : 'border-gray-200 hover:border-indigo-300 hover:bg-indigo-50'
+                                }`}
+                              >
+                                <div className="font-medium text-sm text-gray-800">{course.name}</div>
+                                {course.section && (
+                                  <div className="text-xs text-gray-500 mt-1">{course.section}</div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        {selectedGoogleCourse && googleClassroomStudents.length > 0 && (
+                          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                            <p className="text-sm text-green-800 mb-2">
+                              {googleClassroomStudents.length} elev(ar) hittades i denna kurs
+                            </p>
+                            <button
+                              onClick={importGoogleClassroomStudents}
+                              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                            >
+                              Importera elever
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 )}
 
@@ -707,6 +940,10 @@ export default function TeacherClassesPage() {
                     setNewClassStudents([{ username: '', password: '' }])
                     setCreateMethod('manual')
                     setPasteText('')
+                    setGoogleClassroomCourses([])
+                    setSelectedGoogleCourse(null)
+                    setGoogleClassroomStudents([])
+                    setGoogleClassroomConnected(false)
                   }}
                   className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
                 >

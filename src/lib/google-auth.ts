@@ -80,36 +80,28 @@ export function getGoogleOAuthOptions(role: 'student' | 'teacher' = 'student') {
     throw new Error('Cannot determine origin for OAuth redirect')
   }
   
-  const redirectUrl = `${origin}/auth/callback?role=${role}`
+  // CRITICAL: Force localhost:3000 for local development
+  // Supabase may use Site URL from Dashboard if redirectTo doesn't match exactly
+  const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1')
+  const finalOrigin = isLocalhost ? 'http://localhost:3000' : origin
   
-  // Always log for debugging (helps identify the issue)
-  console.log('🔐 OAuth Configuration:')
-  console.log('  - Current origin:', origin)
-  console.log('  - Redirect URL:', redirectUrl)
-  console.log('  - Role:', role)
-  console.log('  - Full URL:', window.location.href)
+  const redirectUrl = `${finalOrigin}/auth/callback?role=${role}`
   
-  // Warn if we're on localhost but redirect URL doesn't match
-  if (origin.includes('localhost') && !redirectUrl.includes('localhost')) {
-    console.warn('⚠️ WARNING: On localhost but redirect URL does not include localhost!')
-    console.warn('   This might cause redirect to production. Check Supabase Dashboard settings.')
-  }
   
   // Supabase requires queryParams to be passed directly in options
   // These will be forwarded to Google OAuth
-  // NOTE: Supabase may not forward all queryParams correctly
-  // If account picker doesn't show, check Supabase Dashboard configuration
+  // NOTE: We don't use 'prompt' parameter so Google can remember the user
+  // If user is already logged in to Google, they'll be logged in automatically
+  // If not, Google will show the account picker
   return {
     redirectTo: redirectUrl,
     queryParams: {
-      // Use 'consent' instead of 'select_account' - forces account picker AND consent screen
-      // 'select_account' alone might be ignored if user is already logged in
-      prompt: 'consent', // Forces account picker AND consent screen - more reliable than select_account alone
       hd: '*', // Allow all domains (including Workspace)
       access_type: 'offline', // Request refresh token
       include_granted_scopes: 'true',
     },
     scopes: 'email profile',
+    skipBrowserRedirect: false, // Ensure browser redirect happens
   }
 }
 

@@ -161,3 +161,6 @@ Om du ser "❌ CRITICAL: Update error", skicka mig error detaljerna!
 
 
 
+
+
+

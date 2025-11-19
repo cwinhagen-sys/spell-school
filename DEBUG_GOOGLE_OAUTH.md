@@ -71,3 +71,6 @@ Kolla konsolen när du klickar på "Fortsätt med Google" - du bör se:
 
 Om QueryParams visas korrekt men account picker inte visas, är problemet i Supabase eller Google-konfigurationen.
 
+
+
+

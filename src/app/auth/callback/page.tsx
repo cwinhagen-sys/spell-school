@@ -8,62 +8,90 @@ import { isWorkspaceEmail, extractDomain } from '@/lib/google-auth'
 function AuthCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [status, setStatus] = useState('Signing you in…')
+  const [status, setStatus] = useState('Loggar in…')
 
   useEffect(() => {
-    let mounted = true
-    
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user && event === 'SIGNED_IN') {
+        // Session created, will be handled below
+      }
+    })
+
     const run = async () => {
       try {
-        setStatus('Checking session…')
+        setStatus('Kontrollerar session…')
         
-        // Wait a moment for Supabase to process the OAuth callback
-        await new Promise(resolve => setTimeout(resolve, 500))
+        // Check for OAuth errors in URL
+        const hashParams = new URLSearchParams(window.location.hash.substring(1))
+        const queryParams = new URLSearchParams(window.location.search)
+        const errorParam = hashParams.get('error') || queryParams.get('error')
+        const errorDescription = hashParams.get('error_description') || queryParams.get('error_description')
         
-        // Get session
-        const { data: { session }, error } = await supabase.auth.getSession()
+        if (errorParam) {
+          setStatus(`OAuth-fel: ${errorDescription || errorParam}`)
+          setTimeout(() => router.replace('/'), 5000)
+          return
+        }
         
-        if (error) {
-          console.error('Session error:', error)
-          setStatus(`Error: ${error.message}`)
-          setTimeout(() => router.replace('/'), 3000)
+        // Check for tokens in URL (try to set session manually if found)
+        const accessToken = hashParams.get('access_token') || queryParams.get('access_token')
+        const refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token')
+        
+        if (accessToken && refreshToken) {
+          try {
+            const { data: sessionData } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken
+            })
+            if (sessionData.session) {
+              // Clear the hash/query from URL
+              window.history.replaceState({}, '', window.location.pathname)
+            }
+          } catch (e) {
+            // Ignore errors, will try getSession below
+          }
+        }
+        
+        // Wait for Supabase to process the OAuth callback
+        setStatus('Väntar på att sessionen skapas…')
+        let session = null
+        let sessionError = null
+        
+        // Try multiple times with increasing delays
+        for (let attempt = 0; attempt < 10; attempt++) {
+          await new Promise(resolve => setTimeout(resolve, 500 + attempt * 300))
+          
+          const result = await supabase.auth.getSession()
+          session = result.data.session
+          sessionError = result.error
+          
+          if (session?.user) break
+        }
+        
+        if (sessionError) {
+          setStatus(`Fel: ${sessionError.message}`)
+          setTimeout(() => router.replace('/'), 5000)
           return
         }
         
         if (!session?.user) {
-          console.error('No active session found')
-          setStatus('No active session. Redirecting…')
-          setTimeout(() => router.replace('/'), 2000)
+          setStatus('Ingen aktiv session hittades. Omdirigerar till startsidan...')
+          setTimeout(() => router.replace('/'), 3000)
           return
         }
-        
-        console.log('✅ Session found:', {
-          userId: session.user.id,
-          email: session.user.email,
-          provider: session.user.app_metadata?.provider,
-          emailConfirmed: !!session.user.email_confirmed_at
-        })
 
-        setStatus('Checking email verification…')
-        // Check if email is verified (skip in development)
+        setStatus('Skapar din profil…')
         const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost'
         const isGoogleOAuth = session.user.app_metadata?.provider === 'google'
         
         // Google OAuth emails are auto-verified
         if (!session.user.email_confirmed_at && !isDevelopment && !isGoogleOAuth) {
-          setStatus('Please verify your email address first. Check your inbox.')
+          setStatus('Vänligen verifiera din e-postadress först. Kontrollera din inkorg.')
           await supabase.auth.signOut()
-          router.replace('/?message=Please verify your email address before signing in.')
+          router.replace('/?message=Vänligen verifiera din e-postadress innan du loggar in.')
           return
         }
-        
-        // In development, manually confirm email if not already confirmed
-        if (!session.user.email_confirmed_at && isDevelopment) {
-          console.log('Development mode: Skipping email verification')
-          setStatus('Development mode: Skipping email verification…')
-        }
-
-        setStatus('Creating your profile…')
         
         // Extract Google OAuth data
         const googleEmail = session.user.email
@@ -76,24 +104,77 @@ function AuthCallbackContent() {
         const workspaceDomain = isWorkspace ? extractDomain(googleEmail) : null
         
         // Get role from URL params (set during signup) or metadata
+        // For Google OAuth, only allow teacher role
         const requestedRole = searchParams.get('role') || session.user.user_metadata?.role || null
         
-        // Check existing profile for role
+        // Check existing profile for role - check by both ID and email
         let userRole = requestedRole
+        let existingProfile = null
+        let needsRoleUpdate = false
+        
         if (!userRole) {
-          const { data: existingProfile } = await supabase
+          // First check by user ID
+          const { data: profileById } = await supabase
             .from('profiles')
-            .select('role')
+            .select('role, email')
             .eq('id', session.user.id)
-            .single()
-          userRole = existingProfile?.role || null
+            .maybeSingle()
+          
+          if (profileById?.role) {
+            existingProfile = profileById
+            userRole = profileById.role
+            
+            // If user logs in with Google OAuth but has student role, update to teacher
+            // Google OAuth is only for teachers
+            if (isGoogleOAuth && userRole === 'student') {
+              userRole = 'teacher'
+              needsRoleUpdate = true
+            }
+          } else if (googleEmail) {
+            // If no profile by ID, check by email (in case user has existing account)
+            const { data: profileByEmail } = await supabase
+              .from('profiles')
+              .select('role, email, id')
+              .eq('email', googleEmail)
+              .maybeSingle()
+            
+            if (profileByEmail) {
+              // If email matches but ID is different, user has existing account with email/password
+              if (profileByEmail.id !== session.user.id) {
+                setStatus('Det finns redan ett konto med denna e-postadress. Använd e-post och lösenord för att logga in.')
+                await supabase.auth.signOut()
+                setTimeout(() => {
+                  router.replace('/?message=Det finns redan ett konto med denna e-postadress. Använd e-post och lösenord för att logga in.')
+                }, 3000)
+                return
+              } else {
+                // Same ID, use existing role but update if needed
+                userRole = profileByEmail.role
+                if (isGoogleOAuth && userRole === 'student') {
+                  userRole = 'teacher'
+                  needsRoleUpdate = true
+                }
+              }
+            }
+          }
         }
         
-        // If still no role, redirect to role selection
+        // For Google OAuth, default to teacher if no role is found
+        // Students cannot sign up via Google OAuth
         if (!userRole) {
-          setStatus('Please select your role…')
-          router.replace('/select-role')
-          return
+          if (isGoogleOAuth) {
+            userRole = 'teacher'
+          } else {
+            setStatus('Vänligen välj din roll…')
+            router.replace('/select-role')
+            return
+          }
+        }
+        
+        // Ensure Google OAuth only creates/updates to teacher accounts
+        if (isGoogleOAuth && userRole !== 'teacher') {
+          userRole = 'teacher'
+          needsRoleUpdate = true
         }
         
         // Prepare profile data
@@ -134,13 +215,16 @@ function AuthCallbackContent() {
           }
         }
         
-        // Upsert profile
+        // Upsert profile - always ensure role is set correctly
+        if (needsRoleUpdate) {
+          profileData.role = 'teacher'
+        }
+        
         const { error: upsertError } = await supabase
           .from('profiles')
           .upsert(profileData, { onConflict: 'id' })
         
         if (upsertError) {
-          console.log('Profile upsert error:', upsertError)
           // Try without optional fields if they don't exist
           if (upsertError.code === '42703') {
             const basicProfileData: any = {
@@ -154,8 +238,29 @@ function AuthCallbackContent() {
               .upsert(basicProfileData, { onConflict: 'id' })
           }
         }
+        
+        // Double-check: If Google OAuth, ensure role is teacher
+        if (isGoogleOAuth) {
+          const { data: verifyProfile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single()
+          
+          if (verifyProfile?.role !== 'teacher') {
+            await supabase
+              .from('profiles')
+              .update({ role: 'teacher' })
+              .eq('id', session.user.id)
+            userRole = 'teacher'
+          }
+        }
 
-        setStatus('Redirecting…')
+        setStatus('Omdirigerar…')
+        
+        // Wait a moment to ensure profile is saved
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
         const { data: profile } = await supabase
           .from('profiles')
           .select('role')
@@ -163,42 +268,33 @@ function AuthCallbackContent() {
           .single()
 
         if (profile?.role === 'teacher') {
-          console.log('✅ Redirecting to teacher dashboard')
           router.replace('/teacher')
         } else if (profile?.role === 'student') {
-          console.log('✅ Redirecting to student dashboard')
           router.replace('/student')
         } else {
-          console.log('⚠️ No role found, redirecting to role selection')
           router.replace('/select-role')
         }
-        return
       } catch (e: any) {
-        console.error('❌ Auth callback error:', e)
-        console.error('   Error details:', {
-          message: e?.message,
-          status: e?.status,
-          code: e?.code
-        })
-        setStatus(`Error: ${e?.message || 'Unknown error'}. Redirecting...`)
+        setStatus(`Fel: ${e?.message || 'Okänt fel'}. Omdirigerar...`)
         setTimeout(() => {
-          if (mounted) {
-            router.replace('/')
-          }
+          router.replace('/')
         }, 3000)
       }
     }
     
     run()
     
+    // Cleanup subscription on unmount
     return () => {
-      mounted = false
+      subscription.unsubscribe()
     }
   }, [router, searchParams])
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
-      <p className="text-gray-700">{status}</p>
+      <div className="text-center">
+        <p className="text-gray-700 text-lg">{status}</p>
+      </div>
     </div>
   )
 }
@@ -207,12 +303,10 @@ export default function AuthCallback() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center p-6">
-        <p className="text-gray-700">Loading...</p>
+        <p className="text-gray-700">Laddar...</p>
       </div>
     }>
       <AuthCallbackContent />
     </Suspense>
   )
 }
-
-

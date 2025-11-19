@@ -1,15 +1,65 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import SpellSchoolLanding from '@/components/SpellSchoolLanding'
 import { getGoogleOAuthOptions, getGoogleAuthErrorMessage } from '@/lib/google-auth'
 
 export default function Home() {
+  const router = useRouter()
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [checkingAuth, setCheckingAuth] = useState(true)
+
+  // Check for message in URL params (from auth callback redirects)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const urlMessage = params.get('message')
+    if (urlMessage) {
+      setMessage(urlMessage)
+      // Clear the message from URL
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        // Don't redirect if we're on the auth callback page
+        if (window.location.pathname === '/auth/callback') {
+          setCheckingAuth(false)
+          return
+        }
+        
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session?.user) {
+          // User is logged in, check their role and redirect
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single()
+          
+          if (profile?.role === 'teacher') {
+            router.replace('/teacher')
+          } else if (profile?.role === 'student') {
+            router.replace('/student')
+          }
+        }
+      } catch (error) {
+        console.error('Error checking auth:', error)
+      } finally {
+        setCheckingAuth(false)
+      }
+    }
+    
+    checkAuth()
+  }, [router])
 
   const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>, identifierValue: string, passwordValue: string) => {
     e.preventDefault()
@@ -86,9 +136,10 @@ export default function Home() {
       setLoading(true)
       setMessage('')
       
+      // Only allow teacher login via Google OAuth
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: getGoogleOAuthOptions('student') // Default to student, will be determined in callback
+        options: getGoogleOAuthOptions('teacher')
       })
       
       if (error) {
@@ -102,6 +153,15 @@ export default function Home() {
       setMessage(errorMessage)
       setLoading(false)
     }
+  }
+
+  // Show loading while checking auth
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-700">Loading...</p>
+      </div>
+    )
   }
 
   return (

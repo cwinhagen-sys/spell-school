@@ -123,3 +123,6 @@ await updateStudentProgress(score, gameType)  // Vänta!
 
 
 
+
+
+

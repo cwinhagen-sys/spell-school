@@ -186,3 +186,6 @@ Om du stöter på problem:
 3. Verifiera att environment variables är korrekt konfigurerade
 4. Testa med personligt Google-konto först för att isolera Workspace-problem
 
+
+
+

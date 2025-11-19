@@ -72,10 +72,10 @@ export default function SpellSchoolLanding({
                 Logga in
               </button>
               <Link
-                href="/signup"
+                href="/signup/teacher"
                 className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 transition-all shadow-sm"
               >
-                Skapa konto
+                Skapa lärarkonto
               </Link>
             </div>
           </div>
@@ -109,8 +109,8 @@ export default function SpellSchoolLanding({
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-lg md:text-xl text-gray-600 mb-8"
             >
-              Tilldela glosor till dina elever och låt dem lära sig genom magiska övningar. 
-              Ett pedagogiskt verktyg som gör språkinlärning roligt och engagerande.
+              Skapa ordlistor, tilldela glosor till dina elever och låt dem lära sig genom magiska övningar. 
+              Ett pedagogiskt verktyg som gör språkinlärning roligt och engagerande för dina elever.
             </motion.p>
         <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -119,16 +119,10 @@ export default function SpellSchoolLanding({
               className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
             >
               <Link
-                href="/signup"
+                href="/signup/teacher"
                 className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl text-center"
               >
-                Skapa konto gratis
-              </Link>
-              <Link
-                href="/signup/teacher"
-                className="text-purple-600 hover:text-purple-700 font-medium text-lg underline text-center"
-              >
-                Jag är lärare
+                Skapa lärarkonto gratis
               </Link>
             </motion.div>
           </div>
@@ -583,10 +577,10 @@ export default function SpellSchoolLanding({
             Skapa ditt konto idag och börja tilldela glosor till dina elever.
           </p>
           <Link
-            href="/signup"
+            href="/signup/teacher"
             className="inline-block bg-white text-purple-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-50 transition-all shadow-lg"
           >
-            Skapa konto gratis
+            Skapa lärarkonto gratis
           </Link>
         </div>
       </section>
@@ -771,8 +765,8 @@ function FormContents({
       {/* Sign up link */}
       <p className="text-center text-sm text-gray-600">
         Har du inget konto?{' '}
-        <Link className="font-medium text-purple-600 hover:text-purple-700 underline" href="/signup">
-          Registrera dig
+        <Link className="font-medium text-purple-600 hover:text-purple-700 underline" href="/signup/teacher">
+          Skapa lärarkonto
         </Link>
       </p>
     </form>

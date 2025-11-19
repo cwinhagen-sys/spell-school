@@ -187,3 +187,6 @@ ERROR: column reference "total_points" is ambiguous
 
 
 
+
+
+

@@ -86,3 +86,6 @@ Om problemet kvarstår efter att ha följt ovanstående steg:
 3. Verifiera att `prompt=select_account` faktiskt skickas i OAuth-URL:en
 4. Kontakta Supabase support om problemet kvarstår
 
+
+
+

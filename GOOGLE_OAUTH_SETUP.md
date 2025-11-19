@@ -65,3 +65,6 @@ Du kan också lägga till en informativ text på inloggningssidan som förklarar
 - "När du loggar in med Google kan du se en Supabase-domän i meddelandet"
 - "Detta är normalt och säkert - det är Spell School som använder Google Auth"
 
+
+
+

@@ -34,3 +34,6 @@ COMMENT ON COLUMN profiles.workspace_domain IS 'Google Workspace domain if user 
 COMMENT ON COLUMN profiles.google_user_id IS 'Google User ID (sub claim from OAuth) for identifying Google accounts';
 COMMENT ON COLUMN profiles.google_email IS 'Email from Google account (may differ from primary email)';
 
+
+
+

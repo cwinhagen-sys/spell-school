@@ -208,3 +208,6 @@ Om du redan använder Supabase OAuth för Google login, kan du:
 - Elever måste ha Google-konton för att kunna importeras
 - Du kan behöva hantera fall där elever inte har Google-konton (manuell import)
 
+
+
+

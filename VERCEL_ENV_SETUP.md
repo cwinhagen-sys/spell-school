@@ -105,3 +105,6 @@ Om problemet kvarstår efter att du har följt alla steg ovan:
 - [ ] Debug-endpointen visar att variablerna finns
 - [ ] API-nycklarna är giltiga och har rätt behörigheter
 
+
+
+
