@@ -87,19 +87,28 @@ export function getGoogleOAuthOptions(role: 'student' | 'teacher' = 'student') {
   
   const redirectUrl = `${finalOrigin}/auth/callback?role=${role}`
   
+  console.log('🔐 OAuth redirect URL:', redirectUrl)
+  console.log('🔐 Final origin:', finalOrigin)
   
   // Supabase requires queryParams to be passed directly in options
   // These will be forwarded to Google OAuth
-  // NOTE: We don't use 'prompt' parameter so Google can remember the user
-  // If user is already logged in to Google, they'll be logged in automatically
-  // If not, Google will show the account picker
+  // NOTE: Supabase may not forward all queryParams to Google
+  // For account picker, we need to ensure prompt is set correctly
+  const queryParams: Record<string, string> = {
+    hd: '*', // Allow all domains (including Workspace)
+    access_type: 'offline', // Request refresh token
+    include_granted_scopes: 'true',
+  }
+  
+  // Add prompt parameter to force account picker
+  // This should make Google show account selection screen
+  queryParams.prompt = 'select_account'
+  
+  console.log('🔐 OAuth queryParams:', queryParams)
+  
   return {
     redirectTo: redirectUrl,
-    queryParams: {
-      hd: '*', // Allow all domains (including Workspace)
-      access_type: 'offline', // Request refresh token
-      include_granted_scopes: 'true',
-    },
+    queryParams: queryParams,
     scopes: 'email profile',
     skipBrowserRedirect: false, // Ensure browser redirect happens
   }

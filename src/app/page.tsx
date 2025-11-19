@@ -180,19 +180,30 @@ export default function Home() {
       setLoading(true)
       setMessage('')
       
+      console.log('🔐 Initiating Google OAuth...')
+      const oauthOptions = getGoogleOAuthOptions('teacher')
+      console.log('🔐 OAuth options:', oauthOptions)
+      
       // Only allow teacher login via Google OAuth
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: getGoogleOAuthOptions('teacher')
+        options: oauthOptions
       })
       
+      console.log('🔐 OAuth response:', { data, error })
+      
       if (error) {
+        console.error('❌ OAuth error:', error)
         const errorMessage = getGoogleAuthErrorMessage(error)
         setMessage(errorMessage)
         setLoading(false)
+      } else {
+        console.log('✅ OAuth initiated, redirecting to Google...')
+        // If successful, user will be redirected to OAuth flow
+        // Don't set loading to false here as we're redirecting
       }
-      // If successful, user will be redirected to OAuth flow
     } catch (error: any) {
+      console.error('❌ OAuth exception:', error)
       const errorMessage = getGoogleAuthErrorMessage(error)
       setMessage(errorMessage)
       setLoading(false)

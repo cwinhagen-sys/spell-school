@@ -9,7 +9,9 @@ const baseSupabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: true,
     // Handle refresh token errors gracefully
-    flowType: 'pkce'
+    flowType: 'pkce',
+    // Explicitly use localStorage for session persistence
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined
   }
 })
 
