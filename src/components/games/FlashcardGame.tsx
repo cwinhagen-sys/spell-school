@@ -1235,7 +1235,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
           
           // Restore pronunciation results (only for 2+ words and if word list matches)
           if (progress.pronunciationResults && wordList.length >= 2 && wordListMatches) {
-            const restoredResults = new Map(progress.pronunciationResults)
+            const restoredResults = new Map<number, { isCorrect: boolean; accuracyScore: number; feedback: string; transcript: string; xpAwarded?: boolean }>(progress.pronunciationResults as any)
             setPronunciationResults(restoredResults)
             console.log('📥 Loaded progress:', {
               resultsCount: restoredResults.size,
