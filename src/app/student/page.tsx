@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useActivityTracking } from '@/hooks/useActivityTracking'
 import { markUserAsLoggedOut } from '@/lib/activity'
 import { syncManager } from '@/lib/syncManager'
-import { BookOpen, Target, Star, Users, ChevronDown, Calendar, LogOut, Trophy } from 'lucide-react'
+import { BookOpen, Target, Star, Users, ChevronDown, Calendar, LogOut, Trophy, Gamepad2 } from 'lucide-react'
 import Link from 'next/link'
 import { levelForXp } from '@/lib/leveling'
 import { titleForLevel } from '@/lib/wizardTitles'
@@ -2143,6 +2143,14 @@ export default function StudentDashboard() {
                     </div>
                   </>
                 )}
+                <div className="w-px h-12 bg-white/30"></div>
+                <Link
+                  href="/session/join"
+                  className="px-4 py-2 bg-white/20 backdrop-blur-sm border border-white/30 rounded-lg hover:bg-white/30 transition-all flex items-center gap-2 text-sm font-medium text-white"
+                >
+                  <Gamepad2 className="w-4 h-4" />
+                  Gå med i session
+                </Link>
               </div>
             </div>
             

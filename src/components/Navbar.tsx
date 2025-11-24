@@ -90,7 +90,8 @@ export default function Navbar() {
     }
   }
   
-  if (pathname === '/' || pathname === '/login' || pathname === '/signup' || pathname?.startsWith('/signup/')) return null
+  // Don't show Navbar on landing pages or teacher pages (teacher has its own header)
+  if (pathname === '/' || pathname === '/login' || pathname === '/signup' || pathname?.startsWith('/signup/') || pathname?.startsWith('/teacher')) return null
   return (
     <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 shadow-sm">
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">

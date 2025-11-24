@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { BookOpen, Calendar, FileText, Users, Clock, ArrowRight, Plus, TrendingUp, Activity } from 'lucide-react'
+import { BookOpen, Calendar, FileText, Users, Clock, ArrowRight, Plus, TrendingUp, Activity, Gamepad2 } from 'lucide-react'
 import Link from 'next/link'
 import { Homework } from '@/types'
 import SaveStatusIndicator from '@/components/SaveStatusIndicator'
@@ -29,6 +29,7 @@ export default function TeacherDashboard() {
   const [homeworks, setHomeworks] = useState<Assignment[]>([])
   const [activeStudents, setActiveStudents] = useState<any[]>([])
   const [studentActivity, setStudentActivity] = useState<any[]>([])
+  const [sessionsCount, setSessionsCount] = useState<number>(0)
 
   useEffect(() => {
     const init = async () => {
@@ -54,7 +55,8 @@ export default function TeacherDashboard() {
       await loadWordSets()
       await loadActiveStudents()
       await loadStudentActivity()
-      fetchHomeworks()
+      await fetchHomeworks()
+      await loadSessionsCount()
     }
     init()
     
@@ -241,6 +243,24 @@ export default function TeacherDashboard() {
     }
   }
 
+  const loadSessionsCount = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      
+      const { count, error } = await supabase
+        .from('sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('teacher_id', user.id)
+      
+      if (error) throw error
+      setSessionsCount(count || 0)
+    } catch (error) {
+      console.error('Error loading sessions count:', error)
+      setSessionsCount(0)
+    }
+  }
+
   const formatGameType = (type: string) => {
     const gameNames: Record<string, string> = {
       flashcards: 'Flashcards',
@@ -260,38 +280,9 @@ export default function TeacherDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-800">Lärardashboard</h1>
-                <p className="text-sm text-gray-600">Översikt och snabbåtkomst</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">
-                {user?.email?.split('@')[0] || 'Lärare'}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Logga ut
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-6 py-8">
-        {/* Welcome section for new teachers */}
-        {classes.length === 0 && wordSets.length === 0 && (
+    <>
+      {/* Welcome section for new teachers */}
+      {classes.length === 0 && wordSets.length === 0 && (
           <div className="text-center py-16 mb-8">
             <div className="max-w-2xl mx-auto bg-white rounded-xl p-8 shadow-md border border-gray-200">
               <div className="w-20 h-20 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -324,6 +315,7 @@ export default function TeacherDashboard() {
         {/* Dashboard overview for existing teachers */}
         {(classes.length > 0 || wordSets.length > 0) && (
           <>
+            {/* Header */}
             <div className="mb-8">
               <h2 className="text-2xl font-bold text-gray-800 mb-2">
                 Välkommen tillbaka, {user?.email?.split('@')[0] || 'Lärare'}!
@@ -331,209 +323,182 @@ export default function TeacherDashboard() {
               <p className="text-gray-600">Här är en översikt av din verksamhet</p>
             </div>
             
-            {/* Quick Stats */}
-            <div className="grid md:grid-cols-4 gap-4 mb-8">
-              <Link
-                href="/teacher/classes"
-                className="bg-white rounded-xl p-6 shadow-md border border-gray-200 hover:shadow-lg hover:border-indigo-300 transition-all group"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Users className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="text-3xl font-bold text-gray-900">{classes.length}</span>
-                </div>
-                <p className="text-sm font-medium text-gray-600">Klasser</p>
-                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                  Hantera klasser <ArrowRight className="w-3 h-3" />
-                </p>
-              </Link>
-
-              <Link
-                href="/teacher/word-sets"
-                className="bg-white rounded-xl p-6 shadow-md border border-gray-200 hover:shadow-lg hover:border-indigo-300 transition-all group"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <FileText className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="text-3xl font-bold text-gray-900">{wordSets.length}</span>
-                </div>
-                <p className="text-sm font-medium text-gray-600">Ordlistor</p>
-                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                  Skapa glosor <ArrowRight className="w-3 h-3" />
-                </p>
-              </Link>
-
-              <Link
-                href="/teacher/assign"
-                className="bg-white rounded-xl p-6 shadow-md border border-gray-200 hover:shadow-lg hover:border-indigo-300 transition-all group"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Calendar className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="text-3xl font-bold text-gray-900">{homeworks.length}</span>
-                </div>
-                <p className="text-sm font-medium text-gray-600">Tilldelningar</p>
-                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                  Tilldela glosor <ArrowRight className="w-3 h-3" />
-                </p>
-              </Link>
-
-              <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-lg flex items-center justify-center">
-                    <Activity className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="text-3xl font-bold text-gray-900">{activeStudents.length}</span>
-                </div>
-                <p className="text-sm font-medium text-gray-600">Aktiva elever</p>
-                <p className="text-xs text-gray-500 mt-1">Spelar just nu</p>
-              </div>
-            </div>
-
-            {/* Quick Actions */}
+            {/* Main Stats Grid - Symmetrical 3x2 layout */}
             <div className="grid md:grid-cols-3 gap-6 mb-8">
               <Link
                 href="/teacher/classes"
-                className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 border-2 border-indigo-200 hover:border-indigo-400 transition-all group"
+                className="bg-white rounded-xl p-6 shadow-md border border-gray-200 hover:shadow-lg hover:border-teal-300 transition-all group"
               >
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-14 h-14 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Plus className="w-7 h-7 text-white" />
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-14 h-14 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                    <Users className="w-7 h-7 text-white" />
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-800">Skapa klass</h3>
-                    <p className="text-sm text-gray-600">Lägg till en ny klass</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-600 mb-1">Classes</p>
+                    <p className="text-3xl font-bold text-gray-900">{classes.length}</p>
                   </div>
                 </div>
-                <div className="flex items-center text-indigo-600 font-medium text-sm">
-                  Kom igång <ArrowRight className="w-4 h-4 ml-2" />
+                <div className="flex items-center text-teal-600 font-medium text-sm">
+                  Manage classes <ArrowRight className="w-4 h-4 ml-2" />
                 </div>
               </Link>
 
               <Link
                 href="/teacher/word-sets"
-                className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border-2 border-blue-200 hover:border-blue-400 transition-all group"
+                className="bg-white rounded-xl p-6 shadow-md border border-gray-200 hover:shadow-lg hover:border-teal-300 transition-all group"
               >
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
                     <FileText className="w-7 h-7 text-white" />
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-800">Skapa ordlista</h3>
-                    <p className="text-sm text-gray-600">Lägg till nya glosor</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-600 mb-1">Word Sets</p>
+                    <p className="text-3xl font-bold text-gray-900">{wordSets.length}</p>
                   </div>
                 </div>
                 <div className="flex items-center text-blue-600 font-medium text-sm">
-                  Kom igång <ArrowRight className="w-4 h-4 ml-2" />
+                  Create vocabulary <ArrowRight className="w-4 h-4 ml-2" />
                 </div>
               </Link>
 
               <Link
                 href="/teacher/assign"
-                className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border-2 border-green-200 hover:border-green-400 transition-all group"
+                className="bg-white rounded-xl p-6 shadow-md border border-gray-200 hover:shadow-lg hover:border-teal-300 transition-all group"
               >
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-14 h-14 bg-gradient-to-br from-green-600 to-emerald-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
                     <Calendar className="w-7 h-7 text-white" />
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-800">Tilldela glosor</h3>
-                    <p className="text-sm text-gray-600">Tilldela ordlistor till elever</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-600 mb-1">Assignments</p>
+                    <p className="text-3xl font-bold text-gray-900">{homeworks.length}</p>
                   </div>
                 </div>
                 <div className="flex items-center text-green-600 font-medium text-sm">
-                  Kom igång <ArrowRight className="w-4 h-4 ml-2" />
+                  Assign vocabulary <ArrowRight className="w-4 h-4 ml-2" />
+                </div>
+              </Link>
+
+              <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Activity className="w-7 h-7 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-600 mb-1">Active Now</p>
+                    <p className="text-3xl font-bold text-gray-900">{activeStudents.length}</p>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500">Students playing</p>
+              </div>
+
+              <Link
+                href="/teacher/sessions"
+                className="bg-white rounded-xl p-6 shadow-md border border-gray-200 hover:shadow-lg hover:border-teal-300 transition-all group"
+              >
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                    <Gamepad2 className="w-7 h-7 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-600 mb-1">Sessions</p>
+                    <p className="text-3xl font-bold text-gray-900">{sessionsCount}</p>
+                  </div>
+                </div>
+                <div className="flex items-center text-purple-600 font-medium text-sm">
+                  Manage sessions <ArrowRight className="w-4 h-4 ml-2" />
+                </div>
+              </Link>
+
+              <Link
+                href="/teacher/students"
+                className="bg-white rounded-xl p-6 shadow-md border border-gray-200 hover:shadow-lg hover:border-teal-300 transition-all group"
+              >
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                    <TrendingUp className="w-7 h-7 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-600 mb-1">Progress</p>
+                    <p className="text-3xl font-bold text-gray-900">—</p>
+                  </div>
+                </div>
+                <div className="flex items-center text-indigo-600 font-medium text-sm">
+                  View analytics <ArrowRight className="w-4 h-4 ml-2" />
                 </div>
               </Link>
             </div>
 
-            {/* Active students and Latest activity */}
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Students Currently Playing */}
-              <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-green-500" />
-                    Aktiva elever
-                  </h3>
-                  <div className="flex items-center text-xs text-gray-600">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse"></div>
-                    <span className="font-medium">{activeStudents.length}</span>
-                  </div>
+            {/* Activity Feed - Unified section */}
+            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-teal-500" />
+                  Recent Activity
+                </h3>
+                <div className="flex items-center gap-2 text-xs text-gray-600">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span>{activeStudents.length} active</span>
                 </div>
-                
-                {activeStudents.length > 0 ? (
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {activeStudents.map((student) => (
-                      <div key={student.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-indigo-50 hover:border-indigo-300 transition-all">
-                        <span className="font-medium text-sm text-gray-800 truncate">
-                          {student.username || student.email?.split('.')[0] || 'Student'}
-                        </span>
-                        <span className="text-xs text-gray-600 flex items-center">
-                          <Clock className="w-3 h-3 mr-1" />
-                          Nu
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Inga elever spelar just nu</p>
-                  </div>
-                )}
               </div>
-
-              {/* Latest Student Activity */}
-              <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-indigo-500" />
-                    Senaste aktivitet
-                  </h3>
-                  <div className="flex items-center text-xs text-gray-600">
-                    <Clock className="w-3 h-3 mr-1" />
-                    <span>Live</span>
-                  </div>
-                </div>
-                
-                {studentActivity.length > 0 ? (
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {studentActivity.slice(0, 10).map((activity, index) => (
-                      <div key={`${activity.student_id}-${activity.timestamp}-${index}`} className="flex flex-col p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-indigo-50 hover:border-indigo-300 transition-all">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-sm text-gray-800 truncate">
-                            {activity.student_name}{activity.student_class ? ` (${activity.student_class})` : ''}
+              
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Active Students */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Currently Playing</h4>
+                  {activeStudents.length > 0 ? (
+                    <div className="space-y-2">
+                      {activeStudents.slice(0, 5).map((student) => (
+                        <div key={student.id} className="flex items-center justify-between p-2.5 bg-gray-50 rounded-lg hover:bg-teal-50 transition-colors">
+                          <span className="text-sm text-gray-800 truncate">
+                            {student.username || student.email?.split('.')[0] || 'Student'}
                           </span>
-                          <span className="text-xs text-gray-600">
-                            {new Date(activity.timestamp).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
+                          <span className="text-xs text-gray-500 flex items-center gap-1 flex-shrink-0">
+                            <Clock className="w-3 h-3" />
+                            Now
                           </span>
                         </div>
-                        {activity.type === 'game' && activity.game_type && (
-                          <span className="text-xs text-gray-500 mt-1">
-                            Spelade {formatGameType(activity.game_type)}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <TrendingUp className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Ingen senaste aktivitet</p>
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No students playing right now</p>
+                  )}
+                </div>
+
+                {/* Latest Activity */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Latest Games</h4>
+                  {studentActivity.length > 0 ? (
+                    <div className="space-y-2">
+                      {studentActivity.slice(0, 5).map((activity, index) => (
+                        <div key={`${activity.student_id}-${activity.timestamp}-${index}`} className="p-2.5 bg-gray-50 rounded-lg hover:bg-teal-50 transition-colors">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm text-gray-800 truncate">
+                              {activity.student_name}
+                            </span>
+                            <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
+                              {new Date(activity.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          {activity.game_type && (
+                            <p className="text-xs text-gray-500">
+                              {formatGameType(activity.game_type)}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No recent activity</p>
+                  )}
+                </div>
               </div>
             </div>
           </>
         )}
-      </div>
 
       {/* Save Status Indicator */}
       <SaveStatusIndicator />
-    </div>
+    </>
   )
 }

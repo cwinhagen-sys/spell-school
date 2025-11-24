@@ -1,6 +1,6 @@
 'use client'
 
-import { RotateCcw, ArrowLeft, Star, Trophy, Target, Clock, Gamepad2, CheckCircle, Award, Keyboard, AlertTriangle } from 'lucide-react'
+import { RotateCcw, ArrowLeft, Star, Trophy, Target, Clock, Gamepad2, CheckCircle, Award, Keyboard, AlertTriangle, BookOpen, CheckSquare, Brain, Scissors, FileText, Globe, Mic, Target as TargetIcon, Sparkles, BarChart3 } from 'lucide-react'
 
 interface GameCompleteModalProps {
   // Core game data
@@ -59,17 +59,17 @@ export default function UniversalGameCompleteModal({
   
   const getGameIcon = () => {
     switch (gameType) {
-      case 'flashcards': return '🃏'
-      case 'match': return '🧠'
-      case 'typing': return '⌨️'
-      case 'translate': return '🌐'
-      case 'connect': return '🔗'
-      case 'storygap': return '📝'
-      case 'roulette': return '🎰'
-      case 'choice': return '🎯'
-      case 'spellcasting': return '✨'
-      case 'quiz': return '📚'
-      default: return '🎮'
+      case 'flashcards': return BookOpen
+      case 'match': return Brain
+      case 'typing': return Keyboard
+      case 'translate': return Globe
+      case 'connect': return TargetIcon
+      case 'storygap': return FileText
+      case 'roulette': return TargetIcon
+      case 'choice': return CheckSquare
+      case 'spellcasting': return Sparkles
+      case 'quiz': return BarChart3
+      default: return Gamepad2
     }
   }
 
@@ -89,18 +89,18 @@ export default function UniversalGameCompleteModal({
     }
   }
 
-  const getTrophyIcon = () => {
+  const getTrophyColor = () => {
     if (accuracy !== undefined) {
-      if (accuracy >= 100) return '🏆'
-      if (accuracy >= 90) return '🥇'
-      if (accuracy >= 80) return '🥈'
-      if (accuracy >= 70) return '🥉'
+      if (accuracy >= 100) return 'text-yellow-500'
+      if (accuracy >= 90) return 'text-yellow-400'
+      if (accuracy >= 80) return 'text-gray-400'
+      if (accuracy >= 70) return 'text-orange-400'
     }
-    if (pointsAwarded >= 20) return '🏆'
-    if (pointsAwarded >= 15) return '🥇'
-    if (pointsAwarded >= 10) return '🥈'
-    if (pointsAwarded >= 5) return '🥉'
-    return '🎯'
+    if (pointsAwarded >= 20) return 'text-yellow-500'
+    if (pointsAwarded >= 15) return 'text-yellow-400'
+    if (pointsAwarded >= 10) return 'text-gray-400'
+    if (pointsAwarded >= 5) return 'text-orange-400'
+    return 'text-gray-300'
   }
 
   const getScoreColor = () => {
@@ -125,16 +125,20 @@ export default function UniversalGameCompleteModal({
     return 'text-red-400'
   }
 
+  const GameIconComponent = getGameIcon()
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-      <div className="rounded-2xl p-8 max-w-md w-full text-center shadow-2xl relative bg-white text-gray-800 border border-gray-200">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="rounded-xl p-8 max-w-md w-full text-center shadow-xl relative bg-white text-gray-800 border border-gray-200">
         {/* Top Progress Bar */}
-        <div className="h-1 rounded-md mb-4 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+        <div className="h-1 rounded-md mb-4 bg-gradient-to-r from-teal-500 to-emerald-500"></div>
         
         {/* Level Up Notification */}
         {levelUp && (
-          <div className="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl">
-            <div className="text-4xl mb-2">🎉</div>
+          <div className="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center justify-center mb-2">
+              <Trophy className="w-8 h-8 text-yellow-600" />
+            </div>
             <h3 className="text-xl font-bold text-yellow-700 mb-1">Level Up!</h3>
             <p className="text-yellow-800">You reached level {levelUp.level}</p>
             <p className="text-sm text-yellow-700 mt-1">{levelUp.title}</p>
@@ -143,10 +147,12 @@ export default function UniversalGameCompleteModal({
         
         {/* Trophy Icon and Title */}
         <div className="mb-6">
-          <div className="text-6xl mb-4">{getTrophyIcon()}</div>
+          <div className="flex items-center justify-center mb-4">
+            <Trophy className={`w-16 h-16 ${getTrophyColor()}`} />
+          </div>
           <h2 className="text-2xl font-bold mb-2">{getGameTitle()}</h2>
           <p className="text-gray-600 flex items-center justify-center gap-2">
-            <span className="text-2xl">{getGameIcon()}</span>
+            <GameIconComponent className="w-5 h-5" />
             <span>Game Complete!</span>
           </p>
         </div>
@@ -166,7 +172,7 @@ export default function UniversalGameCompleteModal({
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-left flex items-start gap-3">
               <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5" />
               <span className="text-red-700">
-                Spelet avslutades efter tre fel. Försök igen för att få ett resultat.
+                The game ended after three errors. Try again to get a result.
               </span>
             </div>
           )}
@@ -256,7 +262,7 @@ export default function UniversalGameCompleteModal({
           {onViewLeaderboard && (
             <button
               onClick={onViewLeaderboard}
-              className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-3 px-6 rounded-lg font-medium hover:from-yellow-600 hover:to-orange-600 transition-colors flex items-center justify-center space-x-2 shadow-lg"
+              className="w-full bg-teal-500 hover:bg-teal-600 text-white py-3 px-6 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 shadow-md"
             >
               <Trophy className="w-4 h-4" />
               <span>View Leaderboard</span>
@@ -264,14 +270,14 @@ export default function UniversalGameCompleteModal({
           )}
           <button
             onClick={onPlayAgain}
-            className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 shadow-lg"
+            className="w-full bg-teal-500 hover:bg-teal-600 text-white py-3 px-6 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 shadow-md"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Play Again</span>
           </button>
           <button
             onClick={onBackToDashboard}
-            className="w-full bg-gray-100 border border-gray-300 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center space-x-2"
+            className="w-full bg-gray-100 border border-gray-300 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Dashboard</span>

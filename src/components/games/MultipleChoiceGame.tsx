@@ -5,6 +5,7 @@ import { startGameSession, endGameSession, updateStudentProgress, type TrackingC
 import UniversalGameCompleteModal from '@/components/UniversalGameCompleteModal'
 import { calculateMultipleChoiceScore } from '@/lib/gameScoring'
 import ColorGridSelector, { COLOR_GRIDS, GridConfig } from '@/components/ColorGridSelector'
+import { CheckSquare, X, Loader2, Trophy } from 'lucide-react'
 
 interface MultipleChoiceGameProps {
   words: string[]
@@ -14,6 +15,7 @@ interface MultipleChoiceGameProps {
   themeColor?: string
   onScoreUpdate?: (pointsGained: number, newTotal?: number, gameType?: string) => void
   gridConfig?: GridConfig[]
+  sessionMode?: boolean // If true, adapt behavior for session mode
 }
 
 type MCQuestion = {
@@ -22,9 +24,9 @@ type MCQuestion = {
   options: string[]
 }
 
-export default function MultipleChoiceGame({ words, translations = {}, onClose, trackingContext, themeColor, onScoreUpdate, gridConfig }: MultipleChoiceGameProps) {
-  // Always show grid selector - let user choose which blocks to play
-  const [showGridSelector, setShowGridSelector] = useState(true)
+export default function MultipleChoiceGame({ words, translations = {}, onClose, trackingContext, themeColor, onScoreUpdate, gridConfig, sessionMode = false }: MultipleChoiceGameProps) {
+  // Skip grid selector in session mode
+  const [showGridSelector, setShowGridSelector] = useState(!sessionMode)
   const [selectedGrids, setSelectedGrids] = useState<Array<{ words: string[]; translations: { [key: string]: string }; colorScheme: typeof COLOR_GRIDS[0] }>>([])
   const [questions, setQuestions] = useState<MCQuestion[]>([])
   const [index, setIndex] = useState(0)
@@ -47,8 +49,29 @@ export default function MultipleChoiceGame({ words, translations = {}, onClose, 
       showGridSelector,
       selectedGridsLength: selectedGrids.length,
       gridConfigLength: gridConfig?.length,
-      wordsLength: words?.length
+      wordsLength: words?.length,
+      sessionMode
     })
+    
+    // In session mode, use words and translations directly
+    // words is an array of English words, translations is an object with English words as keys
+    if (sessionMode && words && words.length > 0) {
+      console.log('📋 Multiple Choice: Building vocabulary from words array (session mode)', words.length, 'words')
+      const pairs: Array<{ en: string; sv: string }> = []
+      
+      words.forEach((word: string) => {
+        // word is English, find Swedish translation
+        const tr = translations?.[word.toLowerCase()] || translations?.[word]
+        if (tr && tr !== `[${word}]`) {
+          pairs.push({ en: word, sv: tr })
+        } else {
+          console.log(`📋 No translation found for "${word}", skipping`)
+        }
+      })
+      
+      console.log('📋 Multiple Choice vocabulary: built', pairs.length, 'pairs from words array')
+      return pairs
+    }
     
     if (showGridSelector || selectedGrids.length === 0) {
       console.log('📋 Multiple Choice vocabulary: empty due to', { showGridSelector, selectedGridsLength: selectedGrids.length })
@@ -78,7 +101,7 @@ export default function MultipleChoiceGame({ words, translations = {}, onClose, 
     
     console.log('📋 Multiple Choice vocabulary: built', pairs.length, 'pairs')
     return pairs
-  }, [words, translations, selectedGrids, showGridSelector])
+  }, [words, translations, selectedGrids, showGridSelector, sessionMode])
 
   const shuffle = <T,>(arr: T[]) => [...arr].sort(() => Math.random() - 0.5)
 
@@ -169,22 +192,30 @@ export default function MultipleChoiceGame({ words, translations = {}, onClose, 
         
         // INSTANT UI UPDATE: Call onScoreUpdate immediately for instant feedback
         if (onScoreUpdate) {
-          console.log('Multiple Choice: Calling onScoreUpdate with', { 
-            accuracy: scoreResult.accuracy, 
-            pointsToAward: scoreResult.pointsAwarded
-          })
-          onScoreUpdate(scoreResult.accuracy, scoreResult.pointsAwarded, 'choice')
+          if (sessionMode) {
+            // In session mode, pass correctAnswers and totalQuestions for percentage calculation
+            onScoreUpdate(nextScore, questions.length, 'choice')
+            // Automatically close after a brief delay in session mode
+            setTimeout(() => {
+              onClose()
+            }, 300)
+          } else {
+            console.log('Multiple Choice: Calling onScoreUpdate with', { 
+              accuracy: scoreResult.accuracy, 
+              pointsToAward: scoreResult.pointsAwarded
+            })
+            onScoreUpdate(scoreResult.accuracy, scoreResult.pointsAwarded, 'choice')
+          }
         }
         
-        // BACKGROUND SYNC: Update XP progress in database
-        // NOTE: Database sync handled by handleScoreUpdate in student dashboard via onScoreUpdate
-        // No need to call updateStudentProgress here to avoid duplicate sessions
-        
-        const duration = startedAtRef.current ? Math.max(1, Math.floor((Date.now() - startedAtRef.current) / 1000)) : undefined
-        const totalQs = questions.length || 1
-        const accuracyPct = Math.round((nextScore / totalQs) * 100)
-        console.log('🎮 Multiple Choice: About to call endGameSession with sessionId:', sessionId)
-        void endGameSession(sessionId, 'choice', { score: nextScore, durationSec: duration, accuracyPct, details: { questions: questions.length } })
+        // BACKGROUND SYNC: Update XP progress in database (only if not in session mode)
+        if (!sessionMode) {
+          const duration = startedAtRef.current ? Math.max(1, Math.floor((Date.now() - startedAtRef.current) / 1000)) : undefined
+          const totalQs = questions.length || 1
+          const accuracyPct = Math.round((nextScore / totalQs) * 100)
+          console.log('🎮 Multiple Choice: About to call endGameSession with sessionId:', sessionId)
+          void endGameSession(sessionId, 'choice', { score: nextScore, durationSec: duration, accuracyPct, details: { questions: questions.length } })
+        }
       } else {
         setIndex(next)
       }
@@ -214,31 +245,31 @@ export default function MultipleChoiceGame({ words, translations = {}, onClose, 
   }
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center p-4 z-[1000] overflow-y-auto">
-      <div className="bg-white rounded-3xl p-6 w-full max-w-2xl shadow-2xl border border-gray-100 relative my-4">
+    <div className="fixed inset-0 bg-gray-50 flex items-center justify-center p-4 z-[1000] overflow-y-auto">
+      <div className="bg-white rounded-xl p-6 w-full max-w-2xl shadow-lg border border-gray-200 relative my-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-              <span className="text-white text-lg">📝</span>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-lg flex items-center justify-center">
+              <CheckSquare className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-800">Multiple Choice</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Multiple Choice</h2>
               <p className="text-sm text-gray-600">Choose the correct answer</p>
             </div>
           </div>
           <button 
             onClick={onClose} 
-            className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-colors"
+            className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors"
           >
-            <span className="text-gray-600 text-xl">×</span>
+            <X className="w-5 h-5 text-gray-600" />
           </button>
         </div>
 
         {questions.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">⏳</div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">Loading questions...</h3>
+            <Loader2 className="w-12 h-12 text-gray-400 animate-spin mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Loading questions...</h3>
             <p className="text-gray-600">Preparing your quiz</p>
           </div>
         ) : index < questions.length && !gameFinished ? (
@@ -249,17 +280,17 @@ export default function MultipleChoiceGame({ words, translations = {}, onClose, 
                 <span className="font-medium">Question {index + 1} of {questions.length}</span>
                 <span className="font-medium">{Math.round(((index + 1) / questions.length) * 100)}%</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                 <div 
-                  className="h-3 rounded-full transition-all duration-500 bg-gradient-to-r from-blue-500 to-purple-500"
+                  className="h-2 rounded-full transition-all duration-500 bg-gradient-to-r from-teal-500 to-emerald-500"
                   style={{ width: `${((index + 1) / questions.length) * 100}%` }}
                 ></div>
               </div>
             </div>
 
             {/* Question */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl p-6 border-2 border-blue-200">
-              <div className="text-xl font-bold text-gray-800 text-center">{questions[index]?.prompt}</div>
+            <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+              <div className="text-xl font-bold text-gray-900 text-center">{questions[index]?.prompt}</div>
             </div>
 
             {/* Options */}
@@ -270,19 +301,19 @@ export default function MultipleChoiceGame({ words, translations = {}, onClose, 
                   onClick={() => answer(opt, i)}
                   disabled={locked}
                   className={[
-                    'w-full text-left px-6 py-4 rounded-2xl border-2 transition-all duration-300 font-medium text-lg',
-                    locked && feedbackIdx === i && feedbackType === 'correct' ? 'bg-gradient-to-r from-emerald-100 to-green-100 border-emerald-400 text-emerald-800 animate-hop shadow-lg' : '',
-                    locked && feedbackIdx === i && feedbackType === 'wrong' ? 'bg-gradient-to-r from-red-100 to-pink-100 border-red-400 text-red-800 animate-burr shadow-lg' : '',
-                    !locked || feedbackIdx !== i ? 'bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200 hover:from-blue-50 hover:to-indigo-50 hover:border-blue-300 text-gray-800 hover:shadow-lg' : '',
+                    'w-full text-left px-6 py-4 rounded-lg border-2 transition-all duration-300 font-medium text-lg',
+                    locked && feedbackIdx === i && feedbackType === 'correct' ? 'bg-green-50 border-green-400 text-green-800 shadow-md' : '',
+                    locked && feedbackIdx === i && feedbackType === 'wrong' ? 'bg-red-50 border-red-400 text-red-800 shadow-md' : '',
+                    !locked || feedbackIdx !== i ? 'bg-white border-gray-200 hover:border-teal-300 hover:bg-teal-50 text-gray-900 hover:shadow-md' : '',
                     locked && feedbackIdx !== i ? 'opacity-60' : ''
                   ].join(' ')}
                 >
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center gap-3">
                     <div className={[
                       'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold',
-                      locked && feedbackIdx === i && feedbackType === 'correct' ? 'bg-emerald-500 text-white' : '',
+                      locked && feedbackIdx === i && feedbackType === 'correct' ? 'bg-green-500 text-white' : '',
                       locked && feedbackIdx === i && feedbackType === 'wrong' ? 'bg-red-500 text-white' : '',
-                      !locked || feedbackIdx !== i ? 'bg-gray-300 text-gray-600' : ''
+                      !locked || feedbackIdx !== i ? 'bg-gray-200 text-gray-700' : ''
                     ].join(' ')}>
                       {String.fromCharCode(65 + i)}
                     </div>
@@ -294,16 +325,16 @@ export default function MultipleChoiceGame({ words, translations = {}, onClose, 
 
             {/* Score Display */}
             <div className="text-center">
-              <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-100 to-pink-100 px-6 py-3 rounded-2xl border border-purple-200 shadow-sm">
-                <span className="text-purple-600">🏆</span>
-                <span className="font-semibold text-purple-800">Score: {score} / {questions.length}</span>
+              <div className="inline-flex items-center gap-2 bg-teal-50 px-6 py-3 rounded-lg border border-teal-200">
+                <Trophy className="w-5 h-5 text-teal-600" />
+                <span className="font-semibold text-teal-900">Score: {score} / {questions.length}</span>
               </div>
             </div>
           </div>
         ) : null}
 
-        {/* Game Complete Modal */}
-        {gameFinished && (
+        {/* Game Complete Modal - don't show in session mode */}
+        {gameFinished && !sessionMode && (
           <UniversalGameCompleteModal
             score={finalScore}
             pointsAwarded={finalScore}
@@ -332,6 +363,9 @@ export default function MultipleChoiceGame({ words, translations = {}, onClose, 
             themeColor={themeColor}
           />
         )}
+        
+        {/* In session mode, don't render anything when finished (will close automatically) */}
+        {gameFinished && sessionMode && null}
       </div>
       <style jsx>{`
         @keyframes hop {

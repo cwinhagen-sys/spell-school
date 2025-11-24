@@ -14,6 +14,7 @@ interface QuizGameProps {
   themeColor?: string
   onSubmitScore: (score: number, total: number, evaluations: Evaluation[]) => Promise<void> | void
   gridConfig?: GridConfig[]
+  sessionMode?: boolean // If true, skip grid selector and use gridConfig directly
 }
 
 type QuizItem = { prompt: string; answer: string; direction: 'en-to-sv' | 'sv-to-en' }
@@ -25,7 +26,7 @@ type SelectedGrid = {
   colorScheme: typeof COLOR_GRIDS[number]
 }
 
-export default function QuizGame({ words, translations = {}, onClose, trackingContext, themeColor, onSubmitScore, gridConfig }: QuizGameProps) {
+export default function QuizGame({ words, translations = {}, onClose, trackingContext, themeColor, onSubmitScore, gridConfig, sessionMode = false }: QuizGameProps) {
   const [items, setItems] = useState<QuizItem[]>([])
   const [answers, setAnswers] = useState<string[]>([])
   const [submitted, setSubmitted] = useState(false)
@@ -45,7 +46,7 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
   const [blocks, setBlocks] = useState<QuizItem[][]>([])
   const [blockColorSchemes, setBlockColorSchemes] = useState<Array<typeof COLOR_GRIDS[number]>>([])
   const [selectedGrids, setSelectedGrids] = useState<SelectedGrid[]>([])
-  const [showGridSelector, setShowGridSelector] = useState(true)
+  const [showGridSelector, setShowGridSelector] = useState(!sessionMode) // Skip grid selector in session mode
   const [showLanguageSelection, setShowLanguageSelection] = useState(false)
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false)
 
@@ -91,6 +92,48 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
   const norm = (s: unknown) => String(s ?? '').toLowerCase().trim()
   const makeKey = (prompt: string, given: string, expected: string) => `${norm(prompt)}||${norm(given)}||${norm(expected)}`
 
+  // Auto-configure for session mode
+  useEffect(() => {
+    if (!sessionMode || !gridConfig || gridConfig.length === 0) return
+
+    // Convert gridConfig to selectedGrids format
+    const grids: SelectedGrid[] = gridConfig.map((config, idx) => {
+      const words: string[] = []
+      const translations: Record<string, string> = {}
+
+      config.words.forEach(word => {
+        if (typeof word === 'string') {
+          words.push(word)
+          // Try to find translation from config.translations or translations prop
+          const translation = config.translations?.[word.toLowerCase()] || translations[word.toLowerCase()]
+          if (translation) {
+            translations[word.toLowerCase()] = translation
+          }
+        } else if (typeof word === 'object' && word.en && word.sv) {
+          words.push(word.sv) // Use Swedish word as the key word
+          translations[word.sv.toLowerCase()] = word.en
+        }
+      })
+      
+      // Also merge config.translations if available
+      if (config.translations) {
+        Object.entries(config.translations).forEach(([key, value]) => {
+          translations[key.toLowerCase()] = value as string
+        })
+      }
+
+      return {
+        words,
+        translations,
+        colorScheme: COLOR_GRIDS[idx % COLOR_GRIDS.length]
+      }
+    })
+
+    setSelectedGrids(grids)
+    setSelectedLanguageOrder('sv-en')
+    setSelectedDirection('sv-to-en')
+  }, [sessionMode, gridConfig])
+
   useEffect(() => {
     if (!selectedLanguageOrder || selectedGrids.length === 0) return
 
@@ -116,7 +159,7 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
             pair = pairMap.get(translationLower)
 
             if (!pair) {
-              pair = { en: word, sv: gridTranslation }
+              pair = { en: gridTranslation, sv: word }
               pairMap.set(word.toLowerCase(), pair)
               pairMap.set(gridTranslation.toLowerCase(), pair)
             }
@@ -472,9 +515,17 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
     await endGameSession(sessionId, 'quiz', metricsToSend, trackingContext)
     
     // Submit score with total and evaluations (for student_progress)
-    await onSubmitScore(finalScore, totalPossible, evaluations)
+    // Use evaluationsToSave which contains the actual evaluation data
+    await onSubmitScore(finalScore, totalPossible, evaluationsToSave)
     
-    // Show feedback modal after quiz is complete
+    // In session mode, close immediately and show result in the session page
+    if (sessionMode) {
+      // Close quiz component - result will be shown in the purple box on select-game page
+      onClose()
+      return
+    }
+    
+    // Show feedback modal after quiz is complete (only for non-session mode)
     setShowFeedbackModal(true)
   }
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { RotateCcw, ArrowLeft, Star, CheckCircle, XCircle } from 'lucide-react'
+import { RotateCcw, ArrowLeft, Star, CheckCircle, XCircle, Brain, Users, User, X } from 'lucide-react'
 import { startGameSession, endGameSession, logWordAttempt, updateStudentProgress, type TrackingContext } from '@/lib/tracking'
 import UniversalGameCompleteModal from '@/components/UniversalGameCompleteModal'
 import { calculateMemoryScore } from '@/lib/gameScoring'
@@ -37,6 +37,7 @@ interface MemoryGameProps {
   trackingContext?: TrackingContext
   themeColor?: string
   gridConfig?: GridConfig[]
+  sessionMode?: boolean // If true, adapt behavior for session mode
 }
 
 interface WordCard {
@@ -49,13 +50,13 @@ interface WordCard {
   isRemoving?: boolean
 }
 
-export default function MemoryGame({ words, translations = {}, onClose, onScoreUpdate, trackingContext, themeColor, gridConfig }: MemoryGameProps) {
+export default function MemoryGame({ words, translations = {}, onClose, onScoreUpdate, trackingContext, themeColor, gridConfig, sessionMode = false }: MemoryGameProps) {
   const windowSize = useWindowSize()
-  const [showPlayerSelection, setShowPlayerSelection] = useState(true)
+  const [showPlayerSelection, setShowPlayerSelection] = useState(!sessionMode) // Skip in session mode
   const [numPlayers, setNumPlayers] = useState<1 | 2>(1)
   const [player1Name, setPlayer1Name] = useState('Player 1')
   const [player2Name, setPlayer2Name] = useState('Player 2')
-  const [showGridSelector, setShowGridSelector] = useState(false)
+  const [showGridSelector, setShowGridSelector] = useState(!sessionMode) // Skip in session mode
   const [selectedGrids, setSelectedGrids] = useState<Array<{ words: string[]; translations: { [key: string]: string }; colorScheme: typeof COLOR_GRIDS[0] }>>([])
   const [cards, setCards] = useState<WordCard[]>([])
   const [selectedCard, setSelectedCard] = useState<WordCard | null>(null)
@@ -179,10 +180,14 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
   }
 
   useEffect(() => {
-    if (!showGridSelector && selectedGrids.length > 0) {
+    if (sessionMode && words && words.length > 0) {
+      // In session mode, use words and translations directly
+      console.log('🧠 Memory: Initializing game in session mode with', words.length, 'words')
+      initializeGame() // No grids needed, will use words/translations directly
+    } else if (!showGridSelector && selectedGrids.length > 0) {
       initializeGame(selectedGrids)
     }
-  }, [showGridSelector, selectedGrids])
+  }, [showGridSelector, selectedGrids, sessionMode, words])
 
   // Count-up timer
   useEffect(() => {
@@ -205,13 +210,13 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
   // Player selection screen
   if (showPlayerSelection) {
     return (
-      <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl border border-gray-100">
+      <div className="fixed inset-0 bg-gray-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-xl p-8 w-full max-w-md shadow-lg border border-gray-200">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-white text-3xl">🧠</span>
+            <div className="w-16 h-16 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Brain className="w-8 h-8 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Memory Game</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Memory Game</h2>
             <p className="text-gray-600">Choose number of players</p>
           </div>
           
@@ -220,14 +225,14 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
               onClick={() => {
                 setNumPlayers(1)
               }}
-              className={`p-6 rounded-2xl border-2 transition-all shadow-md hover:shadow-lg ${
+              className={`p-6 rounded-lg border-2 transition-all shadow-md hover:shadow-lg ${
                 numPlayers === 1
-                  ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300'
-                  : 'bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200 hover:from-blue-50 hover:to-indigo-50 hover:border-blue-300'
+                  ? 'bg-teal-50 border-teal-300'
+                  : 'bg-white border-gray-200 hover:border-teal-300 hover:bg-teal-50'
               }`}
             >
-              <div className="text-4xl mb-2">👤</div>
-              <div className="font-semibold text-gray-800">1 Player</div>
+              <User className="w-8 h-8 mx-auto mb-2 text-gray-700" />
+              <div className="font-semibold text-gray-900">1 Player</div>
               <div className="text-sm text-gray-600 mt-1">Solo practice</div>
             </button>
             
@@ -235,14 +240,14 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
               onClick={() => {
                 setNumPlayers(2)
               }}
-              className={`p-6 rounded-2xl border-2 transition-all shadow-md hover:shadow-lg ${
+              className={`p-6 rounded-lg border-2 transition-all shadow-md hover:shadow-lg ${
                 numPlayers === 2
-                  ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300'
-                  : 'bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200 hover:from-blue-50 hover:to-indigo-50 hover:border-blue-300'
+                  ? 'bg-teal-50 border-teal-300'
+                  : 'bg-white border-gray-200 hover:border-teal-300 hover:bg-teal-50'
               }`}
             >
-              <div className="text-4xl mb-2">👥</div>
-              <div className="font-semibold text-gray-800">2 Players</div>
+              <Users className="w-8 h-8 mx-auto mb-2 text-gray-700" />
+              <div className="font-semibold text-gray-900">2 Players</div>
               <div className="text-sm text-gray-600 mt-1">Take turns</div>
             </button>
           </div>
@@ -257,7 +262,7 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
                   value={player1Name}
                   onChange={(e) => setPlayer1Name(e.target.value || 'Player 1')}
                   placeholder="Enter name"
-                  className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 text-gray-800"
+                  className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 text-gray-900"
                 />
               </div>
               <div>
@@ -267,7 +272,7 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
                   value={player2Name}
                   onChange={(e) => setPlayer2Name(e.target.value || 'Player 2')}
                   placeholder="Enter name"
-                  className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 text-gray-800"
+                  className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 text-gray-900"
                 />
               </div>
             </div>
@@ -276,7 +281,7 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-colors"
+              className="flex-1 px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-colors"
             >
               Cancel
             </button>
@@ -285,7 +290,7 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
                 setShowPlayerSelection(false)
                 setShowGridSelector(true)
               }}
-              className="flex-1 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium hover:from-blue-600 hover:to-purple-600 transition-all shadow-lg"
+              className="flex-1 px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-600 text-white font-medium transition-all shadow-md"
             >
               Continue
             </button>
@@ -490,12 +495,21 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
     setAwardedPoints(scoreResult.pointsAwarded)
     
     // INSTANT UI UPDATE: Send points to parent for immediate UI update
-    console.log('🧠 Memory Game sending to onScoreUpdate:', { 
-      accuracy: scoreResult.accuracy, 
-      pointsAwarded: scoreResult.pointsAwarded, 
-      gameType: 'match' 
-    })
-    onScoreUpdate(scoreResult.accuracy, scoreResult.pointsAwarded, 'match')
+    if (sessionMode) {
+      // In session mode, pass correctPairs and totalPairs for percentage calculation
+      onScoreUpdate(correctPairs, totalPairs, 'match')
+      // Automatically close after a brief delay in session mode
+      setTimeout(() => {
+        onClose()
+      }, 300)
+    } else {
+      console.log('🧠 Memory Game sending to onScoreUpdate:', { 
+        accuracy: scoreResult.accuracy, 
+        pointsAwarded: scoreResult.pointsAwarded, 
+        gameType: 'match' 
+      })
+      onScoreUpdate(scoreResult.accuracy, scoreResult.pointsAwarded, 'match')
+    }
     
     // NOTE: Database sync handled by handleScoreUpdate in student dashboard
     // No need to call updateStudentProgress here to avoid duplicate sessions
@@ -568,6 +582,11 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
     const correctPairs = Math.max(0, totalAttemptsRef.current - wrongAttemptsRef.current)
     const totalPairs = Math.floor(cards.length / 2) // Use actual number of pairs from cards
     const scoreResult = calculateMemoryScore(correctPairs, totalPairs, wrongAttempts)
+    
+    // In session mode, don't show modal - just return null (will close automatically)
+    if (sessionMode) {
+      return null
+    }
     
     return (
       <UniversalGameCompleteModal

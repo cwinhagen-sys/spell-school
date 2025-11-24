@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { RotateCcw, ArrowLeft, Star, CheckCircle, XCircle, Send } from 'lucide-react'
+import { RotateCcw, ArrowLeft, Star, CheckCircle, XCircle, Send, Target } from 'lucide-react'
 import { startGameSession, endGameSession, updateStudentProgress, type TrackingContext } from '@/lib/tracking'
 import UniversalGameCompleteModal from '@/components/UniversalGameCompleteModal'
 import { calculateRouletteScore } from '@/lib/gameScoring'
@@ -16,6 +16,7 @@ interface RouletteGameProps {
   trackingContext?: TrackingContext
   themeColor?: string
   gridConfig?: GridConfig[]
+  sessionMode?: boolean // If true, adapt behavior for session mode
 }
 
 type SpinMode = 1 | 2 | 3
@@ -25,15 +26,15 @@ interface SpunWord {
   translation: string
 }
 
-export default function RouletteGame({ words, translations, onClose, onScoreUpdate, trackingContext, themeColor, gridConfig }: RouletteGameProps) {
+export default function RouletteGame({ words, translations, onClose, onScoreUpdate, trackingContext, themeColor, gridConfig, sessionMode = false }: RouletteGameProps) {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const startedAtRef = useRef<number | null>(null)
   const [gameFinished, setGameFinished] = useState(false)
   const [elapsedSec, setElapsedSec] = useState(0)
   const [awardedPoints, setAwardedPoints] = useState(0)
   
-  // Grid selector state
-  const [showGridSelector, setShowGridSelector] = useState(true)
+  // Grid selector state - skip in session mode
+  const [showGridSelector, setShowGridSelector] = useState(!sessionMode)
   const [selectedGrids, setSelectedGrids] = useState<Array<{ words: string[]; translations: { [key: string]: string }; colorScheme: typeof COLOR_GRIDS[0] }>>([])
   const [gameWords, setGameWords] = useState<string[]>([]) // Swedish words (for matching)
   const [gameEnglishWords, setGameEnglishWords] = useState<string[]>([]) // English words (for display)
@@ -58,41 +59,48 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
 
   // Initialize words and translations from selected grids
   useEffect(() => {
-    if (showGridSelector || selectedGrids.length === 0) {
+    if (sessionMode && words && words.length > 0) {
+      // In session mode, use words/translations directly (words are English)
+      console.log('🎰 Roulette: Initializing in session mode with', words.length, 'words')
+      setGameWords([]) // No Swedish words in session mode
+      setGameEnglishWords([...words]) // English words for display
+      setGameTranslations(translations)
+      console.log('🎰 Roulette: Initialized in session mode with', words.length, 'English words')
+    } else if (showGridSelector || selectedGrids.length === 0) {
       setGameWords([])
       setGameEnglishWords([])
       setGameTranslations({})
       return
-    }
-    
-    console.log('🎰 Roulette: Building word list from', selectedGrids.length, 'grids')
-    
-    // Combine words and translations from selected grids
-    const allWords: string[] = [] // Swedish words
-    const allEnglishWords: string[] = [] // English words for display
-    const allTranslations: { [key: string]: string } = {}
-    
-    selectedGrids.forEach((grid) => {
-      allWords.push(...grid.words) // Swedish words
-      Object.assign(allTranslations, grid.translations)
+    } else {
+      console.log('🎰 Roulette: Building word list from', selectedGrids.length, 'grids')
       
-      // Convert Swedish words to English for display
-      grid.words.forEach((swedishWord) => {
-        const englishWord = grid.translations[swedishWord.toLowerCase()] || translations[swedishWord.toLowerCase()]
-        if (englishWord && englishWord !== `[${swedishWord}]`) {
-          allEnglishWords.push(englishWord)
-        } else {
-          // Fallback: assume word is already English
-          allEnglishWords.push(swedishWord)
-        }
+      // Combine words and translations from selected grids
+      const allWords: string[] = [] // Swedish words
+      const allEnglishWords: string[] = [] // English words for display
+      const allTranslations: { [key: string]: string } = {}
+      
+      selectedGrids.forEach((grid) => {
+        allWords.push(...grid.words) // Swedish words
+        Object.assign(allTranslations, grid.translations)
+        
+        // Convert Swedish words to English for display
+        grid.words.forEach((swedishWord) => {
+          const englishWord = grid.translations[swedishWord.toLowerCase()] || translations[swedishWord.toLowerCase()]
+          if (englishWord && englishWord !== `[${swedishWord}]`) {
+            allEnglishWords.push(englishWord)
+          } else {
+            // Fallback: assume word is already English
+            allEnglishWords.push(swedishWord)
+          }
+        })
       })
-    })
-    
-    setGameWords(allWords) // Keep Swedish for matching
-    setGameEnglishWords(allEnglishWords) // English for display
-    setGameTranslations({ ...translations, ...allTranslations })
-    console.log('🎰 Roulette: Initialized with', allWords.length, 'words (Swedish) and', allEnglishWords.length, 'words (English)')
-  }, [selectedGrids, showGridSelector, translations])
+      
+      setGameWords(allWords) // Keep Swedish for matching
+      setGameEnglishWords(allEnglishWords) // English for display
+      setGameTranslations({ ...translations, ...allTranslations })
+      console.log('🎰 Roulette: Initialized with', allWords.length, 'words (Swedish) and', allEnglishWords.length, 'words (English)')
+    }
+  }, [selectedGrids, showGridSelector, translations, sessionMode, words])
 
   // Get translation for a word
   const getTranslation = (word: string) => {
@@ -537,6 +545,20 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
 
   // Finish game
   const finishGame = async () => {
+    if (sessionMode) {
+      // In session mode, pass correctAnswers and totalWords for percentage calculation
+      // Roulette: if they completed the sentence, count as 100% correct
+      const totalWords = spunWords.length
+      const correctWords = totalWords // If they finished, all words were used correctly
+      onScoreUpdate(correctWords, totalWords, 'roulette')
+      
+      // Automatically return to game selection after a delay
+      setTimeout(() => {
+        onClose()
+      }, 500)
+      return
+    }
+    
     // NOTE: Database sync handled by handleScoreUpdate in student dashboard via onScoreUpdate
     // No need to call updateStudentProgress here to avoid duplicate sessions
     
@@ -612,8 +634,8 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
     )
   }
 
-  // Game complete modal
-  if (gameFinished) {
+  // Game complete modal (not shown in session mode)
+  if (gameFinished && !sessionMode) {
     const formatTime = (seconds: number) => {
       const mins = Math.floor(seconds / 60)
       const secs = seconds % 60
@@ -646,14 +668,15 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
   // Mode selection screen
   if (!spinMode) {
     return (
-      <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-        <div className="bg-white rounded-3xl p-6 w-full max-w-2xl shadow-2xl border border-gray-100 relative my-4 text-center">
+      <div className="fixed inset-0 bg-gray-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div className="bg-white rounded-xl p-6 w-full max-w-2xl shadow-lg border border-gray-200 relative my-4 text-center">
           {/* Header */}
           <div className="flex items-center justify-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center">
+            <div className="w-16 h-16 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-full flex items-center justify-center">
+              <Target className="w-8 h-8 text-white" />
             </div>
             <div className="ml-4">
-              <h2 className="text-3xl font-bold text-gray-800">Word Roulette</h2>
+              <h2 className="text-3xl font-bold text-gray-900">Word Roulette</h2>
               <p className="text-sm text-gray-600">Spin and create sentences!</p>
             </div>
           </div>
@@ -663,12 +686,12 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
               Spin the wheel and write a sentence using the selected words!
             </p>
             
-            <div className="bg-gradient-to-r from-blue-100 to-indigo-100 rounded-2xl p-6 mb-6 border border-blue-200">
-              <div className="text-sm font-medium text-blue-800 mb-2">How it works:</div>
-              <div className="text-sm text-blue-700">
-                • Click the wheel to spin<br/>
-                • Use all selected words in a sentence<br/>
-                • Points = Number of words in your sentence
+            <div className="bg-gray-50 rounded-lg p-6 mb-6 border border-gray-200">
+              <div className="text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">How it works:</div>
+              <div className="text-sm text-gray-700 text-left space-y-1">
+                <div>• Click the wheel to spin</div>
+                <div>• Use all selected words in a sentence</div>
+                <div>• Points = Number of words in your sentence</div>
               </div>
             </div>
             
@@ -677,7 +700,7 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
                 setSpinMode(1)
                 setSpinsRemaining(1)
               }}
-              className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white py-4 px-8 rounded-2xl font-bold text-lg transition-all shadow-lg hover:shadow-xl"
+              className="w-full bg-teal-500 hover:bg-teal-600 text-white py-4 px-8 rounded-lg font-bold text-lg transition-all shadow-md"
             >
               Start Game
             </button>

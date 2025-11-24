@@ -135,3 +135,4 @@ Nu kan localStorage ALDRIG bli högre än DB eftersom quest XP bara läggs till 
 
 
 
+

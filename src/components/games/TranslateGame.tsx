@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { RotateCcw, ArrowLeft, Star, CheckCircle, XCircle, Languages, ArrowRight, RefreshCw } from 'lucide-react'
+import { RotateCcw, ArrowLeft, Star, CheckCircle, XCircle, Languages, ArrowRight, RefreshCw, Globe, Loader2 } from 'lucide-react'
 import { startGameSession, endGameSession, logWordAttempt, updateStudentProgress, type TrackingContext } from '@/lib/tracking'
 import UniversalGameCompleteModal from '@/components/UniversalGameCompleteModal'
 import { calculateTranslateScore } from '@/lib/gameScoring'
@@ -15,6 +15,7 @@ interface TranslateGameProps {
   trackingContext?: TrackingContext
   themeColor?: string
   gridConfig?: GridConfig[]
+  sessionMode?: boolean // If true, adapt behavior for session mode
 }
 
 interface WordPair {
@@ -35,10 +36,10 @@ interface WordResult {
 
 type Direction = 'en-to-sv' | 'sv-to-en' | 'mixed'
 
-export default function TranslateGame({ words, translations, onClose, onScoreUpdate, trackingContext, themeColor, gridConfig }: TranslateGameProps) {
+export default function TranslateGame({ words, translations, onClose, onScoreUpdate, trackingContext, themeColor, gridConfig, sessionMode = false }: TranslateGameProps) {
   // Game state
-  // Always start at select-grids phase - let user choose which blocks to play
-  const [gamePhase, setGamePhase] = useState<'select-grids' | 'select-direction' | 'playing' | 'results'>('select-grids')
+  // In session mode, skip grid selection and start at direction selection
+  const [gamePhase, setGamePhase] = useState<'select-grids' | 'select-direction' | 'playing' | 'results'>(sessionMode ? 'select-direction' : 'select-grids')
   const [selectedGrids, setSelectedGrids] = useState<Array<{ words: string[]; translations: { [key: string]: string }; colorScheme: typeof COLOR_GRIDS[0] }>>([])
   const [direction, setDirection] = useState<Direction>('mixed')
 
@@ -86,6 +87,39 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
     if (wordsToUse) {
       // Replay with specific words
       pairs = wordsToUse
+    } else if (sessionMode && words && words.length > 0) {
+      // In session mode, use words/translations directly
+      // words are English, translations[word] are Swedish
+      console.log('🔄 Translate initializeGame (session mode):', words.length, 'words')
+      const shuffledWords = [...words].sort(() => Math.random() - 0.5)
+      
+      shuffledWords.forEach((word) => {
+        const translation = translations[word.toLowerCase()]
+        if (translation && translation !== `[${word}]`) {
+          if (selectedDirection === 'en-to-sv' || selectedDirection === 'mixed') {
+            // English to Swedish: show English word, user translates to Swedish
+            pairs.push({
+              original: word,  // English word
+              target: translation,  // Swedish translation
+              originalLanguage: 'en',
+              targetLanguage: 'sv'
+            })
+          }
+        
+          if (selectedDirection === 'sv-to-en' || selectedDirection === 'mixed') {
+            // Swedish to English: show Swedish word, user translates to English
+            pairs.push({
+              original: translation,  // Swedish word
+              target: word,  // English translation
+              originalLanguage: 'sv',
+              targetLanguage: 'en'
+            })
+          }
+        }
+      })
+      
+      // Shuffle the pairs
+      pairs = pairs.sort(() => Math.random() - 0.5)
     } else {
       // New game - use selected grids
       console.log('🔄 Translate initializeGame:', {
@@ -305,37 +339,53 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
 
     setAwardedPoints(scoreResult.pointsAwarded)
     
-    // INSTANT UI UPDATE: Send points to parent for immediate UI update
-    onScoreUpdate(scoreResult.accuracy, scoreResult.pointsAwarded, 'translate')
-    
-    // BACKGROUND SYNC: Update database in background (non-blocking)
-    // NOTE: Database sync handled by handleScoreUpdate in student dashboard via onScoreUpdate
-    // No need to call updateStudentProgress here to avoid duplicate sessions
-    
-    const started = startedAtRef.current
-    
-    if (started) {
-      const duration = Math.max(1, Math.floor((Date.now() - started) / 1000))
-      console.log('📊 TranslateGame calling endGameSession with:', {
-        sessionId,
-        gameType: 'translate',
-        metrics: {
-          score: scoreResult.pointsAwarded,
-          durationSec: duration,
-          accuracyPct: scoreResult.accuracy,
-          details: { correct: finalCorrect, total, wrongClicks: wrong }
-        }
-      })
+    if (sessionMode) {
+      // In session mode, pass correctAnswers and totalQuestions for percentage calculation
+      onScoreUpdate(finalCorrect, total, 'translate')
       
-      void endGameSession(sessionId, 'translate', { 
-        score: scoreResult.pointsAwarded, 
-        durationSec: duration, 
-        accuracyPct: scoreResult.accuracy,
-        details: { correct: finalCorrect, total, wrongClicks: wrong, awarded_points: scoreResult.pointsAwarded } 
-      })
+      // If 100% correct, automatically return to game selection after a delay
+      if (finalCorrect === total) {
+        setTimeout(() => {
+          onClose()
+        }, 500)
+        return
+      } else {
+        // Show results but allow replay
+        setGamePhase('results')
+      }
+    } else {
+      // INSTANT UI UPDATE: Send points to parent for immediate UI update
+      onScoreUpdate(scoreResult.accuracy, scoreResult.pointsAwarded, 'translate')
+      
+      // BACKGROUND SYNC: Update database in background (non-blocking)
+      // NOTE: Database sync handled by handleScoreUpdate in student dashboard via onScoreUpdate
+      // No need to call updateStudentProgress here to avoid duplicate sessions
+      
+      const started = startedAtRef.current
+      
+      if (started) {
+        const duration = Math.max(1, Math.floor((Date.now() - started) / 1000))
+        console.log('📊 TranslateGame calling endGameSession with:', {
+          sessionId,
+          gameType: 'translate',
+          metrics: {
+            score: scoreResult.pointsAwarded,
+            durationSec: duration,
+            accuracyPct: scoreResult.accuracy,
+            details: { correct: finalCorrect, total, wrongClicks: wrong }
+          }
+        })
+        
+        void endGameSession(sessionId, 'translate', { 
+          score: scoreResult.pointsAwarded, 
+          durationSec: duration, 
+          accuracyPct: scoreResult.accuracy,
+          details: { correct: finalCorrect, total, wrongClicks: wrong, awarded_points: scoreResult.pointsAwarded } 
+        })
+      }
+      
+      setGamePhase('results')
     }
-    
-    setGamePhase('results')
   }
 
   const playAgainAllWords = () => {
@@ -390,14 +440,16 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
   // ========== RENDER: Direction Selector ==========
   if (gamePhase === 'select-direction') {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-        <div className="rounded-2xl p-8 max-w-2xl w-full text-center shadow-2xl relative bg-white text-gray-800 border border-gray-200">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="rounded-xl p-8 max-w-2xl w-full text-center shadow-lg relative bg-white text-gray-900 border border-gray-200">
           {/* Top Progress Bar */}
-          <div className="h-1 rounded-md mb-6 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+          <div className="h-1 rounded-md mb-6 bg-gradient-to-r from-teal-500 to-emerald-500"></div>
           
           {/* Header */}
           <div className="mb-8">
-            <div className="text-6xl mb-4">🌍</div>
+            <div className="flex items-center justify-center mb-4">
+              <Globe className="w-12 h-12 text-teal-600" />
+            </div>
             <h2 className="text-2xl font-bold mb-2">Translate Challenge</h2>
             <p className="text-gray-600 text-sm">Choose your translation direction</p>
           </div>
@@ -406,51 +458,57 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
             {/* English to Swedish */}
             <button
               onClick={() => startGame('en-to-sv')}
-              className="w-full group p-6 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-all duration-300 hover:scale-105 hover:shadow-xl"
+              className="w-full group p-6 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 hover:border-teal-300 transition-all duration-300 hover:shadow-md"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="text-4xl">🇬🇧</div>
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
+                    <Languages className="w-6 h-6 text-teal-600" />
+                  </div>
                   <div className="text-left">
-                    <div className="font-bold text-lg mb-1">English → Swedish</div>
+                    <div className="font-bold text-lg mb-1 text-gray-900">English → Swedish</div>
                     <div className="text-sm text-gray-600">Translate from English to Swedish</div>
                   </div>
                 </div>
-                <ArrowRight className="w-5 h-5 text-blue-600 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-5 h-5 text-teal-600 group-hover:translate-x-1 transition-transform" />
               </div>
             </button>
 
             {/* Swedish to English */}
             <button
               onClick={() => startGame('sv-to-en')}
-              className="w-full group p-6 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-all duration-300 hover:scale-105 hover:shadow-xl"
+              className="w-full group p-6 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 hover:border-teal-300 transition-all duration-300 hover:shadow-md"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="text-4xl">🇸🇪</div>
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
+                    <Languages className="w-6 h-6 text-teal-600" />
+                  </div>
                   <div className="text-left">
-                    <div className="font-bold text-lg mb-1">Swedish → English</div>
+                    <div className="font-bold text-lg mb-1 text-gray-900">Swedish → English</div>
                     <div className="text-sm text-gray-600">Translate from Swedish to English</div>
                   </div>
                 </div>
-                <ArrowRight className="w-5 h-5 text-green-600 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-5 h-5 text-teal-600 group-hover:translate-x-1 transition-transform" />
               </div>
             </button>
 
             {/* Mixed */}
             <button
               onClick={() => startGame('mixed')}
-              className="w-full group p-6 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-all duration-300 hover:scale-105 hover:shadow-xl"
+              className="w-full group p-6 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 hover:border-teal-300 transition-all duration-300 hover:shadow-md"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="text-4xl">🔀</div>
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
+                    <RefreshCw className="w-6 h-6 text-teal-600" />
+                  </div>
                   <div className="text-left">
-                    <div className="font-bold text-lg mb-1">Mixed</div>
+                    <div className="font-bold text-lg mb-1 text-gray-900">Mixed</div>
                     <div className="text-sm text-gray-600">Random mix of both directions</div>
                   </div>
                 </div>
-                <ArrowRight className="w-5 h-5 text-purple-600 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-5 h-5 text-teal-600 group-hover:translate-x-1 transition-transform" />
               </div>
             </button>
           </div>
@@ -475,25 +533,25 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
     const missedWordsCount = wordResults.filter(r => !r.firstTryCorrect).length // Include yellow + red
     
     return (
-      <div className="fixed inset-0 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-        <div className="bg-white rounded-3xl p-8 max-w-3xl w-full shadow-2xl border border-gray-100 my-8">
+      <div className="fixed inset-0 bg-gray-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div className="bg-white rounded-xl p-8 max-w-3xl w-full shadow-lg border border-gray-200 my-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl mb-4 shadow-lg">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-full mb-4 shadow-md">
               <CheckCircle className="w-10 h-10 text-white" />
             </div>
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Game Complete!</h2>
-            <div className="flex items-center justify-center space-x-6 text-lg">
+            <div className="flex items-center justify-center gap-6 text-lg">
               <div className="text-gray-600">
-                <span className="font-bold text-emerald-600">{finalCorrect}</span> / {total} correct
+                <span className="font-bold text-teal-600">{finalCorrect}</span> / {total} correct
               </div>
               <div className="text-gray-400">•</div>
               <div className="text-gray-600">
-                <span className="font-bold text-indigo-600">{scoreResult.accuracy}%</span> accuracy
+                <span className="font-bold text-teal-600">{scoreResult.accuracy}%</span> accuracy
               </div>
               <div className="text-gray-400">•</div>
               <div className="text-gray-600">
-                <span className="font-bold text-purple-600">+{awardedPoints}</span> XP
+                <span className="font-bold text-teal-600">+{awardedPoints}</span> XP
               </div>
             </div>
           </div>
@@ -566,7 +624,7 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
             {missedWordsCount > 0 && (
               <button
                 onClick={playAgainMissedWords}
-                className="w-full group bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 flex items-center justify-center space-x-2"
+                className="w-full group bg-teal-500 hover:bg-teal-600 text-white font-semibold py-4 px-6 rounded-lg transition-all shadow-md flex items-center justify-center gap-2"
               >
                 <RefreshCw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
                 <span>Practice Words to Improve ({missedWordsCount})</span>
@@ -575,7 +633,7 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
             
             <button
               onClick={playAgainAllWords}
-              className="w-full group bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 flex items-center justify-center space-x-2"
+              className="w-full group bg-teal-500 hover:bg-teal-600 text-white font-semibold py-4 px-6 rounded-lg transition-all shadow-md flex items-center justify-center gap-2"
             >
               <RotateCcw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
               <span>Play Again (All Words)</span>
@@ -596,9 +654,9 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
   // ========== RENDER: Playing ==========
   if (!currentPair) {
     return (
-      <div className="fixed inset-0 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl border border-gray-100">
-          <div className="text-6xl mb-4">⏳</div>
+      <div className="fixed inset-0 bg-gray-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-xl p-8 max-w-md w-full text-center shadow-lg border border-gray-200">
+          <Loader2 className="w-12 h-12 text-gray-400 animate-spin mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Loading...</h2>
           <p className="text-gray-600">Preparing your translation challenge</p>
         </div>

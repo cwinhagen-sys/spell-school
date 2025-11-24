@@ -16,11 +16,12 @@ interface StoryGapGameProps {
   themeColor?: string
   onScoreUpdate?: (points: number, newTotal?: number, gameType?: string) => void
   gridConfig?: GridConfig[]
+  sessionMode?: boolean // If true, adapt behavior for session mode
 }
 
 type GapMeta = { index: number; correct: string; why_unique: string; rejects: Array<{ word: string; reason: string }> }
 
-export default function StoryGapGame({ words, translations = {}, onClose, trackingContext, themeColor, onScoreUpdate, gridConfig }: StoryGapGameProps) {
+export default function StoryGapGame({ words, translations = {}, onClose, trackingContext, themeColor, onScoreUpdate, gridConfig, sessionMode = false }: StoryGapGameProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [gapText, setGapText] = useState('')
@@ -38,7 +39,14 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
   const [selectedWords, setSelectedWords] = useState<string[]>([])
   const [selectedGrid, setSelectedGrid] = useState<{ words: string[]; translations: { [key: string]: string }; colorScheme: typeof COLOR_GRIDS[0] } | null>(null)
   const [difficulty, setDifficulty] = useState<'green' | 'yellow' | 'red' | null>(null)
-  const [showGridSelector, setShowGridSelector] = useState(true)
+  // In session mode, show grid selector if there are multiple blocks, otherwise skip it
+  // In non-session mode, always show grid selector
+  const [showGridSelector, setShowGridSelector] = useState(() => {
+    if (sessionMode && gridConfig && gridConfig.length > 1) {
+      return true // Show selector in session mode if multiple blocks
+    }
+    return !sessionMode // Show selector in non-session mode, skip if session mode with 1 or 0 blocks
+  })
   const [showWordSelector, setShowWordSelector] = useState(false)
   const [wordsSelected, setWordsSelected] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
@@ -162,15 +170,42 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
     setWordsSelected(true)
   }
 
-  // Only auto-pick words if GridSelector is not shown (fallback)
+  // In session mode, handle grid selection based on number of blocks
+  // If only 1 block in gridConfig, use it directly; if multiple, show selector
   useEffect(() => {
-    if (!showGridSelector && !wordsSelected && selectedWords.length === 0) {
+    if (sessionMode && gridConfig && gridConfig.length === 1 && !wordsSelected) {
+      // Only 1 block - use it directly without showing selector
+      const singleBlock = gridConfig[0]
+      const blockWords = Array.isArray(singleBlock.words) 
+        ? singleBlock.words.map(w => typeof w === 'string' ? w : (w as any).en || '')
+        : []
+      const pick = shuffle([...blockWords]).slice(0, Math.min(6, blockWords.length))
+      setSelectedWords(pick)
+      setSelectedGrid({
+        words: pick,
+        translations: singleBlock.translations || {},
+        colorScheme: singleBlock.colorScheme || COLOR_GRIDS[0]
+      })
+      setWordsSelected(true)
+      setShowGridSelector(false)
+      // Don't auto-select difficulty - let user choose
+    } else if (sessionMode && gridConfig && gridConfig.length > 1 && !wordsSelected) {
+      // Multiple blocks - show selector (already set in useState)
+      // Don't auto-select words, wait for user to choose grid
+    } else if (sessionMode && words && words.length > 0 && !wordsSelected && (!gridConfig || gridConfig.length === 0)) {
+      // Fallback: if no gridConfig but words provided, use words directly
+      const pick = shuffle([...words]).slice(0, Math.min(6, words.length))
+      setSelectedWords(pick)
+      setWordsSelected(true)
+      setShowGridSelector(false)
+    } else if (!showGridSelector && !wordsSelected && selectedWords.length === 0) {
+      // Non-session mode fallback
       const pool = Array.isArray(words) ? uniquePreserve(words) : []
       const pick = shuffle(pool).slice(0, Math.min(8, pool.length))
       setSelectedWords(pick)
       setWordsSelected(true)
     }
-  }, [words, showGridSelector, wordsSelected, selectedWords.length])
+  }, [words, showGridSelector, wordsSelected, selectedWords.length, sessionMode, gridConfig])
 
   useEffect(() => {
     startedAtRef.current = Date.now()
@@ -218,21 +253,29 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
         
         // No timeout - let generation take as long as needed
         
-        // Convert Swedish words to English before sending to API
-        // selectedWords might be Swedish (from gridConfig), but API needs English words
-        const englishWords: string[] = []
-        const allTranslations = selectedGrid?.translations || translations
+        // In session mode, selectedWords are already English
+        // Otherwise, convert Swedish words to English before sending to API
+        let englishWords: string[] = []
         
-        for (const word of selectedWords) {
-          // Check if word is already English (contains common English letters/patterns)
-          // or if it's Swedish and needs translation
-          const translation = allTranslations[word.toLowerCase()]
-          if (translation && translation !== `[${word}]`) {
-            // Word is Swedish, use English translation
-            englishWords.push(translation)
-          } else {
-            // Assume word is already English, or no translation found
-            englishWords.push(word)
+        if (sessionMode) {
+          // In session mode, words are already English
+          englishWords = [...selectedWords]
+        } else {
+          // Convert Swedish words to English before sending to API
+          // selectedWords might be Swedish (from gridConfig), but API needs English words
+          const allTranslations = selectedGrid?.translations || translations
+          
+          for (const word of selectedWords) {
+            // Check if word is already English (contains common English letters/patterns)
+            // or if it's Swedish and needs translation
+            const translation = allTranslations[word.toLowerCase()]
+            if (translation && translation !== `[${word}]`) {
+              // Word is Swedish, use English translation
+              englishWords.push(translation)
+            } else {
+              // Assume word is already English, or no translation found
+              englishWords.push(word)
+            }
           }
         }
         
@@ -240,6 +283,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
         const shuffledEnglishWords = shuffle(englishWords)
         
         console.log('📝 Story Gap: Converting words for API:', {
+          sessionMode,
           original: selectedWords,
           english: englishWords,
           shuffled: shuffledEnglishWords
@@ -392,15 +436,25 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
           setSolutionText(incomingSolution)
         }
         
-        // Add Swedish word mapping for answer checking
+        // Add word mapping for answer checking
+        // In session mode, selectedWords are already English, so no need to map to Swedish
         const updatedMeta = finalMeta.map((meta, idx) => {
           const engWord = meta.correct
-          const engIndex = englishWords.findIndex(w => w.trim().toLowerCase() === engWord)
-          const swedishWord = engIndex >= 0 ? selectedWords[engIndex] : null
-          
-          return {
-            ...meta,
-            swedishWord: swedishWord // Add Swedish for user answer matching
+          if (sessionMode) {
+            // In session mode, words are already English, no Swedish mapping needed
+            return {
+              ...meta,
+              swedishWord: null
+            }
+          } else {
+            // Map English words back to Swedish for answer checking
+            const engIndex = englishWords.findIndex(w => w.trim().toLowerCase() === engWord)
+            const swedishWord = engIndex >= 0 ? selectedWords[engIndex] : null
+            
+            return {
+              ...meta,
+              swedishWord: swedishWord // Add Swedish for user answer matching
+            }
           }
         })
         setGapsMeta(updatedMeta as GapMeta[])
@@ -466,7 +520,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
     // Normalize function for consistent matching
     const normalize = (s: string) => s.trim().toLowerCase()
     
-    // Build set of all acceptable answers (English and Swedish)
+    // Build set of all acceptable answers per gap (English and Swedish)
     // For duplicates: same word can be correct for multiple gaps
     const acceptableAnswers = new Map<number, Set<string>>()
     for (const meta of gapsMeta) {
@@ -481,6 +535,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
     
     // Strict matching: exact case-insensitive match
     // Duplicate words can match multiple gaps (interchangeable)
+    // This works the same way in both session mode and non-session mode
     for (const meta of gapsMeta) {
       const userInput = String(answers[meta.index] || '').trim()
       const normalizedInput = normalize(userInput)
@@ -553,6 +608,13 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
   const submit = async () => {
     if (submitted) return
     
+    // Check answers first if not already checked
+    if (!checked) {
+      checkAnswersVisual()
+      // Wait a bit for state to update
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+    
     // Use the new universal scoring system: +2 per correct, -1 per wrong click
     const totalGaps = gapsMeta.length
     const correctAnswers = Object.values(correctMap).filter(Boolean).length
@@ -563,26 +625,39 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
     setSubmitted(true)
     
     // INSTANT UI UPDATE: Send points to parent for immediate UI update
-    if (onScoreUpdate) onScoreUpdate(scoreResult.accuracy, scoreResult.pointsAwarded, 'story_gap')
+    if (onScoreUpdate) {
+      if (sessionMode) {
+        // In session mode, pass correctAnswers and totalGaps for percentage calculation
+        onScoreUpdate(correctAnswers, totalGaps, 'story_gap')
+        // Automatically close after a brief delay in session mode if 100% correct
+        if (correctAnswers === totalGaps) {
+          setTimeout(() => {
+            onClose()
+          }, 500) // Small delay to show completion
+        }
+      } else {
+        onScoreUpdate(scoreResult.accuracy, scoreResult.pointsAwarded, 'story_gap')
+      }
+    }
     
-    // BACKGROUND SYNC: Update database in background (non-blocking)
-    // NOTE: Database sync handled by handleScoreUpdate in student dashboard via onScoreUpdate
-    // No need to call updateStudentProgress here to avoid duplicate sessions
-    const started = startedAtRef.current
-    if (started) {
-      const duration = Math.max(1, Math.floor((Date.now() - started) / 1000))
-      void endGameSession(sessionId, 'story_gap', { 
-        score: scoreResult.pointsAwarded, 
-        durationSec: duration, 
-        accuracyPct: scoreResult.accuracy,
-        details: { blanks: totalGaps, correctAnswers, totalGaps } 
-      })
-    } else {
-      void endGameSession(sessionId, 'story_gap', { 
-        score: scoreResult.pointsAwarded, 
-        accuracyPct: scoreResult.accuracy,
-        details: { blanks: totalGaps, correctAnswers, totalGaps } 
-      })
+    // BACKGROUND SYNC: Update database in background (non-blocking) - only if not in session mode
+    if (!sessionMode) {
+      const started = startedAtRef.current
+      if (started) {
+        const duration = Math.max(1, Math.floor((Date.now() - started) / 1000))
+        void endGameSession(sessionId, 'story_gap', { 
+          score: scoreResult.pointsAwarded, 
+          durationSec: duration, 
+          accuracyPct: scoreResult.accuracy,
+          details: { blanks: totalGaps, correctAnswers, totalGaps } 
+        })
+      } else {
+        void endGameSession(sessionId, 'story_gap', { 
+          score: scoreResult.pointsAwarded, 
+          accuracyPct: scoreResult.accuracy,
+          details: { blanks: totalGaps, correctAnswers, totalGaps } 
+        })
+      }
     }
   }
 
@@ -728,42 +803,61 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
     )
   }
 
-  if (submitted) {
+  // In session mode, don't show completion screen - just close automatically if 100% correct
+  if (submitted && !sessionMode) {
     return (
       <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-        <div className="bg-white rounded-3xl p-6 w-full max-w-2xl shadow-2xl border border-gray-100 relative my-4 text-center">
+        <div className="bg-white rounded-xl p-6 w-full max-w-2xl shadow-lg border border-gray-200 relative my-4 text-center">
           {/* Header */}
           <div className="flex items-center justify-center mb-6">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-              <span className="text-white text-lg">📝</span>
+            <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-lg flex items-center justify-center">
+              <FileText className="w-6 h-6 text-white" />
             </div>
             <div className="ml-3">
-              <h2 className="text-2xl font-bold text-gray-800">Sentence Gap</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Sentence Gap</h2>
               <p className="text-sm text-gray-600">Game Complete!</p>
             </div>
           </div>
 
           {/* Score Display */}
-          <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl p-6 mb-6 border border-purple-200">
-            <div className="text-3xl font-bold text-purple-800 mb-2">Poäng: {score} / {blanks * 2}</div>
-            <div className="text-lg text-purple-600">Rätt: {Math.floor(score / 2)} / {blanks}</div>
+          <div className="bg-teal-50 rounded-lg p-6 mb-6 border border-teal-200">
+            <div className="text-3xl font-bold text-teal-900 mb-2">Score: {score} / {blanks * 2}</div>
+            <div className="text-lg text-teal-700">Correct: {Math.floor(score / 2)} / {blanks}</div>
           </div>
 
           <button 
             onClick={onClose} 
-            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3 px-8 rounded-2xl font-semibold transition-all shadow-lg hover:shadow-xl"
+            className="bg-teal-500 hover:bg-teal-600 text-white py-3 px-8 rounded-lg font-semibold transition-all shadow-md"
           >
-            Stäng
+            Close
           </button>
         </div>
       </div>
     )
+  }
+  
+  // In session mode, if submitted and 100% correct, don't render anything (will close automatically)
+  if (submitted && sessionMode) {
+    const totalGaps = gapsMeta.length
+    const correctAnswers = Object.values(correctMap).filter(Boolean).length
+    if (correctAnswers === totalGaps) {
+      return null // Will close automatically
+    }
   }
 
   const sentences = solutionText.split(/(?<=[.!?])\s+/).filter(Boolean)
 
   // Color grid selection screen
   if (showGridSelector) {
+    // Convert gridConfig to the format ColorGridSelector expects
+    // ColorGridSelector expects { color: string, index: number } but we receive { colorScheme: ... }
+    const convertedGridConfig = gridConfig?.map((config: any, index: number) => ({
+      words: config.words || [],
+      color: config.colorScheme?.hex || config.color || COLOR_GRIDS[index % COLOR_GRIDS.length].hex,
+      index: config.index !== undefined ? config.index : index,
+      translations: config.translations || {}
+    })) || undefined
+    
     return (
       <ColorGridSelector
         words={words}
@@ -775,7 +869,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
         wordsPerGrid={6}
         title="Select Color Grid"
         description="Choose one color grid to practice with (max 6 words)"
-        gridConfig={gridConfig}
+        gridConfig={convertedGridConfig}
       />
     )
   }

@@ -161,3 +161,4 @@ Vad visar det för `total_points`?
 
 
 
+

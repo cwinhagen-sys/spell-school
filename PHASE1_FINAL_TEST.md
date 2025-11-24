@@ -237,3 +237,4 @@ EMERGENCY_ROLLBACK = true  // ← Nödavstängning
 
 
 
+

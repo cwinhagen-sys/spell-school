@@ -139,6 +139,12 @@ Rules:
 - No component overlap between multi-word targets across different lines.
 - Vary structure, tense, perspective, and context across lines.${animalGuidance}
 - Duplicate words in wordSet are allowed - use them in different contexts.
+- CRITICAL UNIQUENESS REQUIREMENT: Each gap word/phrase must be UNIQUE to its sentence.
+  * wordSet[i] should ONLY fit grammatically and semantically in sentence[i]
+  * wordSet[i] should NOT fit naturally in any other sentence (sentence[j] where j ≠ i)
+  * Create distinct contexts, subjects, verbs, or sentence structures so each word is clearly tied to ONE specific sentence
+  * For example: if wordSet contains "by day" and "by night", create sentences where "by day" only fits one context and "by night" only fits another
+  * Avoid generic sentences where multiple words could fit - make each sentence specific to its target word
 - IMPORTANT: Generate UNIQUE sentences different from previous runs. Vary wording, context, and examples.
 
 Output JSON only (no explanations, no reasoning):
@@ -161,6 +167,18 @@ ${wordSet.length > 4 ? `- wordSet[4]="${wordSet[4]}" → solution_text[4] must c
 ${wordSet.length > 5 ? `- wordSet[5]="${wordSet[5]}" → solution_text[5] must contain "${wordSet[5]}", gaps_meta[5].correct="${wordSet[5].toLowerCase()}"` : ''}
 ${wordSet.length > 6 ? `- wordSet[6]="${wordSet[6]}" → solution_text[6] must contain "${wordSet[6]}", gaps_meta[6].correct="${wordSet[6].toLowerCase()}"` : ''}
 ${wordSet.length > 7 ? `- wordSet[7]="${wordSet[7]}" → solution_text[7] must contain "${wordSet[7]}", gaps_meta[7].correct="${wordSet[7].toLowerCase()}"` : ''}
+
+CRITICAL: Each word/phrase must be UNIQUE to its sentence:
+- "${wordSet[0]}" should ONLY fit in sentence 1, not in any other sentence
+- "${wordSet[1]}" should ONLY fit in sentence 2, not in any other sentence
+${wordSet.length > 2 ? `- "${wordSet[2]}" should ONLY fit in sentence 3, not in any other sentence` : ''}
+${wordSet.length > 3 ? `- "${wordSet[3]}" should ONLY fit in sentence 4, not in any other sentence` : ''}
+${wordSet.length > 4 ? `- "${wordSet[4]}" should ONLY fit in sentence 5, not in any other sentence` : ''}
+${wordSet.length > 5 ? `- "${wordSet[5]}" should ONLY fit in sentence 6, not in any other sentence` : ''}
+${wordSet.length > 6 ? `- "${wordSet[6]}" should ONLY fit in sentence 7, not in any other sentence` : ''}
+${wordSet.length > 7 ? `- "${wordSet[7]}" should ONLY fit in sentence 8, not in any other sentence` : ''}
+- Create distinct contexts so each word is clearly tied to ONE specific sentence
+- Avoid generic sentences where multiple words could fit
 
 sig=${signature} difficulty=${difficulty}
 wordSet=${JSON.stringify(wordSet)}

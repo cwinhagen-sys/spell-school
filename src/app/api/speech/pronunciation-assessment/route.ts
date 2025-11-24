@@ -34,27 +34,93 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse form data (audio file + word)
-    const formData = await request.formData()
-    const audioFile = formData.get('audio') as File
-    const word = formData.get('word') as string
+    let formData: FormData
+    let audioFile: File | null
+    let word: string | null
+    
+    try {
+      formData = await request.formData()
+      audioFile = formData.get('audio') as File
+      word = formData.get('word') as string
+    } catch (error: any) {
+      console.error('❌ Failed to parse form data:', error)
+      return NextResponse.json(
+        { 
+          error: 'Failed to parse request data',
+          details: error?.message || 'Invalid form data'
+        },
+        { status: 400 }
+      )
+    }
 
     if (!audioFile) {
-      return NextResponse.json({ error: 'Audio file is required' }, { status: 400 })
+      return NextResponse.json(
+        { 
+          error: 'Audio file is required',
+          details: 'No audio file provided in the request'
+        },
+        { status: 400 }
+      )
     }
 
     if (!word) {
-      return NextResponse.json({ error: 'Word is required' }, { status: 400 })
+      return NextResponse.json(
+        { 
+          error: 'Word is required',
+          details: 'No word provided in the request'
+        },
+        { status: 400 }
+      )
     }
 
     const apiKey = AZURE_SPEECH_KEY()
     const region = AZURE_SPEECH_REGION()
 
     // Convert audio file to ArrayBuffer
-    const audioBuffer = await audioFile.arrayBuffer()
+    let audioBuffer: ArrayBuffer
+    try {
+      audioBuffer = await audioFile.arrayBuffer()
+      if (!audioBuffer || audioBuffer.byteLength === 0) {
+        return NextResponse.json(
+          { 
+            error: 'Invalid audio file',
+            details: 'Audio file is empty or could not be read'
+          },
+          { status: 400 }
+        )
+      }
+    } catch (error: any) {
+      console.error('❌ Failed to read audio file:', error)
+      return NextResponse.json(
+        { 
+          error: 'Failed to read audio file',
+          details: error?.message || 'Could not process audio file'
+        },
+        { status: 400 }
+      )
+    }
 
     // Use Azure Speech SDK for pronunciation assessment with phoneme-level analysis
     // This provides actual phonetic analysis, not just transcription matching
     return new Promise<NextResponse>((resolve) => {
+      // Set up timeout to prevent hanging (10 seconds)
+      const timeoutId = setTimeout(() => {
+        console.error('⏱️ Pronunciation assessment timeout - Azure SDK did not respond within 10 seconds')
+        resolve(
+          NextResponse.json(
+            { 
+              error: 'Pronunciation assessment timeout',
+              details: 'The assessment took too long. Please try again.',
+              isCorrect: false,
+              accuracyScore: 0,
+              feedback: 'Analysen tog för lång tid. Försök igen.',
+              transcript: ''
+            },
+            { status: 504 }
+          )
+        )
+      }, 10000) // 10 second timeout
+
       const speechConfig = sdk.SpeechConfig.fromSubscription(apiKey, region)
       speechConfig.speechRecognitionLanguage = 'en-US'
 
@@ -87,6 +153,15 @@ export async function POST(request: NextRequest) {
       let transcript = ''
       let accuracyScoreFromAzure: number | null = null
       let pronunciationResult: any = null
+      let resolved = false
+
+      const safeResolve = (response: NextResponse) => {
+        if (!resolved) {
+          resolved = true
+          clearTimeout(timeoutId)
+          resolve(response)
+        }
+      }
 
       recognizer.recognizeOnceAsync(
         (result: sdk.SpeechRecognitionResult) => {
@@ -128,13 +203,13 @@ export async function POST(request: NextRequest) {
             word,
             accuracyScoreFromAzure,
             pronunciationResult,
-            resolve
+            safeResolve
           )
         },
         (error: string) => {
           recognizer.close()
           console.error('❌ Azure Speech SDK error:', error)
-          resolve(
+          safeResolve(
             NextResponse.json(
               { error: 'Failed to assess pronunciation', details: error },
               { status: 500 }

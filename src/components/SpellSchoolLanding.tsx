@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Mail, Lock, ArrowRight, BookOpen, Users, Gamepad2, BarChart3, Sparkles, CheckCircle2, ChevronDown } from "lucide-react";
+import { Mail, Lock, ArrowRight, BookOpen, Users, Gamepad2, BarChart3, Sparkles, CheckCircle2, ChevronDown, Trophy, Mic } from "lucide-react";
 import Link from "next/link";
 
 interface SpellSchoolLandingProps {
@@ -31,7 +31,6 @@ export default function SpellSchoolLanding({
   setPassword,
 }: SpellSchoolLandingProps) {
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showFeatures, setShowFeatures] = useState(false);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
@@ -41,39 +40,23 @@ export default function SpellSchoolLanding({
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center space-x-2">
-              <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+              <div className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
                 Spell School
               </div>
             </Link>
 
-            {/* Navigation */}
-            <nav className="hidden md:flex items-center space-x-8">
-              <button
-                onClick={() => setShowFeatures(!showFeatures)}
-                className="text-gray-700 hover:text-purple-600 transition-colors flex items-center gap-1"
-              >
-                Funktioner
-                <ChevronDown className={`w-4 h-4 transition-transform ${showFeatures ? 'rotate-180' : ''}`} />
-              </button>
-              <Link href="/privacy" className="text-gray-700 hover:text-purple-600 transition-colors">
-                Integritet
-              </Link>
-              <Link href="/terms" className="text-gray-700 hover:text-purple-600 transition-colors">
-                Villkor
-              </Link>
-            </nav>
 
             {/* Auth Buttons */}
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => setShowLoginModal(true)}
-                className="text-gray-700 hover:text-purple-600 font-medium transition-colors"
+                className="text-gray-700 hover:text-teal-600 font-medium transition-colors"
               >
                 Logga in
               </button>
               <Link
                 href="/signup/teacher"
-                className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 transition-all shadow-sm"
+                className="bg-gradient-to-r from-teal-600 to-emerald-600 text-white px-4 py-2 rounded-lg font-medium hover:from-teal-700 hover:to-emerald-700 transition-all shadow-sm"
               >
                 Skapa lärarkonto
               </Link>
@@ -99,7 +82,7 @@ export default function SpellSchoolLanding({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-xl md:text-2xl text-purple-600 font-semibold mb-4"
+              className="text-xl md:text-2xl text-teal-600 font-semibold mb-4"
             >
               Det är gratis.
             </motion.p>
@@ -109,8 +92,8 @@ export default function SpellSchoolLanding({
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-lg md:text-xl text-gray-600 mb-8"
             >
-              Skapa ordlistor, tilldela glosor till dina elever och låt dem lära sig genom magiska övningar. 
-              Ett pedagogiskt verktyg som gör språkinlärning roligt och engagerande för dina elever.
+              Låt dina elever öva glosor på engagerande och roliga sätt genom att samla poäng, tjäna troféer och klättra i rank allt eftersom de blir mästare på orden du tilldelar. 
+              Med interaktiva övningar, direkt feedback på uttal och tydlig progression får både du och dina elever bättre koll på framstegen.
             </motion.p>
         <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -120,33 +103,106 @@ export default function SpellSchoolLanding({
             >
               <Link
                 href="/signup/teacher"
-                className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl text-center"
+                className="bg-gradient-to-r from-teal-600 to-emerald-600 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:from-teal-700 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl text-center"
               >
                 Skapa lärarkonto gratis
+              </Link>
+              <Link
+                href="/session/join"
+                className="bg-white border-2 border-teal-600 text-teal-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-teal-50 transition-all shadow-lg hover:shadow-xl text-center"
+              >
+                Gå med i session
               </Link>
             </motion.div>
           </div>
 
-          {/* Right Column - Student Signup Image */}
+          {/* Right Column - Wizard Images Grid */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="relative"
+            className="relative flex items-center justify-center min-h-[500px]"
           >
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-purple-100">
-              <img
-                src="/images/student-signup.png"
-                alt="Spell School student interface"
-                className="w-full h-auto object-cover"
-              />
+            <div className="relative w-full max-w-2xl">
+              {/* Wizard Novice - Top left, tilted left */}
+              <motion.div
+                initial={{ opacity: 0, rotate: -20, scale: 0.8 }}
+                animate={{ opacity: 1, rotate: -12, scale: 1 }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+                className="absolute left-0 top-0 z-10"
+                style={{ transform: 'translate(-8px, -5px)' }}
+              >
+                <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-teal-200 bg-white p-2 transform hover:scale-105 transition-transform duration-300">
+                  <img
+                    src="/assets/wizard/wizard_novice.png"
+                    alt="Wizard Novice"
+                    className="w-48 h-48 object-contain"
+                  />
+                </div>
+              </motion.div>
+
+              {/* Wizard Torch - Top right, tilted right */}
+              <motion.div
+                initial={{ opacity: 0, rotate: 20, scale: 0.8 }}
+                animate={{ opacity: 1, rotate: 15, scale: 1 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+                className="absolute right-0 top-0 z-20"
+                style={{ transform: 'translate(8px, -8px)' }}
+              >
+                <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-orange-200 bg-white p-2 transform hover:scale-105 transition-transform duration-300">
+                  <img
+                    src="/assets/wizard/wizard_torch.png"
+                    alt="Wizard Torch"
+                    className="w-52 h-52 object-contain"
+                  />
+                </div>
+              </motion.div>
+
+              {/* Wizard Energy - Bottom left, tilted right */}
+              <motion.div
+                initial={{ opacity: 0, rotate: 18, scale: 0.8 }}
+                animate={{ opacity: 1, rotate: 10, scale: 1 }}
+                transition={{ duration: 0.8, delay: 0.5 }}
+                className="absolute left-0 bottom-0 z-30"
+                style={{ transform: 'translate(-5px, 10px)' }}
+              >
+                <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-yellow-200 bg-white p-2 transform hover:scale-105 transition-transform duration-300">
+                  <img
+                    src="/assets/wizard/wizard_energy.png"
+                    alt="Wizard Energy"
+                    className="w-52 h-52 object-contain"
+                  />
+                </div>
+              </motion.div>
+
+              {/* Wizard Staff - Bottom right, tilted left */}
+              <motion.div
+                initial={{ opacity: 0, rotate: -18, scale: 0.8 }}
+                animate={{ opacity: 1, rotate: -10, scale: 1 }}
+                transition={{ duration: 0.8, delay: 0.6 }}
+                className="absolute right-0 bottom-0 z-40"
+                style={{ transform: 'translate(10px, 8px)' }}
+              >
+                <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-emerald-200 bg-white p-2 transform hover:scale-105 transition-transform duration-300">
+                  <img
+                    src="/assets/wizard/wizard_staff.png"
+                    alt="Wizard Staff"
+                    className="w-56 h-56 object-contain"
+                  />
+                </div>
+              </motion.div>
+
+              {/* Decorative background elements */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-96 h-96 bg-gradient-to-br from-teal-100 via-orange-50 to-emerald-100 rounded-full blur-3xl opacity-30"></div>
+              </div>
             </div>
           </motion.div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="bg-white py-16 lg:py-24">
+      <section id="features-section" className="bg-white py-16 lg:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4">
             Så här fungerar Spell School
@@ -156,29 +212,48 @@ export default function SpellSchoolLanding({
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {/* Feature 1: Tilldela glosor */}
+            {/* Feature 1: Poängsystem & Ranking */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-              className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-6 border border-purple-100"
+              className="bg-gradient-to-br from-teal-50 to-emerald-50 rounded-2xl p-6 border border-teal-100"
             >
-              <div className="bg-purple-600 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <BookOpen className="w-6 h-6 text-white" />
+              <div className="bg-teal-600 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
+                <Trophy className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Tilldela glosor</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Poäng & Ranking</h3>
               <p className="text-gray-600">
-                Skapa ordlistor och tilldela dem till klasser eller enskilda elever. Enkelt och snabbt.
+                Elever samlar poäng, tjäna troféer och klättrar i rank allt eftersom de blir mästare på orden. 
+                Ett motiverande system som gör inlärningen rolig och engagerande.
               </p>
             </motion.div>
 
-            {/* Feature 2: Färgblocksindelning */}
+            {/* Feature 2: Interaktiva övningar */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.1 }}
+              className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-6 border border-purple-100"
+            >
+              <div className="bg-purple-600 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Interaktiva övningar</h3>
+              <p className="text-gray-600">
+                Träna uttal och få direkt feedback med automatisk bedömning. 
+                Skapa kontext kring ord genom anpassningsbara övningar som anpassar sig efter elevernas behov.
+              </p>
+            </motion.div>
+
+            {/* Feature 3: Färgblocksindelning */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.2 }}
               className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-6 border border-blue-100"
             >
               <div className="bg-blue-600 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
@@ -191,90 +266,173 @@ export default function SpellSchoolLanding({
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">Färgblocksindelning</h3>
               <p className="text-gray-600">
-                Organisera ord i färgkodade block. Elever väljer själva vilka block de vill öva med för personlig inlärning.
+                Dela in långa gloslistor i färgkodade block. Varje elev väljer själv hur många block de vill öva på för personlig inlärning i egen takt.
               </p>
             </motion.div>
 
-            {/* Feature 3: Magiska övningar */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-2xl p-6 border border-orange-100"
-            >
-              <div className="bg-orange-500 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <Gamepad2 className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Magiska övningar</h3>
-              <p className="text-gray-600">
-                Flashcards, memory, typing och fler spel som gör glosinlärning roligt och engagerande.
-              </p>
-            </motion.div>
-
-            {/* Feature 4: Följ framsteg */}
+            {/* Feature 4: Session Mode */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.3 }}
-              className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-100"
+              className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-2xl p-6 border border-orange-100"
             >
-              <div className="bg-green-600 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <BarChart3 className="w-6 h-6 text-white" />
+              <div className="bg-orange-500 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
+                <Gamepad2 className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Följ framsteg</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Session Mode</h3>
               <p className="text-gray-600">
-                Se hur dina elever presterar med detaljerad statistik och framstegsspårning.
+                Ge läxor i session mode där du bygger upp en kedja av övningar som eleverna gör i följd. 
+                Följ deras progression under hela läxveckan.
               </p>
             </motion.div>
           </div>
 
-          {/* Färgblocksindelning - Detaljerad förklaring */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-8 border-2 border-indigo-200"
-          >
-            <div className="max-w-4xl mx-auto">
-              <div className="flex items-start gap-6">
-                <div className="flex-shrink-0">
-                  <div className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
-                    <div className="grid grid-cols-3 gap-1">
-                      <div className="w-3 h-3 bg-white rounded"></div>
-                      <div className="w-3 h-3 bg-white rounded"></div>
-                      <div className="w-3 h-3 bg-white rounded"></div>
-                      <div className="w-3 h-3 bg-white rounded"></div>
-                      <div className="w-3 h-3 bg-white rounded"></div>
-                      <div className="w-3 h-3 bg-white rounded"></div>
-                      <div className="w-3 h-3 bg-white rounded"></div>
-                      <div className="w-3 h-3 bg-white rounded"></div>
-                      <div className="w-3 h-3 bg-white rounded"></div>
+          {/* Detailed Feature Sections */}
+          <div className="space-y-6">
+            {/* Färgblocksindelning - Detaljerad förklaring */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-8 border-2 border-blue-200"
+            >
+              <div className="max-w-4xl mx-auto">
+                <div className="flex items-start gap-6">
+                  <div className="flex-shrink-0">
+                    <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center">
+                      <div className="grid grid-cols-3 gap-1">
+                        <div className="w-3 h-3 bg-white rounded"></div>
+                        <div className="w-3 h-3 bg-white rounded"></div>
+                        <div className="w-3 h-3 bg-white rounded"></div>
+                        <div className="w-3 h-3 bg-white rounded"></div>
+                        <div className="w-3 h-3 bg-white rounded"></div>
+                        <div className="w-3 h-3 bg-white rounded"></div>
+                        <div className="w-3 h-3 bg-white rounded"></div>
+                        <div className="w-3 h-3 bg-white rounded"></div>
+                        <div className="w-3 h-3 bg-white rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">Färgblocksindelning för personlig inlärning</h3>
+                    <div className="space-y-4 text-gray-700">
+                      <p className="leading-relaxed">
+                        <strong className="text-blue-700">Dela upp långa gloslistor:</strong> Organisera ord i färgkodade block för tematisk eller svårighetsbaserad indelning. Varje block har sin egen färg som gör det visuellt tydligt vilka ord som hör ihop.
+                      </p>
+                      <p className="leading-relaxed">
+                        <strong className="text-blue-700">Elever väljer själva:</strong> Varje elev har möjlighet att välja hur många block de vill öva på. Detta ger dem kontroll över sin inlärning och möjliggör fokuserad träning på områden där de behöver mer övning.
+                      </p>
+                      <p className="leading-relaxed">
+                        <strong className="text-blue-700">Flexibel övning:</strong> Perfekt för både strukturerad undervisning där läraren organiserar ord i block och självständig träning där elever väljer sina egna kombinationer.
+                      </p>
                     </div>
                   </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-3">Varför färgblocksindelning?</h3>
-                  <div className="space-y-4 text-gray-700">
-                    <p className="leading-relaxed">
-                      <strong className="text-indigo-700">Organiserad inlärning:</strong> Lärare delar in ordlistor i färgkodade block, vilket gör det enkelt att organisera ord tematisk eller efter svårighetsgrad. Varje block har sin egen färg som gör det visuellt tydligt.
-                    </p>
-                    <p className="leading-relaxed">
-                      <strong className="text-indigo-700">Personlig anpassning:</strong> Elever väljer själva vilka färgblock de vill öva med. Detta ger dem kontroll över sin inlärning och möjliggör fokuserad träning på områden där de behöver mer övning.
-                    </p>
-                    <p className="leading-relaxed">
-                      <strong className="text-indigo-700">Visuell tydlighet:</strong> Färgkodningen gör det enkelt att se vilka ord som hör ihop och skapar en visuell struktur som underlättar minnet. Elever kan snabbt identifiera och välja rätt block.
-                    </p>
-                    <p className="leading-relaxed">
-                      <strong className="text-indigo-700">Flexibel övning:</strong> Systemet stödjer både lärare som vill organisera ord i block och elever som vill välja sina egna kombinationer. Perfekt för både strukturerad undervisning och självständig träning.
-                    </p>
+              </div>
+            </motion.div>
+
+            {/* Session Mode - Detaljerad förklaring */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-2xl p-8 border-2 border-orange-200"
+            >
+              <div className="max-w-4xl mx-auto">
+                <div className="flex items-start gap-6">
+                  <div className="flex-shrink-0">
+                    <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl flex items-center justify-center">
+                      <Gamepad2 className="w-8 h-8 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">Session Mode - Läxor som kedja av övningar</h3>
+                    <div className="space-y-4 text-gray-700">
+                      <p className="leading-relaxed">
+                        <strong className="text-orange-700">Bygg upp en kedja av övningar:</strong> Ge läxor i session mode där du enkelt och smidigt bygger upp en kedja av övningar som eleverna måste göra i följd. Varje övning låser upp nästa när den är klar.
+                      </p>
+                      <p className="leading-relaxed">
+                        <strong className="text-orange-700">Följ progression under läxveckan:</strong> Se hur dina elever framstår genom hela läxveckan med tydlig översikt över vilka övningar som är klara och vilka som återstår.
+                      </p>
+                      <p className="leading-relaxed">
+                        <strong className="text-orange-700">Avsluta med quiz:</strong> Välj själv om du vill avsluta sessionen med självrättande quiz eller manuellt rättade quiz i ett enkelt poängsystem.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+
+            {/* Interaktiva övningar & Feedback - Detaljerad förklaring */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-8 border-2 border-purple-200"
+            >
+              <div className="max-w-4xl mx-auto">
+                <div className="flex items-start gap-6">
+                  <div className="flex-shrink-0">
+                    <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center">
+                      <Mic className="w-8 h-8 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">Interaktiva övningar med direkt feedback</h3>
+                    <div className="space-y-4 text-gray-700">
+                      <p className="leading-relaxed">
+                        <strong className="text-purple-700">Träna uttal och få direkt feedback:</strong> Elever får omedelbar feedback på sitt uttal med automatisk bedömning. Systemet analyserar uttalet och ger konstruktiv feedback för att förbättra pronunciation.
+                      </p>
+                      <p className="leading-relaxed">
+                        <strong className="text-purple-700">Skapa kontext kring ord:</strong> Använd interaktiva övningar för att skapa kontext kring de ord du tilldelar. Systemet genererar meningar och exempel som hjälper elever att förstå ordets betydelse och användning.
+                      </p>
+                      <p className="leading-relaxed">
+                        <strong className="text-purple-700">Direkt rättning av quiz:</strong> Ge möjlighet till direkt rättning av quiz med automatisk bedömning eller välj manuell rättning där du har full kontroll över poängsättningen.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Progression Tracking - Detaljerad förklaring */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-8 border-2 border-green-200"
+            >
+              <div className="max-w-4xl mx-auto">
+                <div className="flex items-start gap-6">
+                  <div className="flex-shrink-0">
+                    <div className="w-16 h-16 bg-gradient-to-br from-green-600 to-emerald-600 rounded-xl flex items-center justify-center">
+                      <BarChart3 className="w-8 h-8 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">Tydlig koll på elevernas framsteg</h3>
+                    <div className="space-y-4 text-gray-700">
+                      <p className="leading-relaxed">
+                        <strong className="text-green-700">Accuracy score över tid:</strong> Få tydlig koll på hur det går för dina elever med accuracy score över tid på både övningar och gloslistor. Se trender och identifiera områden som behöver extra stöd.
+                      </p>
+                      <p className="leading-relaxed">
+                        <strong className="text-green-700">Detaljerad statistik:</strong> Följ elevernas framsteg med omfattande statistik över poäng, antal övningar, tid spenderad och förbättring över tid. Allt på ett och samma ställe.
+                      </p>
+                      <p className="leading-relaxed">
+                        <strong className="text-green-700">Progression per gloslista:</strong> Se exakt hur elever presterar på varje gloslista du tilldelar, med tydlig översikt över vilka ord som behöver mer övning.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
@@ -325,7 +483,7 @@ export default function SpellSchoolLanding({
               <div className="p-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Flashcards</h3>
                 <p className="text-gray-600 text-sm">
-                  Lära sig ord genom att vända kort och öva uttal med AI-baserad bedömning
+                  Lära sig ord genom att vända kort och öva uttal med automatisk bedömning
                 </p>
               </div>
             </motion.div>
@@ -531,7 +689,7 @@ export default function SpellSchoolLanding({
 
 
       {/* Benefits Section */}
-      <section className="bg-gradient-to-br from-purple-50 to-indigo-50 py-16 lg:py-24">
+      <section className="bg-gradient-to-br from-teal-50 to-emerald-50 py-16 lg:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -568,17 +726,17 @@ export default function SpellSchoolLanding({
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-to-r from-purple-600 to-indigo-700 py-16 lg:py-24">
+      <section className="bg-gradient-to-r from-teal-600 to-emerald-700 py-16 lg:py-24">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             Redo att börja?
           </h2>
-          <p className="text-xl text-purple-100 mb-8">
+          <p className="text-xl text-teal-100 mb-8">
             Skapa ditt konto idag och börja tilldela glosor till dina elever.
           </p>
           <Link
             href="/signup/teacher"
-            className="inline-block bg-white text-purple-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-50 transition-all shadow-lg"
+            className="inline-block bg-white text-teal-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-50 transition-all shadow-lg"
           >
             Skapa lärarkonto gratis
           </Link>
@@ -588,12 +746,30 @@ export default function SpellSchoolLanding({
       {/* Footer */}
       <footer className="bg-gray-900 text-gray-400 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <h3 className="text-white font-bold text-lg mb-4">Spell School</h3>
               <p className="text-sm">
                 Ett pedagogiskt verktyg för glosinlärning som gör språkinlärning roligt och engagerande.
               </p>
+            </div>
+            <div>
+              <h3 className="text-white font-bold text-lg mb-4">Funktioner</h3>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <button
+                    onClick={() => {
+                      const featuresSection = document.getElementById('features-section')
+                      if (featuresSection) {
+                        featuresSection.scrollIntoView({ behavior: 'smooth' })
+                      }
+                    }}
+                    className="hover:text-white transition-colors text-left"
+                  >
+                    Se alla funktioner
+                  </button>
+                </li>
+              </ul>
             </div>
             <div>
               <h3 className="text-white font-bold text-lg mb-4">Länkar</h3>
@@ -697,7 +873,7 @@ function FormContents({
         type="button"
         onClick={onGoogleLogin}
         disabled={loading}
-        className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="h-5 w-5"/>
         Fortsätt med Google
@@ -724,7 +900,7 @@ function FormContents({
             value={identifier}
             onChange={(e) => setIdentifier?.(e.target.value)}
             placeholder="användarnamn eller e-post"
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all"
           />
         </div>
       </label>
@@ -740,7 +916,7 @@ function FormContents({
             value={password}
             onChange={(e) => setPassword?.(e.target.value)}
             placeholder="••••••••"
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all"
           />
         </div>
       </label>
@@ -756,7 +932,7 @@ function FormContents({
       <button
         type="submit"
         disabled={loading}
-        className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-teal-600 to-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg hover:from-teal-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
       >
         {loading ? 'Loggar in...' : 'Logga in'}
         {!loading && <ArrowRight className="h-4 w-4"/>}
@@ -765,7 +941,7 @@ function FormContents({
       {/* Sign up link */}
       <p className="text-center text-sm text-gray-600">
         Har du inget konto?{' '}
-        <Link className="font-medium text-purple-600 hover:text-purple-700 underline" href="/signup/teacher">
+        <Link className="font-medium text-teal-600 hover:text-teal-700 underline" href="/signup/teacher">
           Skapa lärarkonto
         </Link>
       </p>
