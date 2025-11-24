@@ -1007,6 +1007,7 @@ export default function SessionPlayPage() {
                   console.error('Error saving quiz responses:', insertError)
                   // Still update result even if save fails
                   const savedTotalPoints = responses.reduce((sum, r) => {
+                    if (!r) return sum
                     const points = r.score === 100 ? 2 : r.score === 50 ? 1 : 0
                     return sum + points
                   }, 0)
@@ -1023,6 +1024,7 @@ export default function SessionPlayPage() {
                   
                   // Recalculate and update quiz result after saving to ensure accuracy
                   const savedTotalPoints = responses.reduce((sum, r) => {
+                    if (!r) return sum
                     const points = r.score === 100 ? 2 : r.score === 50 ? 1 : 0
                     return sum + points
                   }, 0)
