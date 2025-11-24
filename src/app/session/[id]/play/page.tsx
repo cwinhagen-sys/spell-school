@@ -41,7 +41,7 @@ interface Session {
     id: string
     title: string
     words: Word[]
-  }
+  }[]
 }
 
 interface GameProgress {
@@ -88,8 +88,8 @@ export default function SessionPlayPage() {
   }, [sessionId])
 
   useEffect(() => {
-    if (session && session.word_sets?.words) {
-      createColorBlocks(session.word_sets.words)
+    if (session && session.word_sets && session.word_sets.length > 0 && session.word_sets[0]?.words) {
+      createColorBlocks(session.word_sets[0].words)
     }
   }, [session])
 
@@ -167,7 +167,15 @@ export default function SessionPlayPage() {
         .single()
 
       if (error) throw error
-      setSession(data as Session)
+      
+      // Transform data to match Session interface
+      // word_sets comes as an array from Supabase join
+      const transformedData: Session = {
+        ...data,
+        word_sets: Array.isArray(data.word_sets) ? data.word_sets : []
+      }
+      
+      setSession(transformedData)
     } catch (error) {
       console.error('Error loading session:', error)
     }
