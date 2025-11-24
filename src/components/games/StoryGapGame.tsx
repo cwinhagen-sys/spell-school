@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { FileText } from 'lucide-react'
 import { startGameSession, endGameSession, type TrackingContext, updateStudentProgress } from '@/lib/tracking'
 import WordSelector from './WordSelector'
 import UniversalGameCompleteModal from '@/components/UniversalGameCompleteModal'
