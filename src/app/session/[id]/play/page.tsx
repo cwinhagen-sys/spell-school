@@ -366,7 +366,7 @@ export default function SessionPlayPage() {
       
       // Check if blocks are selected - if not, show block selection
       // Validate that selected_blocks is actually a valid non-empty array
-      const blocksFromDB = participantData?.selected_blocks
+      // Get blocks from storage (blocks from DB are already handled in loadParticipant)
       const blocksFromStorage = sessionStorage.getItem('selectedBlocks') || localStorage.getItem(`selectedBlocks_${sessionId}`)
       let parsedBlocks: string[] = []
       if (blocksFromStorage) {
@@ -376,8 +376,7 @@ export default function SessionPlayPage() {
           // Invalid JSON, treat as no blocks
         }
       }
-      const hasValidBlocks = (Array.isArray(blocksFromDB) && blocksFromDB.length > 0) || 
-                            (Array.isArray(parsedBlocks) && parsedBlocks.length > 0)
+      const hasValidBlocks = Array.isArray(parsedBlocks) && parsedBlocks.length > 0
       if (!hasValidBlocks) {
         setStep('blocks')
         setLoading(false)
