@@ -611,6 +611,14 @@ export default function SessionPlayPage() {
   }
 
   const renderGameComponent = () => {
+    if (!session) {
+      return (
+        <div className="text-center p-8">
+          <p className="text-gray-600">Laddar session...</p>
+        </div>
+      )
+    }
+    
     const { wordsArray, translations, wordObjects } = wordsAndTranslations
     const currentGame = session.enabled_games[currentGameIndex]
 
