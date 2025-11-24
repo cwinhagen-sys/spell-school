@@ -508,7 +508,7 @@ export default function SessionPlayPage() {
         let errorHint = null
         
         if (errorType === 'string') {
-          errorMessage = error as string
+          errorMessage = String(error)
         } else if (error && typeof error === 'object') {
           // Try to get message from various possible properties
           errorMessage = (error as any).message || 
