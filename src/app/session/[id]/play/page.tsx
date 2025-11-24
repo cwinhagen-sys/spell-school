@@ -1070,14 +1070,19 @@ export default function SessionPlayPage() {
           themeColor="#6366f1"
           gridConfig={colorBlocks
             .filter((block, index) => selectedBlocks.includes(block.id))
-            .map((block, index) => ({
-              words: block.words.map(w => ({ en: w.en, sv: w.sv })),
-              translations: block.words.reduce((acc, w) => {
-                acc[w.en] = w.sv
-                return acc
-              }, {} as { [key: string]: string }),
-              colorScheme: COLOR_GRIDS[index % COLOR_GRIDS.length]
-            }))}
+            .map((block, index) => {
+              const colorScheme = COLOR_GRIDS[index % COLOR_GRIDS.length]
+              return {
+                words: block.words.map(w => ({ en: w.en, sv: w.sv })),
+                translations: block.words.reduce((acc, w) => {
+                  acc[w.en] = w.sv
+                  return acc
+                }, {} as { [key: string]: string }),
+                colorScheme: colorScheme,
+                color: colorScheme.id,
+                index: index
+              }
+            })}
         />
       </div>
     )
