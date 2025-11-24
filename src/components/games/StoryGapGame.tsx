@@ -180,11 +180,28 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
         ? singleBlock.words.map(w => typeof w === 'string' ? w : (w as any).en || '')
         : []
       const pick = shuffle([...blockWords]).slice(0, Math.min(6, blockWords.length))
+      
+      // Build translations from words if they're objects, otherwise use translations prop
+      const blockTranslations: Record<string, string> = {}
+      if (Array.isArray(singleBlock.words)) {
+        singleBlock.words.forEach(w => {
+          if (typeof w === 'object' && w.en && w.sv) {
+            blockTranslations[w.sv.toLowerCase()] = w.en
+            blockTranslations[w.en.toLowerCase()] = w.sv
+          } else if (typeof w === 'string' && translations[w.toLowerCase()]) {
+            blockTranslations[w.toLowerCase()] = translations[w.toLowerCase()]
+          }
+        })
+      }
+      
+      // Find colorScheme from COLOR_GRIDS based on color or index
+      const colorScheme = COLOR_GRIDS.find(c => c.id === singleBlock.color) || COLOR_GRIDS[singleBlock.index % COLOR_GRIDS.length] || COLOR_GRIDS[0]
+      
       setSelectedWords(pick)
       setSelectedGrid({
         words: pick,
-        translations: singleBlock.translations || {},
-        colorScheme: singleBlock.colorScheme || COLOR_GRIDS[0]
+        translations: blockTranslations,
+        colorScheme: colorScheme
       })
       setWordsSelected(true)
       setShowGridSelector(false)
