@@ -104,8 +104,8 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
       config.words.forEach(word => {
         if (typeof word === 'string') {
           words.push(word)
-          // Try to find translation from config.translations or translations prop
-          const translation = config.translations?.[word.toLowerCase()] || translations[word.toLowerCase()]
+          // Try to find translation from translations prop
+          const translation = translations[word.toLowerCase()]
           if (translation) {
             translations[word.toLowerCase()] = translation
           }
@@ -114,13 +114,6 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
           translations[word.sv.toLowerCase()] = word.en
         }
       })
-      
-      // Also merge config.translations if available
-      if (config.translations) {
-        Object.entries(config.translations).forEach(([key, value]) => {
-          translations[key.toLowerCase()] = value as string
-        })
-      }
 
       return {
         words,
