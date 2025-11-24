@@ -33,6 +33,11 @@ export async function GET(
       )
     }
 
+    // Extract word set title (word_sets is an array)
+    const wordSetTitle = Array.isArray(session.word_sets) && session.word_sets.length > 0
+      ? session.word_sets[0].title
+      : 'Session'
+
     if (exportType === 'progress') {
       // Export progress data
       const { data: participants, error: participantsError } = await supabase
@@ -284,9 +289,9 @@ export async function GET(
   </style>
 </head>
 <body>
-  <div class="header">
+    <div class="header">
     <div class="logo">SpellSchool</div>
-    <div class="session-title">${session.word_sets?.title || 'Session'} - Quiz Resultat</div>
+    <div class="session-title">${wordSetTitle} - Quiz Resultat</div>
     <div class="session-info">
       Förfaller: ${new Date(session.due_date).toLocaleDateString('sv-SE', { year: 'numeric', month: 'long', day: 'numeric' })}
     </div>
