@@ -36,7 +36,7 @@ interface Session {
   word_sets: {
     id: string
     title: string
-  }
+  }[]
 }
 
 const GAME_NAMES: Record<string, string> = {
@@ -93,7 +93,15 @@ export default function SessionDetailPage() {
         .single()
 
       if (error) throw error
-      setSession(data as Session)
+      
+      // Transform data to match Session interface
+      // word_sets comes as an array from Supabase join
+      const transformedData: Session = {
+        ...data,
+        word_sets: Array.isArray(data.word_sets) ? data.word_sets : []
+      }
+      
+      setSession(transformedData)
     } catch (error) {
       console.error('Error loading session:', error)
     }
@@ -381,7 +389,7 @@ export default function SessionDetailPage() {
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-gray-900 mb-3">
-              {session.session_name || session.word_sets?.title}
+              {session.session_name || (session.word_sets && session.word_sets.length > 0 ? session.word_sets[0].title : 'Session')}
             </h1>
             <div className="flex flex-wrap items-center gap-3 text-sm">
               <div className="flex items-center gap-2 text-gray-600">
