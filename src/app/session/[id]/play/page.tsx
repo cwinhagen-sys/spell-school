@@ -646,14 +646,19 @@ export default function SessionPlayPage() {
       onScoreUpdate: handleGameScoreUpdate,
       trackingContext: undefined, // Explicitly undefined - session mode doesn't track to main system
       themeColor: '#6366f1', // Indigo theme for sessions
-      gridConfig: colorBlocks.map((block, index) => ({
-        words: block.words.map(w => w.en),
-        translations: block.words.reduce((acc, w) => {
-          acc[w.en] = w.sv
-          return acc
-        }, {} as { [key: string]: string }),
-        colorScheme: COLOR_GRIDS[index % COLOR_GRIDS.length]
-      }))
+      gridConfig: colorBlocks.map((block, index) => {
+        const colorScheme = COLOR_GRIDS[index % COLOR_GRIDS.length]
+        return {
+          words: block.words.map(w => w.en),
+          translations: block.words.reduce((acc, w) => {
+            acc[w.en] = w.sv
+            return acc
+          }, {} as { [key: string]: string }),
+          colorScheme: colorScheme,
+          color: colorScheme.id,
+          index: index
+        }
+      })
     }
 
     switch (currentGame) {
