@@ -16,7 +16,7 @@ interface Session {
   word_sets: {
     id: string
     title: string
-  }
+  }[]
   _count?: {
     participants: number
   }
@@ -69,6 +69,7 @@ export default function TeacherSessionsPage() {
 
           return {
             ...session,
+            word_sets: Array.isArray(session.word_sets) ? session.word_sets : [],
             _count: { participants: count || 0 }
           }
         })
@@ -210,7 +211,7 @@ export default function TeacherSessionsPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-gray-900 mb-1 truncate">
-                          {session.session_name || session.word_sets?.title || 'No word set'}
+                          {session.session_name || (session.word_sets && session.word_sets.length > 0 ? session.word_sets[0].title : 'No word set')}
                         </h3>
                         <p className="text-sm text-gray-500">
                           Code: <span className="font-mono font-medium text-gray-700">{session.session_code}</span>
