@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { RotateCcw, ArrowLeft, Star, CheckCircle, XCircle, Brain, Users, User, X } from 'lucide-react'
 import { startGameSession, endGameSession, logWordAttempt, updateStudentProgress, type TrackingContext } from '@/lib/tracking'
 import UniversalGameCompleteModal from '@/components/UniversalGameCompleteModal'
@@ -78,6 +78,23 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
   const wrongAttemptsRef = useRef(0)
   const [awardedPoints, setAwardedPoints] = useState(0)
   const [feedback, setFeedback] = useState<{ type: 'correct' | 'wrong' | null; ids: number[] }>({ type: null, ids: [] })
+
+  // Background and layout mode state
+  type LayoutMode = 'grid' | 'natural'
+  
+  const BACKGROUNDS = [
+    { 
+      id: 'aurora', 
+      label: 'Aurora', 
+      type: 'gradient' as const, 
+      style: { 
+        background: 'radial-gradient(1200px 800px at 10% 10%, rgba(72,187,255,0.25), transparent), radial-gradient(900px 700px at 90% 30%, rgba(124,58,237,0.25), transparent), linear-gradient(135deg, #0f172a, #0b1020 60%, #0b1325)' 
+      } 
+    },
+  ]
+
+  const [selectedBackground, setSelectedBackground] = useState(BACKGROUNDS[0])
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>('natural')
 
   // Fallback translations if none provided
   const fallbackTranslations: { [key: string]: string } = {
@@ -206,6 +223,236 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
     setSessionId(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Calculate grid layout based on number of cards
+  // Uses viewport-based calculations to ensure everything fits on screen and utilizes full space
+  const getGridLayout = () => {
+    const numCards = cards.length
+    const numPairs = Math.floor(numCards / 2)
+    
+    // Calculate available space accounting for sidebars and header
+    const sidebarWidth = windowSize.width >= 640 ? 140 : 0
+    const headerHeight = 60
+    const mobileScoreboardHeight = windowSize.width < 640 ? 60 : 0
+    const gameAreaPadding = 40
+    const topPadding = headerHeight + mobileScoreboardHeight + 20
+    
+    const availableHeight = windowSize.height - topPadding - gameAreaPadding
+    const availableWidth = windowSize.width - (sidebarWidth * 2) - gameAreaPadding
+    
+    if (numCards === 24) {
+      // 12 pairs: 6 columns x 4 rows (wider layout)
+      const gap = 20 // More space between cards
+      const cols = 6
+      const rows = 4
+      const cardSize = Math.min(
+        (availableWidth - (gap * (cols - 1))) / cols,
+        (availableHeight - (gap * (rows - 1))) / rows
+      )
+      return {
+        columns: 6,
+        gap: `${gap}px`,
+        cardSize: `${Math.max(70, Math.min(cardSize, 130))}px`
+      }
+    } else if (numCards === 16) {
+      // 8 pairs: 4 columns x 4 rows
+      const gap = 16
+      const cols = 4
+      const rows = 4
+      const cardSize = Math.min(
+        (availableWidth - (gap * (cols - 1))) / cols,
+        (availableHeight - (gap * (rows - 1))) / rows
+      )
+      return {
+        columns: 4,
+        gap: `${gap}px`,
+        cardSize: `${Math.max(80, Math.min(cardSize, 150))}px`
+      }
+    } else if (numCards === 12) {
+      // 6 pairs: 4 columns x 3 rows
+      const gap = 20
+      const cols = 4
+      const rows = 3
+      const cardSize = Math.min(
+        (availableWidth - (gap * (cols - 1))) / cols,
+        (availableHeight - (gap * (rows - 1))) / rows
+      )
+      return {
+        columns: 4,
+        gap: `${gap}px`,
+        cardSize: `${Math.max(90, Math.min(cardSize, 160))}px`
+      }
+    } else if (numCards <= 8) {
+      // 4 pairs or less: 4 columns
+      const gap = 24
+      const cols = 4
+      const rows = Math.ceil(numCards / cols)
+      const cardSize = Math.min(
+        (availableWidth - (gap * (cols - 1))) / cols,
+        (availableHeight - (gap * (rows - 1))) / rows
+      )
+      return {
+        columns: 4,
+        gap: `${gap}px`,
+        cardSize: `${Math.max(100, Math.min(cardSize, 170))}px`
+      }
+    } else {
+      // For other numbers, calculate dynamically
+      const cols = numCards <= 20 ? 5 : 6
+      const rows = Math.ceil(numCards / cols)
+      const gap = 12
+      const cardSize = Math.min(
+        (availableWidth - (gap * (cols - 1))) / cols,
+        (availableHeight - (gap * (rows - 1))) / rows
+      )
+      return {
+        columns: cols,
+        gap: `${gap}px`,
+        cardSize: `${Math.max(70, Math.min(cardSize, 130))}px`
+      }
+    }
+  }
+
+  const gridLayout = getGridLayout()
+
+  // Calculate stable positions and rotations for cards - dual mode (grid/natural)
+  // This hook must be called before any early returns to follow Rules of Hooks
+  const cardPositions = useMemo(() => {
+    const positions = new Map<number, { x: number; y: number; rotation: number }>()
+    
+    if (cards.length === 0) {
+      return positions
+    }
+    
+    // Safe area inside the full-bleed canvas
+    const sidebarWidth = windowSize.width >= 640 ? (numPlayers === 2 ? 140 * 2 : 140) : 0
+    const headerHeight = 60
+    const mobileScoreboardHeight = windowSize.width < 640 ? 60 : 0
+    const padding = 24
+    
+    const areaW = Math.max(320, windowSize.width - sidebarWidth - padding * 2)
+    const areaH = Math.max(320, windowSize.height - (headerHeight + mobileScoreboardHeight) - padding * 3)
+    
+    // For 24 cards, use 6 columns x 4 rows (wider layout)
+    // For other card counts, calculate dynamically
+    const cols = cards.length === 24 ? 6 : Math.min(6, Math.max(3, Math.ceil(Math.sqrt(cards.length))))
+    const gap = cards.length === 24 ? 20 : 12 // More space for 24 cards
+    
+    // Card size: try to keep within area, clamp nicely
+    const cardSizeGrid = (() => {
+      const rows = Math.ceil(cards.length / cols)
+      const sizeW = (areaW - gap * (cols - 1)) / cols
+      const sizeH = (areaH - gap * (rows - 1)) / rows
+      return Math.max(70, Math.min(150, Math.min(sizeW, sizeH)))
+    })()
+    
+    const cardSizeNatural = Math.min(140, Math.max(90, Math.min(areaW, areaH) / 6))
+    
+    // Helper random seeded by id for stable scatter between renders
+    const seeded = (seed: number) => {
+      const s = Math.sin(seed * 99991) * 10000
+      return s - Math.floor(s)
+    }
+    
+    if (layoutMode === 'grid') {
+      // Perfect centered grid with even spacing - no wobble for clean look
+      // For 24 cards: 6 columns x 4 rows (wider layout)
+      const rows = cards.length === 24 ? 4 : Math.ceil(cards.length / cols)
+      
+      // Calculate available game area (excluding sidebars and header)
+      const gameAreaWidth = windowSize.width - sidebarWidth * 2
+      const gameAreaHeight = windowSize.height - headerHeight - mobileScoreboardHeight
+      
+      // Calculate total grid dimensions
+      const gridWidth = (cardSizeGrid * cols) + (gap * (cols - 1))
+      const gridHeight = (cardSizeGrid * rows) + (gap * (rows - 1))
+      
+      // Center the grid both horizontally and vertically
+      const startX = sidebarWidth + (gameAreaWidth - gridWidth) / 2
+      const startY = headerHeight + mobileScoreboardHeight + (gameAreaHeight - gridHeight) / 2
+      
+      // Place cards in perfect grid - no rotation, perfectly aligned
+      cards.forEach((card, index) => {
+        const col = index % cols
+        const row = Math.floor(index / cols)
+        
+        const x = startX + col * (cardSizeGrid + gap)
+        const y = startY + row * (cardSizeGrid + gap)
+        
+        positions.set(card.id, {
+          x: x,
+          y: y,
+          rotation: 0 // No rotation for clean grid look
+        })
+      })
+      
+      return positions
+    }
+    
+    // layoutMode === 'natural' — Poisson-like placement to avoid overlaps
+    const placed: { x: number; y: number; r: number; id: number }[] = []
+    const maxAttempts = 900
+    const r = cardSizeNatural / 2
+    
+    const bounds = {
+      minX: (windowSize.width - areaW) / 2,
+      minY: headerHeight + mobileScoreboardHeight + padding,
+      maxX: (windowSize.width + areaW) / 2 - cardSizeNatural,
+      maxY: headerHeight + mobileScoreboardHeight + padding + areaH - cardSizeNatural,
+    }
+    
+    // Helper: check overlap with a small padding so cards "breathe"
+    const overlaps = (x: number, y: number) => {
+      const pad = 8
+      for (const p of placed) {
+        const dx = (x + r) - (p.x + p.r)
+        const dy = (y + r) - (p.y + p.r)
+        if (Math.hypot(dx, dy) < r + p.r + pad) return true
+      }
+      return false
+    }
+    
+    const order = [...cards]
+    // Larger words first so they get nicer spots
+    order.sort((a, b) => (b.word.length + b.translation.length) - (a.word.length + a.translation.length))
+    
+    for (const card of order) {
+      let placedThis = false
+      let attempts = 0
+      while (!placedThis && attempts < maxAttempts) {
+        attempts++
+        // low-discrepancy randoms for nice coverage
+        const u = seeded(card.id + attempts * 1.234)
+        const v = seeded(card.id + attempts * 5.678)
+        const x = bounds.minX + u * (bounds.maxX - bounds.minX)
+        const y = bounds.minY + v * (bounds.maxY - bounds.minY)
+        if (!overlaps(x, y)) {
+          placed.push({ x, y, r, id: card.id })
+          const rot = (seeded(card.id + 42) - 0.5) * 14 // -7°..7°
+          positions.set(card.id, { x, y, rotation: rot })
+          placedThis = true
+        }
+      }
+    }
+    
+    // Fallback: if something failed to place, switch to grid for those few
+    for (const card of cards) {
+      if (!positions.has(card.id)) {
+        const idx = cards.indexOf(card)
+        const c = idx % cols
+        const rI = Math.floor(idx / cols)
+        const baseX = (windowSize.width - areaW) / 2 + c * (cardSizeGrid + gap)
+        const baseY = headerHeight + mobileScoreboardHeight + padding + rI * (cardSizeGrid + gap)
+        positions.set(card.id, { x: baseX, y: baseY, rotation: 0 })
+      }
+    }
+    
+    return positions
+  }, [cards, windowSize, layoutMode, numPlayers])
+  
+  const getCardPosition = (cardId: number) => {
+    return cardPositions.get(cardId) || { x: 0, y: 0, rotation: 0 }
+  }
 
   // Player selection screen
   if (showPlayerSelection) {
@@ -340,10 +587,8 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
     setIsProcessing(false)
     setWaitingForFlipBack(false)
     
-    // Switch player in 2-player mode, or continue same player in 1-player mode
-    if (numPlayers === 2) {
-      setCurrentPlayer(prev => prev === 1 ? 2 : 1)
-    }
+    // Note: Player switch already happened when no match was detected
+    // (in handleCardClick when match fails), so we don't need to switch again here
   }
 
   const handleCardClick = (card: WordCard) => {
@@ -471,6 +716,12 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
         
         void logWordAttempt({ word: selectedCard.word, correct: false, gameType: 'match', context: trackingContext })
         void logWordAttempt({ word: card.word, correct: false, gameType: 'match', context: trackingContext })
+        
+        // IMPORTANT: In 2-player mode, switch player immediately when no match
+        // This ensures player switch happens regardless of where user clicks to flip back
+        if (numPlayers === 2) {
+          setCurrentPlayer(prev => prev === 1 ? 2 : 1)
+        }
       }
     }
   }
@@ -608,342 +859,237 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
     )
   }
 
-  // Calculate grid layout based on number of cards
-  // Uses viewport-based calculations to ensure everything fits on screen at any zoom level without scroll
-  const getGridLayout = () => {
-    const numCards = cards.length
-    const numPairs = Math.floor(numCards / 2)
-    
-    // Calculate available space: viewport height minus header, player info, and padding
-    // Header ≈ 60px, container padding ≈ 20px
-    const headerHeight = 60
-    const containerPadding = 20
-    const availableHeight = windowSize.height - headerHeight - containerPadding
-    const availableWidth = windowSize.width - 40
-    
-    if (numCards === 24) {
-      // 12 pairs: 6 columns x 4 rows
-      const gap = 8
-      const cols = 6
-      const rows = 4
-      const cardSize = Math.min(
-        (availableWidth - (gap * (cols - 1))) / cols,
-        (availableHeight - (gap * (rows - 1))) / rows
-      )
-      return {
-        columns: 6,
-        gap: `${gap}px`,
-        cardSize: `${Math.max(80, Math.min(cardSize, 120))}px`
-      }
-    } else if (numCards === 16) {
-      // 8 pairs: 4 columns x 4 rows
-      const gap = 10
-      const cols = 4
-      const rows = 4
-      const cardSize = Math.min(
-        (availableWidth - (gap * (cols - 1))) / cols,
-        (availableHeight - (gap * (rows - 1))) / rows
-      )
-      return {
-        columns: 4,
-        gap: `${gap}px`,
-        cardSize: `${Math.max(90, Math.min(cardSize, 140))}px`
-      }
-    } else if (numCards === 12) {
-      // 6 pairs: 4 columns x 3 rows
-      const gap = 12
-      const cols = 4
-      const rows = 3
-      const cardSize = Math.min(
-        (availableWidth - (gap * (cols - 1))) / cols,
-        (availableHeight - (gap * (rows - 1))) / rows
-      )
-      return {
-        columns: 4,
-        gap: `${gap}px`,
-        cardSize: `${Math.max(100, Math.min(cardSize, 150))}px`
-      }
-    } else if (numCards <= 8) {
-      // 4 pairs or less: 4 columns
-      const gap = 14
-      const cols = 4
-      const rows = Math.ceil(numCards / cols)
-      const cardSize = Math.min(
-        (availableWidth - (gap * (cols - 1))) / cols,
-        (availableHeight - (gap * (rows - 1))) / rows
-      )
-      return {
-        columns: 4,
-        gap: `${gap}px`,
-        cardSize: `${Math.max(110, Math.min(cardSize, 160))}px`
-      }
-    } else {
-      // For other numbers, calculate dynamically
-      const cols = numCards <= 20 ? 5 : 6
-      const rows = Math.ceil(numCards / cols)
-      const gap = 8
-      const cardSize = Math.min(
-        (availableWidth - (gap * (cols - 1))) / cols,
-        (availableHeight - (gap * (rows - 1))) / rows
-      )
-      return {
-        columns: cols,
-        gap: `${gap}px`,
-        cardSize: `${Math.max(80, Math.min(cardSize, 120))}px`
-      }
-    }
-  }
 
-  const gridLayout = getGridLayout()
+  // UI helpers for background & layout selectors
+
+  function LayoutToggle() {
+    const availableModes: LayoutMode[] = []
+    
+    // Always show natural and grid
+    availableModes.push('natural', 'grid')
+    
+    // Show placeholder if we have matching background
+    if (selectedBackground.id === 'wizard-1-block' || selectedBackground.id === 'wizard-2-blocks') {
+      availableModes.push('placeholder')
+    }
+    
+    return (
+      <div className="flex rounded-xl overflow-hidden border border-white/10 backdrop-blur bg-black/20">
+        {availableModes.map(mode => (
+          <button
+            key={mode}
+            onClick={() => setLayoutMode(mode)}
+            className={`px-3 py-1 text-sm ${layoutMode === mode ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10'}`}
+          >
+            {mode === 'natural' ? 'Naturlig' : mode === 'grid' ? 'Rutnät' : 'Placeholder'}
+          </button>
+        ))}
+      </div>
+    )
+  }
 
   const cardBoard = (
     <div
-      className="flex-1 flex items-center justify-center overflow-hidden"
-      style={{
-        display: 'grid',
-        gridTemplateColumns: `repeat(${gridLayout.columns}, ${gridLayout.cardSize})`,
-        gap: gridLayout.gap,
-        justifyContent: 'center',
-        alignContent: 'center',
-        width: '100%',
-        height: '100%',
-        padding: '6px'
-      }}
+      className="absolute inset-0"
+      style={{ cursor: waitingForFlipBack ? 'pointer' : 'default' }}
       onClick={() => {
         if (waitingForFlipBack) {
           handleFlipBackClick()
         }
       }}
     >
-      {cards.map((card) => (
-        <div
-          key={card.id}
-          onClick={(e) => {
-            e.stopPropagation()
-            if (waitingForFlipBack) {
-              handleFlipBackClick()
-            } else {
-              handleCardClick(card)
-            }
-          }}
-          style={{
-            width: gridLayout.cardSize,
-            height: gridLayout.cardSize,
-            aspectRatio: '1 / 1'
-          }}
-          className={`memory-card rounded-2xl cursor-pointer transition-all duration-500 transform hover:scale-105 shadow-xl
-            ${card.isMatched 
-              ? 'bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-600 text-white shadow-2xl ring-4 ring-emerald-300' 
-              : card.isFlipped 
-                ? 'bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 text-white shadow-2xl' 
-                : 'bg-gradient-to-br from-purple-100 via-indigo-100 to-blue-100 border-2 border-purple-200 hover:border-purple-300'
-            }
-            ${card.isMatched ? 'opacity-100 cursor-not-allowed' : ''}
-            ${card.isSelected ? 'ring-4 ring-amber-400 shadow-2xl' : ''}
-            ${(isProcessing || waitingForFlipBack) && !card.isMatched ? 'cursor-not-allowed' : ''}
-            ${feedback.type === 'correct' && feedback.ids.includes(card.id) ? ' animate-hop' : ''}
-            ${feedback.type === 'wrong' && feedback.ids.includes(card.id) ? ' animate-burr' : ''}
-          `}
-        >
-          <div className="w-full h-full flex items-center justify-center" style={{
-            padding: cards.length === 24 ? '14px' : cards.length === 16 ? '16px' : '18px'
-          }}>
-            {card.isFlipped ? (
-              <div className="text-center w-full">
-                <div className="font-bold leading-tight drop-shadow-sm" style={{ 
-                  fontSize: cards.length === 24 ? 'clamp(0.95rem, 1.5vw, 1.15rem)' : cards.length === 16 ? 'clamp(1rem, 1.8vw, 1.25rem)' : 'clamp(1.1rem, 2vw, 1.3rem)',
-                  wordBreak: 'break-word',
-                  overflowWrap: 'break-word',
-                  hyphens: 'auto'
-                }}>
-                  {card.word}
-                </div>
-                {card.translation && (
-                  <div className="text-xs mt-1 opacity-80">
-                    {card.translation}
+      {cards.map((card) => {
+        const position = getCardPosition(card.id)
+        const cardSizeNatural = Math.min(170, Math.max(100, Math.min(windowSize.width, windowSize.height) / 6))
+        // Calculate card size for placeholder mode (same as in cardPositions)
+        // Calculate placeholder card size to match cardPositions calculation
+        // This will be recalculated in cardPositions, but we need an estimate here
+        const gameAreaWidth = windowSize.width - (windowSize.width >= 640 ? (numPlayers === 2 ? 140 * 2 : 140) : 0) * 2
+        const gameAreaHeight = windowSize.height - 60 - (windowSize.width < 640 ? 60 : 0)
+        const numCards = cards.length
+        const cols = numCards === 12 ? 4 : numCards === 20 ? 5 : numCards === 24 ? 6 : Math.ceil(Math.sqrt(numCards))
+        const rows = numCards === 24 ? 4 : Math.ceil(numCards / cols)
+        const gap = numCards === 24 ? 20 : 16 // More space for 24 cards
+        const totalGapWidth = gap * (cols - 1)
+        const totalGapHeight = gap * (rows - 1)
+        const availableWidth = gameAreaWidth - totalGapWidth
+        const availableHeight = gameAreaHeight - totalGapHeight
+        const cardSizePlaceholder = Math.min(
+          Math.floor(availableWidth / cols),
+          Math.floor(availableHeight / rows),
+          150,
+          90
+        )
+        
+        // Determine card size based on layout mode
+        const getCardSize = () => {
+          if (layoutMode === 'placeholder') {
+            return cardSizePlaceholder
+          } else if (layoutMode === 'natural') {
+            return cardSizeNatural
+          } else {
+            return parseFloat(gridLayout.cardSize)
+          }
+        }
+        
+        const currentCardSize = getCardSize()
+        
+        return (
+          <div
+            key={card.id}
+            onClick={(e) => {
+              e.stopPropagation()
+              if (waitingForFlipBack) {
+                handleFlipBackClick()
+              } else {
+                handleCardClick(card)
+              }
+            }}
+            className={`memory-card absolute rounded-2xl cursor-pointer transition-[transform,box-shadow,opacity] duration-400 will-change-transform hover:scale-[1.07] hover:z-50 ${
+              card.isMatched ? 'ring-4 ring-emerald-300 shadow-2xl' : ''
+            }`}
+            style={{
+              left: `${position.x}px`,
+              top: `${position.y}px`,
+              width: layoutMode === 'grid' ? gridLayout.cardSize : `${Math.round(currentCardSize)}px`,
+              height: layoutMode === 'grid' ? gridLayout.cardSize : `${Math.round(currentCardSize)}px`,
+              transform: `rotate(${position.rotation}deg)`,
+            }}
+          >
+            <div
+              className={`relative rounded-2xl overflow-hidden backdrop-blur-sm ${
+                card.isMatched 
+                  ? 'bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-600 text-white' 
+                  : card.isFlipped 
+                  ? 'bg-gradient-to-br from-slate-700 via-slate-800 to-black text-white' 
+                  : 'bg-white/10 text-white border border-white/20'
+              } ${
+                card.isSelected ? 'ring-4 ring-amber-400' : ''
+              } ${
+                (isProcessing || waitingForFlipBack) && !card.isMatched ? 'cursor-not-allowed' : ''
+              } ${
+                feedback.type === 'correct' && feedback.ids.includes(card.id) ? 'animate-hop' : ''
+              } ${
+                feedback.type === 'wrong' && feedback.ids.includes(card.id) ? 'animate-burr' : ''
+              }`}
+              style={{
+                width: '100%',
+                height: '100%',
+                boxShadow: card.isFlipped || card.isMatched ? '0 18px 40px rgba(0,0,0,.35)' : '0 10px 25px rgba(0,0,0,.25)'
+              }}
+            >
+              <div className="w-full h-full flex items-center justify-center p-4">
+                {card.isFlipped || card.isMatched ? (
+                  <div className="text-center w-full z-10">
+                    <div className="font-bold leading-tight drop-shadow-sm" style={{
+                      fontSize: 'clamp(0.95rem, 2vw, 1.25rem)',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
+                      hyphens: 'auto'
+                    }}>{card.word}</div>
+                    {card.translation && (
+                      <div className="text-xs mt-1 opacity-90">{card.translation}</div>
+                    )}
                   </div>
+                ) : (
+                  <div className="absolute inset-0 opacity-90" style={{ backgroundImage: 'url(/assets/wizard/wizard_novice.png)', backgroundSize: 'cover', backgroundPosition: 'center' }} />
                 )}
               </div>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center relative overflow-hidden">
-                <img 
-                  src="/images/memory-card-back.png" 
-                  alt="Memory card back"
-                  className="w-full h-full object-cover rounded-2xl"
-                />
-              </div>
-            )}
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-2 z-50"
+    <div
+      className="fixed inset-0 z-50"
       onClick={waitingForFlipBack ? handleFlipBackClick : undefined}
-      style={{ cursor: waitingForFlipBack ? 'pointer' : 'default' }}
+      style={selectedBackground.style}
     >
-      <div className="rounded-2xl p-3 w-full h-full max-w-full max-h-full shadow-2xl relative bg-white text-gray-800 border border-gray-200 flex flex-col">
-        {themeColor && <div className="h-1 rounded-md mb-1" style={{ backgroundColor: themeColor }}></div>}
-        
-        {/* Winner Animation Overlay */}
-        {showWinnerAnimation && (
-          <div className="absolute inset-0 bg-black/70 flex items-center justify-center z-50 rounded-2xl">
-            <div className="text-center animate-bounce">
-              <div className="text-8xl mb-4">🎉</div>
-              <h2 className="text-4xl font-bold text-white mb-2">
-                {winner === null 
-                  ? "It's a Tie!" 
-                  : `${winner === 1 ? player1Name : player2Name} Wins!`
-                }
-              </h2>
-              <div className="text-2xl text-white/90">
-                {winner === null 
-                  ? `${player1Score} - ${player2Score}`
-                  : `Final Score: ${winner === 1 ? player1Score : player2Score}`
-                }
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Header */}
-        <div className="flex items-center justify-between mb-2" style={{ minHeight: '60px', flexShrink: 0 }}>
-          <h2 className="text-lg font-bold">🧠 Memory Game</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-600 hover:text-gray-800 text-2xl transition-colors w-8 h-8 flex items-center justify-center"
+      {/* Subtle vignette */}
+      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(75% 60% at 50% 40%, transparent 60%, rgba(0,0,0,.35))' }} />
+
+      {/* Top bar (glass) */}
+      <div className="relative flex items-center justify-between gap-3 px-3 sm:px-6 py-3 z-50">
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              e.nativeEvent.stopImmediatePropagation()
+              onClose()
+            }} 
+            className="h-9 w-9 rounded-xl grid place-items-center backdrop-blur bg-black/30 text-white hover:bg-black/40 transition-colors cursor-pointer"
           >
             ×
           </button>
+          <h2 className="text-white font-semibold text-lg drop-shadow">🧠 Memory Game</h2>
         </div>
-
-        {/* Mobile scoreboard */}
-        {numPlayers === 2 ? (
-          <div
-            className="sm:hidden flex items-center justify-center gap-3 mb-2"
-            onClick={() => {
-              if (waitingForFlipBack) {
-                handleFlipBackClick()
-              }
-            }}
-          >
-            <div
-              className={`flex-1 px-3 py-2 rounded-2xl border text-center shadow ${
-                currentPlayer === 1
-                  ? 'bg-blue-500 text-white border-blue-600'
-                  : 'bg-white text-gray-800 border-gray-200'
-              }`}
-            >
-              <div className="text-xs font-semibold mb-1">{player1Name}</div>
-              <div className="text-lg font-bold">{player1Score}</div>
-              <div className="text-[10px] mt-1 opacity-80">
-                {currentPlayer === 1 ? 'Din tur' : 'Väntar...'}
-              </div>
-            </div>
-            <div
-              className={`flex-1 px-3 py-2 rounded-2xl border text-center shadow ${
-                currentPlayer === 2
-                  ? 'bg-blue-500 text-white border-blue-600'
-                  : 'bg-white text-gray-800 border-gray-200'
-              }`}
-            >
-              <div className="text-xs font-semibold mb-1">{player2Name}</div>
-              <div className="text-lg font-bold">{player2Score}</div>
-              <div className="text-[10px] mt-1 opacity-80">
-                {currentPlayer === 2 ? 'Din tur' : 'Väntar...'}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div
-            className="sm:hidden mb-3 px-3 py-2 rounded-2xl border border-purple-200 text-center bg-gradient-to-r from-purple-50 to-pink-50 shadow"
-            onClick={() => {
-              if (waitingForFlipBack) {
-                handleFlipBackClick()
-              }
-            }}
-          >
-            <div className="text-sm font-semibold text-purple-700">Poäng {player1Score}</div>
-            <div className="text-xs text-purple-600 mt-1">Tid: {formatTime(elapsedSec)}</div>
-          </div>
-        )}
-        
-        {/* Game layout with side panels */}
-        <div
-          className="flex-1 flex items-center justify-center gap-4 md:gap-8 px-2 md:px-6 pb-4"
-          onClick={() => {
-            if (waitingForFlipBack) {
-              handleFlipBackClick()
-            }
-          }}
-        >
-          {numPlayers === 2 && (
-            <aside className="hidden sm:flex flex-col items-center gap-3">
-              <div
-                className={`w-28 sm:w-32 md:w-36 rounded-3xl border-2 px-4 py-5 text-center shadow-lg transition-all ${
-                  currentPlayer === 1
-                    ? 'bg-gradient-to-br from-blue-500 to-indigo-500 border-blue-600 text-white scale-105 shadow-2xl'
-                    : 'bg-white border-gray-200 text-gray-800'
-                }`}
-              >
-                <div className="text-sm font-semibold mb-1">{player1Name}</div>
-                <div className="text-3xl font-extrabold">{player1Score}</div>
-                <div className="text-xs mt-2 opacity-80">
-                  {currentPlayer === 1 ? 'Din tur' : 'Väntar...'}
-                </div>
-              </div>
-            </aside>
-          )}
-
-          {/* Game Board */}
-          {cardBoard}
-
-          {numPlayers === 2 ? (
-            <aside className="hidden sm:flex flex-col items-center gap-3">
-              <div
-                className={`w-28 sm:w-32 md:w-36 rounded-3xl border-2 px-4 py-5 text-center shadow-lg transition-all ${
-                  currentPlayer === 2
-                    ? 'bg-gradient-to-br from-blue-500 to-indigo-500 border-blue-600 text-white scale-105 shadow-2xl'
-                    : 'bg-white border-gray-200 text-gray-800'
-                }`}
-              >
-                <div className="text-sm font-semibold mb-1">{player2Name}</div>
-                <div className="text-3xl font-extrabold">{player2Score}</div>
-                <div className="text-xs mt-2 opacity-80">
-                  {currentPlayer === 2 ? 'Din tur' : 'Väntar...'}
-                </div>
-              </div>
-            </aside>
-          ) : (
-            <aside className="w-32 sm:w-40">
-              <div className="rounded-3xl border border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50 px-4 py-5 text-center shadow-lg">
-                <div className="text-sm font-semibold text-purple-700">Poäng</div>
-                <div className="text-3xl font-extrabold text-purple-900 mt-1">{player1Score}</div>
-                <div className="text-xs text-purple-600 mt-3">Tid: {formatTime(elapsedSec)}</div>
-              </div>
-            </aside>
-          )}
+        <div className="flex items-center gap-3">
+          <LayoutToggle />
         </div>
       </div>
+
+      {/* Score HUD (glass) */}
+      <div className="absolute left-3 top-16 sm:left-6 sm:top-16 flex flex-col gap-3">
+        {numPlayers === 2 ? (
+          <>
+            <div className={`px-4 py-3 rounded-2xl backdrop-blur border ${currentPlayer === 1 ? 'bg-white/25 text-white border-white/40' : 'bg-black/25 text-white border-white/10'}`}>
+              <div className="text-xs opacity-90">{player1Name}</div>
+              <div className="text-2xl font-extrabold">{player1Score}</div>
+              <div className="text-[10px] opacity-80">{currentPlayer === 1 ? 'Din tur' : 'Väntar…'}</div>
+            </div>
+            <div className={`px-4 py-3 rounded-2xl backdrop-blur border ${currentPlayer === 2 ? 'bg-white/25 text-white border-white/40' : 'bg-black/25 text-white border-white/10'}`}>
+              <div className="text-xs opacity-90">{player2Name}</div>
+              <div className="text-2xl font-extrabold">{player2Score}</div>
+              <div className="text-[10px] opacity-80">{currentPlayer === 2 ? 'Din tur' : 'Väntar…'}</div>
+            </div>
+          </>
+        ) : (
+          <div className="px-4 py-3 rounded-2xl backdrop-blur bg-white/20 text-white border border-white/30">
+            <div className="text-xs">Poäng</div>
+            <div className="text-2xl font-extrabold">{player1Score}</div>
+            <div className="text-[10px] opacity-90 mt-1">Tid: {formatTime(elapsedSec)}</div>
+          </div>
+        )}
+      </div>
+
+      {/* CARD BOARD — full-bleed; cards absolutely positioned */}
+      {cardBoard}
+
+      {/* Winner overlay preserved */}
+      {showWinnerAnimation && (
+        <div className="absolute inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="text-center animate-bounce">
+            <div className="text-8xl mb-4">🎉</div>
+            <h2 className="text-4xl font-bold text-white mb-2">
+              {winner === null ? "It's a Tie!" : `${winner === 1 ? player1Name : player2Name} Wins!`}
+            </h2>
+            <div className="text-2xl text-white/90">
+              {winner === null ? `${player1Score} - ${player2Score}` : `Final Score: ${winner === 1 ? player1Score : player2Score}`}
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
-        @keyframes hop {
-          0% { transform: translateY(0) scale(1); }
-          30% { transform: translateY(-6px) scale(1.03); }
-          60% { transform: translateY(0) scale(1); }
-          80% { transform: translateY(-2px) scale(1.01); }
-          100% { transform: translateY(0) scale(1); }
+        @keyframes hop { 
+          0% { transform: translateY(0) scale(1); } 
+          30% { transform: translateY(-6px) scale(1.03); } 
+          60% { transform: translateY(0) scale(1); } 
+          80% { transform: translateY(-2px) scale(1.01); } 
+          100% { transform: translateY(0) scale(1); } 
         }
         .animate-hop { animation: hop 450ms ease-out; }
 
-        @keyframes burr {
-          0%, 100% { transform: translateX(0); }
-          20% { transform: translateX(-4px); }
-          40% { transform: translateX(4px); }
-          60% { transform: translateX(-3px); }
-          80% { transform: translateX(3px); }
+        @keyframes burr { 
+          0%, 100% { transform: translateX(0); } 
+          20% { transform: translateX(-4px); } 
+          40% { transform: translateX(4px); } 
+          60% { transform: translateX(-3px); } 
+          80% { transform: translateX(3px); } 
         }
         .animate-burr { animation: burr 400ms ease-in-out; }
       `}</style>

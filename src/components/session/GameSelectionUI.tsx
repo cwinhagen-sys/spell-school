@@ -237,9 +237,10 @@ export default function GameSelectionUI({
               return (
                 <div
                   key={game}
-                  className={`bg-white rounded-xl shadow-md border border-gray-200 p-6 transition-all hover:shadow-lg ${
+                  className={`bg-white rounded-xl shadow-md border border-gray-200 p-6 transition-all hover:shadow-lg flex flex-col ${
                     isLocked ? 'opacity-60' : ''
                   }`}
+                  style={{ minHeight: '100%' }}
                 >
                   {/* Game Icon */}
                   <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${getGameIconGradient(index)} flex items-center justify-center mb-4 shadow-sm`}>
@@ -269,21 +270,26 @@ export default function GameSelectionUI({
                     </div>
                   </div>
 
-                  {/* Status Badge */}
-                  {isCompleted && (
-                    <div className="mb-4 flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-600" />
-                      <span className="text-sm font-medium text-green-700">Completed</span>
-                    </div>
-                  )}
-                  {isLocked && !isCompleted && (
-                    <div className="mb-4 flex items-center gap-2">
-                      <Lock className="w-5 h-5 text-gray-400" />
-                      <span className="text-sm font-medium text-gray-500">Locked</span>
-                    </div>
-                  )}
+                  {/* Status Badge - Use fixed height to ensure consistent spacing */}
+                  <div className="mb-4 min-h-[28px] flex items-center">
+                    {isCompleted && (
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-green-600" />
+                        <span className="text-sm font-medium text-green-700">Completed</span>
+                      </div>
+                    )}
+                    {isLocked && !isCompleted && (
+                      <div className="flex items-center gap-2">
+                        <Lock className="w-5 h-5 text-gray-400" />
+                        <span className="text-sm font-medium text-gray-500">Locked</span>
+                      </div>
+                    )}
+                  </div>
 
-                  {/* Action Button */}
+                  {/* Spacer to push button to bottom */}
+                  <div className="flex-grow"></div>
+
+                  {/* Action Button - Always at bottom */}
                   <button
                     onClick={() => {
                       if (isAvailable || isCompleted) {
@@ -291,7 +297,7 @@ export default function GameSelectionUI({
                       }
                     }}
                     disabled={isLocked}
-                    className={`w-full py-3 px-4 rounded-lg font-semibold transition-all ${
+                    className={`w-full py-3 px-4 rounded-lg font-semibold transition-all mt-auto ${
                       isCompleted
                         ? 'bg-teal-500 hover:bg-teal-600 text-white'
                         : isLocked
@@ -299,7 +305,7 @@ export default function GameSelectionUI({
                         : 'bg-teal-500 hover:bg-teal-600 text-white'
                     }`}
                   >
-                    {isCompleted ? 'View Details' : isLocked ? 'Locked' : 'Play Now'}
+                    {isCompleted ? 'Play Again' : isLocked ? 'Locked' : 'Play Now'}
                   </button>
                 </div>
               )

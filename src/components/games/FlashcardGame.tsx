@@ -48,6 +48,9 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
   // Ref to track the last wordObjects prop to detect actual changes
   const lastWordObjectsRef = useRef<Word[]>([])
   const lastWordsRef = useRef<string[]>([])
+  // Ref to store shuffled word list to prevent re-shuffling on every render
+  const shuffledWordListRef = useRef<Word[]>([])
+  const shuffledWordListKeyRef = useRef<string>('')
   const [isRecording, setIsRecording] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [pronunciationResults, setPronunciationResults] = useState<Map<number, { isCorrect: boolean; accuracyScore: number; feedback: string; transcript: string; xpAwarded?: boolean }>>(new Map())
@@ -1103,10 +1106,23 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
       // Return empty list while grid selector is showing
       if (wordObjects && wordObjects.length > 0) {
         console.log('🃏 Using wordObjects:', wordObjects.length)
-        return [...wordObjects].sort(() => Math.random() - 0.5)
+        // Create a stable key to check if we need to re-shuffle
+        const currentKey = wordObjects.map(w => `${w.en || ''}-${w.sv || ''}`).sort().join('|')
+        if (shuffledWordListKeyRef.current !== currentKey || shuffledWordListRef.current.length === 0) {
+          shuffledWordListRef.current = [...wordObjects].sort(() => Math.random() - 0.5)
+          shuffledWordListKeyRef.current = currentKey
+        }
+        return shuffledWordListRef.current
       }
       console.log('🃏 Using words array:', words.length)
-      return words.map(word => ({ en: word, sv: getTranslation(word), image_url: undefined })).sort(() => Math.random() - 0.5)
+      // Create a stable key for words array
+      const currentKey = [...words].sort().join('|')
+      if (shuffledWordListKeyRef.current !== currentKey || shuffledWordListRef.current.length === 0) {
+        const wordObjs = words.map(word => ({ en: word, sv: getTranslation(word), image_url: undefined }))
+        shuffledWordListRef.current = wordObjs.sort(() => Math.random() - 0.5)
+        shuffledWordListKeyRef.current = currentKey
+      }
+      return shuffledWordListRef.current
     }
     
     // Use selected grids - extract word objects properly
@@ -1152,7 +1168,13 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
     
     console.log('🃏 Final baseWordList length:', allWords.length)
     console.log('🃏 First few words:', allWords.slice(0, 3))
-    return allWords.sort(() => Math.random() - 0.5)
+    // Create a stable key for selected grids
+    const currentKey = allWords.map(w => `${w.en || ''}-${w.sv || ''}`).sort().join('|')
+    if (shuffledWordListKeyRef.current !== currentKey || shuffledWordListRef.current.length === 0) {
+      shuffledWordListRef.current = allWords.sort(() => Math.random() - 0.5)
+      shuffledWordListKeyRef.current = currentKey
+    }
+    return shuffledWordListRef.current
   }, [words, wordObjects, selectedGrids, showGridSelector, translations, sessionMode, getTranslation])
 
   // Use selected grids if available, otherwise fall back to wordObjects or words array
@@ -1343,7 +1365,22 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
     }
   }
 
-  const handleFlip = () => {
+  const handleFlip = (e?: React.MouseEvent) => {
+    // Prevent event propagation and default behavior to avoid triggering other handlers
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
+      e.nativeEvent.stopImmediatePropagation()
+    }
+    
+    // Prevent flipping if we're in the middle of processing or recording
+    if (isProcessing || isRecording) {
+      return
+    }
+    
+    // CRITICAL: Store current word index to prevent it from changing during flip
+    const currentIndex = currentWordIndex
+    
     // In test mode, only allow flipping if:
     // 1. We're on the English side (isFlipped = false) and want to go back to Swedish (not allowed if no result)
     // 2. We're on the Swedish side (isFlipped = true) and have a result (can flip to see English)
@@ -1351,12 +1388,20 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
       // If on Swedish side (isFlipped = true), only allow flip if there's a result
       if (isFlipped && getPronunciationStatus()) {
         setIsFlipped(false) // Flip to English side
+        // Ensure word index doesn't change
+        if (currentWordIndex !== currentIndex) {
+          setCurrentWordIndex(currentIndex)
+        }
       }
       // If on English side (isFlipped = false), don't allow flip back to Swedish in test mode
       // User must pronounce correctly to see English side
     } else {
       // Training mode: allow free flipping
       setIsFlipped(!isFlipped)
+      // Ensure word index doesn't change
+      if (currentWordIndex !== currentIndex) {
+        setCurrentWordIndex(currentIndex)
+      }
     }
   }
 
@@ -1588,7 +1633,14 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
     }
   }
 
-  const currentWord = wordList[currentWordIndex]
+  // Use useMemo to ensure currentWord doesn't change unexpectedly
+  const currentWord = useMemo(() => {
+    if (wordList.length === 0 || currentWordIndex < 0 || currentWordIndex >= wordList.length) {
+      return null
+    }
+    return wordList[currentWordIndex]
+  }, [wordList, currentWordIndex])
+  
   const progress = ((currentWordIndex + 1) / wordList.length) * 100
 
   // Get current word properties - use word object's sv directly if available
@@ -1785,13 +1837,18 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                 return (
                   <button
                     key={index}
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
                       // In test mode, disable navigation between words
                       if (pronunciationMode === 'test') {
                         return
                       }
                       setCurrentWordIndex(index)
                       setIsFlipped(false)
+                    }}
+                    onMouseDown={(e) => {
+                      e.stopPropagation()
                     }}
                     disabled={pronunciationMode === 'test'}
                     className={`
@@ -1829,7 +1886,37 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                 ? 'cursor-pointer'
                 : 'cursor-default'
             }`}
-            onClick={handleFlip}
+            onClick={(e) => {
+              // CRITICAL: Prevent any default behavior and stop all propagation immediately
+              e.preventDefault()
+              e.stopPropagation()
+              e.nativeEvent.stopImmediatePropagation()
+              
+              // Don't do anything if we're processing or recording
+              if (isProcessing || isRecording) {
+                return
+              }
+              
+              // Only flip if clicking is allowed - do NOT change word index
+              // This should ONLY flip the card, never change the word
+              if (pronunciationMode === 'training' || (pronunciationMode === 'test' && isFlipped && getPronunciationStatus())) {
+                handleFlip(e)
+              }
+              
+              // Explicitly prevent any navigation or word changes
+              return false
+            }}
+            onMouseDown={(e) => {
+              // Also prevent on mouse down to catch any other handlers
+              e.preventDefault()
+              e.stopPropagation()
+              e.nativeEvent.stopImmediatePropagation()
+            }}
+            onMouseUp={(e) => {
+              // Prevent mouse up events too
+              e.preventDefault()
+              e.stopPropagation()
+            }}
           >
             {/* Front of card (English word) */}
             <div 

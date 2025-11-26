@@ -147,3 +147,5 @@ All backend-logik finns kvar i `src/app/session/[id]/play/page.tsx`:
 
 UI-komponenterna är **pure presentational components** - de tar emot data och callbacks, men hanterar ingen logik själva.
 
+
+

@@ -88,8 +88,25 @@ export default function SessionPlayPage() {
   }, [sessionId])
 
   useEffect(() => {
-    if (session && session.word_sets && session.word_sets.length > 0 && session.word_sets[0]?.words) {
-      createColorBlocks(session.word_sets[0].words)
+    if (session && session.word_sets && session.word_sets.length > 0) {
+      // Get words from all word sets, not just the first one
+      const allWords: Word[] = []
+      session.word_sets.forEach(wordSet => {
+        if (wordSet.words && Array.isArray(wordSet.words) && wordSet.words.length > 0) {
+          allWords.push(...wordSet.words)
+        }
+      })
+      
+      if (allWords.length > 0) {
+        console.log('📦 Creating color blocks from', allWords.length, 'words')
+        createColorBlocks(allWords)
+      } else {
+        console.warn('⚠️ No words found in word_sets:', session.word_sets)
+        setColorBlocks([])
+      }
+    } else if (session && (!session.word_sets || session.word_sets.length === 0)) {
+      console.warn('⚠️ Session has no word_sets')
+      setColorBlocks([])
     }
   }, [session])
 
@@ -151,7 +168,8 @@ export default function SessionPlayPage() {
 
   const loadSession = async () => {
     try {
-      const { data, error } = await supabase
+      // First, get the session data
+      const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .select(`
           id,
@@ -161,19 +179,63 @@ export default function SessionPlayPage() {
           due_date,
           quiz_enabled,
           quiz_grading_type,
-          word_sets(id, title, words)
+          word_set_id
         `)
         .eq('id', sessionId)
         .single()
 
-      if (error) throw error
-      
-      // Transform data to match Session interface
-      // word_sets comes as an array from Supabase join
-      const transformedData: Session = {
-        ...data,
-        word_sets: Array.isArray(data.word_sets) ? data.word_sets : []
+      if (sessionError) throw sessionError
+      if (!sessionData) {
+        throw new Error('Session not found')
       }
+
+      // Then, get the word_set data separately
+      let wordSets: Array<{ id: string; title: string; words: Word[] }> = []
+      if (sessionData.word_set_id) {
+        const { data: wordSetData, error: wordSetError } = await supabase
+          .from('word_sets')
+          .select('id, title, words')
+          .eq('id', sessionData.word_set_id)
+          .single()
+
+        if (wordSetError) {
+          console.error('Error loading word set:', wordSetError)
+          // Don't throw - continue with empty word sets
+        } else if (wordSetData) {
+          // Transform words to match Word interface
+          const words: Word[] = Array.isArray(wordSetData.words) 
+            ? wordSetData.words.map((w: any) => ({
+                en: w.en || w.english || '',
+                sv: w.sv || w.swedish || '',
+                image_url: w.image_url
+              }))
+            : []
+          
+          wordSets = [{
+            id: wordSetData.id,
+            title: wordSetData.title,
+            words: words
+          }]
+        }
+      }
+
+      // Transform data to match Session interface
+      const transformedData: Session = {
+        id: sessionData.id,
+        session_code: sessionData.session_code,
+        enabled_games: sessionData.enabled_games || [],
+        game_rounds: sessionData.game_rounds || {},
+        due_date: sessionData.due_date,
+        quiz_enabled: sessionData.quiz_enabled || false,
+        quiz_grading_type: sessionData.quiz_grading_type || 'ai',
+        word_sets: wordSets
+      }
+      
+      console.log('✅ Session loaded:', {
+        sessionId: transformedData.id,
+        wordSetsCount: transformedData.word_sets.length,
+        totalWords: transformedData.word_sets.reduce((sum, ws) => sum + ws.words.length, 0)
+      })
       
       setSession(transformedData)
     } catch (error) {
@@ -397,17 +459,27 @@ export default function SessionPlayPage() {
     // This matches the standard Spell School word set structure
     const blocks: ColorBlock[] = []
     
+    if (!words || words.length === 0) {
+      console.warn('⚠️ createColorBlocks called with empty words array')
+      setColorBlocks([])
+      return
+    }
+    
     for (let i = 0; i < words.length; i += 6) {
       const blockWords = words.slice(i, i + 6)
-      const colorIndex = Math.floor(i / 6) % COLOR_GRIDS.length
-      const colorScheme = COLOR_GRIDS[colorIndex]
-      blocks.push({
-        id: `block_${i}`,
-        color: colorScheme.name,
-        words: blockWords,
-      })
+      // Only create block if it has at least one word
+      if (blockWords.length > 0) {
+        const colorIndex = Math.floor(i / 6) % COLOR_GRIDS.length
+        const colorScheme = COLOR_GRIDS[colorIndex]
+        blocks.push({
+          id: `block_${i}`,
+          color: colorScheme.name,
+          words: blockWords,
+        })
+      }
     }
 
+    console.log('✅ Created', blocks.length, 'color blocks')
     setColorBlocks(blocks)
   }
 
@@ -805,6 +877,39 @@ export default function SessionPlayPage() {
 
   // Block selection step
   if (step === 'blocks') {
+    // Show loading state if session is still loading or colorBlocks haven't been created yet
+    if (loading || !session) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading session...</p>
+          </div>
+        </div>
+      )
+    }
+    
+    // If session is loaded but no color blocks, show error
+    if (colorBlocks.length === 0) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto p-6">
+            <div className="text-red-500 text-5xl mb-4">⚠️</div>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Inga ord hittades</h2>
+            <p className="text-gray-600 mb-4">
+              Sessionen har inga ord att visa. Kontakta din lärare.
+            </p>
+            <button
+              onClick={() => router.push('/session/join')}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            >
+              Gå tillbaka
+            </button>
+          </div>
+        </div>
+      )
+    }
+    
     return (
       <BlockSelectionUI
         colorBlocks={colorBlocks}

@@ -133,15 +133,19 @@ export default function LineMatchingGame({ words, translations, onClose, onScore
     
     // Create floating words in grid layout with spacing
     const words: FloatingWord[] = []
-    const cardWidth = 160 // Smaller card width
-    const cardHeight = 70 // Smaller card height
-    const horizontalSpacing = 20
-    const verticalSpacing = 12
     
-    // Use relative positioning based on available game area
-    // Game area is approximately max-w-7xl (1280px) minus padding
-    const gameAreaWidth = 1200 // Approximate game area width
-    const gameAreaHeight = 600 // Approximate game area height
+    // Responsive card sizing based on number of pairs
+    const numPairs = shuffledPairs.length
+    const cardWidth = numPairs <= 10 ? 140 : 130 // Smaller for more pairs
+    const cardHeight = numPairs <= 10 ? 65 : 60
+    const horizontalSpacing = 16
+    const verticalSpacing = 10
+    
+    // Use viewport-based calculations to ensure everything fits
+    // Game area is max-w-7xl container minus padding
+    const containerPadding = 48 // 24px on each side
+    const gameAreaWidth = Math.min(1280 - containerPadding, window.innerWidth - containerPadding - 40)
+    const gameAreaHeight = Math.min(600, window.innerHeight - 200) // Reserve space for header
     
     // Create Swedish and English words separately
     const swedishWords: FloatingWord[] = []
@@ -179,43 +183,44 @@ export default function LineMatchingGame({ words, translations, onClose, onScore
     const shuffledSwedish = shuffle(swedishWords)
     const shuffledEnglish = shuffle(englishWords)
     
-    // Place Swedish words on left side - in 2 columns to fit within game area
-    const swedishPerColumn = Math.ceil(shuffledSwedish.length / 2)
-    const leftSectionWidth = (gameAreaWidth * 0.48) // 48% of game area for left section
-    const leftMargin = 20
-    const columnWidth = (leftSectionWidth - leftMargin * 2 - horizontalSpacing) / 2 // Two columns with spacing
+    // Calculate optimal layout: use 2 columns per side for better fit
+    const wordsPerSide = shuffledSwedish.length
+    const columnsPerSide = 2
+    const rowsPerColumn = Math.ceil(wordsPerSide / columnsPerSide)
     
+    // Calculate available space per side (symmetric)
+    const sideWidth = (gameAreaWidth * 0.45) // 45% per side, 10% gap in middle
+    const sideMargin = 20
+    const availableWidth = sideWidth - (sideMargin * 2)
+    const columnWidth = (availableWidth - horizontalSpacing) / columnsPerSide
+    
+    // Place Swedish words on left side
     shuffledSwedish.forEach((word, index) => {
-      const column = Math.floor(index / swedishPerColumn)
-      const rowInColumn = index % swedishPerColumn
+      const column = Math.floor(index / rowsPerColumn)
+      const rowInColumn = index % rowsPerColumn
       
-      const baseX = leftMargin + column * (columnWidth + horizontalSpacing)
+      const baseX = sideMargin + column * (columnWidth + horizontalSpacing)
       const baseY = 80 + rowInColumn * (cardHeight + verticalSpacing)
       
-      // Ensure it stays within left section
-      word.x = Math.min(baseX, leftSectionWidth - cardWidth - 10)
-      word.y = baseY
+      // Ensure it stays within bounds
+      word.x = Math.min(baseX, sideWidth - cardWidth - sideMargin)
+      word.y = Math.min(baseY, gameAreaHeight - cardHeight - 20)
       words.push(word)
     })
     
-    // Place English words on right side - in 2 columns to fit within game area
-    const englishPerColumn = Math.ceil(shuffledEnglish.length / 2)
-    const rightSectionStart = gameAreaWidth * 0.52 // Start of right section at 52%
-    const rightSectionWidth = gameAreaWidth * 0.48 // 48% of game area for right section
-    const rightMargin = 20
-    const rightColumnWidth = (rightSectionWidth - rightMargin * 2 - horizontalSpacing) / 2 // Two columns with spacing
+    // Place English words on right side (symmetric layout)
+    const rightSectionStart = gameAreaWidth * 0.55 // Start at 55% (45% + 10% gap)
     
     shuffledEnglish.forEach((word, index) => {
-      const column = Math.floor(index / englishPerColumn)
-      const rowInColumn = index % englishPerColumn
+      const column = Math.floor(index / rowsPerColumn)
+      const rowInColumn = index % rowsPerColumn
       
-      // Calculate from right section start
-      const baseX = rightSectionStart + rightMargin + column * (rightColumnWidth + horizontalSpacing)
+      const baseX = rightSectionStart + sideMargin + column * (columnWidth + horizontalSpacing)
       const baseY = 80 + rowInColumn * (cardHeight + verticalSpacing)
       
-      // Ensure it stays within right section
-      word.x = Math.min(baseX, gameAreaWidth - cardWidth - rightMargin - 10)
-      word.y = baseY
+      // Ensure it stays within bounds
+      word.x = Math.min(baseX, gameAreaWidth - cardWidth - sideMargin)
+      word.y = Math.min(baseY, gameAreaHeight - cardHeight - 20)
       words.push(word)
     })
     
@@ -536,7 +541,7 @@ export default function LineMatchingGame({ words, translations, onClose, onScore
         </div>
 
         {/* Game Area - Two Sides Layout */}
-        <div className="flex-1 relative bg-gradient-to-br from-purple-100/30 via-pink-100/30 to-orange-100/30 rounded-2xl border-2 border-purple-200/50 overflow-hidden" style={{ minHeight: '600px' }}>
+        <div className="flex-1 relative bg-gradient-to-br from-purple-100/30 via-pink-100/30 to-orange-100/30 rounded-2xl border-2 border-purple-200/50 overflow-hidden" style={{ minHeight: '600px', maxHeight: 'calc(90vh - 200px)' }}>
           {/* Left Side Label - Swedish */}
           <div className="absolute left-4 top-4 bg-yellow-200 px-4 py-2 rounded-lg border-2 border-yellow-400 z-30">
             <span className="font-bold text-yellow-900 text-sm">🇸🇪 Svenska</span>
@@ -569,7 +574,7 @@ export default function LineMatchingGame({ words, translations, onClose, onScore
               >
                 <div
                   className={`
-                    w-40 px-3 py-2.5 rounded-xl border-2 font-medium shadow-md text-sm
+                    px-3 py-2.5 rounded-xl border-2 font-medium shadow-md text-sm
                     transition-all duration-200 hover:scale-105 hover:shadow-xl relative
                     flex items-center justify-center
                     ${isSelected
@@ -582,8 +587,9 @@ export default function LineMatchingGame({ words, translations, onClose, onScore
                     }
                   `}
                   style={{
-                    maxWidth: '160px',
-                    minHeight: '70px',
+                    width: pairs.length <= 10 ? '140px' : '130px',
+                    minHeight: pairs.length <= 10 ? '65px' : '60px',
+                    maxWidth: pairs.length <= 10 ? '140px' : '130px',
                     wordWrap: 'break-word',
                     overflowWrap: 'break-word'
                   }}
