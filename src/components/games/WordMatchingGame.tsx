@@ -863,25 +863,19 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
   // UI helpers for background & layout selectors
 
   function LayoutToggle() {
-    const availableModes: LayoutMode[] = []
-    
-    // Always show natural and grid
-    availableModes.push('natural', 'grid')
-    
-    // Show placeholder if we have matching background
-    if (selectedBackground.id === 'wizard-1-block' || selectedBackground.id === 'wizard-2-blocks') {
-      availableModes.push('placeholder')
-    }
-    
     return (
       <div className="flex rounded-xl overflow-hidden border border-white/10 backdrop-blur bg-black/20">
-        {availableModes.map(mode => (
+        {(['natural','grid'] as LayoutMode[]).map(mode => (
           <button
             key={mode}
-            onClick={() => setLayoutMode(mode)}
-            className={`px-3 py-1 text-sm ${layoutMode === mode ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10'}`}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setLayoutMode(mode)
+            }}
+            className={`px-3 py-1 text-sm transition-colors ${layoutMode === mode ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
-            {mode === 'natural' ? 'Naturlig' : mode === 'grid' ? 'Rutnät' : 'Placeholder'}
+            {mode === 'natural' ? 'Naturlig' : 'Rutnät'}
           </button>
         ))}
       </div>
@@ -901,31 +895,10 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
       {cards.map((card) => {
         const position = getCardPosition(card.id)
         const cardSizeNatural = Math.min(170, Math.max(100, Math.min(windowSize.width, windowSize.height) / 6))
-        // Calculate card size for placeholder mode (same as in cardPositions)
-        // Calculate placeholder card size to match cardPositions calculation
-        // This will be recalculated in cardPositions, but we need an estimate here
-        const gameAreaWidth = windowSize.width - (windowSize.width >= 640 ? (numPlayers === 2 ? 140 * 2 : 140) : 0) * 2
-        const gameAreaHeight = windowSize.height - 60 - (windowSize.width < 640 ? 60 : 0)
-        const numCards = cards.length
-        const cols = numCards === 12 ? 4 : numCards === 20 ? 5 : numCards === 24 ? 6 : Math.ceil(Math.sqrt(numCards))
-        const rows = numCards === 24 ? 4 : Math.ceil(numCards / cols)
-        const gap = numCards === 24 ? 20 : 16 // More space for 24 cards
-        const totalGapWidth = gap * (cols - 1)
-        const totalGapHeight = gap * (rows - 1)
-        const availableWidth = gameAreaWidth - totalGapWidth
-        const availableHeight = gameAreaHeight - totalGapHeight
-        const cardSizePlaceholder = Math.min(
-          Math.floor(availableWidth / cols),
-          Math.floor(availableHeight / rows),
-          150,
-          90
-        )
         
         // Determine card size based on layout mode
         const getCardSize = () => {
-          if (layoutMode === 'placeholder') {
-            return cardSizePlaceholder
-          } else if (layoutMode === 'natural') {
+          if (layoutMode === 'natural') {
             return cardSizeNatural
           } else {
             return parseFloat(gridLayout.cardSize)
