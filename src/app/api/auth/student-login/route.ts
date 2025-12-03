@@ -13,9 +13,9 @@ const supabaseAuthClient = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: false,
   },
   global: {
-    fetch: (url: string, options: RequestInit = {}) => {
-      return fetch(url, {
-        ...options,
+    fetch: (input: RequestInfo | URL, init?: RequestInit) => {
+      return fetch(input, {
+        ...init,
         // Enable keep-alive for connection reuse
         ...(typeof (globalThis as any).Request !== 'undefined' && { keepalive: true }),
       })
