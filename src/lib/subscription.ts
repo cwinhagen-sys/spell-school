@@ -47,9 +47,15 @@ export const TIER_LIMITS: Record<SubscriptionTier, SubscriptionLimits> = {
 /**
  * Get subscription tier for a user (defaults to 'free')
  */
-export async function getUserSubscriptionTier(userId: string): Promise<SubscriptionTier> {
+export async function getUserSubscriptionTier(userId: string, supabaseClient?: any): Promise<SubscriptionTier> {
   try {
-    const { supabase } = await import('@/lib/supabase')
+    // Use provided client (e.g., admin client) or default to regular client
+    let supabase = supabaseClient
+    if (!supabase) {
+      const supabaseModule = await import('@/lib/supabase')
+      supabase = supabaseModule.supabase
+    }
+    
     const { data, error } = await supabase
       .from('profiles')
       .select('subscription_tier')
@@ -57,10 +63,13 @@ export async function getUserSubscriptionTier(userId: string): Promise<Subscript
       .single()
 
     if (error || !data) {
+      console.warn(`Warning: Could not fetch subscription_tier for user ${userId}, defaulting to 'free'. Error:`, error?.message)
       return 'free'
     }
 
-    return (data.subscription_tier as SubscriptionTier) || 'free'
+    const tier = (data.subscription_tier as SubscriptionTier) || 'free'
+    console.log(`User ${userId} subscription tier: ${tier}`)
+    return tier
   } catch (error) {
     console.error('Error getting subscription tier:', error)
     return 'free'
@@ -70,8 +79,8 @@ export async function getUserSubscriptionTier(userId: string): Promise<Subscript
 /**
  * Get subscription limits for a user
  */
-export async function getUserSubscriptionLimits(userId: string): Promise<SubscriptionLimits> {
-  const tier = await getUserSubscriptionTier(userId)
+export async function getUserSubscriptionLimits(userId: string, supabaseClient?: any): Promise<SubscriptionLimits> {
+  const tier = await getUserSubscriptionTier(userId, supabaseClient)
   return TIER_LIMITS[tier]
 }
 
@@ -116,14 +125,20 @@ export async function canCreateWordSet(userId: string, currentWordSetCount: numb
 export async function canAddStudentsToClass(
   userId: string,
   classId: string,
-  currentStudentCount: number
+  currentStudentCount: number,
+  supabaseClient?: any
 ): Promise<{ allowed: boolean; reason?: string }> {
-  const limits = await getUserSubscriptionLimits(userId)
-  const tier = await getUserSubscriptionTier(userId)
+  const limits = await getUserSubscriptionLimits(userId, supabaseClient)
+  const tier = await getUserSubscriptionTier(userId, supabaseClient)
 
   // For free tier, check total students across all classes
   if (tier === 'free') {
-    const { supabase } = await import('@/lib/supabase')
+    // Use provided client (e.g., admin client) or default to regular client
+    let supabase = supabaseClient
+    if (!supabase) {
+      const supabaseModule = await import('@/lib/supabase')
+      supabase = supabaseModule.supabase
+    }
     
     // Get all class IDs for this teacher
     const { data: teacherClasses } = await supabase
@@ -138,7 +153,7 @@ export async function canAddStudentsToClass(
 
     const classIds = teacherClasses.map(c => c.id)
 
-    // Count total unique students across all classes
+    // Count total unique students across all classes (use same client)
     const { data: allClassStudents } = await supabase
       .from('class_students')
       .select('student_id')

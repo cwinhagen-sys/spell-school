@@ -98,7 +98,9 @@ export async function POST(request: NextRequest) {
       .is('deleted_at', null)
 
     const currentStudentCount = new Set(currentStudents?.map(cs => cs.student_id) || []).size
-    const canAdd = await canAddStudentsToClass(user.id, classId, currentStudentCount)
+    
+    // Use admin client to check subscription tier (bypasses RLS)
+    const canAdd = await canAddStudentsToClass(user.id, classId, currentStudentCount, supabaseAdmin)
 
     if (!canAdd.allowed) {
       return NextResponse.json(
@@ -109,14 +111,18 @@ export async function POST(request: NextRequest) {
 
     // Check if adding these students would exceed the limit
     const studentsToAdd = students.length
-    if (canAdd.allowed) {
-      const tier = await import('@/lib/subscription').then(m => m.getUserSubscriptionTier(user.id))
-      const limits = await import('@/lib/subscription').then(m => m.getUserSubscriptionLimits(user.id))
-      
-      // Pro tier has unlimited students - skip all checks
-      if (tier === 'pro') {
-        // No limits for pro tier, continue with student creation
-      } else if (tier === 'free' && limits.maxTotalStudents !== null) {
+    
+    // Use admin client to get subscription tier (bypasses RLS)
+    const tier = await import('@/lib/subscription').then(m => m.getUserSubscriptionTier(user.id, supabaseAdmin))
+    const limits = await import('@/lib/subscription').then(m => m.getUserSubscriptionLimits(user.id, supabaseAdmin))
+    
+    console.log(`Creating students: User ${user.id} (${user.email}) has tier: ${tier}`)
+    
+    // Pro tier has unlimited students - skip all checks
+    if (tier === 'pro') {
+      console.log('Pro tier detected - skipping all student limit checks')
+      // No limits for pro tier, continue with student creation
+    } else if (tier === 'free' && limits.maxTotalStudents !== null) {
         // Count total students across all classes
         const { data: allClasses } = await supabaseAdmin
           .from('classes')
