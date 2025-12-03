@@ -20,7 +20,7 @@ const supabaseAnonKey = 'sb_publishable_bx81qdFnpcX79ovYbCL98Q_eirRtByp'
 // Simple in-memory cache for leaderboard data
 // In production, consider using Redis or Vercel KV
 const leaderboardCache = new Map<string, { data: any; timestamp: number }>()
-const CACHE_TTL_MS = 30000 // 30 seconds cache
+const CACHE_TTL_MS = 60000 // 60 seconds cache (increased for better performance)
 
 export async function POST(request: NextRequest) {
   try {
@@ -149,13 +149,15 @@ export async function POST(request: NextRequest) {
       return count
     }
 
+    // Optimize: Combine game_sessions queries into one
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    
     const [
       profilesRes,
       progressRes,
       badgeRes,
       gameSessionsRes,
-      typingRes,
-      accuracyRes
+      typingRes
     ] = await Promise.all([
       supabaseAdmin
         .from('profiles')
@@ -173,22 +175,17 @@ export async function POST(request: NextRequest) {
         .from('user_badges')
         .select('user_id')
         .in('user_id', studentIds),
+      // Combined query: get both finished_at and accuracy_pct in one query
       supabaseAdmin
         .from('game_sessions')
-        .select('student_id, finished_at')
+        .select('student_id, finished_at, accuracy_pct')
         .in('student_id', studentIds)
         .not('finished_at', 'is', null)
-        .gte('finished_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()), // Last 30 days only
+        .gte('finished_at', thirtyDaysAgo),
       supabaseAdmin
         .from('typing_leaderboard')
         .select('student_id, kpm')
-        .in('student_id', studentIds),
-      supabaseAdmin
-        .from('game_sessions')
-        .select('student_id, accuracy_pct')
         .in('student_id', studentIds)
-        .not('accuracy_pct', 'is', null)
-        .gte('finished_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()) // Last 30 days only
     ])
 
     const playersMap = new Map<string, LeaderboardPlayer>()
@@ -198,7 +195,9 @@ export async function POST(request: NextRequest) {
     const badges = badgeRes?.data || []
     const gameSessions = gameSessionsRes?.data || []
     const typing = typingRes?.data || []
-    const accuracy = accuracyRes?.data || []
+    
+    // Extract accuracy data from combined game_sessions query
+    const accuracy = gameSessions.filter((session: any) => session.accuracy_pct !== null)
 
     // Aggregate badges by counting per user
     const badgeCounts = new Map<string, number>()
