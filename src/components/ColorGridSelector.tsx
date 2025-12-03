@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { X, Sparkles, Play } from 'lucide-react'
 
 // Enhanced color schemes - stronger and more differentiated colors
 export const COLOR_GRIDS = [
@@ -163,8 +164,8 @@ export default function ColorGridSelector({
   minGrids = 1, 
   maxGrids = 10,
   wordsPerGrid = 6,
-  title = 'Select Color Grids',
-  description = 'Choose which color grids you want to practice with',
+  title = 'Välj färgblock',
+  description = 'Välj vilka färgblock du vill träna med',
   gridConfig
 }: ColorGridSelectorProps) {
   const [selectedGridIndices, setSelectedGridIndices] = useState<Set<number>>(new Set([0])) // Default to first grid
@@ -256,107 +257,122 @@ export default function ColorGridSelector({
   const canStart = selectedCount >= minGrids && (!maxGrids || selectedCount <= maxGrids)
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-      <div className="rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl relative bg-white text-gray-800 border border-gray-200">
-        {/* Header */}
-        <div className="flex-shrink-0 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="text-center flex-1">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">{title}</h2>
-              <p className="text-gray-600 text-sm">{description}</p>
-            </div>
-            {onClose && (
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 text-2xl transition-colors"
-              >
-                ×
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Grid Selection - Same design as word set modal, all on one row */}
-        <div className="flex-1 overflow-hidden px-6 py-6 flex items-center justify-center">
-          <div className="flex gap-3 w-full justify-center overflow-x-auto pb-2" style={{ scrollbarWidth: 'thin' }}>
-            {colorGrids.map((grid, idx) => {
-              const isSelected = selectedGridIndices.has(idx)
-              const isAtCapacity = maxGrids ? selectedGridIndices.size >= maxGrids : false
-              const isDisabled = !isSelected && isAtCapacity && maxGrids !== 1
-              const colorHex = grid.colorScheme?.hex || COLOR_GRIDS[idx % COLOR_GRIDS.length].hex
-              
-              return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Glow effect */}
+        <div className="absolute -inset-1 bg-gradient-to-br from-violet-500/30 via-cyan-500/20 to-fuchsia-500/30 rounded-3xl blur-xl" />
+        
+        <div className="relative rounded-2xl p-6 shadow-2xl bg-[#12122a] border border-white/10 flex flex-col overflow-hidden">
+          {/* Header */}
+          <div className="flex-shrink-0 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/30">
+                  <Sparkles className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white">{title}</h2>
+                  <p className="text-gray-400 text-sm">{description}</p>
+                </div>
+              </div>
+              {onClose && (
                 <button
-                  key={idx}
-                  onClick={() => handleToggleGrid(idx)}
-                  disabled={isDisabled}
-                  className={`
-                    relative w-16 h-16 rounded-xl transition-all transform flex-shrink-0
-                    ${isSelected 
-                      ? 'shadow-lg scale-110' 
-                      : 'opacity-60 hover:opacity-90 hover:scale-105'
-                    }
-                    ${isDisabled ? 'cursor-not-allowed opacity-30' : 'cursor-pointer'}
-                  `}
-                  style={{
-                    backgroundColor: colorHex,
-                    border: isSelected 
-                      ? `4px solid white`
-                      : '2px solid rgba(255, 255, 255, 0.3)',
-                    boxShadow: isSelected 
-                      ? `0 10px 25px -5px ${colorHex}40, 0 0 0 4px white, 0 0 0 8px ${colorHex}30, inset 0 2px 4px rgba(0,0,0,0.1)`
-                      : '0 2px 8px rgba(0,0,0,0.1)'
-                  }}
+                  onClick={onClose}
+                  className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
                 >
-                  {/* Grid number */}
-                  <div className="absolute top-1 left-1/2 transform -translate-x-1/2 bg-white/90 text-gray-800 px-2 py-0.5 rounded-full text-xs font-bold shadow-sm">
-                    {idx + 1}
-                  </div>
-                  
-                  {/* Selection indicator - checkmark */}
-                  {isSelected && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-lg animate-bounce">
-                      <span className="text-green-600 text-xs font-bold">✓</span>
-                    </div>
-                  )}
+                  <X className="w-5 h-5 text-gray-400" />
                 </button>
-              )
-            })}
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between flex-shrink-0 pt-4 mt-6 border-t border-gray-200">
-          <div className="text-sm text-gray-600">
-            {selectedCount} block{selectedCount !== 1 ? 's' : ''} selected{maxGrids && ` / ${maxGrids} max`}
+          {/* Grid Selection */}
+          <div className="flex-1 overflow-visible px-2 py-8 flex items-center justify-center">
+            <div className="flex gap-5 w-full justify-center overflow-x-auto pt-3 pb-4 px-4" style={{ scrollbarWidth: 'thin' }}>
+              {colorGrids.map((grid, idx) => {
+                const isSelected = selectedGridIndices.has(idx)
+                const isAtCapacity = maxGrids ? selectedGridIndices.size >= maxGrids : false
+                const isDisabled = !isSelected && isAtCapacity && maxGrids !== 1
+                const colorHex = grid.colorScheme?.hex || COLOR_GRIDS[idx % COLOR_GRIDS.length].hex
+                
+                return (
+                  <div key={idx} className="relative flex-shrink-0 pt-2">
+                    <button
+                      onClick={() => handleToggleGrid(idx)}
+                      disabled={isDisabled}
+                      className={`
+                        relative w-12 h-12 rounded-xl transition-all transform group
+                        ${isSelected 
+                          ? 'scale-110 ring-2 ring-white/70' 
+                          : 'opacity-70 hover:opacity-100 hover:scale-105'
+                        }
+                        ${isDisabled ? 'cursor-not-allowed opacity-30' : 'cursor-pointer'}
+                      `}
+                      style={{
+                        backgroundColor: colorHex,
+                        boxShadow: isSelected 
+                          ? `0 0 20px ${colorHex}60, 0 6px 25px -6px ${colorHex}80`
+                          : `0 4px 10px ${colorHex}30`
+                      }}
+                    >
+                      {/* Grid number - centered inside the block */}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-white text-base font-bold drop-shadow-lg">
+                          {idx + 1}
+                        </span>
+                      </div>
+                      
+                      {/* Hover glow */}
+                      <div 
+                        className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{ boxShadow: `inset 0 0 12px ${colorHex}50` }}
+                      />
+                    </button>
+                    
+                    {/* Selection indicator - checkmark (outside button for better visibility) */}
+                    {isSelected && (
+                      <div className="absolute -top-0.5 right-0 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg border-2 border-[#12122a] z-10">
+                        <span className="text-white text-xs font-bold">✓</span>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
-          <div className="flex gap-3">
-            {onClose && (
+
+          {/* Footer */}
+          <div className="flex items-center justify-between flex-shrink-0 pt-4 mt-4 border-t border-white/10">
+            <div className="text-sm text-gray-400">
+              <span className="text-white font-semibold">{selectedCount}</span> block{selectedCount !== 1 ? '' : ''} vald{selectedCount !== 1 ? 'a' : ''}{maxGrids && <span className="text-gray-500"> / max {maxGrids}</span>}
+            </div>
+            <div className="flex gap-3">
+              {onClose && (
+                <button
+                  onClick={onClose}
+                  className="px-5 py-3 bg-white/5 border border-white/10 text-gray-400 rounded-xl font-medium hover:bg-white/10 transition-colors"
+                >
+                  Avbryt
+                </button>
+              )}
               <button
-                onClick={onClose}
-                className="px-6 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                onClick={handleStart}
+                disabled={!canStart}
+                className={`
+                  px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2
+                  ${canStart 
+                    ? 'bg-gradient-to-r from-violet-500 to-cyan-500 text-white hover:from-violet-400 hover:to-cyan-400 shadow-lg shadow-violet-500/30 hover:shadow-xl hover:shadow-violet-500/40' 
+                    : 'bg-white/5 text-gray-500 cursor-not-allowed'
+                  }
+                `}
               >
-                Cancel
+                <Play className="w-5 h-5" />
+                <span>Starta spel</span>
               </button>
-            )}
-            <button
-              onClick={handleStart}
-              disabled={!canStart}
-              className={`
-                px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center space-x-2 shadow-lg
-                ${canStart 
-                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 hover:shadow-xl transform hover:scale-105' 
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }
-              `}
-            >
-              <span>Start Game</span>
-              {canStart && <span>→</span>}
-            </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
   )
 }
-

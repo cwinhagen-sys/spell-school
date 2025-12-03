@@ -20,8 +20,8 @@ class SyncManager {
   private state: SyncState = 'IDLE'
   private flushInterval: NodeJS.Timeout | null = null
   private lastFlushTime = 0
-  private readonly FLUSH_INTERVAL_MS = 3000  // 3 seconds
-  private readonly MIN_FLUSH_INTERVAL_MS = 2000  // Throttle: max once per 2 seconds
+  private readonly FLUSH_INTERVAL_MS = 10000  // 10 seconds (increased from 3 to reduce load)
+  private readonly MIN_FLUSH_INTERVAL_MS = 5000  // Throttle: max once per 5 seconds (increased from 2)
   private isInitialized = false
 
   /**

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { canAddStudentsToClass } from '@/lib/subscription'
 
 type StudentInput = {
   username: string
@@ -87,6 +88,67 @@ export async function POST(request: NextRequest) {
 
     if (classError || !classRecord) {
       return NextResponse.json({ error: 'Class not found or access denied' }, { status: 404 })
+    }
+
+    // Check subscription limits before creating students
+    const { data: currentStudents } = await supabaseAdmin
+      .from('class_students')
+      .select('student_id')
+      .eq('class_id', classId)
+      .is('deleted_at', null)
+
+    const currentStudentCount = new Set(currentStudents?.map(cs => cs.student_id) || []).size
+    const canAdd = await canAddStudentsToClass(user.id, classId, currentStudentCount)
+
+    if (!canAdd.allowed) {
+      return NextResponse.json(
+        { error: canAdd.reason || 'Subscription limit reached' },
+        { status: 403 }
+      )
+    }
+
+    // Check if adding these students would exceed the limit
+    const studentsToAdd = students.length
+    if (canAdd.allowed) {
+      const tier = await import('@/lib/subscription').then(m => m.getUserSubscriptionTier(user.id))
+      const limits = await import('@/lib/subscription').then(m => m.getUserSubscriptionLimits(user.id))
+      
+      if (tier === 'free' && limits.maxTotalStudents !== null) {
+        // Count total students across all classes
+        const { data: allClasses } = await supabaseAdmin
+          .from('classes')
+          .select('id')
+          .eq('teacher_id', user.id)
+          .is('deleted_at', null)
+
+        if (allClasses && allClasses.length > 0) {
+          const classIds = allClasses.map(c => c.id)
+          const { data: allClassStudents } = await supabaseAdmin
+          .from('class_students')
+          .select('student_id')
+          .in('class_id', classIds)
+          .is('deleted_at', null)
+
+          const totalStudents = new Set(allClassStudents?.map(cs => cs.student_id) || []).size
+          if (totalStudents + studentsToAdd > limits.maxTotalStudents) {
+            const { getTierDisplayName } = await import('@/lib/subscription')
+            const tierName = getTierDisplayName(tier)
+            return NextResponse.json(
+              { error: `${tierName} plan allows max ${limits.maxTotalStudents} students total. You're trying to add ${studentsToAdd} students but already have ${totalStudents}.` },
+              { status: 403 }
+            )
+          }
+        }
+      } else if (tier === 'premium' && limits.maxStudentsPerClass !== null) {
+        if (currentStudentCount + studentsToAdd > limits.maxStudentsPerClass) {
+          const { getTierDisplayName } = await import('@/lib/subscription')
+          const tierName = getTierDisplayName(tier)
+          return NextResponse.json(
+            { error: `${tierName} plan allows max ${limits.maxStudentsPerClass} students per class. You're trying to add ${studentsToAdd} students but already have ${currentStudentCount}.` },
+            { status: 403 }
+          )
+        }
+      }
     }
 
     const normalizedClassCode = classRecord.name

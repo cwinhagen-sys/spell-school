@@ -1,9 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Users, Search, Mail, Trash2, Eye, RefreshCw, ChevronLeft } from 'lucide-react'
+import { Users, Search, Eye, ChevronLeft, Lock, LayoutGrid, List, TrendingUp, Award, Target, Clock, ArrowUpDown, BookOpen, Brain, Keyboard, Globe, BarChart3, Gamepad2, FileText, CheckSquare, Sparkles, GripVertical } from 'lucide-react'
 import StudentDetailsModal from '@/components/StudentDetailsModal'
+import { hasProgressStatsAccess, hasQuizStatsAccess } from '@/lib/subscription'
+import { titleForLevel } from '@/lib/wizardTitles'
+import Link from 'next/link'
 
 interface Student {
   id: string
@@ -17,6 +20,20 @@ interface Student {
   level: number
   last_activity: string
   is_active: boolean
+  average_accuracy?: number
+  games_played?: number
+  recent_quiz_results?: Array<{
+    word_set_title: string
+    score: number
+    total: number
+    accuracy: number
+    completed_at: string
+  }>
+  latest_games?: Array<{
+    game_type: string
+    played_at: string
+    accuracy: number
+  }>
 }
 
 interface StudentDetailedStats {
@@ -89,19 +106,49 @@ export default function ManageStudentsPage() {
   const [students, setStudents] = useState<Student[]>([])
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [sortBy, setSortBy] = useState<'name' | 'class_name' | 'total_points' | 'level' | 'last_activity'>('name')
+  const [sortBy, setSortBy] = useState<'name' | 'total_points' | 'average_accuracy' | 'games_played' | 'last_activity'>('name')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
   const [showStudentDetails, setShowStudentDetails] = useState(false)
   const [studentDetails, setStudentDetails] = useState<StudentDetailedStats | null>(null)
   const [detailsLoading, setDetailsLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<'overview' | 'badges' | 'games' | 'activity'>('overview')
-  const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [selectedClass, setSelectedClass] = useState<string>('')
   const [classes, setClasses] = useState<Array<{id: string, name: string}>>([])
+  const [hasProgressAccess, setHasProgressAccess] = useState(false)
+  const [hasQuizAccess, setHasQuizAccess] = useState(false)
+  const [checkingAccess, setCheckingAccess] = useState(true)
+  const [viewMode, setViewMode] = useState<'compact' | 'expanded'>('compact')
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
+    student: 200,
+    xp: 120,
+    accuracy: 120,
+    games: 100,
+    latestGame: 150,
+    quizzes: 300
+  })
+  const [expandedQuizzes, setExpandedQuizzes] = useState<Set<string>>(new Set())
+  const [resizingColumn, setResizingColumn] = useState<string | null>(null)
+  const tableRef = useRef<HTMLTableElement>(null)
 
   useEffect(() => {
+    const checkAccess = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const progressAccess = await hasProgressStatsAccess(user.id)
+          const quizAccess = await hasQuizStatsAccess(user.id)
+          setHasProgressAccess(progressAccess)
+          setHasQuizAccess(quizAccess)
+        }
+      } catch (error) {
+        console.error('Error checking access:', error)
+      } finally {
+        setCheckingAccess(false)
+      }
+    }
+    checkAccess()
+    // loadClasses will automatically load students for the selected class
     loadClasses()
   }, [])
 
@@ -123,6 +170,17 @@ export default function ManageStudentsPage() {
       if (error) throw error
       
       setClasses(data || [])
+      
+      // Auto-select first class or last selected class
+      if (data && data.length > 0) {
+        const lastSelectedClassId = localStorage.getItem('teacher_last_selected_class')
+        const classToSelect = lastSelectedClassId && data.find(c => c.id === lastSelectedClassId)
+          ? lastSelectedClassId
+          : data[0].id
+        
+        setSelectedClass(classToSelect)
+        await loadStudents(classToSelect)
+      }
     } catch (error) {
       console.error('Error loading classes:', error)
       setMessage({ type: 'error', text: 'Failed to load classes' })
@@ -150,16 +208,52 @@ export default function ManageStudentsPage() {
       if (response.ok) {
         let allStudents = data.students || []
         
-        // Filter students based on selected class
+        // Filter students based on selected class - exclude unassigned
         if (classFilter) {
-          if (classFilter === 'unassigned') {
-            allStudents = allStudents.filter((s: Student) => s.class_name === 'Unassigned')
-          } else {
-            allStudents = allStudents.filter((s: Student) => s.class_id === classFilter)
-          }
+          allStudents = allStudents.filter((s: Student) => {
+            // Only show students with active classes (not unassigned)
+            return s.class_id === classFilter && s.class_name !== 'Unassigned'
+          })
+        } else {
+          // If no filter, exclude unassigned students
+          allStudents = allStudents.filter((s: Student) => s.class_name !== 'Unassigned')
         }
         
-        setStudents(allStudents)
+        // Load additional stats for each student
+        const studentsWithStats = await Promise.all(
+          allStudents.map(async (student: Student) => {
+            try {
+              const detailsResponse = await fetch(`/api/teacher/student-details?studentId=${student.id}`, {
+                headers: {
+                  'Authorization': `Bearer ${session.access_token}`
+                }
+              })
+              
+              if (detailsResponse.ok) {
+                const details = await detailsResponse.json()
+                return {
+                  ...student,
+                  average_accuracy: details.average_accuracy || 0,
+                  games_played: details.games_played || 0,
+                  recent_quiz_results: details.quiz_results || [],
+                  latest_games: (details.activity_log || []).slice(0, 5) // Get latest 5 games
+                }
+              }
+            } catch (error) {
+              console.error(`Error loading stats for student ${student.id}:`, error)
+            }
+            
+            return {
+              ...student,
+              average_accuracy: 0,
+              games_played: 0,
+              recent_quiz_results: [],
+              latest_games: []
+            }
+          })
+        )
+        
+        setStudents(studentsWithStats)
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to load students' })
       }
@@ -227,91 +321,125 @@ export default function ManageStudentsPage() {
   const handleClassChange = async (classId: string) => {
     setSelectedClass(classId)
     setStudents([]) // Clear current students
+    // Save selected class to localStorage
     if (classId) {
+      localStorage.setItem('teacher_last_selected_class', classId)
       await loadStudents(classId)
+    } else {
+      localStorage.removeItem('teacher_last_selected_class')
     }
   }
 
-  const handleAction = async (action: string, student: Student) => {
-    try {
-      setActionLoading(student.id)
-      
-      // Get the current session token
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        setMessage({ type: 'error', text: 'Not authenticated' })
-        return
-      }
-      
-      // Handle password reset separately
-      if (action === 'reset_password') {
-        const newPassword = prompt(`Enter new password for ${student.name}:\n\n(Minimum 6 characters)`)
-        
-        if (!newPassword) {
-          setActionLoading(null)
-          return // User cancelled
-        }
-        
-        if (newPassword.length < 6) {
-          setMessage({ type: 'error', text: 'Password must be at least 6 characters long' })
-          setActionLoading(null)
-          return
-        }
-        
-        const response = await fetch('/api/teacher/reset-student-password', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`
-          },
-          body: JSON.stringify({
-            studentId: student.id,
-            newPassword
-          })
-        })
-        
-        const data = await response.json()
-        
-        if (response.ok) {
-          setMessage({ type: 'success', text: `Password updated! ${student.name} can now login with username "${data.student.username}" and the new password.` })
-        } else {
-          setMessage({ type: 'error', text: data.error || 'Failed to reset password' })
-        }
-        
-        setActionLoading(null)
-        return
-      }
-      
-      // Handle other actions (remove from class, etc.)
-      const response = await fetch('/api/teacher/students', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          action,
-          studentId: student.id,
-          studentEmail: student.email
-        })
-      })
-      
-      const data = await response.json()
-      
-      if (response.ok) {
-        setMessage({ type: 'success', text: data.message })
-        if (action === 'remove_from_class') {
-          // Reload students to update the list with current filter
-          await loadStudents(selectedClass)
-        }
-      } else {
-        setMessage({ type: 'error', text: data.error || 'Action failed' })
-      }
-    } catch (error) {
-      console.error('Error performing action:', error)
-      setMessage({ type: 'error', text: 'Action failed' })
-    } finally {
-      setActionLoading(null)
+
+  const handleSort = (column: typeof sortBy) => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(column)
+      setSortOrder('asc')
+    }
+  }
+
+  const handleResizeStart = useCallback((column: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    setResizingColumn(column)
+    const startX = e.clientX
+    const startWidth = columnWidths[column]
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const diff = e.clientX - startX
+      const newWidth = Math.max(100, startWidth + diff) // Minimum width 100px
+      setColumnWidths(prev => ({ ...prev, [column]: newWidth }))
+    }
+
+    const handleMouseUp = () => {
+      setResizingColumn(null)
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+  }, [columnWidths])
+
+  const getGameIcon = (gameType: string) => {
+    // Normalize game type names (handle variations)
+    const normalized = gameType?.toLowerCase().trim()
+    
+    switch (normalized) {
+      case 'flashcards': return BookOpen
+      case 'match':
+      case 'matching': return Brain
+      case 'typing': return Keyboard
+      case 'translate': return Globe
+      case 'connect': return Target
+      case 'storygap':
+      case 'story_gap':
+      case 'story':
+      case 'sentence_gap': return FileText
+      case 'roulette': return Target
+      case 'choice':
+      case 'multiple_choice': return CheckSquare
+      case 'spellcasting':
+      case 'spell_slinger': return Sparkles
+      case 'quiz': return BarChart3
+      case 'daily_quest': return Award
+      case 'pronunciation': return Users
+      default: return Gamepad2
+    }
+  }
+
+  const getGameName = (gameType: string) => {
+    // Normalize game type names (handle variations)
+    const normalized = gameType?.toLowerCase().trim()
+    
+    switch (normalized) {
+      case 'flashcards': return 'Flashcards'
+      case 'match':
+      case 'matching': return 'Word Match'
+      case 'typing': return 'Typing Challenge'
+      case 'translate': return 'Translation'
+      case 'connect': return 'Line Match'
+      case 'storygap':
+      case 'story_gap':
+      case 'story':
+      case 'sentence_gap': return 'Story Gap'
+      case 'roulette': return 'Word Roulette'
+      case 'choice':
+      case 'multiple_choice': return 'Multiple Choice'
+      case 'spellcasting':
+      case 'spell_slinger': return 'Spell Casting'
+      case 'quiz': return 'Quiz'
+      case 'daily_quest': return 'Daily Quest'
+      case 'pronunciation': return 'Pronunciation'
+      default: return gameType || 'Game'
+    }
+  }
+
+  const getGameColor = (gameType: string) => {
+    // Normalize game type names (handle variations)
+    const normalized = gameType?.toLowerCase().trim()
+    
+    switch (normalized) {
+      case 'flashcards': return 'bg-blue-100 text-blue-700'
+      case 'match':
+      case 'matching': return 'bg-purple-100 text-purple-700'
+      case 'typing': return 'bg-green-100 text-green-700'
+      case 'translate': return 'bg-indigo-100 text-indigo-700'
+      case 'connect': return 'bg-orange-100 text-orange-700'
+      case 'storygap':
+      case 'story_gap':
+      case 'story':
+      case 'sentence_gap': return 'bg-pink-100 text-pink-700'
+      case 'roulette': return 'bg-yellow-100 text-yellow-700'
+      case 'choice':
+      case 'multiple_choice': return 'bg-cyan-100 text-cyan-700'
+      case 'spellcasting':
+      case 'spell_slinger': return 'bg-rose-100 text-rose-700'
+      case 'quiz': return 'bg-teal-100 text-teal-700'
+      case 'daily_quest': return 'bg-amber-100 text-amber-700'
+      case 'pronunciation': return 'bg-violet-100 text-violet-700'
+      default: return 'bg-gray-100 text-gray-700'
     }
   }
 
@@ -322,18 +450,31 @@ export default function ManageStudentsPage() {
         student.class_name.toLowerCase().includes(searchTerm.toLowerCase())
     })
     .sort((a, b) => {
-      let aValue: any = a[sortBy]
-      let bValue: any = b[sortBy]
+      let aValue: any
+      let bValue: any
       
       if (sortBy === 'last_activity') {
-        aValue = new Date(aValue).getTime()
-        bValue = new Date(bValue).getTime()
+        aValue = new Date(a.last_activity).getTime()
+        bValue = new Date(b.last_activity).getTime()
+      } else if (sortBy === 'average_accuracy') {
+        aValue = a.average_accuracy || 0
+        bValue = b.average_accuracy || 0
+      } else if (sortBy === 'games_played') {
+        aValue = a.games_played || 0
+        bValue = b.games_played || 0
+      } else {
+        aValue = a[sortBy]
+        bValue = b[sortBy]
       }
       
+      // Handle null/undefined values
+      if (aValue == null) aValue = sortBy === 'name' ? '' : 0
+      if (bValue == null) bValue = sortBy === 'name' ? '' : 0
+      
       if (sortOrder === 'asc') {
-        return aValue > bValue ? 1 : -1
+        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0
       } else {
-        return aValue < bValue ? 1 : -1
+        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0
       }
     })
 
@@ -349,308 +490,519 @@ export default function ManageStudentsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-xl font-semibold text-gray-700">Loading students...</p>
+          <div className="w-12 h-12 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Laddar elever...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <a 
-                href="/teacher" 
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Back to dashboard"
-              >
-                <ChevronLeft className="w-6 h-6 text-gray-600" />
-              </a>
-              <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
-                <Users className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800">Progress Report</h1>
-                <p className="text-sm text-gray-600">Track student progress and performance</p>
-              </div>
+    <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Page Header */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/20">
+              <TrendingUp className="w-6 h-6 text-white" />
             </div>
-            <div className="text-sm text-gray-500">
-              {students.length} student{students.length !== 1 ? 's' : ''}
+            <div>
+              <h1 className="text-2xl font-bold text-white">Progress</h1>
+              <p className="text-gray-400">Följ elevernas framsteg och prestationer</p>
             </div>
+          </div>
+          <div className="px-3 py-1.5 bg-white/5 rounded-lg text-sm text-gray-400">
+            {students.length} {students.length !== 1 ? 'elever' : 'elev'}
+          </div>
+        </div>
+        
+        {checkingAccess ? null : (!hasProgressAccess || !hasQuizAccess) && (
+          <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+            <div className="flex items-center gap-2 text-amber-400 text-sm">
+              <Lock className="w-4 h-4" />
+              <span>
+                {!hasProgressAccess && !hasQuizAccess 
+                  ? 'Progress och Quiz-statistik kräver Pro-plan.'
+                  : !hasProgressAccess 
+                  ? 'Progress-statistik kräver Pro-plan.'
+                  : 'Quiz-statistik kräver Pro-plan.'}
+              </span>
+              <Link href="/pricing" className="font-semibold text-amber-300 hover:text-amber-200 ml-1">
+                Uppgradera →
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Search and Filter */}
+      <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-white/10 p-6 mb-8 shadow-xl">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Sök elever efter namn..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:outline-none transition-all"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <select
+              value={selectedClass}
+              onChange={(e) => handleClassChange(e.target.value)}
+              className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-violet-500/50 focus:outline-none transition-all appearance-none cursor-pointer min-w-[200px]"
+            >
+              <option value="" className="bg-[#1a1a2e]">Alla aktiva klasser</option>
+              {classes.map(c => (
+                <option key={c.id} value={c.id} className="bg-[#1a1a2e]">{c.name}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => setViewMode(viewMode === 'compact' ? 'expanded' : 'compact')}
+              className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center gap-2"
+              title={`Byt till ${viewMode === 'compact' ? 'utökad' : 'kompakt'} vy`}
+            >
+              {viewMode === 'compact' ? <LayoutGrid className="w-4 h-4" /> : <List className="w-4 h-4" />}
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-6 py-8">
-        {/* Search and Filter */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Search students by name or class..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <select
-                value={selectedClass}
-                onChange={(e) => handleClassChange(e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              >
-                <option value="">Select class to view students</option>
-                {classes.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-                <option value="unassigned">Unassigned Students</option>
-              </select>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              >
-                <option value="name">Sort by Name</option>
-                <option value="class_name">Sort by Class</option>
-                <option value="total_points">Sort by Points</option>
-                <option value="level">Sort by Level</option>
-                <option value="last_activity">Sort by Last Activity</option>
-              </select>
-              <button
-                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                title={`Sort ${sortOrder === 'asc' ? 'Descending' : 'Ascending'}`}
-              >
-                {sortOrder === 'asc' ? '↑' : '↓'}
-              </button>
-            </div>
+      {/* Message */}
+      {message && (
+        <div className={`mb-6 p-4 rounded-xl border backdrop-blur-sm ${
+          message.type === 'success' 
+            ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' 
+            : 'bg-red-500/20 border-red-500/30 text-red-300'
+        }`}>
+          <div className="flex items-center justify-between">
+            <span>{message.text}</span>
+            <button
+              onClick={() => setMessage(null)}
+              className="text-gray-400 hover:text-white"
+            >
+              ×
+            </button>
           </div>
         </div>
+      )}
 
-        {/* Message */}
-        {message && (
-          <div className={`mb-6 p-4 rounded-lg ${
-            message.type === 'success' 
-              ? 'bg-green-50 border border-green-200 text-green-700' 
-              : 'bg-red-50 border border-red-200 text-red-700'
-          }`}>
-            <div className="flex items-center justify-between">
-              <span>{message.text}</span>
-              <button
-                onClick={() => setMessage(null)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ×
-              </button>
-            </div>
+      {/* Students List */}
+      <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-white/10 shadow-xl overflow-hidden">
+        {filteredStudents.length === 0 ? (
+          <div className="text-center py-12">
+            <Users className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-400 mb-2">
+              {searchTerm ? 'Inga elever hittades' : selectedClass ? 'Inga elever i denna klass' : 'Välj en klass för att se elever'}
+            </h3>
+            <p className="text-gray-500">
+              {searchTerm 
+                ? 'Försök att justera din sökning' 
+                : selectedClass
+                ? 'Inga elever har gått med i denna klass ännu'
+                : 'Välj en klass från listan ovan för att se dess elever'
+              }
+            </p>
           </div>
-        )}
-
-        {/* Students List */}
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-          {!selectedClass ? (
-            <div className="text-center py-12">
-              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                Select a class to view students
-              </h3>
-              <p className="text-gray-500">
-                Choose a class from the dropdown above to see its students
-              </p>
-            </div>
-          ) : filteredStudents.length === 0 ? (
-            <div className="text-center py-12">
-              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                {searchTerm ? 'No students found' : 'No students in this class'}
-              </h3>
-              <p className="text-gray-500">
-                {searchTerm 
-                  ? 'Try adjusting your search terms' 
-                  : 'No students have joined this class yet'
-                }
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
+        ) : viewMode === 'compact' ? (
+          <div className="overflow-x-auto">
+            <table ref={tableRef} className="w-full border-collapse" style={{ tableLayout: 'fixed' }}>
+              <thead className="bg-white/5 border-b border-white/10">
+                <tr>
+                    {/* Student Column */}
                     <th 
-                      className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
-                      onClick={() => {
-                        if (sortBy === 'name') {
-                          setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-                        } else {
-                          setSortBy('name')
-                          setSortOrder('asc')
-                        }
-                      }}
+                      className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider relative select-none cursor-pointer hover:bg-white/5 transition-colors"
+                      style={{ width: columnWidths.student, minWidth: 150 }}
+                      onClick={() => handleSort('name')}
                     >
-                      Student {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      <div className="flex items-center gap-2">
+                        <span>Elev</span>
+                        <ArrowUpDown className="w-3 h-3 text-gray-500" />
+                        {sortBy === 'name' && (
+                          <span className="text-xs font-bold text-violet-400">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </div>
+                      <div
+                        className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors ${resizingColumn === 'student' ? 'bg-violet-500' : 'hover:bg-violet-400'}`}
+                        onMouseDown={(e) => handleResizeStart('student', e)}
+                      />
                     </th>
+                    
+                    {/* XP / Level Column */}
                     <th 
-                      className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
-                      onClick={() => {
-                        if (sortBy === 'class_name') {
-                          setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-                        } else {
-                          setSortBy('class_name')
-                          setSortOrder('asc')
-                        }
-                      }}
+                      className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider relative select-none cursor-pointer hover:bg-white/5 transition-colors"
+                      style={{ width: columnWidths.xp, minWidth: 100 }}
+                      onClick={() => handleSort('total_points')}
                     >
-                      Class {sortBy === 'class_name' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      <div className="flex items-center gap-2">
+                        <span>XP / Level</span>
+                        <ArrowUpDown className="w-3 h-3 text-gray-500" />
+                        {sortBy === 'total_points' && (
+                          <span className="text-xs font-bold text-violet-400">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </div>
+                      <div
+                        className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors ${resizingColumn === 'xp' ? 'bg-violet-500' : 'hover:bg-violet-400'}`}
+                        onMouseDown={(e) => handleResizeStart('xp', e)}
+                      />
                     </th>
+                    
+                    {/* Accuracy Column */}
                     <th 
-                      className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
-                      onClick={() => {
-                        if (sortBy === 'total_points') {
-                          setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-                        } else {
-                          setSortBy('total_points')
-                          setSortOrder('desc')
-                        }
-                      }}
+                      className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider relative select-none cursor-pointer hover:bg-white/5 transition-colors"
+                      style={{ width: columnWidths.accuracy, minWidth: 100 }}
+                      onClick={() => handleSort('average_accuracy')}
                     >
-                      Points {sortBy === 'total_points' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      <div className="flex items-center gap-2">
+                        <span>Accuracy</span>
+                        <ArrowUpDown className="w-3 h-3 text-gray-500" />
+                        {sortBy === 'average_accuracy' && (
+                          <span className="text-xs font-bold text-violet-400">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </div>
+                      <div
+                        className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors ${resizingColumn === 'accuracy' ? 'bg-violet-500' : 'hover:bg-violet-400'}`}
+                        onMouseDown={(e) => handleResizeStart('accuracy', e)}
+                      />
                     </th>
+                    
+                    {/* Games Played Column */}
                     <th 
-                      className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
-                      onClick={() => {
-                        if (sortBy === 'level') {
-                          setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-                        } else {
-                          setSortBy('level')
-                          setSortOrder('desc')
-                        }
-                      }}
+                      className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider relative select-none cursor-pointer hover:bg-white/5 transition-colors"
+                      style={{ width: columnWidths.games, minWidth: 80 }}
+                      onClick={() => handleSort('games_played')}
                     >
-                      Level {sortBy === 'level' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      <div className="flex items-center gap-2">
+                        <span>Games</span>
+                        <ArrowUpDown className="w-3 h-3 text-gray-500" />
+                        {sortBy === 'games_played' && (
+                          <span className="text-xs font-bold text-violet-400">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </div>
+                      <div
+                        className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors ${resizingColumn === 'games' ? 'bg-violet-500' : 'hover:bg-violet-400'}`}
+                        onMouseDown={(e) => handleResizeStart('games', e)}
+                      />
                     </th>
+                    
+                    {/* Latest Game Column */}
                     <th 
-                      className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
-                      onClick={() => {
-                        if (sortBy === 'last_activity') {
-                          setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-                        } else {
-                          setSortBy('last_activity')
-                          setSortOrder('desc')
-                        }
-                      }}
+                      className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider relative select-none hover:bg-white/5 transition-colors"
+                      style={{ width: columnWidths.latestGame, minWidth: 120 }}
                     >
-                      Last Activity {sortBy === 'last_activity' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      <span>Latest Games</span>
+                      <div
+                        className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors ${resizingColumn === 'latestGame' ? 'bg-violet-500' : 'hover:bg-violet-400'}`}
+                        onMouseDown={(e) => handleResizeStart('latestGame', e)}
+                      />
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Class Status
+                    
+                    {/* Quizzes Column - Expandable */}
+                    <th 
+                      className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider relative select-none hover:bg-white/5 transition-colors"
+                      style={{ width: columnWidths.quizzes, minWidth: 200 }}
+                    >
+                      <span>Recent Quizzes</span>
+                      <div
+                        className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors ${resizingColumn === 'quizzes' ? 'bg-violet-500' : 'hover:bg-violet-400'}`}
+                        onMouseDown={(e) => handleResizeStart('quizzes', e)}
+                      />
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    
+                    {/* Actions Column */}
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-20">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredStudents.map((student) => (
-                    <tr key={student.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{student.name}</div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          student.class_name === 'Unassigned'
-                            ? 'bg-gray-100 text-gray-600 border border-gray-300'
-                            : 'bg-indigo-100 text-indigo-800'
-                        }`}>
-                          {student.class_name}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">
-                          {student.total_points} XP
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">
-                          Level {student.level}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {formatDate(student.last_activity)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          student.class_name === 'Unassigned'
-                            ? 'bg-red-100 text-red-700 border border-red-200'
-                            : student.is_active 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {student.class_name === 'Unassigned' ? 'No Class' : student.is_active ? 'In Class' : 'In Class'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center space-x-2">
+                <tbody className="divide-y divide-white/5">
+                  {filteredStudents.map((student) => {
+                    const isQuizzesExpanded = expandedQuizzes.has(student.id)
+                    const quizzesToShow = isQuizzesExpanded 
+                      ? (student.recent_quiz_results || [])
+                      : (student.recent_quiz_results || []).slice(0, 3)
+                    
+                    return (
+                      <tr key={student.id} className="hover:bg-white/5 transition-colors border-b border-white/5">
+                        {/* Student */}
+                        <td className="px-4 py-4" style={{ width: columnWidths.student }}>
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-500">
+                              {(() => {
+                                const wizard = titleForLevel(student.level)
+                                return wizard.image ? (
+                                  <img 
+                                    src={wizard.image} 
+                                    alt={wizard.title || 'Wizard'} 
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      // Fallback to initial if image fails to load
+                                      const target = e.target as HTMLImageElement
+                                      target.style.display = 'none'
+                                      const parent = target.parentElement
+                                      if (parent) {
+                                        parent.innerHTML = `<span class="text-white font-semibold">${student.name.charAt(0).toUpperCase()}</span>`
+                                      }
+                                    }}
+                                  />
+                                ) : (
+                                  <span className="text-white font-semibold">{student.name.charAt(0).toUpperCase()}</span>
+                                )
+                              })()}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-sm font-semibold text-white truncate">{student.name}</div>
+                              <div className="text-xs text-gray-500">{formatDate(student.last_activity)}</div>
+                            </div>
+                          </div>
+                        </td>
+                        
+                        {/* XP / Level */}
+                        <td className="px-4 py-4" style={{ width: columnWidths.xp }}>
+                          <div className="flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                            <div className="min-w-0">
+                              <div className="text-sm font-semibold text-white">{student.total_points.toLocaleString()} XP</div>
+                              <div className="text-xs text-gray-500">Level {student.level}</div>
+                            </div>
+                          </div>
+                        </td>
+                        
+                        {/* Accuracy */}
+                        <td className="px-4 py-4" style={{ width: columnWidths.accuracy }}>
+                          <div className="flex items-center gap-2">
+                            <Target className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                            <div className="text-sm font-semibold text-white">
+                              {student.average_accuracy || 0}%
+                            </div>
+                          </div>
+                        </td>
+                        
+                        {/* Games Played */}
+                        <td className="px-4 py-4" style={{ width: columnWidths.games }}>
+                          <div className="flex items-center gap-2">
+                            <Award className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                            <div className="text-sm font-semibold text-white">
+                              {student.games_played || 0}
+                            </div>
+                          </div>
+                        </td>
+                        
+                        {/* Latest Games */}
+                        <td className="px-4 py-4" style={{ width: columnWidths.latestGame }}>
+                          <div className="flex gap-1.5 flex-wrap">
+                            {student.latest_games && student.latest_games.length > 0 ? (
+                              student.latest_games.slice(0, 3).map((game, idx) => {
+                                const gameType = game.game_type || 'unknown'
+                                const Icon = getGameIcon(gameType)
+                                const gameName = getGameName(gameType)
+                                const gameColor = getGameColor(gameType)
+                                
+                                // Debug logging for missing game types
+                                if (!game.game_type || gameType === 'unknown' || gameName === (gameType || 'Game')) {
+                                  console.warn('⚠️ Unknown or missing game type in latest games:', {
+                                    gameType: game.game_type,
+                                    game,
+                                    student: student.name
+                                  })
+                                }
+                                
+                                return (
+                                  <div
+                                    key={idx}
+                                    className={`relative group ${gameColor} rounded-lg p-1.5 flex items-center justify-center cursor-help`}
+                                    title={`${gameName} - ${game.accuracy || 0}% accuracy`}
+                                  >
+                                    <Icon className="w-4 h-4" />
+                                  </div>
+                                )
+                              })
+                            ) : (
+                              <span className="text-xs text-gray-400">No games</span>
+                            )}
+                          </div>
+                        </td>
+                        
+                        {/* Quizzes - Expandable */}
+                        <td className="px-4 py-4" style={{ width: columnWidths.quizzes }}>
+                          <div className="flex flex-col gap-1">
+                            <div className="flex gap-1 flex-wrap">
+                              {quizzesToShow.length > 0 ? (
+                                quizzesToShow.map((quiz, idx) => (
+                                  <div
+                                    key={idx}
+                                    className={`px-2 py-1 rounded text-xs font-medium ${
+                                      quiz.accuracy >= 80
+                                        ? 'bg-emerald-500/20 text-emerald-400'
+                                        : quiz.accuracy >= 60
+                                        ? 'bg-amber-500/20 text-amber-400'
+                                        : 'bg-red-500/20 text-red-400'
+                                    }`}
+                                    title={`${quiz.word_set_title}: ${quiz.score}/${quiz.total} (${quiz.accuracy}%)`}
+                                  >
+                                    {quiz.accuracy}%
+                                  </div>
+                                ))
+                              ) : (
+                                <span className="text-xs text-gray-400">No quizzes</span>
+                              )}
+                            </div>
+                            {student.recent_quiz_results && student.recent_quiz_results.length > 3 && (
+                              <button
+                                onClick={() => {
+                                  const newExpanded = new Set(expandedQuizzes)
+                                  if (isQuizzesExpanded) {
+                                    newExpanded.delete(student.id)
+                                  } else {
+                                    newExpanded.add(student.id)
+                                  }
+                                  setExpandedQuizzes(newExpanded)
+                                }}
+                                className="text-xs text-violet-400 hover:text-violet-300 mt-1 self-start"
+                              >
+                                {isQuizzesExpanded 
+                                  ? `Show less (${student.recent_quiz_results.length - 3} hidden)`
+                                  : `Show ${student.recent_quiz_results.length - 3} more`
+                                }
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                        
+                        {/* Actions */}
+                        <td className="px-4 py-4">
                           <button
                             onClick={() => {
                               setSelectedStudent(student)
                               setShowStudentDetails(true)
                               loadStudentDetails(student.id)
                             }}
-                            className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
+                            className="p-2 text-gray-400 hover:text-violet-400 hover:bg-violet-500/10 rounded-lg transition-colors"
                             title="View details"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => handleAction('reset_password', student)}
-                            disabled={actionLoading === student.id}
-                            className="p-2 text-gray-400 hover:text-blue-600 transition-colors disabled:opacity-50"
-                            title="Reset password"
-                          >
-                            <RefreshCw className={`w-4 h-4 ${actionLoading === student.id ? 'animate-spin' : ''}`} />
-                          </button>
-                          <button
-                            onClick={() => {
-                              const isUnassigned = student.class_name === 'Unassigned'
-                              const confirmMessage = isUnassigned
-                                ? `Are you sure you want to permanently delete ${student.name}? This cannot be undone.`
-                                : `Are you sure you want to remove ${student.name} from ${student.class_name}?`
-                              
-                              if (confirm(confirmMessage)) {
-                                handleAction('remove_from_class', student)
-                              }
-                            }}
-                            disabled={actionLoading === student.id}
-                            className={`p-2 transition-colors disabled:opacity-50 ${
-                              student.class_name === 'Unassigned'
-                                ? 'text-red-400 hover:text-red-700'
-                                : 'text-gray-400 hover:text-red-600'
-                            }`}
-                            title={student.class_name === 'Unassigned' ? 'Delete student permanently' : 'Remove from class'}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
-          )}
-        </div>
+          ) : (
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredStudents.map((student) => (
+                <div
+                  key={student.id}
+                  className="bg-white/5 rounded-xl border border-white/10 p-6 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer"
+                  onClick={() => {
+                    setSelectedStudent(student)
+                    setShowStudentDetails(true)
+                    loadStudentDetails(student.id)
+                  }}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-500">
+                        {(() => {
+                          const wizard = titleForLevel(student.level)
+                          return wizard.image ? (
+                            <img 
+                              src={wizard.image} 
+                              alt={wizard.title || 'Wizard'} 
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // Fallback to initial if image fails to load
+                                const target = e.target as HTMLImageElement
+                                target.style.display = 'none'
+                                const parent = target.parentElement
+                                if (parent) {
+                                  parent.innerHTML = `<span class="text-white font-bold text-lg">${student.name.charAt(0).toUpperCase()}</span>`
+                                }
+                              }}
+                            />
+                          ) : (
+                            <span className="text-white font-bold text-lg">{student.name.charAt(0).toUpperCase()}</span>
+                          )
+                        })()}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-white">{student.name}</h3>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-violet-500/20 text-violet-400 mt-1">
+                          {student.class_name}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="bg-white/5 rounded-lg p-3 border border-white/5">
+                      <div className="flex items-center gap-2 mb-1">
+                        <TrendingUp className="w-4 h-4 text-cyan-400" />
+                        <span className="text-xs text-gray-500">XP</span>
+                      </div>
+                      <div className="text-xl font-bold text-white">{student.total_points}</div>
+                      <div className="text-xs text-gray-500">Level {student.level}</div>
+                    </div>
+                    
+                    <div className="bg-white/5 rounded-lg p-3 border border-white/5">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Target className="w-4 h-4 text-emerald-400" />
+                        <span className="text-xs text-gray-500">Accuracy</span>
+                      </div>
+                      <div className="text-xl font-bold text-white">{student.average_accuracy || 0}%</div>
+                    </div>
+                    
+                    <div className="bg-white/5 rounded-lg p-3 border border-white/5">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Award className="w-4 h-4 text-amber-400" />
+                        <span className="text-xs text-gray-500">Games</span>
+                      </div>
+                      <div className="text-xl font-bold text-white">{student.games_played || 0}</div>
+                    </div>
+                    
+                    <div className="bg-white/5 rounded-lg p-3 border border-white/5">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Clock className="w-4 h-4 text-violet-400" />
+                        <span className="text-xs text-gray-500">Last Active</span>
+                      </div>
+                      <div className="text-xs font-semibold text-white">{formatDate(student.last_activity)}</div>
+                    </div>
+                  </div>
+                  
+                  {student.recent_quiz_results && student.recent_quiz_results.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-white/10">
+                      <div className="text-xs font-semibold text-gray-400 mb-2">Recent Quizzes</div>
+                      <div className="flex flex-wrap gap-2">
+                        {student.recent_quiz_results.map((quiz, idx) => (
+                          <div
+                            key={idx}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
+                              quiz.accuracy >= 80
+                                ? 'bg-emerald-500/20 text-emerald-400'
+                                : quiz.accuracy >= 60
+                                ? 'bg-amber-500/20 text-amber-400'
+                                : 'bg-red-500/20 text-red-400'
+                            }`}
+                            title={`${quiz.word_set_title}: ${quiz.score}/${quiz.total} (${quiz.accuracy}%)`}
+                          >
+                            <div className="font-semibold">{quiz.accuracy}%</div>
+                            <div className="text-xs opacity-75 truncate max-w-[80px]">{quiz.word_set_title}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+        )}
       </div>
 
       {/* Student Details Modal */}

@@ -31,13 +31,13 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
   const [loading, setLoading] = useState(false)
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [uploadPreview, setUploadPreview] = useState<string | null>(null)
+
   // Search for images on Unsplash
   const searchImages = async (query: string) => {
     if (!query.trim()) return
     
     setLoading(true)
     try {
-      // Check if Unsplash API key is available
       const apiKey = process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY
       
       if (!apiKey || apiKey === 'YOUR_UNSPLASH_ACCESS_KEY') {
@@ -116,8 +116,6 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
     }
   }
 
-
-
   // Search when modal opens or when word changes
   useEffect(() => {
     if (showModal) {
@@ -144,11 +142,11 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
             <img 
               src={value} 
               alt={word}
-              className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+              className="w-12 h-12 object-cover rounded-lg border border-white/10"
             />
             <button
               onClick={onClear}
-              className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
             >
               <X className="w-3 h-3 text-white" />
             </button>
@@ -156,27 +154,27 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
         ) : (
           <button
             onClick={() => setShowModal(true)}
-            className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center hover:border-gray-400 transition-colors"
+            className="w-12 h-12 border-2 border-dashed border-white/20 rounded-lg flex items-center justify-center hover:border-white/40 transition-colors bg-white/5"
           >
-            <ImageIcon className="w-6 h-6 text-gray-500" />
+            <ImageIcon className="w-5 h-5 text-gray-500" />
           </button>
         )}
         <button
           onClick={() => setShowModal(true)}
-          className="text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-3 py-1 rounded-lg transition-colors"
+          className="text-sm font-medium text-cyan-400 hover:text-cyan-300 px-3 py-1.5 rounded-lg transition-colors hover:bg-white/5"
         >
-          {value ? 'Change image' : 'Add image'}
+          {value ? 'Byt bild' : 'Lägg till bild'}
         </button>
       </div>
 
       {/* Inline Image Selector */}
       {showModal && (
-        <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="mt-4 p-4 bg-[#1a1a2e] rounded-xl border border-white/10">
           <div className="flex items-center justify-between mb-4">
-            <h4 className="font-medium text-gray-800">Choose image for "{word}"</h4>
+            <h4 className="font-medium text-white">Välj bild för "{word}"</h4>
             <button
               onClick={() => setShowModal(false)}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 hover:text-white p-1 hover:bg-white/10 rounded-lg transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -191,46 +189,46 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && searchImages(searchQuery)}
-                placeholder="Search for images..."
-                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 placeholder:text-gray-500 shadow-sm"
+                placeholder="Sök efter bilder..."
+                className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-none transition-all"
               />
             </div>
             <button
               onClick={() => searchImages(searchQuery)}
               disabled={loading}
-              className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 shadow-md"
+              className="px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 font-medium transition-all"
             >
-              {loading ? 'Searching...' : 'Search'}
+              {loading ? 'Söker...' : 'Sök'}
             </button>
           </div>
 
           {/* Upload section */}
-          <div className="mb-4 p-3 bg-white rounded-lg border border-gray-200">
-            <h5 className="font-medium mb-2 text-gray-800">Or upload your own image:</h5>
+          <div className="mb-4 p-4 bg-white/5 rounded-xl border border-white/10">
+            <h5 className="font-medium mb-3 text-gray-300 text-sm">Eller ladda upp egen bild:</h5>
             <div className="flex items-center gap-4">
               <input
                 type="file"
                 accept="image/*"
                 onChange={handleFileUpload}
                 className="hidden"
-                id="image-upload"
+                id={`image-upload-${wordIndex}`}
               />
               <label
-                htmlFor="image-upload"
-                className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
+                htmlFor={`image-upload-${wordIndex}`}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 cursor-pointer transition-colors"
               >
-                <Upload className="w-4 h-4 text-gray-600" />
-                <span className="text-gray-700 text-sm">Choose file</span>
+                <Upload className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-300 text-sm">Välj fil</span>
               </label>
               {uploadPreview && (
-                <div className="flex items-center gap-2">
-                  <img src={uploadPreview} alt="Preview" className="w-10 h-10 object-cover rounded border border-gray-200" />
+                <div className="flex items-center gap-3">
+                  <img src={uploadPreview} alt="Preview" className="w-10 h-10 object-cover rounded-lg border border-white/10" />
                   <button
                     onClick={handleUpload}
                     disabled={loading}
-                    className="px-3 py-1 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded hover:from-emerald-700 hover:to-green-700 disabled:opacity-50 text-sm"
+                    className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-lg hover:from-emerald-400 hover:to-green-500 disabled:opacity-50 text-sm font-medium transition-all"
                   >
-                    Upload
+                    Ladda upp
                   </button>
                 </div>
               )}
@@ -240,15 +238,18 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
           {/* Image grid */}
           <div className="max-h-64 overflow-y-auto">
             {loading ? (
-              <div className="text-center py-6 text-gray-600">Searching for images...</div>
+              <div className="text-center py-8">
+                <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto mb-3" />
+                <p className="text-gray-400">Söker efter bilder...</p>
+              </div>
             ) : !process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY || process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY === 'YOUR_UNSPLASH_ACCESS_KEY' ? (
-              <div className="text-center py-6 text-gray-600">
-                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 mb-3">
-                  <h5 className="font-semibold text-indigo-800 mb-1 text-sm">🔍 Automatiska bildförslag</h5>
-                  <p className="text-xs mb-1 text-gray-700">För att få automatiska bildförslag när du skriver ord behöver du en Unsplash API-nyckel.</p>
-                  <p className="text-xs text-indigo-600">Se UNSPLASH_SETUP.md för instruktioner</p>
+              <div className="text-center py-6">
+                <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4 mb-3">
+                  <h5 className="font-semibold text-cyan-400 mb-2 text-sm">🔍 Automatiska bildförslag</h5>
+                  <p className="text-xs mb-2 text-gray-400">För att få automatiska bildförslag när du skriver ord behöver du en Unsplash API-nyckel.</p>
+                  <p className="text-xs text-cyan-500">Se UNSPLASH_SETUP.md för instruktioner</p>
                 </div>
-                <p className="text-xs text-gray-600">Du kan fortfarande ladda upp egna bilder ovan ↑</p>
+                <p className="text-xs text-gray-500">Du kan fortfarande ladda upp egna bilder ovan ↑</p>
               </div>
             ) : unsplashImages.length > 0 ? (
               <div className="grid grid-cols-4 gap-3">
@@ -256,20 +257,23 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
                   <button
                     key={image.id}
                     onClick={() => handleImageSelect(image.urls.regular)}
-                    className="group relative aspect-square overflow-hidden rounded-lg border border-gray-200 hover:border-indigo-500 transition-colors"
+                    className="group relative aspect-square overflow-hidden rounded-xl border border-white/10 hover:border-cyan-500/50 transition-all"
                   >
                     <img
                       src={image.urls.small}
                       alt={image.alt_description}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                      <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">Välj</span>
+                    </div>
                   </button>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-6 text-gray-600">
-                No images found. Try a different search term.
+              <div className="text-center py-8 text-gray-400">
+                <ImageIcon className="w-10 h-10 mx-auto mb-3 opacity-50" />
+                <p>Inga bilder hittades. Prova ett annat sökord.</p>
               </div>
             )}
           </div>

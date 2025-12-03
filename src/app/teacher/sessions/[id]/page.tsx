@@ -367,96 +367,108 @@ export default function SessionDetailPage() {
   }
 
   if (loading) {
-    return <div className="text-center py-12 text-gray-500">Loading...</div>
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Laddar session...</p>
+        </div>
+      </div>
+    )
   }
 
   if (!session) {
-    return <div className="text-center py-12 text-red-600">Session not found</div>
+    return (
+      <div className="text-center py-12">
+        <Gamepad2 className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+        <p className="text-red-400">Session hittades inte</p>
+      </div>
+    )
   }
 
   return (
     <div>
       <Link
         href="/teacher/sessions"
-        className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
+        className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition-colors"
       >
         <ChevronLeft className="w-4 h-4" />
-        Back to sessions
+        Tillbaka till sessioner
       </Link>
 
       {/* Session Info */}
-      <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-6">
-        <div className="flex items-start justify-between mb-4">
+      <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-white/10 p-6 mb-6 shadow-xl">
+        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6 mb-4">
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900 mb-3">
+            <h1 className="text-2xl font-bold text-white mb-3">
               {session.session_name || (session.word_sets && session.word_sets.length > 0 ? session.word_sets[0].title : 'Session')}
             </h1>
-            <div className="flex flex-wrap items-center gap-3 text-sm">
-              <div className="flex items-center gap-2 text-gray-600">
-                <Calendar className="w-4 h-4" />
-                <span>Due: {formatDate(session.due_date)}</span>
+            <div className="flex flex-wrap items-center gap-4 text-sm">
+              <div className="flex items-center gap-2 text-gray-400">
+                <Calendar className="w-4 h-4 text-amber-400" />
+                <span>Slutdatum: {formatDate(session.due_date)}</span>
                 {isExpired() && (
-                  <span className="ml-2 px-2 py-0.5 bg-gray-200 text-gray-700 rounded text-xs font-medium">
-                    Expired
+                  <span className="ml-2 px-2 py-0.5 bg-gray-500/20 text-gray-400 rounded text-xs font-medium">
+                    Passerat
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2 text-gray-600">
-                <Gamepad2 className="w-4 h-4" />
-                <span>{session.enabled_games.length} games</span>
+              <div className="flex items-center gap-2 text-gray-400">
+                <Gamepad2 className="w-4 h-4 text-cyan-400" />
+                <span>{session.enabled_games.length} spel</span>
               </div>
               {session.quiz_enabled && (
-                <div className="flex items-center gap-2 text-gray-600">
-                  <FileText className="w-4 h-4" />
-                  <span>Quiz: {session.quiz_grading_type === 'ai' ? 'Automatic' : 'Manual'}</span>
+                <div className="flex items-center gap-2 text-gray-400">
+                  <FileText className="w-4 h-4 text-violet-400" />
+                  <span>Quiz: {session.quiz_grading_type === 'ai' ? 'AI-rättning' : 'Manuell'}</span>
                 </div>
               )}
             </div>
           </div>
-          <div className="text-right ml-6">
-            <div className="text-sm text-gray-600 mb-2">Session code</div>
-            <div className="flex items-center gap-3">
+          <div className="text-left lg:text-right">
+            <div className="text-sm text-gray-400 mb-2">Sessionskod</div>
+            <div className="flex flex-wrap items-center gap-3">
               <button
                 onClick={copySessionCode}
-                className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl transition-all shadow-lg shadow-amber-500/20"
               >
                 <span className="text-xl font-bold font-mono">{session.session_code}</span>
                 <Copy className="w-4 h-4" />
               </button>
               <button
                 onClick={copyJoinSessionLink}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors border border-gray-300"
-                title="Copy join session link for Google Classroom"
+                className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl transition-colors border border-white/10"
+                title="Kopiera länk för Google Classroom"
               >
                 <LinkIcon className="w-4 h-4" />
-                <span className="text-sm font-medium">Copy link</span>
+                <span className="text-sm font-medium">Kopiera länk</span>
               </button>
             </div>
-            <div className="flex items-center gap-3 mt-1">
+            <div className="flex items-center gap-3 mt-2">
               {copied && (
-                <p className="text-xs text-gray-600">Copied!</p>
+                <p className="text-xs text-emerald-400">Kopierat!</p>
               )}
               {linkCopied && (
-                <p className="text-xs text-gray-600">Link copied!</p>
+                <p className="text-xs text-emerald-400">Länk kopierad!</p>
               )}
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Share the link in Google Classroom
+              Dela länken i Google Classroom
             </p>
           </div>
         </div>
 
         {/* Export Buttons */}
         {canExport() && session.quiz_enabled && (
-          <div className="border-t border-gray-200 pt-4 mt-4">
+          <div className="border-t border-white/10 pt-4 mt-4">
             <div className="flex items-center gap-3">
-              <Download className="w-4 h-4 text-gray-600" />
-              <span className="text-sm font-medium text-gray-700">Export data:</span>
+              <Download className="w-4 h-4 text-gray-400" />
+              <span className="text-sm font-medium text-gray-300">Exportera data:</span>
               <button
                 onClick={() => handleExport('quiz')}
-                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors text-sm font-medium"
+                className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl transition-all text-sm font-medium shadow-lg shadow-amber-500/20"
               >
-                Export quiz results
+                Exportera quizresultat
               </button>
             </div>
           </div>
@@ -465,49 +477,49 @@ export default function SessionDetailPage() {
 
       {/* Participants View */}
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900">
-            Participants ({participants.length})
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <h2 className="text-xl font-bold text-white">
+            Deltagare ({participants.length})
           </h2>
           {participants.length > 0 && (
             <div className="flex items-center gap-3">
               {/* View Mode Toggle */}
-              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+              <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1 border border-white/10">
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
                     viewMode === 'list'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-white/10 text-white'
+                      : 'text-gray-400 hover:text-white'
                   }`}
                 >
                   <List className="w-4 h-4" />
-                  List
+                  Lista
                 </button>
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
                     viewMode === 'grid'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-white/10 text-white'
+                      : 'text-gray-400 hover:text-white'
                   }`}
                 >
                   <Grid3x3 className="w-4 h-4" />
-                  Grid
+                  Rutnät
                 </button>
               </div>
               {/* Sort Dropdown */}
               <div className="flex items-center gap-2">
-                <ArrowUpDown className="w-4 h-4 text-gray-600" />
+                <ArrowUpDown className="w-4 h-4 text-gray-500" />
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as 'progress' | 'blocks' | 'quiz' | 'name')}
-                  className="px-3 py-2 rounded-lg bg-white border border-gray-300 text-gray-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500/50 appearance-none cursor-pointer"
                 >
-                  <option value="name">Sort by name</option>
-                  <option value="progress">Sort by progress</option>
-                  <option value="blocks">Sort by color blocks</option>
-                  {session.quiz_enabled && <option value="quiz">Sort by quiz results</option>}
+                  <option value="name" className="bg-[#1a1a2e]">Sortera på namn</option>
+                  <option value="progress" className="bg-[#1a1a2e]">Sortera på framsteg</option>
+                  <option value="blocks" className="bg-[#1a1a2e]">Sortera på färgblock</option>
+                  {session.quiz_enabled && <option value="quiz" className="bg-[#1a1a2e]">Sortera på quizresultat</option>}
                 </select>
               </div>
             </div>
@@ -515,22 +527,22 @@ export default function SessionDetailPage() {
         </div>
 
         {participants.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-            <Users className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-600">No participants yet. Share the session code with students.</p>
+          <div className="bg-white/5 rounded-2xl border border-white/10 p-12 text-center">
+            <Users className="w-12 h-12 mx-auto mb-4 text-gray-500" />
+            <p className="text-gray-400">Inga deltagare ännu. Dela sessionskoden med elever.</p>
           </div>
         ) : viewMode === 'list' ? (
           /* List View */
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
             {/* List Header */}
-            <div className="bg-gray-50 border-b border-gray-200 px-6 py-3">
+            <div className="bg-white/5 border-b border-white/10 px-6 py-3">
               <div className="grid grid-cols-12 gap-4 items-center">
                 <div className="col-span-4">
                   <button
                     onClick={() => handleSort('name')}
-                    className="flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-gray-900 transition-colors"
+                    className="flex items-center gap-2 text-sm font-semibold text-gray-400 hover:text-white transition-colors"
                   >
-                    Full Name
+                    Namn
                     {sortBy === 'name' && (
                       sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
                     )}
@@ -539,9 +551,9 @@ export default function SessionDetailPage() {
                 <div className="col-span-3">
                   <button
                     onClick={() => handleSort('blocks')}
-                    className="flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-gray-900 transition-colors"
+                    className="flex items-center gap-2 text-sm font-semibold text-gray-400 hover:text-white transition-colors"
                   >
-                    Color Blocks
+                    Färgblock
                     {sortBy === 'blocks' && (
                       sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
                     )}
@@ -551,9 +563,9 @@ export default function SessionDetailPage() {
                   <div className="col-span-2">
                     <button
                       onClick={() => handleSort('quiz')}
-                      className="flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-gray-900 transition-colors"
+                      className="flex items-center gap-2 text-sm font-semibold text-gray-400 hover:text-white transition-colors"
                     >
-                      Quiz Score
+                      Quizpoäng
                       {sortBy === 'quiz' && (
                         sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
                       )}
@@ -563,9 +575,9 @@ export default function SessionDetailPage() {
                 <div className={session.quiz_enabled ? "col-span-3" : "col-span-5"}>
                   <button
                     onClick={() => handleSort('progress')}
-                    className="flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-gray-900 transition-colors"
+                    className="flex items-center gap-2 text-sm font-semibold text-gray-400 hover:text-white transition-colors"
                   >
-                    Progress
+                    Framsteg
                     {sortBy === 'progress' && (
                       sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
                     )}
@@ -575,7 +587,7 @@ export default function SessionDetailPage() {
             </div>
 
             {/* Table Body */}
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-white/5">
               {sortedParticipants.map((participant) => {
                 const completedCount = getCompletedGamesCount(participant)
                 const totalGames = session.enabled_games.length
@@ -585,21 +597,21 @@ export default function SessionDetailPage() {
                 return (
                   <div
                     key={participant.id}
-                    className="px-6 py-4 hover:bg-gray-50 transition-colors"
+                    className="px-6 py-4 hover:bg-white/5 transition-colors"
                   >
                     <div className="grid grid-cols-12 gap-4 items-center">
                       {/* Full Name Column */}
                       <div className="col-span-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white font-semibold text-sm shadow-lg shadow-amber-500/20">
                             {initials}
                           </div>
                           <div>
-                            <div className="font-semibold text-gray-900">
+                            <div className="font-semibold text-white">
                               {participant.student_name}
                             </div>
                             <div className="text-xs text-gray-500">
-                              Joined {new Date(participant.joined_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              Gick med {new Date(participant.joined_at).toLocaleDateString('sv-SE', { month: 'short', day: 'numeric' })}
                             </div>
                           </div>
                         </div>
@@ -609,13 +621,13 @@ export default function SessionDetailPage() {
                       <div className="col-span-3">
                         {participant.blocksCount !== undefined && participant.blocksCount > 0 ? (
                           <div className="flex items-center gap-2">
-                            <Palette className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-700 font-medium">
-                              {participant.blocksCount} {participant.blocksCount === 1 ? 'block' : 'blocks'}
+                            <Palette className="w-4 h-4 text-violet-400" />
+                            <span className="text-sm text-gray-300 font-medium">
+                              {participant.blocksCount} {participant.blocksCount === 1 ? 'block' : 'block'}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-sm text-gray-400">No blocks selected</span>
+                          <span className="text-sm text-gray-500">Inga block valda</span>
                         )}
                       </div>
 
@@ -624,20 +636,20 @@ export default function SessionDetailPage() {
                         <div className="col-span-2">
                           {participant.quizResult ? (
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-semibold text-gray-900">
+                              <span className="text-sm font-semibold text-white">
                                 {participant.quizResult.score}/{participant.quizResult.total}
                               </span>
                               {session.quiz_grading_type === 'manual' && isExpired() && (
                                 <button
                                   onClick={() => router.push(`/teacher/sessions/${sessionId}/quiz/${participant.id}`)}
-                                  className="text-xs px-2 py-1 bg-teal-50 text-teal-700 rounded hover:bg-teal-100 transition-colors"
+                                  className="text-xs px-2 py-1 bg-amber-500/20 text-amber-400 rounded-lg hover:bg-amber-500/30 transition-colors"
                                 >
-                                  {participant.quizGraded ? 'View' : 'Grade'}
+                                  {participant.quizGraded ? 'Visa' : 'Rätta'}
                                 </button>
                               )}
                             </div>
                           ) : (
-                            <span className="text-sm text-gray-400">Not completed</span>
+                            <span className="text-sm text-gray-500">Ej klar</span>
                           )}
                         </div>
                       )}
@@ -646,19 +658,19 @@ export default function SessionDetailPage() {
                       <div className={session.quiz_enabled ? "col-span-3" : "col-span-5"}>
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="text-gray-600">{completedCount} / {totalGames} games</span>
-                            <span className="text-gray-600 font-medium">{progressPercentage}%</span>
+                            <span className="text-gray-400">{completedCount} / {totalGames} spel</span>
+                            <span className="text-gray-400 font-medium">{progressPercentage}%</span>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                          <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
                             <div
                               className={`h-2 rounded-full transition-all duration-500 ${
                                 progressPercentage === 100
-                                  ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                                  ? 'bg-gradient-to-r from-emerald-500 to-green-500'
                                   : progressPercentage >= 67
-                                  ? 'bg-gradient-to-r from-teal-500 to-emerald-500'
+                                  ? 'bg-gradient-to-r from-amber-500 to-orange-500'
                                   : progressPercentage >= 34
-                                  ? 'bg-gradient-to-r from-yellow-400 to-yellow-500'
-                                  : 'bg-gradient-to-r from-red-400 to-red-500'
+                                  ? 'bg-gradient-to-r from-yellow-500 to-amber-500'
+                                  : 'bg-gradient-to-r from-red-500 to-rose-500'
                               }`}
                               style={{ width: `${progressPercentage}%` }}
                             />
@@ -681,28 +693,28 @@ export default function SessionDetailPage() {
               return (
                 <div
                   key={participant.id}
-                  className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow"
+                  className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-5 hover:bg-white/10 transition-all"
                 >
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-base font-semibold text-gray-900">
+                      <h3 className="text-base font-semibold text-white">
                         {participant.student_name}
                       </h3>
                       <div className="flex items-center gap-2 flex-wrap justify-end">
                         {participant.blocksCount !== undefined && participant.blocksCount > 0 && (
-                          <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded font-medium">
-                            {participant.blocksCount} color blocks
+                          <span className="text-xs px-2 py-0.5 bg-violet-500/20 text-violet-400 rounded-lg font-medium">
+                            {participant.blocksCount} block
                           </span>
                         )}
                         {participant.quizResult && (
-                          <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded font-medium">
+                          <span className="text-xs px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-lg font-medium">
                             Quiz: {participant.quizResult.score}/{participant.quizResult.total}
                           </span>
                         )}
                       </div>
                     </div>
                     <p className="text-xs text-gray-500">
-                      Joined: {new Date(participant.joined_at).toLocaleDateString('en-US')}
+                      Gick med: {new Date(participant.joined_at).toLocaleDateString('sv-SE')}
                     </p>
                   </div>
 
@@ -720,10 +732,10 @@ export default function SessionDetailPage() {
                     participant.quizGraded ? (
                       <button
                         disabled
-                        className="w-full px-4 py-2 bg-gray-200 text-gray-600 rounded-lg cursor-default text-sm font-medium flex items-center justify-center gap-2"
+                        className="w-full px-4 py-2 bg-white/5 text-gray-500 rounded-xl cursor-default text-sm font-medium flex items-center justify-center gap-2 border border-white/10"
                       >
                         <FileText className="w-4 h-4" />
-                        Quiz graded
+                        Quiz rättat
                       </button>
                     ) : (
                       <button
@@ -731,10 +743,10 @@ export default function SessionDetailPage() {
                           // Open quiz grading page
                           router.push(`/teacher/sessions/${sessionId}/quiz/${participant.id}`)
                         }}
-                        className="w-full px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                        className="w-full px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl transition-all text-sm font-medium flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
                       >
                         <FileText className="w-4 h-4" />
-                        Grade Quiz
+                        Rätta quiz
                       </button>
                     )
                   )}

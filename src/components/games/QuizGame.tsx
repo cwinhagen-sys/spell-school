@@ -568,59 +568,63 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
   // Language selection screen
   if (showLanguageSelection) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-        <div className="rounded-2xl p-8 max-w-4xl w-full text-center shadow-2xl relative bg-white text-gray-800 border border-gray-200">
-          {/* Top Progress Bar */}
-          <div className="h-1 rounded-md mb-6 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="relative w-full max-w-4xl">
+          {/* Glow effect */}
+          <div className="absolute -inset-1 bg-gradient-to-br from-violet-500/30 via-cyan-500/20 to-fuchsia-500/30 rounded-3xl blur-xl" />
           
-          {/* Header */}
-          <div className="mb-8">
-            <div className="text-6xl mb-4">🌍</div>
-            <h2 className="text-2xl font-bold mb-2">Choose Translation Direction</h2>
-            <p className="text-gray-600 text-sm">
-              You have selected {selectedGrids.length} color block{selectedGrids.length !== 1 ? 's' : ''} with {totalSelectedWords} word{totalSelectedWords !== 1 ? 's' : ''}. Choose which direction you want to translate.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            {/* Swedish to English */}
-            <button
-              onClick={() => {
-                setSelectedLanguageOrder('sv-en')
-                setSelectedDirection('sv-to-en')
-                setShowLanguageSelection(false)
-              }}
-              className="group p-6 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-all duration-300 hover:scale-105 hover:shadow-xl"
-            >
-              <div className="text-5xl mb-3">🇸🇪</div>
-              <h3 className="text-xl font-bold mb-2">Swedish → English</h3>
-              <p className="text-gray-600 text-sm mb-3">Translate Swedish words to English</p>
-              <div className="text-2xl text-blue-600 group-hover:scale-110 transition-transform duration-300">→</div>
-            </button>
+          <div className="relative rounded-2xl p-8 shadow-2xl bg-[#12122a] border border-white/10">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/30">
+                <span className="text-3xl">🌍</span>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">Välj översättningsriktning</h2>
+              <p className="text-gray-400 text-sm">
+                Du har valt {selectedGrids.length} färgblock med {totalSelectedWords} ord. Välj vilken riktning du vill översätta.
+              </p>
+            </div>
             
-            {/* English to Swedish */}
-            <button
-              onClick={() => {
-                setSelectedLanguageOrder('en-sv')
-                setSelectedDirection('en-to-sv')
-                setShowLanguageSelection(false)
-              }}
-              className="group p-6 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-all duration-300 hover:scale-105 hover:shadow-xl"
-            >
-              <div className="text-5xl mb-3">🇬🇧</div>
-              <h3 className="text-xl font-bold mb-2">English → Swedish</h3>
-              <p className="text-gray-600 text-sm mb-3">Translate English words to Swedish</p>
-              <div className="text-2xl text-green-600 group-hover:scale-110 transition-transform duration-300">→</div>
-            </button>
-          </div>
-          
-          <div className="flex gap-3 justify-center">
-            <button
-              onClick={onClose}
-              className="px-6 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-            >
-              Cancel
-            </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              {/* Swedish to English */}
+              <button
+                onClick={() => {
+                  setSelectedLanguageOrder('sv-en')
+                  setSelectedDirection('sv-to-en')
+                  setShowLanguageSelection(false)
+                }}
+                className="group p-6 rounded-xl border border-white/10 bg-white/5 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all duration-300"
+              >
+                <div className="text-5xl mb-3">🇸🇪</div>
+                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-violet-400 transition-colors">Svenska → Engelska</h3>
+                <p className="text-gray-400 text-sm mb-3">Översätt svenska ord till engelska</p>
+                <div className="text-2xl text-violet-400 group-hover:translate-x-1 transition-transform duration-300">→</div>
+              </button>
+              
+              {/* English to Swedish */}
+              <button
+                onClick={() => {
+                  setSelectedLanguageOrder('en-sv')
+                  setSelectedDirection('en-to-sv')
+                  setShowLanguageSelection(false)
+                }}
+                className="group p-6 rounded-xl border border-white/10 bg-white/5 hover:bg-cyan-500/10 hover:border-cyan-500/30 transition-all duration-300"
+              >
+                <div className="text-5xl mb-3">🇬🇧</div>
+                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors">Engelska → Svenska</h3>
+                <p className="text-gray-400 text-sm mb-3">Översätt engelska ord till svenska</p>
+                <div className="text-2xl text-cyan-400 group-hover:translate-x-1 transition-transform duration-300">→</div>
+              </button>
+            </div>
+            
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={onClose}
+                className="px-6 py-3 bg-white/5 border border-white/10 text-gray-400 rounded-xl font-medium hover:bg-white/10 transition-colors"
+              >
+                Avbryt
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -630,62 +634,62 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
   // Quiz setup screen (if no language order selected)
   if (items.length === 0) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center">
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="relative bg-[#12122a] rounded-2xl p-8 max-w-md w-full text-center shadow-2xl border border-white/10">
           <div className="text-6xl mb-4">📚</div>
-          <h2 className="text-2xl font-bold mb-4">Quiz Setup</h2>
-          <p className="text-gray-600 mb-6">Choose translation direction:</p>
+          <h2 className="text-2xl font-bold text-white mb-4">Quiz-inställningar</h2>
+          <p className="text-gray-400 mb-6">Välj översättningsriktning:</p>
           
           <div className="space-y-3">
             <button
               onClick={() => setSelectedDirection('both')}
-              className={`w-full p-4 rounded-xl border-2 transition-all ${
+              className={`w-full p-4 rounded-xl border transition-all ${
                 selectedDirection === 'both' 
-                  ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400' 
+                  : 'border-white/10 bg-white/5 text-gray-300 hover:border-white/20'
               }`}
             >
-              <div className="font-semibold">Both Directions</div>
-              <div className="text-sm text-gray-600">English ↔ Swedish</div>
+              <div className="font-semibold">Båda riktningarna</div>
+              <div className="text-sm text-gray-400">Engelska ↔ Svenska</div>
             </button>
             
             <button
               onClick={() => setSelectedDirection('en-to-sv')}
-              className={`w-full p-4 rounded-xl border-2 transition-all ${
+              className={`w-full p-4 rounded-xl border transition-all ${
                 selectedDirection === 'en-to-sv' 
-                  ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400' 
+                  : 'border-white/10 bg-white/5 text-gray-300 hover:border-white/20'
               }`}
             >
-              <div className="font-semibold">English → Swedish</div>
-              <div className="text-sm text-gray-600">Translate to Swedish</div>
+              <div className="font-semibold">Engelska → Svenska</div>
+              <div className="text-sm text-gray-400">Översätt till svenska</div>
             </button>
             
             <button
               onClick={() => setSelectedDirection('sv-to-en')}
-              className={`w-full p-4 rounded-xl border-2 transition-all ${
+              className={`w-full p-4 rounded-xl border transition-all ${
                 selectedDirection === 'sv-to-en' 
-                  ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400' 
+                  : 'border-white/10 bg-white/5 text-gray-300 hover:border-white/20'
               }`}
             >
-              <div className="font-semibold">Swedish → English</div>
-              <div className="text-sm text-gray-600">Translate to English</div>
+              <div className="font-semibold">Svenska → Engelska</div>
+              <div className="text-sm text-gray-400">Översätt till engelska</div>
             </button>
           </div>
           
           <div className="mt-6 flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              className="flex-1 px-4 py-2 bg-white/5 border border-white/10 text-gray-400 rounded-xl hover:bg-white/10"
             >
-              Cancel
+              Avbryt
             </button>
             <button
               onClick={() => {/* Items will be generated automatically */}}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="flex-1 px-4 py-2 bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-xl hover:from-violet-400 hover:to-cyan-400 shadow-lg shadow-violet-500/30"
             >
-              Start Quiz
+              Starta Quiz
             </button>
           </div>
         </div>
@@ -694,13 +698,17 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl p-6 max-w-7xl w-full max-h-[95vh] overflow-hidden flex flex-col border border-gray-200 shadow-xl">
+    <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50">
+      {/* Aurora background effects */}
+      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-violet-600/20 rounded-full blur-[100px] animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-cyan-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+      
+      <div className="relative bg-[#12122a] rounded-2xl p-6 max-w-7xl w-full max-h-[95vh] overflow-hidden flex flex-col border border-white/10 shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200 flex-shrink-0">
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10 flex-shrink-0">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">Quiz</h2>
-            <p className="text-sm text-gray-500 mt-1">
+            <h2 className="text-xl font-semibold text-white">Quiz</h2>
+            <p className="text-sm text-gray-400 mt-1">
               {items.length} ord • {answerLanguageLabel}
             </p>
           </div>
@@ -709,16 +717,16 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
             {!submitted && (
               <button
                 onClick={() => setShowSubmitConfirmation(true)}
-                className="px-6 py-2 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-lg hover:from-red-700 hover:to-pink-700 shadow-md font-semibold text-sm transition-all hover:scale-105"
+                className="px-6 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:from-amber-400 hover:to-orange-400 shadow-lg shadow-amber-500/30 font-semibold text-sm transition-all hover:scale-105"
               >
-                🎯 Submit Quiz
+                🎯 Skicka in Quiz
               </button>
             )}
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 text-2xl transition-colors"
+              className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center transition-colors border border-white/10"
             >
-              ×
+              <span className="text-gray-400 text-xl">×</span>
             </button>
           </div>
         </div>
@@ -736,7 +744,7 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
                       key={idx}
                       onClick={() => goToBlock(idx)}
                       className={`w-12 h-12 rounded-2xl transition-transform ${
-                        isActive ? 'ring-4 ring-gray-900 scale-110' : 'ring-2 ring-transparent hover:scale-105'
+                        isActive ? 'ring-4 ring-white/50 scale-110' : 'ring-2 ring-transparent hover:scale-105'
                       }`}
                       style={{ backgroundColor: colorScheme.hex }}
                       aria-label={`Block ${idx + 1}`}
@@ -745,10 +753,10 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
                 })}
               </aside>
 
-              <section className="flex flex-col min-h-0 bg-white border border-gray-200 rounded-3xl shadow-sm">
-                <header className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-                  <span className="text-sm text-gray-500">
-                    Block {currentBlock + 1} of {blocks.length}
+              <section className="flex flex-col min-h-0 bg-white/5 border border-white/10 rounded-3xl">
+                <header className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+                  <span className="text-sm text-gray-400">
+                    Block {currentBlock + 1} av {blocks.length}
                   </span>
                   <div className="flex items-center gap-2">
                     <button
@@ -756,8 +764,8 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
                       disabled={currentBlock === 0}
                       className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
                         currentBlock === 0
-                          ? 'text-gray-300 cursor-not-allowed'
-                          : 'text-gray-600 hover:bg-gray-100 transition-colors'
+                          ? 'text-gray-600 cursor-not-allowed'
+                          : 'text-gray-400 hover:bg-white/10 transition-colors'
                       }`}
                     >
                       ←
@@ -767,8 +775,8 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
                       disabled={currentBlock === blocks.length - 1}
                       className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
                         currentBlock === blocks.length - 1
-                          ? 'text-gray-300 cursor-not-allowed'
-                          : 'text-gray-600 hover:bg-gray-100 transition-colors'
+                          ? 'text-gray-600 cursor-not-allowed'
+                          : 'text-gray-400 hover:bg-white/10 transition-colors'
                       }`}
                     >
                       →
@@ -778,7 +786,7 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
 
                 {blocks.length === 0 ? (
                   <div className="flex-1 flex items-center justify-center text-gray-500">
-                    No words found for the selected blocks.
+                    Inga ord hittades för de valda blocken.
                   </div>
                 ) : (
                   <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -788,13 +796,14 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
                         return (
                           <article
                             key={globalIdx}
-                            className="flex flex-col gap-4 p-4 rounded-2xl border border-gray-200 shadow-sm"
+                            className="flex flex-col gap-4 p-4 rounded-2xl border border-white/10 bg-white/5"
                           >
-                            <h4 className="text-lg font-semibold text-gray-900 leading-tight">{item.prompt}</h4>
+                            <h4 className="text-lg font-semibold text-white leading-tight">{item.prompt}</h4>
                             <input
                               type="text"
                               value={answers[globalIdx] || ''}
                               onChange={(e) => handleChange(globalIdx, e.target.value)}
+                              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 focus:outline-none"
                               placeholder={
                                 item.direction === 'sv-to-en'
                                   ? 'Write in English...'
@@ -802,7 +811,6 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
                                     ? 'Write in Swedish...'
                                     : 'Write your answer...'
                               }
-                              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent transition"
                               autoComplete="off"
                               disabled={submitted}
                             />

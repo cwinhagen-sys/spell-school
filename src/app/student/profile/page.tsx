@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { levelForXp } from '@/lib/leveling'
 import { titleForLevel } from '@/lib/wizardTitles'
-import { Star, User, Award } from 'lucide-react'
+import { Star, User, Award, Sparkles, TrendingUp } from 'lucide-react'
+import Link from 'next/link'
 
 export default function WizardProfilePage() {
   const [user, setUser] = useState<any>(null)
@@ -22,7 +23,6 @@ export default function WizardProfilePage() {
         }
         setUser(user)
 
-        // Load XP
         const { data: globalProgress } = await supabase
           .from('student_progress')
           .select('total_points')
@@ -63,8 +63,11 @@ export default function WizardProfilePage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-6 py-12 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600"></div>
+      <div className="container mx-auto px-6 py-12 flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Laddar profil...</p>
+        </div>
       </div>
     )
   }
@@ -74,82 +77,117 @@ export default function WizardProfilePage() {
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">Wizard Profile</h1>
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="relative">
+            <div className="w-14 h-14 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-500/30">
+              <User className="w-7 h-7 text-white" />
+            </div>
+            <div className="absolute -inset-1 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl blur opacity-30" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-white">Trollkarlsprofil</h1>
+            <p className="text-gray-400">Din magiska resa</p>
+          </div>
+        </div>
 
         <div className="grid md:grid-cols-2 gap-6">
           {/* Profile Card */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg p-8">
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 shadow-xl p-8">
             <div className="flex flex-col items-center mb-6">
-              <div className="w-32 h-32 rounded-full border-4 border-purple-300 bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center overflow-hidden mb-4">
-                {wizardTitle?.image ? (
-                  <img src={wizardTitle.image} alt={wizardTitle.title} className="w-full h-full object-cover" />
-                ) : (
-                  <Star className="w-16 h-16 text-purple-500" />
-                )}
+              <div className="relative mb-4">
+                <div className="w-32 h-32 rounded-full border-4 border-violet-500/50 bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 flex items-center justify-center overflow-hidden">
+                  {wizardTitle?.image ? (
+                    <img src={wizardTitle.image} alt={wizardTitle.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <Sparkles className="w-16 h-16 text-violet-400" />
+                  )}
+                </div>
+                <div className="absolute -inset-2 rounded-full bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 blur-xl -z-10" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-800">{wizardTitle?.title || 'Novice Learner'}</h2>
-              <p className="text-gray-600 mt-2">{user?.user_metadata?.username || user?.email?.split('@')[0] || 'Student'}</p>
+              <h2 className="text-2xl font-bold text-white">{wizardTitle?.title || 'Lärling'}</h2>
+              <p className="text-gray-400 mt-2">{user?.user_metadata?.username || user?.email?.split('@')[0] || 'Elev'}</p>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-                <span className="text-gray-700 font-medium">Level</span>
-                <span className="text-2xl font-bold text-purple-600">{leveling.level}</span>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-4 bg-violet-500/10 rounded-xl border border-violet-500/20">
+                <span className="text-gray-300 font-medium flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-violet-400" />
+                  Level
+                </span>
+                <span className="text-3xl font-bold text-violet-400">{leveling.level}</span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-indigo-50 rounded-lg">
-                <span className="text-gray-700 font-medium">Total XP</span>
-                <span className="text-xl font-bold text-indigo-600">{points.toLocaleString()}</span>
+              <div className="flex items-center justify-between p-4 bg-amber-500/10 rounded-xl border border-amber-500/20">
+                <span className="text-gray-300 font-medium flex items-center gap-2">
+                  <Star className="w-4 h-4 text-amber-400" />
+                  Total XP
+                </span>
+                <span className="text-2xl font-bold text-amber-400">{points.toLocaleString()}</span>
+              </div>
+            </div>
+
+            {/* XP Progress */}
+            <div className="mt-6">
+              <div className="flex items-center justify-between text-sm mb-2">
+                <span className="text-gray-400">Framsteg till Level {leveling.level + 1}</span>
+                <span className="text-gray-300">{Math.round(leveling.progressToNext * 100)}%</span>
+              </div>
+              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full transition-all duration-500"
+                  style={{ width: `${leveling.progressToNext * 100}%` }}
+                />
               </div>
             </div>
           </div>
 
           {/* Wizard Titles Preview */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg p-8">
-            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Award className="w-5 h-5 text-purple-600" />
-              Available Titles
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 shadow-xl p-8">
+            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <Award className="w-5 h-5 text-amber-400" />
+              Tillgängliga titlar
             </h3>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { level: 10, title: 'Spark Initiate', image: '/assets/wizard/wizard_torch.png' },
-                { level: 20, title: 'Apprentice of Embers', image: '/assets/wizard/wizard_orbs.png' },
-                { level: 30, title: 'Rune Adept', image: '/assets/wizard/wizard_book.png' },
-                { level: 40, title: 'Arcane Scholar', image: '/assets/wizard/wizard_pentagram.png' },
-                { level: 50, title: 'Spellblade', image: '/assets/wizard/wizard_sword.png' },
-                { level: 60, title: 'Master of Sigils', image: '/assets/wizard/wizard_staff.png' },
+                { level: 10, title: 'Gnistans lärling', image: '/assets/wizard/wizard_torch.png' },
+                { level: 20, title: 'Eldväktare', image: '/assets/wizard/wizard_orbs.png' },
+                { level: 30, title: 'Runadept', image: '/assets/wizard/wizard_book.png' },
+                { level: 40, title: 'Arkanist', image: '/assets/wizard/wizard_pentagram.png' },
+                { level: 50, title: 'Trollkarlskrigare', image: '/assets/wizard/wizard_sword.png' },
+                { level: 60, title: 'Sigilmästare', image: '/assets/wizard/wizard_staff.png' },
               ].map((wizard) => {
                 const unlocked = leveling.level >= wizard.level
                 return (
                   <div
                     key={wizard.level}
-                    className={`p-3 rounded-lg border-2 text-center transition-all ${
+                    className={`p-3 rounded-xl border text-center transition-all ${
                       unlocked
-                        ? 'border-purple-300 bg-purple-50'
-                        : 'border-gray-200 bg-gray-50 opacity-50'
+                        ? 'border-violet-500/30 bg-violet-500/10'
+                        : 'border-white/5 bg-white/5 opacity-40'
                     }`}
                   >
-                    <div className="w-12 h-12 mx-auto mb-2 rounded-full overflow-hidden bg-purple-100">
+                    <div className="w-12 h-12 mx-auto mb-2 rounded-full overflow-hidden bg-white/5">
                       {wizard.image && unlocked ? (
                         <img src={wizard.image} alt={wizard.title} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Star className="w-6 h-6 text-gray-400" />
+                          <Star className="w-6 h-6 text-gray-600" />
                         </div>
                       )}
                     </div>
-                    <div className="text-xs font-semibold text-gray-700">{wizard.title}</div>
+                    <div className="text-xs font-semibold text-gray-300">{wizard.title}</div>
                     <div className="text-xs text-gray-500">Lv.{wizard.level}</div>
                   </div>
                 )
               })}
             </div>
             <div className="mt-4 text-center">
-              <a
+              <Link
                 href="/student/levels"
-                className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+                className="text-sm text-violet-400 hover:text-violet-300 font-medium"
               >
-                View all titles →
-              </a>
+                Visa alla titlar →
+              </Link>
             </div>
           </div>
         </div>
@@ -157,9 +195,3 @@ export default function WizardProfilePage() {
     </div>
   )
 }
-
-
-
-
-
-

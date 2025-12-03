@@ -182,7 +182,6 @@ export default function QuizFeedbackModal({
       <div className="bg-white rounded-3xl p-8 max-w-4xl w-full max-h-[90vh] overflow-auto shadow-2xl">
         {/* Header with celebration message */}
         <div className="text-center mb-8">
-          <div className="text-6xl mb-4">🎉</div>
           <h2 className="text-3xl font-bold text-gray-800 mb-2">
             Great! You learned {learnedCount} new words this week!
           </h2>

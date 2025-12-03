@@ -14,13 +14,16 @@ import {
   LogOut, 
   ChevronDown,
   Menu,
-  X
+  X,
+  Sparkles,
+  Zap
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { markUserAsLoggedOut } from '@/lib/activity'
 import { syncManager } from '@/lib/syncManager'
 
 interface NavItem {
+  id: string
   label: string
   href: string
   icon: React.ReactNode
@@ -41,8 +44,17 @@ export default function StudentHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   const [homeworks, setHomeworks] = useState<Homework[]>([])
+  const [scrolled, setScrolled] = useState(false)
   const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const mobileMenuRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   useEffect(() => {
     const loadUser = async () => {
@@ -64,7 +76,6 @@ export default function StudentHeader() {
 
       const classIds = (classLinks || []).map((r: any) => r.class_id)
 
-      // Load assignments
       const { data: direct } = await supabase
         .from('assigned_word_sets')
         .select('due_date, word_sets ( id, title, color )')
@@ -92,9 +103,8 @@ export default function StudentHeader() {
           color: rec.word_sets.color,
           due_date: rec.due_date
         }))
-        .slice(0, 5) // Limit to 5 for dropdown
+        .slice(0, 5)
 
-      // Remove duplicates by id
       const unique = Array.from(new Map(active.map(item => [item.id, item])).values())
       setHomeworks(unique)
     } catch (error) {
@@ -108,20 +118,15 @@ export default function StudentHeader() {
       return
     }
     
-    // Show homework selection if multiple assignments exist, otherwise start directly
     if (homeworks.length === 1) {
-      // Only one assignment - start directly
       window.location.href = `/student?game=${gameType}&homework=${homeworks[0].id}`
     } else {
-      // Multiple assignments - show selection modal
       window.location.href = `/student?game=${gameType}&showHomeworkSelection=true`
     }
   }
 
-  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Close desktop dropdowns
       Object.entries(dropdownRefs.current).forEach(([key, ref]) => {
         if (ref && !ref.contains(event.target as Node)) {
           setOpenDropdown((prev) => prev === key ? null : prev)
@@ -133,7 +138,6 @@ export default function StudentHeader() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Close mobile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
@@ -147,7 +151,6 @@ export default function StudentHeader() {
     }
   }, [mobileMenuOpen])
 
-  // Close dropdowns on route change
   useEffect(() => {
     setOpenDropdown(null)
     setMobileMenuOpen(false)
@@ -159,7 +162,6 @@ export default function StudentHeader() {
     try {
       setIsLoggingOut(true)
       
-      // Final sync before logout
       try {
         await Promise.race([
           syncManager.cleanup(),
@@ -207,69 +209,56 @@ export default function StudentHeader() {
 
   const navItems: NavItem[] = [
     {
-      label: 'Wizard Profile',
+      id: 'profile',
+      label: 'Profil',
       href: '/student/profile',
-      icon: <User className="w-4 h-4" />,
-      subItems: [
-        { label: 'View Profile', href: '/student/profile' },
-        { label: 'Edit Avatar', href: '/student/profile' }
-      ]
+      icon: <User className="w-4 h-4" />
     },
     {
+      id: 'levels',
       label: 'Level & XP',
       href: '/student/levels',
-      icon: <TrendingUp className="w-4 h-4" />,
-      subItems: [
-        { label: 'View Progress', href: '/student/levels' },
-        { label: 'Wizard Titles', href: '/student/levels' }
-      ]
+      icon: <TrendingUp className="w-4 h-4" />
     },
     {
-      label: 'Daily Quests',
+      id: 'quests',
+      label: 'Uppdrag',
       href: '/student/quests',
-      icon: <Target className="w-4 h-4" />,
-      subItems: [
-        { label: 'View Quests', href: '/student/quests' },
-        { label: 'Quest History', href: '/student/quests' }
-      ]
+      icon: <Target className="w-4 h-4" />
     },
     {
-      label: 'Trophies',
+      id: 'badges',
+      label: 'Trofeer',
       href: '/student/badges',
-      icon: <Trophy className="w-4 h-4" />,
-      subItems: [
-        { label: 'View Collection', href: '/student/badges' },
-        { label: 'Achievements', href: '/student/badges' }
-      ]
+      icon: <Trophy className="w-4 h-4" />
     },
     {
-      label: 'Assignments',
+      id: 'wordsets',
+      label: 'Ordlistor',
       href: '/student/word-sets',
-      icon: <BookOpen className="w-4 h-4" />,
-      subItems: [] // Will be populated dynamically
+      icon: <BookOpen className="w-4 h-4" />
     },
     {
-      label: 'Games',
+      id: 'games',
+      label: 'Spel',
       href: '/student/games',
       icon: <Gamepad2 className="w-4 h-4" />,
       subItems: [
         { label: 'Flashcards', href: '#flashcards' },
-        { label: 'Multiple Choice', href: '#choice' },
-        { label: 'Memory Game', href: '#match' },
-        { label: 'Matching Pairs', href: '#connect' },
-        { label: 'Typing Challenge', href: '#typing' },
-        { label: 'Translate', href: '#translate' },
-        { label: 'Sentence Gap', href: '#storygap' },
-        { label: 'Word Roulette', href: '#roulette' }
+        { label: 'Flerval', href: '#choice' },
+        { label: 'Memory', href: '#match' },
+        { label: 'Para ihop', href: '#connect' },
+        { label: 'Skrivning', href: '#typing' },
+        { label: 'Översätt', href: '#translate' },
+        { label: 'Meningsluckor', href: '#storygap' },
+        { label: 'Ordkarusellen', href: '#roulette' }
       ]
     },
     {
-      label: 'Leaderboard',
+      id: 'leaderboard',
+      label: 'Topplista',
       href: '/student/leaderboard',
-      icon: <Users className="w-4 h-4" />,
-      subItems: [
-        { label: 'Class Rankings', href: '/student/leaderboard' }
-      ]
+      icon: <Users className="w-4 h-4" />
     }
   ]
 
@@ -285,13 +274,23 @@ export default function StudentHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-gradient-to-r from-indigo-50/95 via-purple-50/95 to-pink-50/95 backdrop-blur-md border-b border-purple-200/50 shadow-sm">
+    <header className={`sticky top-0 z-50 transition-all duration-300 ${
+      scrolled 
+        ? 'bg-[#0a0a1a]/95 backdrop-blur-xl border-b border-white/10 shadow-lg shadow-black/20' 
+        : 'bg-transparent'
+    }`}>
       <div className="container mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/student" className="flex items-center gap-2 group">
-            <span className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Spell School
+          <Link href="/student" className="flex items-center gap-3 group">
+            <div className="relative">
+              <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 via-violet-500 to-fuchsia-500 rounded-xl flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg shadow-violet-500/30">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <div className="absolute -inset-1 bg-gradient-to-br from-cyan-400 to-fuchsia-500 rounded-xl blur opacity-30 group-hover:opacity-50 transition-opacity" />
+            </div>
+            <span className="text-xl font-bold text-white hidden sm:block">
+              Spell<span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-violet-500">School</span>
             </span>
           </Link>
 
@@ -301,7 +300,7 @@ export default function StudentHeader() {
               const active = isActive(item.href)
               return (
                 <div
-                  key={item.label}
+                  key={item.id}
                   ref={(el) => {
                     dropdownRefs.current[item.label] = el
                   }}
@@ -309,25 +308,25 @@ export default function StudentHeader() {
                 >
                   <button
                     onClick={() => {
-                      if (item.label === 'Assignments' || item.label === 'Games' || (item.subItems && item.subItems.length > 0)) {
+                      if (item.subItems && item.subItems.length > 0) {
                         toggleDropdown(item.label)
                       } else {
                         window.location.href = item.href
                       }
                     }}
                     className={`
-                      flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
+                      flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200
                       ${active
-                        ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/30'
-                        : 'text-gray-700 hover:bg-white/60 hover:text-purple-600'
+                        ? 'bg-gradient-to-r from-violet-500/20 to-cyan-500/20 text-white border border-violet-500/30'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
                       }
                     `}
-                    aria-haspopup={item.label === 'Assignments' || item.label === 'Games' || (item.subItems && item.subItems.length > 0)}
+                    aria-haspopup={item.subItems && item.subItems.length > 0}
                     aria-expanded={openDropdown === item.label}
                   >
-                    <span className={active ? 'text-white' : 'text-purple-600'}>{item.icon}</span>
+                    <span className={active ? 'text-violet-400' : ''}>{item.icon}</span>
                     <span>{item.label}</span>
-                    {(item.label === 'Assignments' || item.label === 'Games' || (item.subItems && item.subItems.length > 0)) && (
+                    {item.subItems && item.subItems.length > 0 && (
                       <ChevronDown 
                         className={`w-3 h-3 transition-transform ${openDropdown === item.label ? 'rotate-180' : ''}`}
                       />
@@ -335,99 +334,32 @@ export default function StudentHeader() {
                   </button>
 
                   {/* Dropdown Menu */}
-                  {openDropdown === item.label && (
-                    <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-purple-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 max-h-96 overflow-y-auto">
-                      <div className="py-1">
-                        {/* Special handling for Games */}
-                        {item.label === 'Games' && item.subItems ? (
-                          <>
-                            {item.subItems.map((subItem, subIndex) => {
-                              const gameType = subItem.href.replace('#', '')
-                              return (
-                                <button
-                                  key={`${item.label}-sub-${subIndex}-${subItem.href}`}
-                                  onClick={() => {
-                                    startGame(gameType)
-                                    setOpenDropdown(null)
-                                  }}
-                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors"
-                                >
-                                  {subItem.label}
-                                </button>
-                              )
-                            })}
-                            <Link
-                              key={`${item.label}-main`}
-                              href={item.href}
-                              className="block px-4 py-2 text-sm font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors border-t border-purple-100"
-                              onClick={() => setOpenDropdown(null)}
+                  {openDropdown === item.label && item.subItems && (
+                    <div className="absolute top-full left-0 mt-2 w-56 bg-[#12122a] rounded-xl shadow-2xl border border-white/10 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="py-2">
+                        {item.subItems.map((subItem, subIndex) => {
+                          const gameType = subItem.href.replace('#', '')
+                          return (
+                            <button
+                              key={`${item.id}-sub-${subIndex}`}
+                              onClick={() => {
+                                startGame(gameType)
+                                setOpenDropdown(null)
+                              }}
+                              className="w-full text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-violet-500/10 hover:text-white transition-colors flex items-center gap-2"
                             >
-                              View all games →
-                            </Link>
-                          </>
-                        ) : item.label === 'Assignments' ? (
-                          <>
-                            {homeworks.length > 0 ? (
-                              <>
-                                {homeworks.map((hw, hwIndex) => (
-                                  <Link
-                                    key={`assignment-${hw.id}`}
-                                    href={`/student/word-sets?assignment=${hw.id}`}
-                                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors"
-                                    onClick={() => setOpenDropdown(null)}
-                                  >
-                                    <span 
-                                      className="w-3 h-3 rounded-full flex-shrink-0" 
-                                      style={{ backgroundColor: hw.color || '#6b7280' }}
-                                    />
-                                    <span className="truncate flex-1">{hw.title}</span>
-                                  </Link>
-                                ))}
-                                <Link
-                                  key={`${item.label}-main`}
-                                  href={item.href}
-                                  className="block px-4 py-2 text-sm font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors border-t border-purple-100"
-                                  onClick={() => setOpenDropdown(null)}
-                                >
-                                  View all assignments →
-                                </Link>
-                              </>
-                            ) : (
-                              <>
-                                <div className="px-4 py-2 text-sm text-gray-500">No assignments</div>
-                                <Link
-                                  key={`${item.label}-main`}
-                                  href={item.href}
-                                  className="block px-4 py-2 text-sm font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors border-t border-purple-100"
-                                  onClick={() => setOpenDropdown(null)}
-                                >
-                                  View assignments →
-                                </Link>
-                              </>
-                            )}
-                          </>
-                        ) : item.subItems ? (
-                          <>
-                            {item.subItems.map((subItem, subIndex) => (
-                              <Link
-                                key={`${item.label}-sub-${subIndex}-${subItem.href}`}
-                                href={subItem.href}
-                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors"
-                                onClick={() => setOpenDropdown(null)}
-                              >
-                                {subItem.label}
-                              </Link>
-                            ))}
-                            <Link
-                              key={`${item.label}-main`}
-                              href={item.href}
-                              className="block px-4 py-2 text-sm font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors border-t border-purple-100"
-                              onClick={() => setOpenDropdown(null)}
-                            >
-                              Go to {item.label} →
-                            </Link>
-                          </>
-                        ) : null}
+                              <Zap className="w-3 h-3 text-violet-400" />
+                              {subItem.label}
+                            </button>
+                          )
+                        })}
+                        <Link
+                          href={item.href}
+                          className="block px-4 py-2.5 text-sm font-semibold text-violet-400 bg-violet-500/10 hover:bg-violet-500/20 transition-colors border-t border-white/5 mt-1"
+                          onClick={() => setOpenDropdown(null)}
+                        >
+                          Visa alla spel →
+                        </Link>
                       </div>
                     </div>
                   )}
@@ -440,11 +372,11 @@ export default function StudentHeader() {
           <div className="flex items-center gap-3">
             {/* User Avatar/Name */}
             <div className="hidden md:flex items-center gap-2 text-sm">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center text-white font-semibold text-xs shadow-sm">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-white font-semibold text-xs shadow-lg shadow-violet-500/30">
                 {user?.user_metadata?.username?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'S'}
               </div>
-              <span className="text-gray-700 font-medium">
-                {user?.user_metadata?.username || user?.email?.split('@')[0] || 'Student'}
+              <span className="text-gray-300 font-medium">
+                {user?.user_metadata?.username || user?.email?.split('@')[0] || 'Elev'}
               </span>
             </div>
 
@@ -453,21 +385,21 @@ export default function StudentHeader() {
               onClick={handleSignOut}
               disabled={isLoggingOut}
               className={`
-                flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all
+                flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all
                 ${isLoggingOut
-                  ? 'text-gray-400 cursor-not-allowed'
-                  : 'text-gray-700 hover:bg-white/60 hover:text-purple-600'
+                  ? 'text-gray-500 cursor-not-allowed'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }
               `}
             >
               <LogOut className={`w-4 h-4 ${isLoggingOut ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{isLoggingOut ? 'Saving...' : 'Sign Out'}</span>
+              <span className="hidden sm:inline">{isLoggingOut ? 'Sparar...' : 'Logga ut'}</span>
             </button>
 
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg text-gray-700 hover:bg-white/60 transition-colors"
+              className="lg:hidden p-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -480,7 +412,7 @@ export default function StudentHeader() {
       {mobileMenuOpen && (
         <div
           ref={mobileMenuRef}
-          className="lg:hidden border-t border-purple-200/50 bg-white/95 backdrop-blur-md animate-in slide-in-from-top duration-200"
+          className="lg:hidden border-t border-white/10 bg-[#0a0a1a]/98 backdrop-blur-xl animate-in slide-in-from-top duration-200"
         >
           <nav className="container mx-auto px-4 py-4 space-y-1">
             {navItems.map((item) => {
@@ -488,10 +420,10 @@ export default function StudentHeader() {
               const isExpanded = openDropdown === item.label
               
               return (
-                <div key={item.label}>
+                <div key={item.id}>
                   <button
                     onClick={() => {
-                      if (item.label === 'Assignments' || item.label === 'Games' || (item.subItems && item.subItems.length > 0)) {
+                      if (item.subItems && item.subItems.length > 0) {
                         toggleDropdown(item.label)
                       } else {
                         window.location.href = item.href
@@ -499,18 +431,18 @@ export default function StudentHeader() {
                       }
                     }}
                     className={`
-                      w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-all
+                      w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all
                       ${active
-                        ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white'
-                        : 'text-gray-700 hover:bg-purple-50'
+                        ? 'bg-gradient-to-r from-violet-500/20 to-cyan-500/20 text-white border border-violet-500/30'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
                       }
                     `}
                   >
                     <div className="flex items-center gap-2">
-                      <span className={active ? 'text-white' : 'text-purple-600'}>{item.icon}</span>
+                      <span className={active ? 'text-violet-400' : ''}>{item.icon}</span>
                       <span>{item.label}</span>
                     </div>
-                    {(item.label === 'Assignments' || item.label === 'Games' || (item.subItems && item.subItems.length > 0)) && (
+                    {item.subItems && item.subItems.length > 0 && (
                       <ChevronDown 
                         className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                       />
@@ -518,116 +450,35 @@ export default function StudentHeader() {
                   </button>
                   
                   {/* Mobile Dropdown */}
-                  {isExpanded && (
+                  {isExpanded && item.subItems && (
                     <div className="mt-1 ml-4 space-y-1">
-                      {item.label === 'Games' && item.subItems ? (
-                        <>
-                          {item.subItems.map((subItem, subIndex) => {
-                            const gameType = subItem.href.replace('#', '')
-                            return (
-                              <button
-                                key={`${item.label}-mobile-sub-${subIndex}-${subItem.href}`}
-                                onClick={() => {
-                                  startGame(gameType)
-                                  setMobileMenuOpen(false)
-                                  setOpenDropdown(null)
-                                }}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-purple-50 rounded-lg transition-colors"
-                              >
-                                {subItem.label}
-                              </button>
-                            )
-                          })}
-                          <Link
-                            key={`${item.label}-mobile-main`}
-                            href={item.href}
-                            className="block px-4 py-2 text-sm font-semibold text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                      {item.subItems.map((subItem, subIndex) => {
+                        const gameType = subItem.href.replace('#', '')
+                        return (
+                          <button
+                            key={`${item.id}-mobile-sub-${subIndex}`}
                             onClick={() => {
+                              startGame(gameType)
                               setMobileMenuOpen(false)
                               setOpenDropdown(null)
                             }}
+                            className="w-full text-left px-4 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2"
                           >
-                            View all games →
-                          </Link>
-                        </>
-                      ) : item.label === 'Assignments' ? (
-                        <>
-                          {homeworks.length > 0 ? (
-                            <>
-                              {homeworks.map((hw) => (
-                                <Link
-                                  key={`assignment-mobile-${hw.id}`}
-                                  href={`/student/word-sets?assignment=${hw.id}`}
-                                  className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:bg-purple-50 rounded-lg transition-colors"
-                                  onClick={() => {
-                                    setMobileMenuOpen(false)
-                                    setOpenDropdown(null)
-                                  }}
-                                >
-                                  <span 
-                                    className="w-3 h-3 rounded-full flex-shrink-0" 
-                                    style={{ backgroundColor: hw.color || '#6b7280' }}
-                                  />
-                                  <span className="truncate flex-1">{hw.title}</span>
-                                </Link>
-                              ))}
-                              <Link
-                                key={`${item.label}-mobile-main`}
-                                href={item.href}
-                                className="block px-4 py-2 text-sm font-semibold text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                                onClick={() => {
-                                  setMobileMenuOpen(false)
-                                  setOpenDropdown(null)
-                                }}
-                              >
-                                View all assignments →
-                              </Link>
-                            </>
-                          ) : (
-                            <>
-                              <div className="px-4 py-2 text-sm text-gray-500">No assignments</div>
-                              <Link
-                                key={`${item.label}-mobile-main`}
-                                href={item.href}
-                                className="block px-4 py-2 text-sm font-semibold text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                                onClick={() => {
-                                  setMobileMenuOpen(false)
-                                  setOpenDropdown(null)
-                                }}
-                              >
-                                View assignments →
-                              </Link>
-                            </>
-                          )}
-                        </>
-                      ) : item.subItems ? (
-                        <>
-                          {item.subItems.map((subItem, subIndex) => (
-                            <Link
-                              key={`${item.label}-mobile-sub-${subIndex}-${subItem.href}`}
-                              href={subItem.href}
-                              className="block px-4 py-2 text-sm text-gray-600 hover:bg-purple-50 rounded-lg transition-colors"
-                              onClick={() => {
-                                setMobileMenuOpen(false)
-                                setOpenDropdown(null)
-                              }}
-                            >
-                              {subItem.label}
-                            </Link>
-                          ))}
-                          <Link
-                            key={`${item.label}-mobile-main`}
-                            href={item.href}
-                            className="block px-4 py-2 text-sm font-semibold text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                            onClick={() => {
-                              setMobileMenuOpen(false)
-                              setOpenDropdown(null)
-                            }}
-                          >
-                            Go to {item.label} →
-                          </Link>
-                        </>
-                      ) : null}
+                            <Zap className="w-3 h-3 text-violet-400" />
+                            {subItem.label}
+                          </button>
+                        )
+                      })}
+                      <Link
+                        href={item.href}
+                        className="block px-4 py-2.5 text-sm font-semibold text-violet-400 hover:bg-violet-500/10 rounded-lg transition-colors"
+                        onClick={() => {
+                          setMobileMenuOpen(false)
+                          setOpenDropdown(null)
+                        }}
+                      >
+                        Visa alla spel →
+                      </Link>
                     </div>
                   )}
                 </div>
@@ -639,4 +490,3 @@ export default function StudentHeader() {
     </header>
   )
 }
-

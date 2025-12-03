@@ -2,41 +2,30 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import ColorSelect, { type ColorOption } from '@/components/ColorSelect'
 import ImageSelector from '@/components/ImageSelector'
-import { FileText, ChevronLeft } from 'lucide-react'
-import Link from 'next/link'
+import { FileText, Edit2, Trash2, Plus, X, Save, Sparkles, ArrowLeft, AlertTriangle } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { canCreateWordSet } from '@/lib/subscription'
 
 type Word = { en: string; sv: string; image_url?: string }
-type WordSet = { id: string; title: string; words: Word[]; created_at: string; color?: string }
+type WordSet = { id: string; title: string; words: Word[]; created_at: string }
 
 export default function TeacherWordSetsPage() {
   const [wordSets, setWordSets] = useState<WordSet[]>([])
   const [title, setTitle] = useState('')
   const [rows, setRows] = useState<Word[]>([{ en: '', sv: '' }])
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editRows, setEditRows] = useState<Word[]>([])
-  const [color, setColor] = useState<string>('')
-  const [editColor, setEditColor] = useState<string>('')
-  const colorOptions: ColorOption[] = [
-    { value: '#ef4444', label: 'Red' },
-    { value: '#f59e0b', label: 'Orange' },
-    { value: '#fbbf24', label: 'Amber' },
-    { value: '#10b981', label: 'Green' },
-    { value: '#3b82f6', label: 'Blue' },
-    { value: '#8b5cf6', label: 'Purple' },
-    { value: '#ec4899', label: 'Pink' },
-    { value: '#14b8a6', label: 'Teal' },
-  ]
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
 
-  // Bulk paste helpers: parse lines into { en, sv }
   const parsePairsFromText = (text: string): Word[] => {
     const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
     const out: Word[] = []
     for (const line of lines) {
-      // Prefer tab, then explicit dash with spaces, then comma/semicolon/colon
       let parts: string[] | null = null
       if (line.includes('\t')) parts = line.split('\t')
       else if (/\s-\s/.test(line)) parts = line.split(/\s-\s/)
@@ -48,14 +37,13 @@ export default function TeacherWordSetsPage() {
         const sv = (parts[1] ?? '').trim()
         if (en || sv) out.push({ en, sv })
       } else {
-        // Single token line; default to English-only, Swedish left blank
         out.push({ en: line, sv: '' })
       }
     }
     return out
   }
 
-  const handleCreatePasteEn = (e: React.ClipboardEvent<HTMLInputElement>) => {
+  const handleCreatePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     const text = e.clipboardData.getData('text')
     if (!text) return
     if (/\r|\n|\t|,|;|:\s|\s-\s/.test(text)) {
@@ -65,27 +53,7 @@ export default function TeacherWordSetsPage() {
     }
   }
 
-  const handleCreatePasteSv = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    const text = e.clipboardData.getData('text')
-    if (!text) return
-    if (/\r|\n|\t|,|;|:\s|\s-\s/.test(text)) {
-      e.preventDefault()
-      const parsed = parsePairsFromText(text)
-      if (parsed.length > 0) setRows(parsed)
-    }
-  }
-
-  const handleEditPasteEn = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    const text = e.clipboardData.getData('text')
-    if (!text) return
-    if (/\r|\n|\t|,|;|:\s|\s-\s/.test(text)) {
-      e.preventDefault()
-      const parsed = parsePairsFromText(text)
-      if (parsed.length > 0) setEditRows(parsed)
-    }
-  }
-
-  const handleEditPasteSv = (e: React.ClipboardEvent<HTMLInputElement>) => {
+  const handleEditPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     const text = e.clipboardData.getData('text')
     if (!text) return
     if (/\r|\n|\t|,|;|:\s|\s-\s/.test(text)) {
@@ -105,7 +73,8 @@ export default function TeacherWordSetsPage() {
         .eq('id', user.id)
         .single()
       if (!profile || profile.role !== 'teacher') { window.location.href = '/student'; return }
-      load()
+      await load()
+      setLoading(false)
     }
     init()
   }, [])
@@ -117,14 +86,13 @@ export default function TeacherWordSetsPage() {
       
       const { data, error } = await supabase
         .from('word_sets')
-        .select('id,title,words,created_at,color')
+        .select('id,title,words,created_at')
         .eq('teacher_id', user.id)
         .order('created_at', { ascending: false })
       if (error) throw error
-      setWordSets((data as any[])?.map(ws => ({ id: ws.id, title: ws.title, words: ws.words, created_at: ws.created_at, color: ws.color })) ?? [])
+      setWordSets((data as any[])?.map(ws => ({ id: ws.id, title: ws.title, words: ws.words, created_at: ws.created_at })) ?? [])
     } catch (e: any) {
-      setMessage(`Failed to load word sets${e?.message ? `: ${e.message}` : ''}`)
-      console.error('load word_sets error', e)
+      setMessage({ type: 'error', text: `Kunde inte ladda ordlistor${e?.message ? `: ${e.message}` : ''}` })
     }
   }
 
@@ -134,19 +102,34 @@ export default function TeacherWordSetsPage() {
   const save = async () => {
     if (!title.trim() || rows.length === 0) return
     const clean = rows.filter(r => r.en.trim() && r.sv.trim())
-    if (clean.length === 0) return
+    if (clean.length === 0) {
+      setMessage({ type: 'error', text: 'Lägg till minst ett ord med både engelska och svenska' })
+      return
+    }
+    
+    setSaving(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-      const payload = { title: title.trim(), words: clean as any, teacher_id: user.id, color: color || null }
+      
+      const canCreate = await canCreateWordSet(user.id, wordSets.length)
+      if (!canCreate.allowed) {
+        setMessage({ type: 'error', text: canCreate.reason || 'Du har nått max antal ordlistor för din plan.' })
+        setSaving(false)
+        return
+      }
+      
+      const payload = { title: title.trim(), words: clean as any, teacher_id: user.id }
       const { error } = await supabase.from('word_sets').insert(payload)
       if (error) throw error
       setTitle('')
       setRows([{ en: '', sv: '' }])
-      setColor('')
-      load()
+      setMessage({ type: 'success', text: 'Ordlista skapad!' })
+      await load()
     } catch (e: any) {
-      setMessage(`Failed to save${e?.message ? `: ${e.message}` : ''}`)
+      setMessage({ type: 'error', text: `Kunde inte spara${e?.message ? `: ${e.message}` : ''}` })
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -161,34 +144,18 @@ export default function TeacherWordSetsPage() {
         .eq('id', id)
         .eq('teacher_id', user.id)
       if (error) throw error
-      load()
+      setMessage({ type: 'success', text: 'Ordlista raderad' })
+      setDeleteConfirm(null)
+      await load()
     } catch {
-      setMessage('Failed to delete')
-    }
-  }
-
-  const update = async (id: string, newTitle: string, newColor?: string) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      
-      const { error } = await supabase
-        .from('word_sets')
-        .update({ title: newTitle, color: newColor ?? null })
-        .eq('id', id)
-        .eq('teacher_id', user.id)
-      if (error) throw error
-      load()
-    } catch {
-      setMessage('Failed to update')
+      setMessage({ type: 'error', text: 'Kunde inte radera' })
     }
   }
 
   const beginEdit = (ws: WordSet) => {
     setEditingId(ws.id)
     setEditTitle(ws.title)
-    setEditRows(ws.words.map(w => ({ en: w.en, sv: w.sv })))
-    setEditColor(ws.color || '')
+    setEditRows(ws.words.map(w => ({ en: w.en, sv: w.sv, image_url: w.image_url })))
   }
 
   const cancelEdit = () => {
@@ -206,180 +173,462 @@ export default function TeacherWordSetsPage() {
       if (!user) return
       
       const clean = editRows.filter(r => r.en.trim() && r.sv.trim())
-      if (!editTitle.trim() || clean.length === 0) { setMessage('Please provide title and at least one word'); return }
+      if (!editTitle.trim() || clean.length === 0) {
+        setMessage({ type: 'error', text: 'Ange titel och minst ett ord' })
+        return
+      }
+      setSaving(true)
       const { error } = await supabase
         .from('word_sets')
-        .update({ title: editTitle.trim(), words: clean as any, color: editColor || null })
+        .update({ title: editTitle.trim(), words: clean as any })
         .eq('id', id)
         .eq('teacher_id', user.id)
       if (error) throw error
       cancelEdit()
       await load()
-      setMessage('Updated word set')
+      setMessage({ type: 'success', text: 'Ordlista uppdaterad!' })
     } catch (e: any) {
-      setMessage(`Failed to update${e?.message ? `: ${e.message}` : ''}`)
+      setMessage({ type: 'error', text: `Kunde inte uppdatera${e?.message ? `: ${e.message}` : ''}` })
+    } finally {
+      setSaving(false)
     }
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center space-x-4">
-            <a href="/teacher" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </a>
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <FileText className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-800">Ordlistor</h1>
-              <p className="text-sm text-gray-600">Skapa och hantera glosor</p>
-            </div>
-          </div>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Laddar ordlistor...</p>
         </div>
       </div>
+    )
+  }
 
-      <div className="container mx-auto px-6 py-8">
-
-        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Skapa ny ordlista</h2>
-          <div className="grid md:grid-cols-2 gap-4 mb-4">
-            <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Title" className="px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm"/>
-            <ColorSelect value={color} onChange={setColor} options={colorOptions} />
+  // Full-screen edit mode
+  if (editingId) {
+    const editingWordSet = wordSets.find(ws => ws.id === editingId)
+    return (
+      <>
+        {/* Header */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <button
+            onClick={cancelEdit}
+            className="flex items-center gap-2 text-gray-400 hover:text-white mb-4 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Tillbaka till ordlistor
+          </button>
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="w-14 h-14 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center">
+                <Edit2 className="w-7 h-7 text-white" />
+              </div>
+              <div className="absolute -inset-1 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl blur opacity-30" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white">Redigera ordlista</h1>
+              <p className="text-gray-400">Uppdatera "{editingWordSet?.title}"</p>
+            </div>
           </div>
-          <div className="space-y-4 mb-4">
-            {rows.map((r, i) => (
-              <div key={i} data-word-index={i} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
+        </motion.div>
+
+        {/* Message */}
+        <AnimatePresence>
+          {message && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className={`mb-6 p-4 rounded-xl border flex items-center gap-3 ${
+                message.type === 'success' 
+                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                  : 'bg-red-500/10 border-red-500/20 text-red-400'
+              }`}
+            >
+              {message.type === 'success' ? <Sparkles className="w-5 h-5" /> : <X className="w-5 h-5" />}
+              <span className="flex-1">{message.text}</span>
+              <button onClick={() => setMessage(null)} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Edit Form */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-[#12122a] border border-white/5 rounded-2xl p-6"
+        >
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-300 mb-2">Titel</label>
+            <input 
+              value={editTitle} 
+              onChange={e => setEditTitle(e.target.value)} 
+              placeholder="T.ex. Djur, Färger, Mat..." 
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-none transition-all"
+            />
+          </div>
+          
+          <div className="space-y-3 mb-6">
+            <label className="block text-sm font-medium text-gray-300 mb-2">Ord ({editRows.length})</label>
+            {editRows.map((r, i) => (
+              <motion.div 
+                key={i}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 transition-colors"
+              >
                 <div className="grid grid-cols-2 gap-3 mb-3">
-                  <input value={r.en} onPaste={handleCreatePasteEn} onChange={e=>{
-                    const copy=[...rows]; copy[i]={...copy[i], en:e.target.value}; setRows(copy)
-                  }} placeholder="English" className="px-3 py-2 rounded bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm"/>
+                  <input 
+                    value={r.en} 
+                    onPaste={handleEditPaste} 
+                    onChange={e => {
+                      const copy = [...editRows]
+                      copy[i] = { ...copy[i], en: e.target.value }
+                      setEditRows(copy)
+                    }} 
+                    placeholder="Engelska" 
+                    className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-none transition-all"
+                  />
                   <div className="flex gap-2">
-                    <input value={r.sv} onPaste={handleCreatePasteSv} onChange={e=>{
-                      const copy=[...rows]; copy[i]={...copy[i], sv:e.target.value}; setRows(copy)
-                    }} placeholder="Swedish" className="px-3 py-2 rounded w-full bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm"/>
-                    <button onClick={()=>removeRow(i)} className="px-3 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300">-</button>
+                    <input 
+                      value={r.sv} 
+                      onPaste={handleEditPaste} 
+                      onChange={e => {
+                        const copy = [...editRows]
+                        copy[i] = { ...copy[i], sv: e.target.value }
+                        setEditRows(copy)
+                      }} 
+                      placeholder="Svenska" 
+                      className="flex-1 px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-none transition-all"
+                    />
+                    {editRows.length > 1 && (
+                      <button 
+                        onClick={() => removeEditRowAt(i)} 
+                        className="px-3 py-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
-                  <span className="text-sm font-medium text-gray-700">Image:</span>
+                <div className="flex items-center gap-3 bg-white/5 p-3 rounded-lg">
+                  <span className="text-xs font-medium text-gray-500">Bild:</span>
                   <ImageSelector
                     value={r.image_url}
                     onChange={(imageUrl) => {
-                      const copy = [...rows]
+                      const copy = [...editRows]
                       copy[i] = { ...copy[i], image_url: imageUrl }
-                      setRows(copy)
+                      setEditRows(copy)
                     }}
                     onClear={() => {
-                      const copy = [...rows]
+                      const copy = [...editRows]
                       copy[i] = { ...copy[i], image_url: undefined }
-                      setRows(copy)
+                      setEditRows(copy)
                     }}
-                    word={r.en || 'word'}
+                    word={r.en || 'ord'}
                     wordIndex={i}
                   />
                 </div>
-              </div>
+              </motion.div>
             ))}
-            <button onClick={addRow} className="px-3 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300">+ Add word</button>
+            <button 
+              onClick={addEditRow} 
+              className="w-full px-4 py-3 rounded-xl bg-white/5 text-gray-400 hover:bg-white/10 border-2 border-dashed border-white/10 transition-colors flex items-center justify-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Lägg till ord
+            </button>
           </div>
-          <button onClick={save} className="px-4 py-2 rounded bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-md">Save</button>
-        </div>
+          
+          <div className="flex gap-3">
+            <button 
+              onClick={() => saveEdit(editingId)}
+              disabled={saving || !editTitle.trim()}
+              className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:from-cyan-400 hover:to-blue-400 transition-all font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Save className="w-5 h-5" />
+              {saving ? 'Sparar...' : 'Spara ändringar'}
+            </button>
+            <button 
+              onClick={cancelEdit}
+              className="px-6 py-3 rounded-xl bg-white/5 text-gray-400 hover:bg-white/10 transition-colors font-medium"
+            >
+              Avbryt
+            </button>
+          </div>
+        </motion.div>
+      </>
+    )
+  }
 
-        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Dina ordlistor</h2>
-          <div className="space-y-3">
-            {wordSets.map(ws => (
-              <div key={ws.id} className="p-4 border border-gray-200 bg-white rounded-lg shadow-sm">
-                {editingId === ws.id ? (
-                  <div className="space-y-3">
-                    <input
-                      value={editTitle}
-                      onChange={(e)=>setEditTitle(e.target.value)}
-                      className="w-full px-3 py-2 rounded bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm"
-                      placeholder="Title"
-                    />
-                    <ColorSelect value={editColor} onChange={setEditColor} options={colorOptions} />
-                    <div className="space-y-4">
-                      {editRows.map((r, i) => (
-                        <div key={i} data-word-index={i} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
-                          <div className="grid grid-cols-2 gap-3 mb-3">
-                            <input
-                              value={r.en}
-                              onPaste={handleEditPasteEn}
-                              onChange={(e)=>{ const copy=[...editRows]; copy[i] = { ...copy[i], en: e.target.value }; setEditRows(copy) }}
-                              placeholder="English"
-                              className="px-3 py-2 rounded bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm"
-                            />
-                            <div className="flex gap-2">
-                              <input
-                                value={r.sv}
-                                onPaste={handleEditPasteSv}
-                                onChange={(e)=>{ const copy=[...editRows]; copy[i] = { ...copy[i], sv: e.target.value }; setEditRows(copy) }}
-                                placeholder="Swedish"
-                                className="px-3 py-2 rounded w-full bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm"
-                              />
-                              <button onClick={()=>removeEditRowAt(i)} className="px-3 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300">-</button>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
-                            <span className="text-sm font-medium text-gray-700">Image:</span>
-                            <ImageSelector
-                              value={r.image_url}
-                              onChange={(imageUrl) => {
-                                const copy = [...editRows]
-                                copy[i] = { ...copy[i], image_url: imageUrl }
-                                setEditRows(copy)
-                              }}
-                              onClear={() => {
-                                const copy = [...editRows]
-                                copy[i] = { ...copy[i], image_url: undefined }
-                                setEditRows(copy)
-                              }}
-                              word={r.en || 'word'}
-                              wordIndex={i}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                      <button onClick={addEditRow} className="px-3 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300">+ Add word</button>
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={()=>saveEdit(ws.id)} className="px-4 py-2 rounded bg-gradient-to-r from-emerald-600 to-green-600 text-white hover:from-emerald-700 hover:to-green-700 shadow-md">Save</button>
-                      <button onClick={cancelEdit} className="px-4 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300">Cancel</button>
+  return (
+    <>
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setDeleteConfirm(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#12122a] border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center">
+                  <AlertTriangle className="w-6 h-6 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Radera ordlista?</h3>
+                  <p className="text-gray-400 text-sm">Denna åtgärd kan inte ångras</p>
+                </div>
+              </div>
+              <p className="text-gray-300 mb-6">
+                Är du säker på att du vill radera ordlistan "{wordSets.find(ws => ws.id === deleteConfirm)?.title}"? 
+                Alla ord och tilldelningar kopplade till denna lista kommer att tas bort.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => remove(deleteConfirm)}
+                  className="flex-1 px-4 py-3 rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors font-medium flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Ja, radera
+                </button>
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  className="flex-1 px-4 py-3 rounded-xl bg-white/5 text-gray-400 hover:bg-white/10 transition-colors font-medium"
+                >
+                  Avbryt
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Header */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8"
+      >
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center">
+              <FileText className="w-7 h-7 text-white" />
+            </div>
+            <div className="absolute -inset-1 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl blur opacity-30" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">Gloslistor</h1>
+            <p className="text-gray-400">Skapa och hantera dina ordlistor</p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Message */}
+      <AnimatePresence>
+        {message && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className={`mb-6 p-4 rounded-xl border flex items-center gap-3 ${
+              message.type === 'success' 
+                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                : 'bg-red-500/10 border-red-500/20 text-red-400'
+            }`}
+          >
+            {message.type === 'success' ? <Sparkles className="w-5 h-5" /> : <X className="w-5 h-5" />}
+            <span className="flex-1">{message.text}</span>
+            <button onClick={() => setMessage(null)} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Create New Word Set */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-[#12122a] border border-white/5 rounded-2xl p-6 mb-8"
+      >
+        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+          <Plus className="w-5 h-5 text-amber-500" />
+          Skapa ny ordlista
+        </h2>
+        
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-300 mb-2">Titel</label>
+          <input 
+            value={title} 
+            onChange={e => setTitle(e.target.value)} 
+            placeholder="T.ex. Djur, Färger, Mat..." 
+            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all"
+          />
+        </div>
+        
+        <div className="space-y-3 mb-6">
+          <label className="block text-sm font-medium text-gray-300 mb-2">Ord ({rows.length})</label>
+          {rows.map((r, i) => (
+            <motion.div 
+              key={i}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 transition-colors"
+            >
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <input 
+                  value={r.en} 
+                  onPaste={handleCreatePaste} 
+                  onChange={e => {
+                    const copy = [...rows]
+                    copy[i] = { ...copy[i], en: e.target.value }
+                    setRows(copy)
+                  }} 
+                  placeholder="Engelska" 
+                  className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-none transition-all"
+                />
+                <div className="flex gap-2">
+                  <input 
+                    value={r.sv} 
+                    onPaste={handleCreatePaste} 
+                    onChange={e => {
+                      const copy = [...rows]
+                      copy[i] = { ...copy[i], sv: e.target.value }
+                      setRows(copy)
+                    }} 
+                    placeholder="Svenska" 
+                    className="flex-1 px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-none transition-all"
+                  />
+                  {rows.length > 1 && (
+                    <button 
+                      onClick={() => removeRow(i)} 
+                      className="px-3 py-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-white/5 p-3 rounded-lg">
+                <span className="text-xs font-medium text-gray-500">Bild:</span>
+                <ImageSelector
+                  value={r.image_url}
+                  onChange={(imageUrl) => {
+                    const copy = [...rows]
+                    copy[i] = { ...copy[i], image_url: imageUrl }
+                    setRows(copy)
+                  }}
+                  onClear={() => {
+                    const copy = [...rows]
+                    copy[i] = { ...copy[i], image_url: undefined }
+                    setRows(copy)
+                  }}
+                  word={r.en || 'ord'}
+                  wordIndex={i}
+                />
+              </div>
+            </motion.div>
+          ))}
+          <button 
+            onClick={addRow} 
+            className="w-full px-4 py-3 rounded-xl bg-white/5 text-gray-400 hover:bg-white/10 border-2 border-dashed border-white/10 transition-colors flex items-center justify-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Lägg till ord
+          </button>
+        </div>
+        
+        <button 
+          onClick={save}
+          disabled={saving || !title.trim()}
+          className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-400 hover:to-orange-400 transition-all font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Save className="w-5 h-5" />
+          {saving ? 'Sparar...' : 'Skapa ordlista'}
+        </button>
+      </motion.div>
+
+      {/* Word Sets List */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="bg-[#12122a] border border-white/5 rounded-2xl p-6"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-white">Dina ordlistor</h2>
+          <span className="text-sm text-gray-500">{wordSets.length} {wordSets.length === 1 ? 'lista' : 'listor'}</span>
+        </div>
+        
+        {wordSets.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="w-20 h-20 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <FileText className="w-10 h-10 text-gray-500" />
+            </div>
+            <p className="text-gray-400 text-lg">Inga ordlistor ännu</p>
+            <p className="text-gray-500 text-sm mt-1">Skapa din första ordlista ovan</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {wordSets.map((ws, index) => (
+              <motion.div 
+                key={ws.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="group relative bg-white/5 border border-white/5 rounded-xl overflow-hidden hover:border-white/10 transition-all p-5"
+              >
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-bold text-white mb-1 truncate">{ws.title}</h3>
+                    <div className="flex items-center gap-3 text-sm text-gray-400">
+                      <span className="flex items-center gap-1.5">
+                        <FileText className="w-4 h-4" />
+                        {ws.words.length} ord
+                      </span>
                     </div>
                   </div>
-                ) : (
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1">
-                      <input defaultValue={ws.title} onBlur={(e)=>{
-                        const v=e.target.value.trim(); if(v && v!==ws.title){update(ws.id, v, ws.color)}
-                      }} className="w-full bg-transparent text-gray-800 font-medium outline-none border-b border-gray-300 focus:border-indigo-500" />
-                      <div className="text-gray-600 text-sm flex items-center gap-2">
-                        <span>{ws.words.length} words</span>
-                        {ws.color && <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ backgroundColor: ws.color }}></span></span>}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <button onClick={()=>beginEdit(ws)} className="text-indigo-600 hover:text-indigo-700">Edit</button>
-                      <button onClick={()=>remove(ws.id)} className="text-red-500 hover:text-red-600">Delete</button>
-                    </div>
-                  </div>
-                )}
-              </div>
+                </div>
+                <div className="flex items-center gap-2 pt-3 border-t border-white/5">
+                  <button 
+                    onClick={() => beginEdit(ws)} 
+                    className="flex-1 px-4 py-2 rounded-xl bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 transition-all flex items-center justify-center gap-2 font-medium text-sm"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    Redigera
+                  </button>
+                  <button 
+                    onClick={() => setDeleteConfirm(ws.id)} 
+                    className="px-4 py-2 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all"
+                    title="Radera ordlista"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </motion.div>
             ))}
-            {wordSets.length===0 && <div className="text-gray-500">No word sets yet.</div>}
           </div>
-        </div>
-
-        {message && <div className="mt-6 p-3 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">{message}</div>}
-      </div>
-    </div>
+        )}
+      </motion.div>
+    </>
   )
 }
-
-

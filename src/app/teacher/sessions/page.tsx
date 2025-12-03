@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Gamepad2, Plus, Users, Calendar, CheckCircle2, Circle, Clock, Trash2, X } from 'lucide-react'
+import { Gamepad2, Plus, Users, Calendar, Trash2, X, Lock, ArrowRight, Sparkles, Clock } from 'lucide-react'
 import Link from 'next/link'
+import { hasSessionModeAccess } from '@/lib/subscription'
 
 interface Session {
   id: string
@@ -26,13 +27,28 @@ export default function TeacherSessionsPage() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [loading, setLoading] = useState(true)
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [hasAccess, setHasAccess] = useState(false)
+  const [checkingAccess, setCheckingAccess] = useState(true)
 
   useEffect(() => {
+    const checkAccess = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const access = await hasSessionModeAccess(user.id)
+          setHasAccess(access)
+        }
+      } catch (error) {
+        console.error('Error checking session mode access:', error)
+      } finally {
+        setCheckingAccess(false)
+      }
+    }
+    checkAccess()
     loadSessions()
-    // Update time every minute to refresh countdown
     const interval = setInterval(() => {
       setCurrentTime(new Date())
-    }, 60000) // Update every minute
+    }, 60000)
     
     return () => clearInterval(interval)
   }, [])
@@ -59,7 +75,6 @@ export default function TeacherSessionsPage() {
 
       if (error) throw error
 
-      // Get participant counts
       const sessionsWithCounts = await Promise.all(
         (data || []).map(async (session) => {
           const { count } = await supabase
@@ -75,7 +90,14 @@ export default function TeacherSessionsPage() {
         })
       )
 
-      setSessions(sessionsWithCounts as Session[])
+      // Filter out expired sessions (due_date has passed)
+      const now = new Date()
+      const activeSessions = sessionsWithCounts.filter((session) => {
+        const dueDate = new Date(session.due_date)
+        return dueDate >= now
+      }) as Session[]
+
+      setSessions(activeSessions)
     } catch (error) {
       console.error('Error loading sessions:', error)
     } finally {
@@ -85,7 +107,7 @@ export default function TeacherSessionsPage() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString('sv-SE', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -99,7 +121,7 @@ export default function TeacherSessionsPage() {
   const getHoursUntilDeletion = (dueDate: string) => {
     const due = new Date(dueDate)
     const deletionTime = new Date(due)
-    deletionTime.setHours(deletionTime.getHours() + 48) // 48 hours after due date
+    deletionTime.setHours(deletionTime.getHours() + 48)
     const diffMs = deletionTime.getTime() - currentTime.getTime()
     const diffHours = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)))
     return diffHours
@@ -108,16 +130,16 @@ export default function TeacherSessionsPage() {
   const formatTimeUntilDeletion = (dueDate: string) => {
     const hours = getHoursUntilDeletion(dueDate)
     if (hours === 0) {
-      return 'Deleting soon'
+      return 'Raderas snart'
     }
-    return `Deletes in ${hours} ${hours === 1 ? 'hour' : 'hours'}`
+    return `Raderas om ${hours} ${hours === 1 ? 'timme' : 'timmar'}`
   }
 
   const handleDeleteSession = async (sessionId: string, e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     
-    if (!confirm('Are you sure you want to delete this session? All data will be permanently deleted.')) {
+    if (!confirm('Är du säker på att du vill ta bort denna session? All data kommer att raderas permanent.')) {
       return
     }
 
@@ -128,12 +150,10 @@ export default function TeacherSessionsPage() {
         .eq('id', sessionId)
 
       if (error) throw error
-
-      // Reload sessions
       loadSessions()
     } catch (error) {
       console.error('Error deleting session:', error)
-      alert('Could not delete session. Please try again.')
+      alert('Kunde inte ta bort sessionen. Försök igen.')
     }
   }
 
@@ -148,48 +168,102 @@ export default function TeacherSessionsPage() {
         .eq('id', sessionId)
 
       if (error) throw error
-
-      // Reload sessions
       loadSessions()
     } catch (error) {
       console.error('Error deactivating session:', error)
-      alert('Could not end session. Please try again.')
+      alert('Kunde inte avsluta sessionen. Försök igen.')
     }
   }
 
+  if (checkingAccess) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Kontrollerar åtkomst...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!hasAccess) {
+    return (
+      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20">
+              <Gamepad2 className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white">Session Mode</h1>
+              <p className="text-gray-400">Skapa sessioner som elever kan gå med i med en kod</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-amber-500/30 p-8 text-center shadow-xl">
+          <div className="w-20 h-20 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-amber-500/20">
+            <Lock className="w-10 h-10 text-amber-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-3">Session Mode kräver Premium eller Pro</h2>
+          <p className="text-gray-400 mb-8 max-w-md mx-auto">
+            Session Mode är endast tillgängligt för Premium och Pro-planer. Uppgradera din plan för att skapa sessioner.
+          </p>
+          <Link
+            href="/pricing"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20"
+          >
+            <Sparkles className="w-5 h-5" />
+            Visa prenumerationsplaner
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div>
+    <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Page Header */}
       <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Session Mode
-          </h1>
-          <p className="text-gray-600">Create sessions that students can join with a code</p>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+            <Gamepad2 className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">Session Mode</h1>
+            <p className="text-gray-400">Skapa sessioner som elever kan gå med i med en kod</p>
+          </div>
         </div>
         <Link
           href="/teacher/sessions/create"
-          className="flex items-center gap-2 px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-semibold transition-colors shadow-md"
+          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-semibold hover:from-emerald-600 hover:to-teal-700 transition-all shadow-lg shadow-emerald-500/20"
         >
           <Plus className="w-5 h-5" />
-          Create new session
+          Skapa session
         </Link>
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-gray-500">Loading...</div>
-      ) : sessions.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-teal-100 to-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Gamepad2 className="w-8 h-8 text-teal-600" />
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="w-12 h-12 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-gray-400">Laddar sessioner...</p>
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">No sessions yet</h2>
-          <p className="text-gray-600 mb-6">Create your first session to get started</p>
+        </div>
+      ) : sessions.length === 0 ? (
+        <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-white/10 p-12 text-center shadow-xl">
+          <div className="w-20 h-20 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-emerald-500/20">
+            <Gamepad2 className="w-10 h-10 text-emerald-400" />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-3">Inga sessioner ännu</h2>
+          <p className="text-gray-400 mb-8">Skapa din första session för att komma igång</p>
           <Link
             href="/teacher/sessions/create"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-semibold transition-colors shadow-md"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-semibold hover:from-emerald-600 hover:to-teal-700 transition-all shadow-lg shadow-emerald-500/20"
           >
             <Plus className="w-5 h-5" />
-            Create session
+            Skapa session
           </Link>
         </div>
       ) : (
@@ -197,7 +271,7 @@ export default function TeacherSessionsPage() {
           {sessions.map((session) => (
             <div
               key={session.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg hover:border-teal-300 transition-all p-6 group relative"
+              className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-emerald-500/30 transition-all p-6 group relative shadow-xl"
             >
               <Link
                 href={`/teacher/sessions/${session.id}`}
@@ -206,15 +280,19 @@ export default function TeacherSessionsPage() {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-lg flex items-center justify-center shadow-sm">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ${
+                        session.is_active 
+                          ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-500/20' 
+                          : 'bg-gradient-to-br from-gray-600 to-gray-700 shadow-gray-500/10'
+                      }`}>
                         <Gamepad2 className="w-6 h-6 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 mb-1 truncate">
-                          {session.session_name || (session.word_sets && session.word_sets.length > 0 ? session.word_sets[0].title : 'No word set')}
+                        <h3 className="font-semibold text-white mb-1 truncate">
+                          {session.session_name || (session.word_sets && session.word_sets.length > 0 ? session.word_sets[0].title : 'Ingen ordlista')}
                         </h3>
-                        <p className="text-sm text-gray-500">
-                          Code: <span className="font-mono font-medium text-gray-700">{session.session_code}</span>
+                        <p className="text-sm text-gray-400">
+                          Kod: <span className="font-mono font-medium text-emerald-400">{session.session_code}</span>
                         </p>
                       </div>
                     </div>
@@ -222,37 +300,48 @@ export default function TeacherSessionsPage() {
                 </div>
 
                 <div className="space-y-2.5 mb-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Calendar className="w-4 h-4 text-gray-400" />
+                  <div className="flex items-center gap-2 text-sm">
+                    <Calendar className="w-4 h-4 text-gray-500" />
                     {isExpired(session.due_date) ? (
                       <span className={`font-medium ${
                         getHoursUntilDeletion(session.due_date) < 12 
-                          ? 'text-red-600' 
+                          ? 'text-red-400' 
                           : getHoursUntilDeletion(session.due_date) < 24 
-                          ? 'text-orange-600' 
-                          : 'text-gray-600'
+                          ? 'text-amber-400' 
+                          : 'text-gray-400'
                       }`}>
+                        <Clock className="w-3 h-3 inline mr-1" />
                         {formatTimeUntilDeletion(session.due_date)}
                       </span>
                     ) : (
-                      <span>Due: {formatDate(session.due_date)}</span>
+                      <span className="text-gray-400">Förfaller: {formatDate(session.due_date)}</span>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Users className="w-4 h-4 text-gray-400" />
-                    <span>{session._count?.participants || 0} participants</span>
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <Users className="w-4 h-4 text-gray-500" />
+                    <span>{session._count?.participants || 0} deltagare</span>
                   </div>
 
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Gamepad2 className="w-4 h-4 text-gray-400" />
-                    <span>{session.enabled_games?.length || 0} games</span>
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <Gamepad2 className="w-4 h-4 text-gray-500" />
+                    <span>{session.enabled_games?.length || 0} spel</span>
                   </div>
                 </div>
 
-                <div className="mt-5 pt-4 border-t border-gray-100">
-                  <div className="flex items-center text-teal-600 font-medium text-sm group-hover:text-teal-700 transition-colors">
-                    View details
+                {/* Status indicator */}
+                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${
+                  session.is_active 
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' 
+                    : 'bg-gray-500/20 text-gray-400 border border-gray-500/20'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${session.is_active ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'}`} />
+                  {session.is_active ? 'Aktiv' : 'Inaktiv'}
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-white/5">
+                  <div className="flex items-center text-emerald-400 font-medium text-sm group-hover:text-emerald-300 transition-colors">
+                    Visa detaljer
                     <span className="ml-auto">→</span>
                   </div>
                 </div>
@@ -263,16 +352,16 @@ export default function TeacherSessionsPage() {
                 {session.is_active && (
                   <button
                     onClick={(e) => handleDeactivateSession(session.id, e)}
-                    className="p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors shadow-sm"
-                    title="End session"
+                    className="p-2 bg-white/5 text-gray-400 rounded-lg hover:bg-white/10 hover:text-white transition-all border border-white/10"
+                    title="Avsluta session"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 )}
                 <button
                   onClick={(e) => handleDeleteSession(session.id, e)}
-                  className="p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors shadow-sm"
-                  title="Delete session"
+                  className="p-2 bg-white/5 text-gray-400 rounded-lg hover:bg-red-500/20 hover:text-red-400 transition-all border border-white/10"
+                  title="Ta bort session"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>

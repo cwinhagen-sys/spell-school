@@ -213,8 +213,18 @@ export default function Home() {
   // Show loading while checking auth
   if (checkingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-700">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a1a] relative overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0f0f2a] via-[#0a0a1a] to-[#050510]" />
+          <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-purple-600/20 rounded-full blur-[100px]" />
+          <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-amber-500/10 rounded-full blur-[80px]" />
+        </div>
+        
+        <div className="relative text-center">
+          <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Laddar...</p>
+        </div>
       </div>
     )
   }

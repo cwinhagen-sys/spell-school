@@ -335,7 +335,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { action, studentId, studentEmail } = await request.json()
+    const { action, studentId, studentEmail, classId } = await request.json()
 
     if (action === 'reset_password') {
       // Verify teacher has access to this student using the working function
@@ -364,42 +364,132 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, message: 'Password reset email sent' })
 
     } else if (action === 'remove_from_class' || action === 'delete_student') {
-      // Verify teacher has access to this student using the working function
-      const { data: teacherStudents } = await supabase
-        .rpc('get_teacher_students', { 
-          teacher_uuid: user.id,
-          class_ids: [] // Get all students for this teacher
-        })
-
-      const studentRecord = teacherStudents?.find((s: any) => s.student_id === studentId)
+      let studentRecord: any = null
+      let hasActiveClass = false
       
-      // If student not found in teacher's students at all, deny access
-      if (!studentRecord) {
-        console.log('API: Student not found in teacher students:', { studentId, teacherId: user.id })
-        return NextResponse.json({ error: 'Access denied - student not found' }, { status: 403 })
+      // If action is delete_student and classId is null, treat as unassigned deletion
+      if (action === 'delete_student' && !classId) {
+        // Skip class check, go directly to deletion
+        hasActiveClass = false
+        studentRecord = {
+          class_id: null,
+          class_name: 'Unassigned'
+        }
       }
+      // If classId is provided, verify it belongs to teacher and use it directly
+      else if (classId && action === 'remove_from_class') {
+        // Verify the class belongs to the teacher
+        const { data: classData, error: classError } = await supabase
+          .from('classes')
+          .select('id, name')
+          .eq('id', classId)
+          .eq('teacher_id', user.id)
+          .is('deleted_at', null)
+          .single()
+        
+        if (classError || !classData) {
+          console.log('API: Class not found or access denied:', { classId, teacherId: user.id, error: classError?.message })
+          return NextResponse.json({ error: 'Access denied - class not found' }, { status: 403 })
+        }
+        
+        // Verify student is in this class
+        const { data: classStudent, error: csError } = await supabase
+          .from('class_students')
+          .select('class_id, deleted_at')
+          .eq('student_id', studentId)
+          .eq('class_id', classId)
+          .is('deleted_at', null)
+          .single()
+        
+        if (csError || !classStudent) {
+          console.log('API: Student not in class:', { studentId, classId, error: csError?.message })
+          return NextResponse.json({ error: 'Student not found in this class' }, { status: 404 })
+        }
+        
+        hasActiveClass = true
+        studentRecord = {
+          class_id: classId,
+          class_name: classData.name
+        }
+      } else {
+        // Fallback: Verify teacher has access to this student by checking if student belongs to teacher's class
+        // Get all teacher's classes
+        const { data: teacherClasses, error: classesError } = await supabase
+          .from('classes')
+          .select('id, name')
+          .eq('teacher_id', user.id)
+          .is('deleted_at', null)
+        
+        if (classesError) {
+          console.error('Error fetching teacher classes:', classesError)
+          return NextResponse.json({ error: 'Failed to verify access' }, { status: 500 })
+        }
 
-      // Check if student has an active class
-      const { data: teacherClasses } = await supabase
-        .from('classes')
-        .select('id')
-        .eq('teacher_id', user.id)
-      
-      const existingClassIds = teacherClasses?.map(c => c.id) || []
-      const hasActiveClass = studentRecord.class_id && existingClassIds.includes(studentRecord.class_id)
+        const teacherClassIds = teacherClasses?.map(c => c.id) || []
+        
+        if (teacherClassIds.length === 0) {
+          return NextResponse.json({ error: 'No classes found for teacher' }, { status: 403 })
+        }
+
+        // Check if student belongs to any of teacher's classes (active)
+        const { data: classStudents, error: csError } = await supabase
+          .from('class_students')
+          .select('class_id, deleted_at')
+          .eq('student_id', studentId)
+          .in('class_id', teacherClassIds)
+          .is('deleted_at', null)
+        
+        if (!csError && classStudents && classStudents.length > 0) {
+          // Student is in at least one active class
+          const activeClassStudent = classStudents[0]
+          const classInfo = teacherClasses?.find(c => c.id === activeClassStudent.class_id)
+          hasActiveClass = true
+          studentRecord = {
+            class_id: activeClassStudent.class_id,
+            class_name: classInfo?.name || 'Unknown Class'
+          }
+        } else {
+          // Check if student was in a deleted class_students record
+          const { data: deletedClassStudents } = await supabase
+            .from('class_students')
+            .select('class_id, deleted_at')
+            .eq('student_id', studentId)
+            .in('class_id', teacherClassIds)
+            .not('deleted_at', 'is', null)
+          
+          if (deletedClassStudents && deletedClassStudents.length > 0) {
+            // Student was previously in teacher's class but is now unassigned
+            studentRecord = {
+              class_id: null,
+              class_name: 'Unassigned'
+            }
+          } else {
+            // Student doesn't belong to any of teacher's classes
+            console.log('API: Student not found in teacher classes:', { 
+              studentId, 
+              teacherId: user.id, 
+              teacherClassIds,
+              csError: csError?.message 
+            })
+            return NextResponse.json({ error: 'Access denied - student not found in your classes' }, { status: 403 })
+          }
+        }
+      }
       
       console.log('API: Delete check:', {
         studentId,
-        studentClassId: studentRecord.class_id,
-        existingClassIds,
-        hasActiveClass
+        studentClassId: studentRecord?.class_id,
+        hasActiveClass,
+        providedClassId: classId
       })
 
+      const deletionTimestamp = new Date().toISOString()
+      
       if (hasActiveClass) {
         // Student has an active class - remove from class using soft delete
         const { error: removeError } = await supabase
           .from('class_students')
-          .update({ deleted_at: new Date().toISOString() })
+          .update({ deleted_at: deletionTimestamp })
           .eq('student_id', studentId)
           .eq('class_id', studentRecord.class_id)
 
@@ -408,13 +498,62 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'Failed to remove student from class' }, { status: 500 })
         }
 
-        return NextResponse.json({ success: true, message: 'Student removed from class' })
+        // Log deletion in deletion_logs
+        await supabase
+          .from('deletion_logs')
+          .insert({
+            table_name: 'class_students',
+            record_id: studentId,
+            deleted_by: user.id,
+            deleted_at: deletionTimestamp,
+            reason: `Student removed from class: ${studentRecord.class_name}`,
+            anonymized_data: {
+              student_name: studentRecord.student_email?.split('@')[0] || 'Unknown',
+              class_name: studentRecord.class_name,
+              deletion_type: 'remove_from_class'
+            }
+          })
+
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Student removed from class',
+          deletionDate: deletionTimestamp,
+          anonymizationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        })
       } else {
         // Student is unassigned (no active class) - soft delete the student entirely
+        // Check if student is already deleted
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id, deleted_at, username, email, created_at')
+          .eq('id', studentId)
+          .single()
+
+        if (!existingProfile) {
+          return NextResponse.json({ error: 'Student not found' }, { status: 404 })
+        }
+
+        if (existingProfile.deleted_at) {
+          // Student is already deleted, return success
+          return NextResponse.json({ 
+            success: true, 
+            message: 'Student already deleted',
+            deletionDate: existingProfile.deleted_at
+          })
+        }
+
+        // Get student data before deletion for logging
+        const studentProfile = {
+          username: existingProfile.username,
+          email: existingProfile.email,
+          created_at: existingProfile.created_at
+        }
+
         const { error: deleteError } = await supabase
           .from('profiles')
-          .update({ deleted_at: new Date().toISOString() })
+          .update({ deleted_at: deletionTimestamp })
           .eq('id', studentId)
+          .is('deleted_at', null) // Only update if not already deleted
 
         if (deleteError) {
           console.error('Error deleting unassigned student:', deleteError)
@@ -424,11 +563,32 @@ export async function POST(request: NextRequest) {
         // Also soft delete any class_students records (if they exist but class is gone)
         await supabase
           .from('class_students')
-          .update({ deleted_at: new Date().toISOString() })
+          .update({ deleted_at: deletionTimestamp })
           .eq('student_id', studentId)
           .is('deleted_at', null)
 
-        return NextResponse.json({ success: true, message: 'Unassigned student deleted' })
+        // Log deletion in deletion_logs
+        await supabase
+          .from('deletion_logs')
+          .insert({
+            table_name: 'profiles',
+            record_id: studentId,
+            deleted_by: user.id,
+            deleted_at: deletionTimestamp,
+            reason: 'Unassigned student permanently deleted',
+            anonymized_data: {
+              username: studentProfile?.username || 'Unknown',
+              account_created: studentProfile?.created_at,
+              deletion_type: 'permanent_delete'
+            }
+          })
+
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Unassigned student deleted',
+          deletionDate: deletionTimestamp,
+          anonymizationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        })
       }
 
     } else {

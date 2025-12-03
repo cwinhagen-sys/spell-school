@@ -668,30 +668,34 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
   // Mode selection screen
   if (!spinMode) {
     return (
-      <div className="fixed inset-0 bg-gray-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-        <div className="bg-white rounded-xl p-6 w-full max-w-2xl shadow-lg border border-gray-200 relative my-4 text-center">
+      <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50 overflow-y-auto">
+        {/* Aurora background effects */}
+        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+        
+        <div className="relative bg-[#12122a] rounded-2xl p-6 w-full max-w-2xl shadow-2xl border border-white/10 my-4 text-center">
           {/* Header */}
           <div className="flex items-center justify-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-full flex items-center justify-center">
+            <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/30">
               <Target className="w-8 h-8 text-white" />
             </div>
             <div className="ml-4">
-              <h2 className="text-3xl font-bold text-gray-900">Word Roulette</h2>
-              <p className="text-sm text-gray-600">Spin and create sentences!</p>
+              <h2 className="text-3xl font-bold text-white">Ordroulette</h2>
+              <p className="text-sm text-gray-400">Snurra och skriv meningar!</p>
             </div>
           </div>
 
           <div className="mb-8">
-            <p className="text-lg text-gray-700 mb-6">
-              Spin the wheel and write a sentence using the selected words!
+            <p className="text-lg text-gray-300 mb-6">
+              Snurra på hjulet och skriv en mening med de valda orden!
             </p>
             
-            <div className="bg-gray-50 rounded-lg p-6 mb-6 border border-gray-200">
-              <div className="text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">How it works:</div>
-              <div className="text-sm text-gray-700 text-left space-y-1">
-                <div>• Click the wheel to spin</div>
-                <div>• Use all selected words in a sentence</div>
-                <div>• Points = Number of words in your sentence</div>
+            <div className="bg-white/5 rounded-xl p-6 mb-6 border border-white/10">
+              <div className="text-sm font-semibold text-white mb-2 uppercase tracking-wide">Så här fungerar det:</div>
+              <div className="text-sm text-gray-400 text-left space-y-1">
+                <div>• Klicka på hjulet för att snurra</div>
+                <div>• Använd alla valda ord i en mening</div>
+                <div>• Poäng = Antal ord i din mening</div>
               </div>
             </div>
             
@@ -700,17 +704,17 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
                 setSpinMode(1)
                 setSpinsRemaining(1)
               }}
-              className="w-full bg-teal-500 hover:bg-teal-600 text-white py-4 px-8 rounded-lg font-bold text-lg transition-all shadow-md"
+              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white py-4 px-8 rounded-xl font-bold text-lg transition-all shadow-lg shadow-amber-500/30"
             >
-              Start Game
+              Starta spelet
             </button>
           </div>
           
           <button 
             onClick={onClose} 
-            className="text-gray-600 hover:text-gray-800 font-medium transition-colors"
+            className="text-gray-400 hover:text-white font-medium transition-colors"
           >
-            Back to Dashboard
+            Tillbaka till Dashboard
           </button>
         </div>
       </div>
@@ -719,23 +723,28 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
 
   // Main game screen
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-3xl p-6 w-full max-w-5xl shadow-2xl border border-gray-100 relative my-8 mx-auto">
+    <div className="fixed inset-0 bg-[#0a0a1a] p-4 z-50 overflow-y-auto">
+      {/* Aurora background effects */}
+      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+      
+      <div className="relative bg-[#12122a] rounded-2xl p-6 w-full max-w-5xl shadow-2xl border border-white/10 my-8 mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/30">
+              <Target className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-800">Word Roulette</h2>
-              <p className="text-sm text-gray-600">Spin and create sentences!</p>
+              <h2 className="text-2xl font-bold text-white">Ordroulette</h2>
+              <p className="text-sm text-gray-400">Snurra och skriv meningar!</p>
             </div>
           </div>
           <button 
             onClick={onClose} 
-            className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-colors"
+            className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center transition-colors border border-white/10"
           >
-            <span className="text-gray-600 text-xl">×</span>
+            <span className="text-gray-400 text-xl">×</span>
           </button>
         </div>
 
@@ -754,9 +763,9 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
                  height: 0;
                  border-left: 24px solid transparent;
                  border-right: 24px solid transparent;
-                 border-top: 48px solid #ff3b30;
+                 border-top: 48px solid #f59e0b;
                  z-index: 10;
-                 filter: drop-shadow(0 2px 2px rgba(0,0,0,.35));
+                 filter: drop-shadow(0 4px 8px rgba(245, 158, 11, 0.5));
                }
              `}</style>
              {/* Large pointer at 12 o'clock */}
@@ -772,11 +781,11 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
                  width: '100%',
                  height: '100%',
                  borderRadius: '50%',
-                 border: '10px solid #e5e7eb',
-                 boxShadow: '0 0 15px rgba(0,0,0,0.3)',
+                 border: '8px solid rgba(255, 255, 255, 0.2)',
+                 boxShadow: '0 0 30px rgba(245, 158, 11, 0.3), inset 0 0 20px rgba(0,0,0,0.2)',
                  transition: 'transform 4s cubic-bezier(0.25, 1, 0.5, 1)',
                  transform: `rotate(${wheelRotation}deg)`,
-                 backgroundColor: '#f9fafb',
+                 backgroundColor: 'rgba(18, 18, 42, 0.8)',
                  cursor: isSpinning ? 'not-allowed' : 'pointer'
                }}
              />
@@ -785,13 +794,14 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
 
         {/* Spun Words Display */}
         {spunWords.length > 0 && (
-          <div className="mb-8 p-6 bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl border border-purple-200">
-            <h3 className="text-lg font-bold mb-4 text-gray-800 flex items-center">
-              Selected Words:
+          <div className="mb-8 p-6 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-2xl border border-amber-500/30">
+            <h3 className="text-lg font-bold mb-4 text-white flex items-center">
+              <Target className="w-5 h-5 mr-2 text-amber-400" />
+              Valda ord:
             </h3>
             <div className="flex flex-wrap gap-3">
               {spunWords.map((spun, index) => (
-                <div key={index} className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-2xl text-sm font-semibold shadow-lg">
+                <div key={index} className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-amber-500/30">
                   {spun.word}
                 </div>
               ))}
@@ -802,9 +812,9 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
         {/* Spin Instructions */}
         {spinsRemaining > 0 && (
           <div className="text-center mb-8">
-            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-orange-100 to-red-100 px-6 py-3 rounded-2xl border border-orange-200">
-              <p className="text-orange-800 font-medium">
-                {isSpinning ? 'Spinning...' : 'Click the wheel to spin!'}
+            <div className="inline-flex items-center space-x-2 bg-amber-500/10 px-6 py-3 rounded-xl border border-amber-500/30">
+              <p className="text-amber-300 font-medium">
+                {isSpinning ? 'Snurrar...' : 'Klicka på hjulet för att snurra!'}
               </p>
             </div>
           </div>
@@ -813,44 +823,44 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
         {/* Sentence Input */}
         {spinsRemaining === 0 && (
           <div className="mb-8">
-            <div className="bg-gradient-to-r from-green-100 to-emerald-100 rounded-2xl p-6 border border-green-200">
-              <h3 className="text-xl font-bold mb-4 text-gray-800 flex items-center">
-                <span className="mr-2">✍️</span>
-                Write a sentence using all the words:
+            <div className="bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 rounded-2xl p-6 border border-emerald-500/30">
+              <h3 className="text-xl font-bold mb-4 text-white flex items-center">
+                <Send className="w-5 h-5 mr-2 text-emerald-400" />
+                Skriv en mening med alla orden:
               </h3>
               <div className="space-y-4">
                 <textarea
                   value={currentSentence}
                   onChange={(e) => setCurrentSentence(e.target.value)}
-                  placeholder="Write your sentence here..."
-                  className="w-full p-4 bg-white border-2 border-gray-300 rounded-2xl text-gray-800 placeholder-gray-500 resize-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                  placeholder="Skriv din mening här..."
+                  className="w-full p-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 resize-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                   rows={3}
                 />
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="text-sm font-medium">
                     {containsInappropriateWords(currentSentence) ? (
-                      <span className="text-red-600 flex items-center">
-                        <span className="mr-1">⚠️</span>
-                        Please use appropriate language
+                      <span className="text-red-400 flex items-center">
+                        <span className="mr-1">⚠</span>
+                        Använd lämpligt språk
                       </span>
                     ) : (
-                      <span className="text-gray-600 flex items-center">
+                      <span className="text-gray-400 flex items-center">
                         <span className="mr-1">💡</span>
-                        Must start with capital letter and end with . ! or ?
+                        Måste börja med stor bokstav och sluta med . ! eller ?
                       </span>
                     )}
                   </div>
                   <button
                     onClick={submitSentence}
                     disabled={!validateSentence(currentSentence) || isSubmitting || hasSubmitted || containsInappropriateWords(currentSentence)}
-                    className={`px-6 py-3 rounded-2xl font-semibold transition-all flex items-center gap-2 shadow-lg ${
+                    className={`px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg ${
                       !validateSentence(currentSentence) || isSubmitting || hasSubmitted || containsInappropriateWords(currentSentence)
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl'
+                        ? 'bg-white/5 text-gray-500 cursor-not-allowed border border-white/5'
+                        : 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white hover:from-emerald-400 hover:to-cyan-400 hover:shadow-xl shadow-emerald-500/30'
                     }`}
                   >
                     <Send className="w-4 h-4" />
-                    {isSubmitting ? 'Analyzing...' : hasSubmitted ? 'Submitted' : 'Submit'}
+                    {isSubmitting ? 'Analyserar...' : hasSubmitted ? 'Skickat' : 'Skicka'}
                   </button>
                 </div>
               </div>
@@ -860,19 +870,19 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
 
         {/* Feedback */}
         {feedback && (
-          <div className={`p-6 rounded-2xl mb-8 border-2 ${
-            feedback.type === 'success' ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-300' :
-            feedback.type === 'error' ? 'bg-gradient-to-r from-red-100 to-rose-100 text-red-800 border-red-300' :
-            'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border-blue-300'
+          <div className={`p-6 rounded-2xl mb-8 border ${
+            feedback.type === 'success' ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' :
+            feedback.type === 'error' ? 'bg-red-500/10 text-red-300 border-red-500/30' :
+            'bg-cyan-500/10 text-cyan-300 border-cyan-500/30'
           }`}>
             <div className="mb-4 text-lg font-medium">{feedback.message}</div>
             {showFinishButton && (
               <div className="text-center">
                 <button
                   onClick={finishGame}
-                  className="bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-8 rounded-2xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl"
+                  className="bg-gradient-to-r from-emerald-500 to-cyan-500 text-white py-3 px-8 rounded-xl font-semibold hover:from-emerald-400 hover:to-cyan-400 transition-all shadow-lg shadow-emerald-500/30 hover:shadow-xl"
                 >
-                  🎉 Finish Game
+                  Avsluta spel
                 </button>
               </div>
             )}
@@ -883,10 +893,10 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
         <div className="flex justify-center gap-4">
           <button 
             onClick={restartGame} 
-            className="bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-800 py-3 px-6 rounded-2xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+            className="bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 py-3 px-6 rounded-xl font-semibold transition-all flex items-center gap-2"
           >
             <RotateCcw className="w-4 h-4" />
-            Restart
+            Starta om
           </button>
         </div>
       </div>

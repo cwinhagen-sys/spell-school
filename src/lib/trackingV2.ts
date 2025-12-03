@@ -16,7 +16,7 @@ import { supabase } from '@/lib/supabase'
 import { xpOutbox, createXpEvent } from '@/lib/xpOutbox'
 import { syncManager } from '@/lib/syncManager'
 
-export type GameType = 'flashcards' | 'match' | 'typing' | 'story' | 'translate' | 'connect' | 'quiz' | 'choice' | 'roulette' | 'story_gap' | 'spellslinger' | 'daily_quest'
+export type GameType = 'flashcards' | 'match' | 'typing' | 'story' | 'translate' | 'connect' | 'quiz' | 'choice' | 'roulette' | 'story_gap' | 'daily_quest'
 
 export interface TrackingContext {
   wordSetId?: string

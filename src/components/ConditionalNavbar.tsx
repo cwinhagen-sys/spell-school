@@ -11,6 +11,16 @@ export default function ConditionalNavbar() {
     return null
   }
   
+  // Don't show Navbar on session pages (they have their own dark theme header)
+  if (pathname?.startsWith('/session')) {
+    return null
+  }
+  
+  // Don't show Navbar on pricing page (it has its own header)
+  if (pathname === '/pricing') {
+    return null
+  }
+  
   return <Navbar />
 }
 

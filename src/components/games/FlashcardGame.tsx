@@ -427,39 +427,17 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
       if (pronunciationMode === 'test') {
         setIsFlipped(false) // false means English side is showing
         
-        // If correct pronunciation, automatically move to next word after a delay
-        if (result.isCorrect && result.accuracyScore >= 85) {
-          // Wait a bit to show the result, then move to next word
-          setTimeout(() => {
-            if (currentWordIndex < wordList.length - 1) {
-              setCurrentWordIndex(prev => prev + 1)
-              setIsFlipped(true) // Start with Swedish side for next word
-            }
-          }, 1500) // 1.5 second delay to see the result
-        } else {
-          // If incorrect pronunciation, automatically play English word
+        // Don't automatically move to next word - user must click "Next" button
+        // If incorrect pronunciation, automatically play English word
+        if (!result.isCorrect || result.accuracyScore < 85) {
           setTimeout(() => {
             handleSpeakEnglish()
           }, 400)
         }
       }
       
-      // In training mode in session mode, automatically move to next word when correct
-      if (pronunciationMode === 'training' && sessionMode && result.isCorrect && result.accuracyScore >= 85) {
-        // Wait a bit to show the result, then move to next word
-        setTimeout(() => {
-          if (currentWordIndex < wordList.length - 1) {
-            setCurrentWordIndex(prev => prev + 1)
-            setIsFlipped(false) // Start with English side showing in training mode
-          } else if (wordList.length === 1) {
-            // If only 1 word, don't auto-finish - let user manually finish
-            // This prevents auto-completion when there's only 1 word
-            console.log('⚠️ Only 1 word: Not auto-finishing, waiting for user action')
-          }
-          // Don't call finishGame() here - let useEffect handle it when pronunciationResults updates
-          // This ensures the last word's result is properly included
-        }, 1000) // 1 second delay to see the result
-      }
+      // In training mode, don't automatically move to next word - user must click "Next" button
+      // This applies to both session mode and regular mode
 
       setIsProcessing(false)
       
@@ -1744,22 +1722,26 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
   }
 
   return (
-    <div className="fixed inset-0 bg-gray-50 flex items-center justify-center p-2 z-50 overflow-y-auto">
-      <div className="bg-white rounded-xl p-6 w-full max-w-3xl shadow-lg border border-gray-200 relative my-2">
+    <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-2 z-50 overflow-y-auto">
+      {/* Aurora background effects */}
+      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-emerald-600/20 rounded-full blur-[100px] animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-cyan-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+      
+      <div className="relative bg-[#12122a] rounded-2xl p-6 w-full max-w-3xl shadow-2xl border border-white/10 my-2">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
               <BookOpen className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Vocabulary Flashcards</h2>
+              <h2 className="text-2xl font-bold text-white">Ordkort</h2>
             </div>
           </div>
           <div className="flex items-center gap-3">
             {/* Mode Selector - only show if not in session mode */}
             {!sessionMode && (
-              <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+              <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1 border border-white/10">
                 <button
                   onClick={() => {
                     setPronunciationMode('training')
@@ -1772,11 +1754,11 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                   }}
                   className={`px-4 py-2 rounded-lg font-medium transition-all ${
                     pronunciationMode === 'training'
-                      ? 'bg-white text-teal-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-800'
+                      ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-lg shadow-emerald-500/30'
+                      : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  Training
+                  Träning
                 </button>
                 <button
                   onClick={() => {
@@ -1790,8 +1772,8 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                   }}
                   className={`px-4 py-2 rounded-lg font-medium transition-all ${
                     pronunciationMode === 'test'
-                      ? 'bg-white text-teal-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-800'
+                      ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-lg shadow-emerald-500/30'
+                      : 'text-gray-400 hover:text-white'
                   }`}
                 >
                   Test
@@ -1805,22 +1787,22 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                 }
                 onClose()
               }}
-              className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors"
-              title={sessionMode ? 'Back to game selection' : 'Close'}
+              className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center transition-colors border border-white/10"
+              title={sessionMode ? 'Tillbaka till spelval' : 'Stäng'}
             >
-              <X className="w-5 h-5 text-gray-600" />
+              <X className="w-5 h-5 text-gray-400" />
             </button>
           </div>
         </div>
 
         {/* Progress Bar */}
         <div className="mb-4">
-          <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
+          <div className="flex items-center justify-between text-sm text-gray-400 mb-3">
             <span className="font-medium">{Math.round(progress)}%</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+          <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
             <div 
-              className="h-2 rounded-full transition-all duration-500 bg-gradient-to-r from-teal-500 to-emerald-500"
+              className="h-2 rounded-full transition-all duration-500 bg-gradient-to-r from-emerald-500 to-cyan-500"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
@@ -1829,7 +1811,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
         {/* Word Status Mini Grid - Compact horizontal row */}
         {wordList.length > 0 && (
           <div className="mb-4 px-1">
-            <div className="flex flex-wrap gap-0.5 justify-center items-center">
+            <div className="flex flex-wrap gap-1 justify-center items-center">
               {wordList.map((word, index) => {
                 const status = getWordStatus(index)
                 const isCurrent = index === currentWordIndex
@@ -1854,19 +1836,19 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                     className={`
                       w-2.5 h-2.5 rounded-full
                       transition-all duration-150 hover:scale-150 hover:z-10 relative
-                      ${isCurrent ? 'ring-1 ring-purple-600 ring-offset-0 scale-150' : ''}
+                      ${isCurrent ? 'ring-2 ring-cyan-400 ring-offset-1 ring-offset-[#12122a] scale-150' : ''}
                       ${pronunciationMode === 'test' ? 'cursor-not-allowed opacity-50' : ''}
                       ${
                         status === 'green' 
-                          ? 'bg-green-500' 
+                          ? 'bg-emerald-500' 
                           : status === 'yellow'
-                          ? 'bg-yellow-500'
+                          ? 'bg-amber-500'
                           : status === 'red'
                           ? 'bg-red-500'
-                          : 'bg-gray-300 border border-gray-400'
+                          : 'bg-white/20 border border-white/30'
                       }
                     `}
-                    title={`${word.en} - ${status === 'white' ? 'Not attempted' : status === 'green' ? 'Perfect' : status === 'yellow' ? 'Close' : 'Needs improvement'}`}
+                    title={`${word.en} - ${status === 'white' ? 'Ej försökt' : status === 'green' ? 'Perfekt' : status === 'yellow' ? 'Nära' : 'Behöver övning'}`}
                   />
                 )
               })}
@@ -1920,7 +1902,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
           >
             {/* Front of card (English word) */}
             <div 
-              className={`absolute inset-0 bg-gray-50 rounded-xl overflow-hidden shadow-lg backface-hidden border-2 border-gray-200 transition-colors ${
+              className={`absolute inset-0 bg-gradient-to-br from-[#1a1a3a] to-[#12122a] rounded-2xl overflow-hidden shadow-2xl backface-hidden border border-white/10 transition-colors ${
                 isFlipped ? 'opacity-0' : 'opacity-100'
               } ${pronunciationMode === 'training' ? getCardColorClass() : ''}`}
             >
@@ -1932,10 +1914,10 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                   handleSpeakEnglish()
                 }}
                 disabled={isSpeaking}
-                  className={`p-3 rounded-lg transition-all shadow-md ${
+                  className={`p-3 rounded-xl transition-all shadow-lg ${
                   isSpeaking 
-                    ? 'bg-teal-500 text-white cursor-not-allowed' 
-                    : 'bg-white hover:bg-gray-50 text-teal-600 hover:shadow-lg border border-gray-200'
+                    ? 'bg-cyan-500 text-white cursor-not-allowed' 
+                    : 'bg-white/10 hover:bg-white/20 text-cyan-400 hover:shadow-xl border border-white/10'
                 }`}
               >
                 <Volume2 className={`w-5 h-5 ${isSpeaking ? 'animate-pulse' : ''}`} />
@@ -1957,7 +1939,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                 {/* Right side - Word */}
                 <div className={`flex items-center justify-center p-8 ${currentImage ? 'w-1/2' : 'w-full'}`}>
                   <div className="text-center w-full">
-                    <h3 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-800 mb-4 leading-tight" style={{ 
+                    <h3 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight" style={{ 
                       fontSize: 'clamp(1.5rem, 4vw, 3rem)',
                       wordBreak: 'keep-all',
                       overflowWrap: 'break-word',
@@ -1966,17 +1948,17 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                     
                     {/* Recording indicator */}
                     {isRecording && (
-                      <div className="mt-4 flex items-center justify-center gap-3 text-red-600">
-                        <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
+                      <div className="mt-4 flex items-center justify-center gap-3 text-red-400">
+                        <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
                         <span className="font-semibold">Spelar in...</span>
                       </div>
                     )}
                     
                     {/* Processing indicator */}
                     {isProcessing && (
-                      <div className="mt-4 flex items-center justify-center gap-3 text-teal-600">
+                      <div className="mt-4 flex items-center justify-center gap-3 text-cyan-400">
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        <span>Analyzing pronunciation...</span>
+                        <span>Analyserar uttal...</span>
                       </div>
                     )}
                     
@@ -1985,12 +1967,12 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                       const status = getPronunciationStatus()
                       return pronunciationMode === 'training' && status && !isRecording && !isProcessing && (
                         <div className="mt-4">
-                          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg ${
+                          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl ${
                             status.isCorrect && status.accuracyScore >= 85
-                              ? 'bg-green-100 text-green-700'
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                               : status.accuracyScore >= 70
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-red-100 text-red-700'
+                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                              : 'bg-red-500/20 text-red-400 border border-red-500/30'
                           }`}>
                             {status.isCorrect && status.accuracyScore >= 85 ? (
                               <CheckCircle2 className="w-5 h-5" />
@@ -2011,7 +1993,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
 
             {/* Back of card (Swedish translation) */}
             <div 
-              className={`absolute inset-0 bg-gray-50 rounded-xl overflow-hidden shadow-lg backface-hidden rotate-y-180 border-2 border-gray-200 transition-colors ${
+              className={`absolute inset-0 bg-gradient-to-br from-[#1a1a3a] to-[#12122a] rounded-2xl overflow-hidden shadow-2xl backface-hidden rotate-y-180 border border-white/10 transition-colors ${
                 isFlipped ? 'opacity-100' : 'opacity-0'
               } ${pronunciationMode === 'test' && getPronunciationStatus() ? getCardColorClass() : ''}`}
             >
@@ -2023,10 +2005,10 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                   handleSpeakSwedish()
                 }}
                 disabled={isSpeaking}
-                  className={`p-3 rounded-lg transition-all shadow-md ${
+                  className={`p-3 rounded-xl transition-all shadow-lg ${
                   isSpeaking 
-                    ? 'bg-teal-500 text-white cursor-not-allowed' 
-                    : 'bg-white hover:bg-gray-50 text-teal-600 hover:shadow-lg border border-gray-200'
+                    ? 'bg-cyan-500 text-white cursor-not-allowed' 
+                    : 'bg-white/10 hover:bg-white/20 text-cyan-400 hover:shadow-xl border border-white/10'
                 }`}
               >
                 <Volume2 className={`w-5 h-5 ${isSpeaking ? 'animate-pulse' : ''}`} />
@@ -2039,14 +2021,14 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                       e.stopPropagation()
                       startRecording()
                     }}
-                    className="p-3 rounded-lg transition-all shadow-md bg-white hover:bg-gray-50 text-teal-600 hover:shadow-lg border border-gray-200"
+                    className="p-3 rounded-xl transition-all shadow-lg bg-white/10 hover:bg-white/20 text-cyan-400 hover:shadow-xl border border-white/10"
                   >
                     <Mic className="w-5 h-5" />
                   </button>
                 )}
                 {/* Disabled microphone indicator if already attempted in test mode */}
                 {pronunciationMode === 'test' && isFlipped && getPronunciationStatus() && (
-                  <div className="p-3 rounded-lg bg-gray-100 text-gray-400 cursor-not-allowed">
+                  <div className="p-3 rounded-xl bg-white/5 text-gray-500 cursor-not-allowed border border-white/5">
                     <Mic className="w-5 h-5" />
                   </div>
                 )}
@@ -2067,7 +2049,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                 {/* Right side - Word */}
                 <div className={`flex items-center justify-center p-8 ${currentImage ? 'w-1/2' : 'w-full'}`}>
                   <div className="text-center w-full">
-                    <h3 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-800 mb-4 leading-tight" style={{ 
+                    <h3 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight" style={{ 
                       fontSize: 'clamp(1.5rem, 4vw, 3rem)',
                       wordBreak: 'keep-all',
                       overflowWrap: 'break-word',
@@ -2076,15 +2058,15 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                     
                     {/* Recording indicator for test mode */}
                     {pronunciationMode === 'test' && isRecording && (
-                      <div className="mt-4 flex items-center justify-center gap-3 text-red-600">
-                        <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
+                      <div className="mt-4 flex items-center justify-center gap-3 text-red-400">
+                        <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
                         <span className="font-semibold">Spelar in...</span>
                       </div>
                     )}
                     
                     {/* Processing indicator for test mode */}
                     {pronunciationMode === 'test' && isProcessing && (
-                      <div className="mt-4 flex items-center justify-center gap-3 text-indigo-600">
+                      <div className="mt-4 flex items-center justify-center gap-3 text-cyan-400">
                         <Loader2 className="w-5 h-5 animate-spin" />
                         <span>Analyserar uttal...</span>
                       </div>
@@ -2095,12 +2077,12 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                       const status = getPronunciationStatus()
                       return pronunciationMode === 'test' && !isFlipped && status && (
                         <div className="mt-4">
-                          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg ${
+                          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl ${
                             status.isCorrect && status.accuracyScore >= 85
-                              ? 'bg-green-100 text-green-700'
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                               : status.accuracyScore >= 70
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-red-100 text-red-700'
+                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                              : 'bg-red-500/20 text-red-400 border border-red-500/30'
                           }`}>
                             {status.isCorrect && status.accuracyScore >= 85 ? (
                               <CheckCircle2 className="w-5 h-5" />
@@ -2126,14 +2108,14 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
           <button
             onClick={handlePrevious}
             disabled={currentWordIndex === 0 || (pronunciationMode === 'test' && (!pronunciationResults.has(currentWordIndex - 1)))}
-            className="bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-2xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center space-x-2 shadow-lg hover:shadow-xl disabled:shadow-lg"
+            className="bg-white/5 hover:bg-white/10 text-gray-300 py-3 px-4 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center space-x-2 border border-white/10"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Previous</span>
+            <span>Föregående</span>
           </button>
 
           {pronunciationMode === 'test' && (
-            <div className="text-sm text-gray-600 font-medium">
+            <div className="text-sm text-gray-400 font-medium">
               {pronunciationResults.size} / {wordList.length} ord försökta
             </div>
           )}
@@ -2146,7 +2128,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                   e.stopPropagation()
                   startRecording()
                 }}
-                className="p-3 rounded-lg transition-all shadow-md bg-white border-2 border-teal-200 hover:bg-teal-50 text-teal-600 hover:shadow-lg"
+                className="p-3 rounded-xl transition-all shadow-lg bg-white/10 border border-cyan-500/30 hover:bg-cyan-500/10 text-cyan-400 hover:shadow-xl"
               >
                 <Mic className="w-5 h-5" />
               </button>
@@ -2158,16 +2140,16 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                 (pronunciationMode === 'test' && !getPronunciationStatus()) ||
                 (pronunciationMode !== 'test' && currentWordIndex === wordList.length - 1)
               }
-              className="bg-teal-500 hover:bg-teal-600 text-white py-3 px-4 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-md"
+              className="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-white py-3 px-5 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/30"
             >
-              <span>{currentWordIndex === wordList.length - 1 ? 'Finish' : 'Next'}</span>
+              <span>{currentWordIndex === wordList.length - 1 ? 'Klar' : 'Nästa'}</span>
               <ArrowLeft className="w-4 h-4 rotate-180" />
             </button>
           </div>
         </div>
 
-        {/* XP Animation Overlay */}
-        {xpAnimations.map(anim => (
+        {/* XP Animation Overlay - Don't show in session mode test */}
+        {!sessionMode && xpAnimations.map(anim => (
           <div
             key={anim.id}
             className="fixed pointer-events-none z-50"
@@ -2178,7 +2160,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
               animation: 'xpFloat 2s ease-out forwards'
             }}
           >
-            <div className="text-2xl font-bold text-teal-600 drop-shadow-lg">
+            <div className="text-2xl font-bold text-cyan-400 drop-shadow-lg">
               +2 XP
             </div>
           </div>

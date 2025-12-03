@@ -348,6 +348,82 @@ export async function GET(request: NextRequest) {
       .not('last_quiz_total', 'is', null)
       .order('last_quiz_at', { ascending: false })
 
+    // Also get session quiz results where student participated via dashboard (has student_id)
+    let sessionQuizResults: any[] = []
+    try {
+      // Get session participants for this student
+      const { data: sessionParticipants } = await supabase
+        .from('session_participants')
+        .select('id, student_name, session_id')
+        .eq('student_id', studentId)
+      
+      if (sessionParticipants && sessionParticipants.length > 0) {
+        const participantIds = sessionParticipants.map(sp => sp.id)
+        
+        // Get quiz responses for these participants
+        const { data: sessionQuizResponses } = await supabase
+          .from('session_quiz_responses')
+          .select(`
+            id,
+            session_id,
+            participant_id,
+            score,
+            graded_at,
+            sessions!inner(
+              id,
+              word_set_id,
+              word_sets (title)
+            )
+          `)
+          .in('participant_id', participantIds)
+          .order('created_at', { ascending: false })
+        
+        if (sessionQuizResponses && sessionQuizResponses.length > 0) {
+          // Group by session_id and get latest per session
+          const sessionQuizMap = new Map<string, any>()
+          
+          for (const response of sessionQuizResponses) {
+            const sessionId = response.session_id
+            const session = (response.sessions as any)
+            const wordSetTitle = session?.word_sets?.title || 'Session Quiz'
+            
+            if (!sessionQuizMap.has(sessionId)) {
+              // Calculate total score for this session
+              const sessionResponses = sessionQuizResponses.filter(r => r.session_id === sessionId)
+              const totalPoints = sessionResponses.reduce((sum, r) => {
+                const points = r.score === 100 ? 2 : r.score === 50 ? 1 : 0
+                return sum + points
+              }, 0)
+              const totalPossible = sessionResponses.length * 2
+              const accuracy = totalPossible > 0 ? Math.round((totalPoints / totalPossible) * 100) : 0
+              
+              // Get the latest graded_at or created_at
+              const latestResponse = sessionResponses.sort((a, b) => {
+                const aTime = a.graded_at || a.created_at || ''
+                const bTime = b.graded_at || b.created_at || ''
+                return new Date(bTime).getTime() - new Date(aTime).getTime()
+              })[0]
+              
+              sessionQuizMap.set(sessionId, {
+                quiz_id: `session_${sessionId}`,
+                word_set_title: wordSetTitle,
+                word_set_id: session?.word_set_id || null,
+                score: totalPoints,
+                total: totalPossible,
+                accuracy: accuracy,
+                completed_at: latestResponse?.graded_at || latestResponse?.created_at || new Date().toISOString(),
+                is_session_quiz: true
+              })
+            }
+          }
+          
+          sessionQuizResults = Array.from(sessionQuizMap.values())
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching session quiz results:', error)
+    }
+
     // Group by word_set_id and get only the latest one per word set
     const quizMap = new Map<string, any>()
     if (allQuizResults) {
@@ -397,8 +473,8 @@ export async function GET(request: NextRequest) {
       }))
     }
 
-    // Combine quiz results with detailed feedback
-    const quiz_results = Array.from(quizMap.values())
+    // Combine regular quiz results with session quiz results
+    const regularQuizResults = Array.from(quizMap.values())
       .map(qr => {
         const score = qr.last_quiz_score || 0
         const total = qr.last_quiz_total || 0
@@ -593,9 +669,13 @@ export async function GET(request: NextRequest) {
           total,
           accuracy,
           completed_at: qr.last_quiz_at || '',
-          word_details: wordDetails.length > 0 ? wordDetails : undefined // Only include if we have details
+          word_details: wordDetails.length > 0 ? wordDetails : undefined, // Only include if we have details
+          is_session_quiz: false
         }
       })
+    
+    // Combine regular and session quiz results, sort by date
+    const quiz_results = [...regularQuizResults, ...sessionQuizResults]
       .sort((a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime())
 
     // ===== 7. MISSED WORDS (if word_progress table exists) =====

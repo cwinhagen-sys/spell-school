@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import GridConfigModal, { GridConfig } from '@/components/GridConfigModal'
-import { Calendar, ChevronLeft } from 'lucide-react'
-import Link from 'next/link'
+import { Calendar, Trash2, Users, User, BookOpen, Send, CheckSquare, Square, ChevronDown, Sparkles } from 'lucide-react'
 
 type WordSet = { id: string; title: string; color?: string; words?: Array<{ en: string; sv: string }> }
 type Class = { id: string; name: string }
@@ -23,12 +22,14 @@ export default function AssignWordSetsPage() {
   const [selectedClasses, setSelectedClasses] = useState<string[]>([])
   const [dueDate, setDueDate] = useState<string>('')
   const [message, setMessage] = useState('')
+  const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info')
   const [loading, setLoading] = useState(false)
+  const [pageLoading, setPageLoading] = useState(true)
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [showClassDropdown, setShowClassDropdown] = useState(false)
   const [showGridConfig, setShowGridConfig] = useState(false)
   const [wordSetForConfig, setWordSetForConfig] = useState<WordSet | null>(null)
-  const [gridConfigs, setGridConfigs] = useState<Record<string, GridConfig[]>>({}) // word_set_id -> grids
+  const [gridConfigs, setGridConfigs] = useState<Record<string, GridConfig[]>>({})
 
   useEffect(() => {
     const init = async () => {
@@ -54,15 +55,15 @@ export default function AssignWordSetsPage() {
 
         await loadWordSets()
         await loadClasses()
-        // Defer student loading until a class is selected to avoid RLS noise
         await loadAssignments()
+        setPageLoading(false)
       } catch (error) {
         console.error('Init error:', error)
+        setPageLoading(false)
       }
     }
     init()
 
-    // Close dropdown when clicking outside
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement
       if (showClassDropdown && !target.closest('.class-dropdown-container')) {
@@ -74,28 +75,26 @@ export default function AssignWordSetsPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showClassDropdown])
 
-  // (Removed debug exposure)
-
-  // Load students for the selected class when targetClass changes
   useEffect(() => {
     ;(async () => {
       try {
         if (!targetClass) { setClassStudentsForSelected([]); return }
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { setClassStudentsForSelected([]); return }
-        // Primary attempt: mirror Classes page pattern (IDs -> profiles)
-        // Step 1: RLS-safe primary: enforce teacher ownership via inner join
+        
         const { data: classLinks, error: linkErr } = await supabase
           .from('class_students')
           .select('student_id, classes!inner(id, teacher_id)')
           .eq('classes.teacher_id', user.id)
           .eq('class_id', targetClass)
-        // If this RLS-friendly join fails, continue to fallbacks
+        
         if (linkErr) {
           console.warn('Assign DEBUG → inner join failed, will try fallbacks:', linkErr)
         }
+        
         const ids = (classLinks || []).map((r: any) => r.student_id).filter(Boolean)
         let list: Student[] = []
+        
         if (ids.length > 0) {
           const { data: profs } = await supabase
             .from('profiles')
@@ -108,7 +107,6 @@ export default function AssignWordSetsPage() {
             display: p.username || 'Student',
             username: p.username
           }))
-          // If profiles are unreadable due to RLS or missing, still show raw IDs
           if ((!profs || profs.length === 0) && ids.length > 0) {
             list = ids.map((sid: string) => ({
               id: sid,
@@ -119,7 +117,6 @@ export default function AssignWordSetsPage() {
           }
         }
 
-        // Fallback A: simple lookup without explicit join (in case RLS allows it)
         if (!list || list.length === 0) {
           try {
             const { data: idsOnly } = await supabase
@@ -141,12 +138,9 @@ export default function AssignWordSetsPage() {
               }))
               list = mapped.length > 0 ? mapped : altIds.map((sid: string) => ({ id: sid, email: '', role: '', display: undefined }))
             }
-          } catch (_) {
-            // ignore and continue to next fallback
-          }
+          } catch (_) {}
         }
 
-        // Fallback B: fetch IDs then profiles via IN (last resort if allowed by RLS)
         if (!list || list.length === 0) {
           try {
             const { data: ids } = await supabase
@@ -167,12 +161,9 @@ export default function AssignWordSetsPage() {
                 username: p.username
               }))
             }
-          } catch (_) {
-            // ignore
-          }
+          } catch (_) {}
         }
 
-        // Fallback C: enrich existing ID-only entries via RLS-friendly join with profiles
         const needsEnrichment = (list || []).some(s => !s.email && !s.display)
         if (list && list.length > 0 && needsEnrichment) {
           try {
@@ -197,9 +188,7 @@ export default function AssignWordSetsPage() {
                 username: (s as any).username || info.username
               }
             })
-          } catch (_) {
-            // ignore
-          }
+          } catch (_) {}
         }
         setClassStudentsForSelected(list || [])
       } catch (e) {
@@ -207,6 +196,12 @@ export default function AssignWordSetsPage() {
       }
     })()
   }, [targetClass])
+
+  const showMessage = (text: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setMessage(text)
+    setMessageType(type)
+    setTimeout(() => setMessage(''), 4000)
+  }
 
   const loadWordSets = async () => {
     try {
@@ -227,7 +222,6 @@ export default function AssignWordSetsPage() {
       
       setWordSets(sets)
       
-      // Load existing grid configurations if they exist
       const configs: Record<string, GridConfig[]> = {}
       for (const ws of sets) {
         const { data: configData } = await supabase
@@ -243,7 +237,7 @@ export default function AssignWordSetsPage() {
       setGridConfigs(configs)
     } catch (error) {
       console.error('Error loading word sets:', error)
-      setMessage('Failed to load word sets')
+      showMessage('Kunde inte ladda ordlistor', 'error')
     }
   }
 
@@ -253,7 +247,7 @@ export default function AssignWordSetsPage() {
         .from('classes')
         .select('id, name')
         .eq('teacher_id', (await supabase.auth.getUser()).data.user?.id)
-        .is('deleted_at', null) // Only get non-deleted classes
+        .is('deleted_at', null)
         .order('created_at', { ascending: false })
       
       if (error) throw error
@@ -261,49 +255,7 @@ export default function AssignWordSetsPage() {
       setClasses(data || [])
     } catch (error) {
       console.error('Error loading classes:', error)
-      setMessage('Failed to load classes')
-    }
-  }
-
-  const loadStudents = async () => {
-    try {
-      const { data: classStudents, error: csError } = await supabase
-        .from('class_students')
-        .select(`
-          student_id,
-          class_id,
-          classes!inner(teacher_id),
-          profiles!inner(id, email, role, display_alias)
-        `)
-        .eq('classes.teacher_id', (await supabase.auth.getUser()).data.user?.id)
-      
-      if (csError) throw csError
-      
-      // Extract unique students
-      const uniqueStudents = new Map<string, Student>()
-      const map: Record<string, string[]> = {}
-      ;(classStudents || []).forEach((cs: any) => {
-        const prof = cs.profiles
-        const cid = String(cs.class_id || '')
-        const sid = String(cs.student_id || prof?.id || '')
-        if (!sid) return
-        if (!map[sid]) map[sid] = []
-        if (cid && !map[sid].includes(cid)) map[sid].push(cid)
-        if (prof && !uniqueStudents.has(sid)) {
-          const alias = (prof.display_alias || (prof.email ? String(prof.email).split('@')[0] : '')) as string
-          uniqueStudents.set(sid, {
-            id: sid,
-            email: prof.email,
-            role: prof.role,
-            display: alias
-          })
-        }
-      })
-      setStudentToClasses(map)
-      setStudents(Array.from(uniqueStudents.values()))
-    } catch (error) {
-      // Don't surface this globally; per-class loader will populate the dropdown
-      console.error('Error loading students (initial list):', error)
+      showMessage('Kunde inte ladda klasser', 'error')
     }
   }
 
@@ -325,22 +277,21 @@ export default function AssignWordSetsPage() {
       
       const formattedAssignments: Assignment[] = (data || []).map((item: any) => ({
         id: item.id,
-        word_set_title: item.word_sets?.title || 'Unknown',
+        word_set_title: item.word_sets?.title || 'Okänd',
         word_set_color: item.word_sets?.color,
-        class_name: item.class_id ? item.classes?.name : 'Individual Assignment',
+        class_name: item.class_id ? item.classes?.name : 'Individuell tilldelning',
         student_name: item.student_id ? item.profiles?.username : undefined
       }))
       
       setAssignments(formattedAssignments)
     } catch (error) {
       console.error('Error loading assignments:', error)
-      setMessage('Failed to load assignments')
+      showMessage('Kunde inte ladda tilldelningar', 'error')
     }
   }
 
   const handleGridConfigSave = async (wordSetId: string, grids: GridConfig[]) => {
     try {
-      // Save grid configuration to word_sets table
       const { error } = await supabase
         .from('word_sets')
         .update({ grid_config: grids })
@@ -348,90 +299,31 @@ export default function AssignWordSetsPage() {
 
       if (error) throw error
 
-      // Update local state
       setGridConfigs(prev => ({ ...prev, [wordSetId]: grids }))
       setShowGridConfig(false)
       setWordSetForConfig(null)
-      setMessage('Grid configuration saved!')
+      showMessage('Rutnätskonfiguration sparad!', 'success')
     } catch (error) {
       console.error('Error saving grid config:', error)
-      setMessage('Failed to save grid configuration')
-    }
-  }
-
-
-  const assignToClass = async () => {
-    if (!selectedWordSet || !targetClass) {
-      setMessage('Please select both word set and class')
-      return
-    }
-
-    setLoading(true)
-    setMessage('')
-
-    try {
-      // Check if assignment already exists
-      const { data: existing, error: checkError } = await supabase
-        .from('assigned_word_sets')
-        .select('id')
-        .eq('word_set_id', selectedWordSet)
-        .eq('class_id', targetClass)
-        .is('student_id', null)
-        .single()
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        throw checkError
-      }
-
-      if (existing) {
-        setMessage('This word set is already assigned to this class!')
-        setLoading(false)
-        return
-      }
-
-      // Create a single class assignment (not individual student assignments)
-      const { error } = await supabase
-        .from('assigned_word_sets')
-        .insert({ 
-          word_set_id: selectedWordSet, 
-          class_id: targetClass,
-          student_id: null, // Must be null due to constraint
-          due_date: dueDate || null,
-          quiz_unlocked: true
-        })
-
-      if (error) throw error
-      setMessage('Successfully assigned to class!')
-      setSelectedWordSet('')
-      setTargetClass('')
-      setDueDate('')
-      await loadAssignments()
-    } catch (error) {
-      console.error('Error assigning to class:', error)
-      setMessage('Failed to assign to class')
-    } finally {
-      setLoading(false)
+      showMessage('Kunde inte spara rutnätskonfiguration', 'error')
     }
   }
 
   const assignToSelectedClasses = async () => {
     if (!selectedWordSet || selectedClasses.length === 0) {
-      setMessage('Please select word set and at least one class')
+      showMessage('Välj ordlista och minst en klass', 'error')
       return
     }
 
     setLoading(true)
-    setMessage('')
 
     try {
       let successCount = 0
       let skippedCount = 0
       const errors: string[] = []
 
-      // Process each selected class
       for (const classId of selectedClasses) {
         try {
-          // Check if assignment already exists
           const { data: existing, error: checkError } = await supabase
             .from('assigned_word_sets')
             .select('id')
@@ -449,13 +341,12 @@ export default function AssignWordSetsPage() {
             continue
           }
 
-          // Create assignment for this class
           const { error } = await supabase
             .from('assigned_word_sets')
             .insert({ 
               word_set_id: selectedWordSet, 
               class_id: classId,
-              student_id: null, // Must be null due to constraint
+              student_id: null,
               due_date: dueDate || null,
               quiz_unlocked: true
             })
@@ -468,29 +359,23 @@ export default function AssignWordSetsPage() {
         }
       }
 
-      // Set appropriate message
       if (successCount > 0) {
-        let message = `Successfully assigned to ${successCount} class${successCount !== 1 ? 'es' : ''}!`
+        let msg = `Tilldelad till ${successCount} klass${successCount !== 1 ? 'er' : ''}!`
         if (skippedCount > 0) {
-          message += ` (${skippedCount} already assigned)`
+          msg += ` (${skippedCount} redan tilldelade)`
         }
-        setMessage(message)
+        showMessage(msg, 'success')
       } else {
-        setMessage('No assignments created. All selected classes already have this word set.')
+        showMessage('Inga tilldelningar skapade. Alla valda klasser har redan denna ordlista.', 'info')
       }
 
-      if (errors.length > 0) {
-        setMessage(`Partial success: ${successCount} assigned, ${errors.length} errors`)
-      }
-
-      // Clear only class selections and due date, keep word set selected
       setSelectedClasses([])
       setDueDate('')
       setShowClassDropdown(false)
       await loadAssignments()
     } catch (error) {
       console.error('Error in batch assignment:', error)
-      setMessage('Failed to assign to classes')
+      showMessage('Kunde inte tilldela till klasser', 'error')
     } finally {
       setLoading(false)
     }
@@ -498,15 +383,13 @@ export default function AssignWordSetsPage() {
 
   const assignToStudent = async () => {
     if (!selectedWordSet || !targetStudent) {
-      setMessage('Please select both word set and student')
+      showMessage('Välj ordlista och elev', 'error')
       return
     }
 
     setLoading(true)
-    setMessage('')
 
     try {
-      // Check if assignment already exists
       const { data: existing, error: checkError } = await supabase
         .from('assigned_word_sets')
         .select('id')
@@ -520,7 +403,7 @@ export default function AssignWordSetsPage() {
       }
 
       if (existing) {
-        setMessage('This word set is already assigned to this student!')
+        showMessage('Denna ordlista är redan tilldelad till eleven!', 'info')
         setLoading(false)
         return
       }
@@ -530,20 +413,20 @@ export default function AssignWordSetsPage() {
         .insert({ 
           word_set_id: selectedWordSet, 
           student_id: targetStudent,
-          class_id: null, // Must be null due to constraint
+          class_id: null,
           due_date: dueDate || null,
           quiz_unlocked: true
         })
 
       if (error) throw error
-      setMessage('Successfully assigned to student!')
+      showMessage('Tilldelad till elev!', 'success')
       setTargetStudent('')
       setTargetClass('')
       setDueDate('')
       await loadAssignments()
     } catch (error) {
       console.error('Error assigning to student:', error)
-      setMessage('Failed to assign to student')
+      showMessage('Kunde inte tilldela till elev', 'error')
     } finally {
       setLoading(false)
     }
@@ -557,118 +440,162 @@ export default function AssignWordSetsPage() {
         .eq('id', id)
 
       if (error) throw error
-      setMessage('Assignment removed successfully')
+      showMessage('Tilldelning borttagen', 'success')
       await loadAssignments()
     } catch (error) {
       console.error('Error removing assignment:', error)
-      setMessage('Failed to remove assignment')
+      showMessage('Kunde inte ta bort tilldelning', 'error')
     }
   }
 
+  if (pageLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Laddar tilldelningar...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center space-x-4">
-            <Link href="/teacher" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <ChevronLeft className="w-5 h-5 text-gray-600" />
-            </Link>
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-800">Tilldela ordlistor</h1>
-              <p className="text-sm text-gray-600">Tilldela glosor till klasser eller elever</p>
-            </div>
+    <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Page Header */}
+      <div className="mb-8">
+        <div className="flex items-center gap-4 mb-2">
+          <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20">
+            <Send className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">Tilldela ordlistor</h1>
+            <p className="text-gray-400">Tilldela ordlistor till klasser eller enskilda elever</p>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-6 py-8">
-        {/* Assignment Form */}
-        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-6">
-          <div className="grid md:grid-cols-4 gap-4 items-start">
-            {/* Word Set Selection */}
-            <div className="space-y-2">
-              <div className="font-medium text-gray-600">Word Set</div>
-              <div className="flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full border border-gray-300" style={{ backgroundColor: (wordSets.find(w=>w.id===selectedWordSet)?.color) || 'transparent' }}></span>
-                <select 
-                  value={selectedWordSet} 
-                  onChange={e => setSelectedWordSet(e.target.value)}
-                  className="w-full h-10 px-3 text-sm rounded bg-white text-gray-800 border border-gray-300 shadow-sm"
-                >
-                  <option value="">Select word set</option>
-                  {wordSets.map(ws => (
-                    <option key={ws.id} value={ws.id}>{ws.title}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
+      {/* Message Toast */}
+      {message && (
+        <div className={`fixed top-24 right-6 z-50 px-6 py-3 rounded-xl shadow-2xl border backdrop-blur-sm animate-in slide-in-from-right duration-300 ${
+          messageType === 'success' 
+            ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' 
+            : messageType === 'error'
+            ? 'bg-red-500/20 border-red-500/30 text-red-300'
+            : 'bg-amber-500/20 border-amber-500/30 text-amber-300'
+        }`}>
+          {message}
+        </div>
+      )}
 
-            {/* Due Date */}
-            <div className="space-y-2">
-              <div className="font-medium text-gray-600">Due date (optional)</div>
+      {/* Assignment Form */}
+      <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-white/10 p-6 mb-8 shadow-xl">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-white" />
+          </div>
+          <h2 className="text-xl font-bold text-white">Ny tilldelning</h2>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Word Set Selection */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-400">Välj ordlista</label>
+            <div className="flex items-center gap-3">
+              <span 
+                className="w-8 h-8 rounded-lg border-2 border-white/10 flex-shrink-0" 
+                style={{ backgroundColor: (wordSets.find(w=>w.id===selectedWordSet)?.color) || 'rgba(255,255,255,0.05)' }}
+              />
+              <select 
+                value={selectedWordSet} 
+                onChange={e => setSelectedWordSet(e.target.value)}
+                className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:border-amber-500/50 focus:outline-none transition-all appearance-none cursor-pointer"
+              >
+                <option value="" className="bg-[#1a1a2e]">Välj ordlista...</option>
+                {wordSets.map(ws => (
+                  <option key={ws.id} value={ws.id} className="bg-[#1a1a2e]">{ws.title}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Due Date */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-400">Förfallodatum (valfritt)</label>
+            <div className="relative">
+              <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
               <input
                 type="date"
                 value={dueDate}
                 onChange={(e)=>setDueDate(e.target.value)}
-                className="w-full h-10 px-3 text-sm rounded bg-white text-gray-800 border border-gray-300 shadow-sm"
+                className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:border-amber-500/50 focus:outline-none transition-all"
               />
             </div>
+          </div>
+        </div>
 
-            {/* Class Assignment */}
-            <div className="space-y-2 relative">
-              <div className="font-medium text-gray-600">Assign to Classes</div>
-              {classes.length > 0 ? (
-                <div className="flex gap-2 items-center">
-                  <div className="flex-1 relative class-dropdown-container">
-                    <button
-                      type="button"
-                      onClick={() => setShowClassDropdown(!showClassDropdown)}
-                      className="w-full h-10 px-3 text-sm rounded bg-white text-gray-800 border border-gray-300 shadow-sm text-left cursor-pointer hover:bg-gray-50"
-                    >
+        {/* Assignment Options */}
+        <div className="grid md:grid-cols-2 gap-6 mt-6">
+          {/* Class Assignment */}
+          <div className="bg-white/5 rounded-xl p-5 border border-white/10">
+            <div className="flex items-center gap-2 mb-4">
+              <Users className="w-5 h-5 text-cyan-400" />
+              <h3 className="font-semibold text-white">Tilldela till klasser</h3>
+            </div>
+            
+            {classes.length > 0 ? (
+              <div className="space-y-3">
+                <div className="relative class-dropdown-container">
+                  <button
+                    type="button"
+                    onClick={() => setShowClassDropdown(!showClassDropdown)}
+                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-left text-white hover:bg-white/10 transition-all flex items-center justify-between"
+                  >
+                    <span className={selectedClasses.length === 0 ? 'text-gray-500' : ''}>
                       {selectedClasses.length === 0 
-                        ? "Select classes..." 
-                        : `${selectedClasses.length} class${selectedClasses.length !== 1 ? 'es' : ''} selected`
+                        ? "Välj klasser..." 
+                        : `${selectedClasses.length} klass${selectedClasses.length !== 1 ? 'er' : ''} vald${selectedClasses.length !== 1 ? 'a' : ''}`
                       }
-                    </button>
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                      <svg className={`w-4 h-4 text-gray-400 transition-transform ${showClassDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                    
-                    {/* Simple dropdown with checkboxes */}
-                    {showClassDropdown && (
-                      <div className="absolute z-[9999] w-full mt-1 bg-white border border-gray-300 rounded-md shadow-xl max-h-32 overflow-y-auto">
-                        {classes.length > 1 && (
-                          <div className="px-3 py-2 border-b border-gray-200 bg-gray-50 flex gap-2">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setSelectedClasses(classes.map(c => c.id))
-                              }}
-                              className="text-xs px-2 py-1 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-100 rounded"
-                            >
-                              Select All
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setSelectedClasses([])
-                              }}
-                              className="text-xs px-2 py-1 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded"
-                            >
-                              Clear
-                            </button>
-                          </div>
-                        )}
-                        {classes.map(c => (
-                          <label key={c.id} className="flex items-center space-x-3 px-3 py-2 hover:bg-gray-50 cursor-pointer">
+                    </span>
+                    <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showClassDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {showClassDropdown && (
+                    <div className="absolute z-50 w-full mt-2 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl max-h-48 overflow-y-auto">
+                      {classes.length > 1 && (
+                        <div className="px-4 py-2 border-b border-white/10 flex gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedClasses(classes.map(c => c.id))
+                            }}
+                            className="text-xs px-3 py-1.5 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 rounded-lg transition-colors"
+                          >
+                            Välj alla
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedClasses([])
+                            }}
+                            className="text-xs px-3 py-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                          >
+                            Rensa
+                          </button>
+                        </div>
+                      )}
+                      {classes.map(c => (
+                        <label 
+                          key={c.id} 
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 cursor-pointer transition-colors"
+                        >
+                          <div className="relative">
+                            {selectedClasses.includes(c.id) ? (
+                              <CheckSquare className="w-5 h-5 text-cyan-400" />
+                            ) : (
+                              <Square className="w-5 h-5 text-gray-500" />
+                            )}
                             <input
                               type="checkbox"
                               checked={selectedClasses.includes(c.id)}
@@ -680,17 +607,18 @@ export default function AssignWordSetsPage() {
                                   setSelectedClasses(selectedClasses.filter(id => id !== c.id))
                                 }
                               }}
-                              className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                              className="absolute inset-0 opacity-0 cursor-pointer"
                             />
-                            <span className="text-sm text-gray-700">{c.name}</span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                          </div>
+                          <span className="text-white">{c.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
                 <button 
                   onClick={async () => {
-                    // Check if grid config exists
                     if (!gridConfigs[selectedWordSet]) {
                       const ws = wordSets.find(w => w.id === selectedWordSet)
                       if (ws && ws.words) {
@@ -702,127 +630,156 @@ export default function AssignWordSetsPage() {
                     await assignToSelectedClasses()
                   }}
                   disabled={loading || !selectedWordSet || selectedClasses.length === 0}
-                  className="h-10 px-3 text-sm rounded bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:bg-gray-400 text-white shadow-md whitespace-nowrap"
+                  className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium hover:from-cyan-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-cyan-500/20 flex items-center justify-center gap-2"
                 >
-                  Assign
-                </button>
-                </div>
-              ) : (
-                <div className="text-sm text-gray-500 italic">No classes available</div>
-              )}
-            </div>
-
-            {/* Student Assignment */}
-            <div className="space-y-2">
-              <div className="font-medium text-gray-600">Assign to Individual Student</div>
-              <div className="flex gap-2">
-                <select 
-                  value={targetClass} 
-                  onChange={e => setTargetClass(e.target.value)}
-                  className="flex-1 h-10 px-3 text-sm rounded bg-white text-gray-800 border border-gray-300 shadow-sm"
-                  style={{ maxHeight: '80px', overflowY: 'auto' }}
-                >
-                  <option value="">Select class</option>
-                  {classes.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-                <select 
-                  value={targetStudent} 
-                  onChange={e => setTargetStudent(e.target.value)}
-                  disabled={!targetClass}
-                  className="flex-1 h-10 px-3 text-sm rounded bg-white text-gray-800 border border-gray-300 disabled:bg-gray-200 disabled:text-gray-500 shadow-sm"
-                  style={{ maxHeight: '80px', overflowY: 'auto' }}
-                >
-                  {!targetClass ? (
-                    <option value="">Select class first</option>
-                  ) : (
-                    <>
-                      <option value="">Select student</option>
-                      {classStudentsForSelected.length === 0 ? (
-                        <option value="" disabled>No students</option>
-                      ) : (
-                        classStudentsForSelected.map(s => (
-                          <option key={s.id} value={s.id}>{s.display || (s as any).username || 'Student'}</option>
-                        ))
-                      )}
-                    </>
-                  )}
-                </select>
-                <button 
-                  onClick={async () => {
-                    // Check if grid config exists
-                    if (!gridConfigs[selectedWordSet]) {
-                      const ws = wordSets.find(w => w.id === selectedWordSet)
-                      if (ws && ws.words) {
-                        setWordSetForConfig(ws)
-                        setShowGridConfig(true)
-                        return
-                      }
-                    }
-                    await assignToStudent()
-                  }}
-                  disabled={loading || !selectedWordSet || !targetClass || !targetStudent}
-                  className="h-10 px-3 text-sm rounded bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 disabled:bg-gray-400 text-white shadow-md"
-                >
-                  Assign
+                  <Send className="w-4 h-4" />
+                  Tilldela till klasser
                 </button>
               </div>
-              {/* Debug info removed */}
+            ) : (
+              <p className="text-gray-500 text-sm italic">Inga klasser tillgängliga</p>
+            )}
+          </div>
+
+          {/* Individual Student Assignment */}
+          <div className="bg-white/5 rounded-xl p-5 border border-white/10">
+            <div className="flex items-center gap-2 mb-4">
+              <User className="w-5 h-5 text-emerald-400" />
+              <h3 className="font-semibold text-white">Tilldela till enskild elev</h3>
+            </div>
+            
+            <div className="space-y-3">
+              <select 
+                value={targetClass} 
+                onChange={e => setTargetClass(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:border-emerald-500/50 focus:outline-none transition-all appearance-none cursor-pointer"
+              >
+                <option value="" className="bg-[#1a1a2e]">Välj klass först...</option>
+                {classes.map(c => (
+                  <option key={c.id} value={c.id} className="bg-[#1a1a2e]">{c.name}</option>
+                ))}
+              </select>
+              
+              <select 
+                value={targetStudent} 
+                onChange={e => setTargetStudent(e.target.value)}
+                disabled={!targetClass}
+                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white disabled:opacity-50 disabled:cursor-not-allowed focus:border-emerald-500/50 focus:outline-none transition-all appearance-none cursor-pointer"
+              >
+                {!targetClass ? (
+                  <option value="" className="bg-[#1a1a2e]">Välj klass först</option>
+                ) : (
+                  <>
+                    <option value="" className="bg-[#1a1a2e]">Välj elev...</option>
+                    {classStudentsForSelected.length === 0 ? (
+                      <option value="" disabled className="bg-[#1a1a2e]">Inga elever</option>
+                    ) : (
+                      classStudentsForSelected.map(s => (
+                        <option key={s.id} value={s.id} className="bg-[#1a1a2e]">{s.display || (s as any).username || 'Elev'}</option>
+                      ))
+                    )}
+                  </>
+                )}
+              </select>
+              
+              <button 
+                onClick={async () => {
+                  if (!gridConfigs[selectedWordSet]) {
+                    const ws = wordSets.find(w => w.id === selectedWordSet)
+                    if (ws && ws.words) {
+                      setWordSetForConfig(ws)
+                      setShowGridConfig(true)
+                      return
+                    }
+                  }
+                  await assignToStudent()
+                }}
+                disabled={loading || !selectedWordSet || !targetClass || !targetStudent}
+                className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-medium hover:from-emerald-600 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+              >
+                <Send className="w-4 h-4" />
+                Tilldela till elev
+              </button>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Extra space after Assign Word Sets for dropdown */}
-        <div className="mb-12"></div>
-
-        {/* Message Display */}
-        {message && (
-          <div className="mb-6 p-3 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
-            {message}
+      {/* Existing Assignments */}
+      <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-white/10 p-6 shadow-xl">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-white" />
+            </div>
+            <h2 className="text-xl font-bold text-white">Befintliga tilldelningar</h2>
           </div>
-        )}
-
-        {/* Extra space for dropdown visibility - increased significantly */}
-        <div className="mb-24"></div>
-
-        {/* Existing Assignments */}
-        <div className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Existing Assignments</h2>
-          
-          {assignments.length === 0 ? (
-            <div className="text-gray-500">No assignments yet.</div>
-          ) : (
-            <div className="space-y-2">
-              {assignments.map(assignment => (
-                <div key={assignment.id} className="flex items-center justify-between p-3 rounded bg-white border border-gray-200 shadow-sm">
-                  <div className="text-sm text-gray-700 flex items-center gap-2">
-                    <span 
-                      className="inline-block w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: assignment.word_set_color || '#e5e7eb' }}
-                      title="Word set color"
-                    ></span>
-                    <span className="font-medium">{assignment.word_set_title}</span>
-                    <span className="mx-2 text-gray-400">→</span>
-                    {assignment.student_name ? (
-                      <span className="text-green-600 font-medium">Individual: {assignment.student_name}</span>
-                    ) : assignment.class_name && assignment.class_name !== 'Individual Assignment' ? (
-                      <span className="text-blue-600 font-medium">Class: {assignment.class_name}</span>
-                    ) : (
-                      <span className="text-gray-500">Unknown target</span>
-                    )}
+          <div className="px-3 py-1.5 bg-white/5 rounded-lg text-sm text-gray-400">
+            {assignments.length} {assignments.length === 1 ? 'tilldelning' : 'tilldelningar'}
+          </div>
+        </div>
+        
+        {assignments.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Calendar className="w-8 h-8 text-gray-500" />
+            </div>
+            <p className="text-gray-400 text-lg font-medium">Inga tilldelningar ännu</p>
+            <p className="text-gray-500 text-sm mt-1">Tilldela en ordlista ovan för att komma igång</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-4">
+            {assignments.map(assignment => (
+              <div 
+                key={assignment.id} 
+                className="group bg-white/5 border border-white/10 rounded-xl hover:border-white/20 transition-all duration-200 p-5"
+                style={{
+                  borderLeftColor: assignment.word_set_color || 'rgba(255,255,255,0.1)',
+                  borderLeftWidth: '4px'
+                }}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span 
+                        className="inline-block w-4 h-4 rounded-full border-2 border-white/20 shadow-sm flex-shrink-0" 
+                        style={{ backgroundColor: assignment.word_set_color || 'rgba(255,255,255,0.1)' }}
+                      />
+                      <h3 className="font-bold text-white truncate">{assignment.word_set_title}</h3>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      {assignment.student_name ? (
+                        <>
+                          <User className="w-4 h-4 text-emerald-400" />
+                          <span className="text-emerald-400 font-medium">Individuell:</span>
+                          <span className="text-gray-300">{assignment.student_name}</span>
+                        </>
+                      ) : assignment.class_name && assignment.class_name !== 'Individuell tilldelning' ? (
+                        <>
+                          <Users className="w-4 h-4 text-cyan-400" />
+                          <span className="text-cyan-400 font-medium">Klass:</span>
+                          <span className="text-gray-300">{assignment.class_name}</span>
+                        </>
+                      ) : (
+                        <>
+                          <BookOpen className="w-4 h-4 text-gray-500" />
+                          <span className="text-gray-500">Okänd mottagare</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                   <button 
                     onClick={() => removeAssignment(assignment.id)}
-                    className="text-red-500 hover:text-red-600"
+                    className="p-2.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-all flex-shrink-0"
+                    title="Ta bort tilldelning"
                   >
-                    Delete
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Grid Configuration Modal */}
@@ -836,10 +793,7 @@ export default function AssignWordSetsPage() {
           existingGrids={gridConfigs[wordSetForConfig.id]}
           onSave={(grids) => {
             handleGridConfigSave(wordSetForConfig.id, grids)
-            // After saving config, proceed with assignment
-            if (targetClass) {
-              assignToClass()
-            } else if (selectedClasses.length > 0) {
+            if (selectedClasses.length > 0) {
               assignToSelectedClasses()
             } else if (targetStudent) {
               assignToStudent()
@@ -851,7 +805,6 @@ export default function AssignWordSetsPage() {
           }}
         />
       )}
-
     </div>
   )
 }

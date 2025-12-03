@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { BookOpen, Users, ArrowLeft, Gamepad2 } from 'lucide-react'
+import { BookOpen, Users, ArrowLeft, Gamepad2, Sparkles } from 'lucide-react'
 
 function JoinSessionContent() {
   const router = useRouter()
@@ -90,7 +90,7 @@ function JoinSessionContent() {
     setLoading(true)
 
     if (sessionCode.length !== 6) {
-      setError('Session code must be 6 characters')
+      setError('Sessionskoden måste vara 6 tecken')
       setLoading(false)
       return
     }
@@ -111,23 +111,20 @@ function JoinSessionContent() {
         .single()
 
       if (fetchError || !data) {
-        throw new Error('Session not found or not active')
+        throw new Error('Sessionen hittades inte eller är inte aktiv')
       }
 
       // Check if session is expired (but allow joining for testing even if expired)
-      // Note: Quiz will still unlock when due date passes, but students can still join
       const dueDate = new Date(data.due_date)
       const now = new Date()
       if (dueDate < now) {
-        // Allow joining expired sessions for testing, but show a warning
         console.warn('⚠️ Joining expired session (for testing)')
-        // Don't block joining, just continue
       }
 
       setSession(data)
       setStep('name')
     } catch (error: any) {
-      setError(error.message || 'Could not find session. Please check the code.')
+      setError(error.message || 'Kunde inte hitta sessionen. Kontrollera koden.')
     } finally {
       setLoading(false)
     }
@@ -139,7 +136,7 @@ function JoinSessionContent() {
     setLoading(true)
 
     if (!studentName.trim()) {
-      setError('Please enter your name')
+      setError('Ange ditt namn')
       setLoading(false)
       return
     }
@@ -166,15 +163,13 @@ function JoinSessionContent() {
           .insert({
             session_id: session.id,
             student_name: studentName.trim(),
-            student_id: user?.id || null, // Link to account if logged in
+            student_id: user?.id || null,
           })
           .select()
           .single()
 
         if (joinError) {
-          // Check if it's a duplicate name error (race condition)
           if (joinError.code === '23505') {
-            // Try to fetch the existing participant again
             const { data: retryParticipant } = await supabase
               .from('session_participants')
               .select('id')
@@ -185,7 +180,7 @@ function JoinSessionContent() {
             if (retryParticipant) {
               participantId = retryParticipant.id
             } else {
-              setError('This name is already taken. Please choose another.')
+              setError('Detta namn är redan taget. Välj ett annat.')
               setLoading(false)
               return
             }
@@ -197,8 +192,7 @@ function JoinSessionContent() {
         }
       }
 
-      // Store in both sessionStorage and localStorage for the play page
-      // localStorage persists across tabs, sessionStorage is per-tab
+      // Store in both sessionStorage and localStorage
       sessionStorage.setItem('sessionParticipantId', participantId)
       sessionStorage.setItem('sessionId', session.id)
       sessionStorage.setItem('studentName', studentName.trim())
@@ -206,18 +200,15 @@ function JoinSessionContent() {
       localStorage.setItem(`sessionId_${session.id}`, session.id)
       localStorage.setItem(`studentName_${session.id}`, studentName.trim())
 
-      // If existing participant had selected blocks, restore them ONLY if they're valid
+      // If existing participant had selected blocks, restore them
       if (existingParticipant?.selected_blocks && 
           Array.isArray(existingParticipant.selected_blocks) && 
           existingParticipant.selected_blocks.length > 0) {
         sessionStorage.setItem('selectedBlocks', JSON.stringify(existingParticipant.selected_blocks))
         localStorage.setItem(`selectedBlocks_${session.id}`, JSON.stringify(existingParticipant.selected_blocks))
       } else {
-        // New participant OR invalid blocks - ensure blocks step will be shown
-        // Clear any old block selections
         sessionStorage.removeItem('selectedBlocks')
         localStorage.removeItem(`selectedBlocks_${session.id}`)
-        // Also clear from database if it's invalid
         if (existingParticipant && (!existingParticipant.selected_blocks || 
             !Array.isArray(existingParticipant.selected_blocks) || 
             existingParticipant.selected_blocks.length === 0)) {
@@ -228,56 +219,92 @@ function JoinSessionContent() {
         }
       }
 
-      // Redirect to play page (it will show block selection if no blocks are selected)
       router.push(`/session/${session.id}/play`)
     } catch (error: any) {
       console.error('Error joining session:', error)
-      setError(error.message || 'Could not join session. Please try again.')
+      setError(error.message || 'Kunde inte gå med i sessionen. Försök igen.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
-      <div className="max-w-md w-full">
-        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-8">
+    <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center py-12 px-4 relative overflow-hidden">
+      {/* Aurora background effects */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-violet-900/30 via-cyan-900/20 to-fuchsia-900/30 blur-3xl animate-pulse" style={{ animationDuration: '8s' }} />
+        <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
+      </div>
+      
+      {/* Subtle grid pattern */}
+      <div className="absolute inset-0 z-0 opacity-10" style={{ 
+        backgroundImage: 'linear-gradient(to right, #ffffff1a 1px, transparent 1px), linear-gradient(to bottom, #ffffff1a 1px, transparent 1px)', 
+        backgroundSize: '40px 40px' 
+      }} />
+      
+      <div className="max-w-md w-full relative z-10">
+        {/* Glow effect behind card */}
+        <div className="absolute -inset-1 bg-gradient-to-br from-violet-500/20 via-cyan-500/10 to-fuchsia-500/20 rounded-3xl blur-xl" />
+        
+        <div className="relative bg-[#12122a]/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 p-8">
           {step === 'code' && (
             <form onSubmit={handleCodeSubmit} className="space-y-6">
               <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-                  <BookOpen className="w-8 h-8 text-white" />
+                {/* Animated icon container */}
+                <div className="relative w-20 h-20 mx-auto mb-6">
+                  <div className="absolute inset-0 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-2xl blur-lg opacity-50 animate-pulse" />
+                  <div className="relative w-20 h-20 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-500/30">
+                    <Gamepad2 className="w-10 h-10 text-white" />
+                  </div>
+                  {/* Sparkle decorations */}
+                  <Sparkles className="absolute -top-2 -right-2 w-5 h-5 text-amber-400 animate-pulse" />
                 </div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">Join Session</h1>
-                <p className="text-gray-600">Enter the session code from your teacher</p>
+                <h1 className="text-3xl font-bold text-white mb-2">Gå med i Session</h1>
+                <p className="text-gray-400">Ange sessionskoden från din lärare</p>
               </div>
 
               <div>
-                <label htmlFor="code" className="block text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">
-                  Session Code
+                <label htmlFor="code" className="block text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">
+                  Sessionskod
                 </label>
-                <input
-                  type="text"
-                  id="code"
-                  value={sessionCode}
-                  onChange={(e) => {
-                    setSessionCode(e.target.value.toUpperCase().slice(0, 6))
-                    setError('')
-                  }}
-                  placeholder="ABC123"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-center text-2xl font-mono tracking-widest bg-gray-50"
-                  maxLength={6}
-                  required
-                />
-                {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="code"
+                    value={sessionCode}
+                    onChange={(e) => {
+                      setSessionCode(e.target.value.toUpperCase().slice(0, 6))
+                      setError('')
+                    }}
+                    placeholder="ABC123"
+                    className="w-full px-4 py-4 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-center text-3xl font-mono tracking-[0.3em] text-white placeholder:text-gray-600 transition-all"
+                    maxLength={6}
+                    required
+                  />
+                  {/* Animated border glow when focused */}
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-violet-500/0 via-cyan-500/0 to-violet-500/0 pointer-events-none transition-all peer-focus:from-violet-500/20 peer-focus:via-cyan-500/20 peer-focus:to-violet-500/20" />
+                </div>
+                {error && (
+                  <div className="mt-3 flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                    <span>⚠️</span>
+                    <span>{error}</span>
+                  </div>
+                )}
               </div>
 
               <button
                 type="submit"
                 disabled={loading || sessionCode.length !== 6}
-                className="w-full px-6 py-3 bg-teal-500 hover:bg-teal-600 text-white rounded-lg font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed transition-all shadow-md"
+                className="w-full px-6 py-4 bg-gradient-to-r from-violet-500 to-cyan-500 hover:from-violet-400 hover:to-cyan-400 text-white rounded-xl font-semibold disabled:from-gray-600 disabled:to-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed transition-all shadow-lg shadow-violet-500/30 disabled:shadow-none transform hover:scale-[1.02] active:scale-[0.98]"
               >
-                {loading ? 'Checking...' : 'Continue'}
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Kontrollerar...
+                  </span>
+                ) : (
+                  'Fortsätt'
+                )}
               </button>
             </form>
           )}
@@ -285,31 +312,46 @@ function JoinSessionContent() {
           {step === 'name' && session && (
             <form onSubmit={handleNameSubmit} className="space-y-6">
               <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-                  <Users className="w-8 h-8 text-white" />
+                {/* Animated icon container */}
+                <div className="relative w-20 h-20 mx-auto mb-6">
+                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl blur-lg opacity-50 animate-pulse" />
+                  <div className="relative w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                    <Users className="w-10 h-10 text-white" />
+                  </div>
                 </div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">What's your name?</h1>
-                <p className="text-gray-600">Enter your name to continue</p>
+                <h1 className="text-3xl font-bold text-white mb-2">Vad heter du?</h1>
+                <p className="text-gray-400">Ange ditt namn för att fortsätta</p>
               </div>
 
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <BookOpen className="w-4 h-4 text-gray-600" />
-                  <p className="text-sm font-semibold text-gray-700">
-                    Word Set: {session.word_sets?.title}
-                  </p>
+              {/* Session info card */}
+              <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-violet-500/20 to-cyan-500/20 rounded-lg flex items-center justify-center border border-white/10">
+                    <BookOpen className="w-5 h-5 text-violet-400" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Ordlista</p>
+                    <p className="text-sm font-semibold text-white">
+                      {session.word_sets?.title || 'Session'}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Gamepad2 className="w-4 h-4 text-gray-600" />
-                  <p className="text-sm text-gray-600">
-                    {session.enabled_games?.length || 0} games to play
-                  </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-lg flex items-center justify-center border border-white/10">
+                    <Gamepad2 className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Spel</p>
+                    <p className="text-sm font-semibold text-white">
+                      {session.enabled_games?.length || 0} spel att spela
+                    </p>
+                  </div>
                 </div>
               </div>
 
               <div>
-                <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">
-                  Your Name
+                <label htmlFor="name" className="block text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">
+                  Ditt namn
                 </label>
                 <input
                   type="text"
@@ -319,36 +361,51 @@ function JoinSessionContent() {
                     setStudentName(e.target.value)
                     setError('')
                   }}
-                  placeholder="e.g. Emma"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-gray-50"
+                  placeholder="t.ex. Emma"
+                  className="w-full px-4 py-4 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 text-white placeholder:text-gray-600 transition-all text-lg"
                   required
                 />
-                {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+                {error && (
+                  <div className="mt-3 flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                    <span>⚠️</span>
+                    <span>{error}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex gap-3">
                 <button
                   type="button"
                   onClick={() => {
                     setStep('code')
                     setError('')
                   }}
-                  className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 px-6 py-4 bg-white/5 border border-white/10 text-gray-300 rounded-xl font-medium hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2"
                 >
                   <ArrowLeft className="w-4 h-4" />
-                  Back
+                  Tillbaka
                 </button>
                 <button
                   type="submit"
                   disabled={loading || !studentName.trim()}
-                  className="flex-1 px-6 py-3 bg-teal-500 hover:bg-teal-600 text-white rounded-lg font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed transition-all shadow-md"
+                  className="flex-1 px-6 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white rounded-xl font-semibold disabled:from-gray-600 disabled:to-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-500/30 disabled:shadow-none transform hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  {loading ? 'Joining...' : 'Start Playing'}
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Ansluter...
+                    </span>
+                  ) : (
+                    'Börja spela'
+                  )}
                 </button>
               </div>
             </form>
           )}
         </div>
+        
+        {/* Decorative elements */}
+        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-gradient-to-r from-violet-500/20 via-cyan-500/20 to-violet-500/20 blur-xl rounded-full" />
       </div>
     </div>
   )
@@ -357,10 +414,18 @@ function JoinSessionContent() {
 export default function JoinSessionPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+      <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center relative overflow-hidden">
+        {/* Aurora background effects */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-violet-900/30 via-cyan-900/20 to-fuchsia-900/30 blur-3xl" />
+          <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl" />
+        </div>
+        <div className="text-center relative z-10">
+          <div className="w-16 h-16 mx-auto mb-4 relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-xl blur-lg opacity-50 animate-pulse" />
+            <div className="relative w-16 h-16 border-2 border-violet-500/30 border-t-violet-500 rounded-xl animate-spin" />
+          </div>
+          <p className="text-gray-400">Laddar...</p>
         </div>
       </div>
     }>
@@ -368,4 +433,3 @@ export default function JoinSessionPage() {
     </Suspense>
   )
 }
-

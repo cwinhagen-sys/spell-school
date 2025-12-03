@@ -457,14 +457,18 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
   // Player selection screen
   if (showPlayerSelection) {
     return (
-      <div className="fixed inset-0 bg-gray-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-xl p-8 w-full max-w-md shadow-lg border border-gray-200">
+      <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50">
+        {/* Aurora background effects */}
+        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-violet-600/20 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-cyan-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+        
+        <div className="relative bg-[#12122a] rounded-2xl p-8 w-full max-w-md shadow-2xl border border-white/10">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/30">
               <Brain className="w-8 h-8 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Memory Game</h2>
-            <p className="text-gray-600">Choose number of players</p>
+            <h2 className="text-2xl font-bold text-white mb-2">Memory Game</h2>
+            <p className="text-gray-400">Välj antal spelare</p>
           </div>
           
           <div className="grid grid-cols-2 gap-4 mb-6">
@@ -472,30 +476,30 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
               onClick={() => {
                 setNumPlayers(1)
               }}
-              className={`p-6 rounded-lg border-2 transition-all shadow-md hover:shadow-lg ${
+              className={`p-6 rounded-xl border transition-all shadow-lg ${
                 numPlayers === 1
-                  ? 'bg-teal-50 border-teal-300'
-                  : 'bg-white border-gray-200 hover:border-teal-300 hover:bg-teal-50'
+                  ? 'bg-violet-500/20 border-violet-500/50'
+                  : 'bg-white/5 border-white/10 hover:border-violet-500/30 hover:bg-violet-500/10'
               }`}
             >
-              <User className="w-8 h-8 mx-auto mb-2 text-gray-700" />
-              <div className="font-semibold text-gray-900">1 Player</div>
-              <div className="text-sm text-gray-600 mt-1">Solo practice</div>
+              <User className={`w-8 h-8 mx-auto mb-2 ${numPlayers === 1 ? 'text-violet-400' : 'text-gray-400'}`} />
+              <div className={`font-semibold ${numPlayers === 1 ? 'text-white' : 'text-gray-300'}`}>1 Spelare</div>
+              <div className={`text-sm mt-1 ${numPlayers === 1 ? 'text-gray-300' : 'text-gray-500'}`}>Solo träning</div>
             </button>
             
             <button
               onClick={() => {
                 setNumPlayers(2)
               }}
-              className={`p-6 rounded-lg border-2 transition-all shadow-md hover:shadow-lg ${
+              className={`p-6 rounded-xl border transition-all shadow-lg ${
                 numPlayers === 2
-                  ? 'bg-teal-50 border-teal-300'
-                  : 'bg-white border-gray-200 hover:border-teal-300 hover:bg-teal-50'
+                  ? 'bg-cyan-500/20 border-cyan-500/50'
+                  : 'bg-white/5 border-white/10 hover:border-cyan-500/30 hover:bg-cyan-500/10'
               }`}
             >
-              <Users className="w-8 h-8 mx-auto mb-2 text-gray-700" />
-              <div className="font-semibold text-gray-900">2 Players</div>
-              <div className="text-sm text-gray-600 mt-1">Take turns</div>
+              <Users className={`w-8 h-8 mx-auto mb-2 ${numPlayers === 2 ? 'text-cyan-400' : 'text-gray-400'}`} />
+              <div className={`font-semibold ${numPlayers === 2 ? 'text-white' : 'text-gray-300'}`}>2 Spelare</div>
+              <div className={`text-sm mt-1 ${numPlayers === 2 ? 'text-gray-300' : 'text-gray-500'}`}>Turordning</div>
             </button>
           </div>
           
@@ -503,23 +507,23 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
           {numPlayers === 2 && (
             <div className="space-y-4 mb-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Player 1 Name</label>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Spelare 1 namn</label>
                 <input
                   type="text"
                   value={player1Name}
                   onChange={(e) => setPlayer1Name(e.target.value || 'Player 1')}
-                  placeholder="Enter name"
-                  className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 text-gray-900"
+                  placeholder="Ange namn"
+                  className="w-full px-4 py-2 rounded-xl border border-white/10 bg-white/5 focus:border-cyan-500/50 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 text-white placeholder:text-gray-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Player 2 Name</label>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Spelare 2 namn</label>
                 <input
                   type="text"
                   value={player2Name}
                   onChange={(e) => setPlayer2Name(e.target.value || 'Player 2')}
-                  placeholder="Enter name"
-                  className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 text-gray-900"
+                  placeholder="Ange namn"
+                  className="w-full px-4 py-2 rounded-xl border border-white/10 bg-white/5 focus:border-cyan-500/50 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 text-white placeholder:text-gray-500"
                 />
               </div>
             </div>
@@ -528,18 +532,18 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-colors"
+              className="flex-1 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 font-medium transition-colors"
             >
-              Cancel
+              Avbryt
             </button>
             <button
               onClick={() => {
                 setShowPlayerSelection(false)
                 setShowGridSelector(true)
               }}
-              className="flex-1 px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-600 text-white font-medium transition-all shadow-md"
+              className="flex-1 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 hover:from-violet-400 hover:to-cyan-400 text-white font-medium transition-all shadow-lg shadow-violet-500/30"
             >
-              Continue
+              Fortsätt
             </button>
           </div>
         </div>
@@ -960,9 +964,6 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
                       overflowWrap: 'break-word',
                       hyphens: 'auto'
                     }}>{card.word}</div>
-                    {card.translation && (
-                      <div className="text-xs mt-1 opacity-90">{card.translation}</div>
-                    )}
                   </div>
                 ) : (
                   <div className="absolute inset-0 opacity-90" style={{ backgroundImage: 'url(/assets/wizard/wizard_novice.png)', backgroundSize: 'cover', backgroundPosition: 'center' }} />

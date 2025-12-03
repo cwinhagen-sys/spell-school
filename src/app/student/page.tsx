@@ -1126,6 +1126,351 @@ export default function StudentDashboard() {
     dismiss()
   }
 
+  const loadTeacherInfo = async (classId: string) => {
+    try {
+      console.log('Loading teacher info for class:', classId)
+      
+      // First, try to get teacher_id from class_students join (most reliable for students)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        console.log('No user found for teacher info')
+        return
+      }
+      
+      // Try approach 1: Get teacher info through class_students -> classes -> profiles
+      const { data: studentClassData, error: studentClassError } = await supabase
+        .from('class_students')
+        .select(`
+          classes!inner(
+            teacher_id,
+            profiles:teacher_id(
+              displayName,
+              username,
+              email
+            )
+          )
+        `)
+        .eq('student_id', user.id)
+        .eq('class_id', classId)
+        .maybeSingle()
+      
+      console.log('Teacher info query result:', { studentClassData, studentClassError })
+      
+      if (!studentClassError && studentClassData) {
+        const data = studentClassData as any
+        if (data.classes) {
+          const classes = data.classes
+          // Check if profiles is an array or object
+          let profile = null
+          if (Array.isArray(classes.profiles) && classes.profiles.length > 0) {
+            profile = classes.profiles[0]
+          } else if (classes.profiles && typeof classes.profiles === 'object') {
+            profile = classes.profiles
+          }
+          
+          if (profile) {
+            const teacherName = profile.displayName || profile.username || profile.email?.split('@')[0] || 'Teacher'
+            console.log('Found teacher name:', teacherName)
+            setTeacherInfo({ name: teacherName })
+            return
+          }
+        }
+      }
+      
+      // Fallback: Try to get teacher_id directly and then fetch profile
+      if (studentClassData && (studentClassData as any).classes?.teacher_id) {
+        const teacherId = (studentClassData as any).classes.teacher_id
+        console.log('Trying to fetch teacher profile directly for teacher_id:', teacherId)
+        
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('displayName, username, email')
+          .eq('id', teacherId)
+          .maybeSingle()
+        
+        console.log('Direct profile query result:', { profileData, profileError })
+        
+        if (!profileError && profileData) {
+          const teacherName = profileData.displayName || profileData.username || profileData.email?.split('@')[0] || 'Teacher'
+          console.log('Found teacher name from direct query:', teacherName)
+          setTeacherInfo({ name: teacherName })
+          return
+        }
+      }
+      
+      console.log('Could not load teacher info')
+    } catch (error) {
+      console.error('Error loading teacher info:', error)
+    }
+  }
+
+  const loadClassInfo = async () => {
+    try {
+      console.log('Debug - loadClassInfo started')
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        console.log('Debug - No user found in loadClassInfo')
+        return
+      }
+      
+      console.log('Debug - User ID for class lookup:', user.id)
+
+      // First, let's see what's in the class_students table for this user
+      const { data: allClassStudents, error: allError } = await supabase
+        .from('class_students')
+        .select('*')
+        .eq('student_id', user.id)
+
+      console.log('Debug - All class_students records for user:', allClassStudents)
+      console.log('Debug - All class_students error:', allError)
+
+      if (allError) {
+        console.log('Debug - Error loading all class_students:', allError)
+        setClassInfo(null)
+        return
+      }
+
+      if (!allClassStudents || allClassStudents.length === 0) {
+        console.log('Debug - No class_students records found for user')
+        setClassInfo(null)
+        return
+      }
+
+      // Get the first class record
+      const firstClassRecord = allClassStudents[0]
+      console.log('Debug - First class record:', firstClassRecord)
+
+      // Try to get the real class name using a simpler approach
+      // We'll try to read from the classes table with a different method
+      
+      if (firstClassRecord.class_id) {
+        console.log('Debug - Attempting to get real class name for:', firstClassRecord.class_id)
+        
+        // Try approach 1: Simple direct query to classes table
+        try {
+          console.log('Debug - Attempting direct query to classes table...')
+          
+          // Try to read the actual class name from the classes table
+          const { data: classData, error: classError } = await supabase
+            .from('classes')
+            .select('name')
+            .eq('id', firstClassRecord.class_id)
+            .maybeSingle()
+          
+          if (!classError && classData && classData.name) {
+            console.log('Debug - SUCCESS! Got real class name from classes table:', classData.name)
+            setClassInfo({
+              id: firstClassRecord.class_id,
+              name: classData.name  // This should be "6A", "6B", "6C" etc.
+            })
+            // Load teacher info
+            void loadTeacherInfo(firstClassRecord.class_id)
+            return
+          } else {
+            console.log('Debug - Direct query failed or no data:', classError, classData)
+            
+            // If direct query fails, let's try to see what the actual error is
+            if (classError) {
+              console.log('Debug - RLS Error details:', classError.message, classError.code)
+            }
+          }
+        } catch (e) {
+          console.log('Debug - Direct query approach failed:', e)
+        }
+        
+        // Try approach 2: Use a join query to get class name from class_students
+        try {
+          console.log('Debug - Attempting join query approach...')
+          
+          // Try to get class name through a join query
+          // This might work better with RLS policies than direct access
+          const { data: joinData, error: joinError } = await supabase
+            .from('class_students')
+            .select(`
+              class_id,
+              classes!inner (
+                id,
+                name
+              )
+            `)
+            .eq('student_id', user.id)
+            .eq('class_id', firstClassRecord.class_id)
+            .maybeSingle()
+          
+          if (!joinError && joinData && joinData.classes) {
+            const classInfo = joinData.classes as any
+            console.log('Debug - SUCCESS! Got class name from join query:', classInfo.name)
+            setClassInfo({
+              id: firstClassRecord.class_id,
+              name: classInfo.name  // This should be "6A", "6B", "6C" etc.
+            })
+            // Load teacher info
+            void loadTeacherInfo(firstClassRecord.class_id)
+            return
+          } else {
+            console.log('Debug - Join query failed or no data:', joinError, joinData)
+            
+            // If join query fails, let's try a different approach
+            if (joinError) {
+              console.log('Debug - Join query error details:', joinError.message, joinError.code)
+            }
+          }
+        } catch (e) {
+          console.log('Debug - Join query approach failed:', e)
+        }
+        
+        // Try approach 2b: Use a different join syntax
+        try {
+          console.log('Debug - Attempting alternative join syntax...')
+          
+          // Try a different join approach that might work better
+          const { data: altJoinData, error: altJoinError } = await supabase
+            .from('class_students')
+            .select(`
+              class_id,
+              classes (
+                id,
+                name
+              )
+            `)
+            .eq('student_id', user.id)
+            .eq('class_id', firstClassRecord.class_id)
+            .maybeSingle()
+          
+          if (!altJoinError && altJoinData && altJoinData.classes) {
+            const classInfo = altJoinData.classes as any
+            console.log('Debug - SUCCESS! Got class name from alternative join:', classInfo.name)
+            setClassInfo({
+              id: firstClassRecord.class_id,
+              name: classInfo.name  // This should be "6A", "6B", "6C" etc.
+            })
+            // Load teacher info
+            void loadTeacherInfo(firstClassRecord.class_id)
+            return
+          } else {
+            console.log('Debug - Alternative join failed or no data:', altJoinError, altJoinData)
+          }
+        } catch (e) {
+          console.log('Debug - Alternative join approach failed:', e)
+        }
+        
+        // Try approach 3: Try to get class name through a different table or method
+        try {
+          console.log('Debug - Attempting alternative table approach...')
+          
+          // Since we can't access the classes table directly due to RLS,
+          // let's try to find the class name through other means
+          
+          // Let's check if we can get any information from the class_students table
+          const { data: classStudentInfo, error: classStudentError } = await supabase
+            .from('class_students')
+            .select('*')
+            .eq('student_id', user.id)
+            .eq('class_id', firstClassRecord.class_id)
+            .maybeSingle()
+          
+          if (!classStudentError && classStudentInfo) {
+            console.log('Debug - Found class_student record:', classStudentInfo)
+            
+            // Maybe we can find the class name in other accessible data
+            // For now, let's create a temporary name that's at least consistent
+            const classId = firstClassRecord.class_id
+            
+            // IMPORTANT: This is just a fallback - we really need the real class name!
+            // The real class name should be "6A", "6B", "6C" etc. from the classes table
+            let className = 'Class'
+            
+            // Extract the first number for a simple name
+            const numbers = classId.match(/\d+/g)
+            if (numbers && numbers.length > 0) {
+              className = `Class ${numbers[0]}`
+            } else {
+              className = `Class ${classId.slice(0, 4)}`
+            }
+            
+            console.log('Debug - Found class_student record, but continuing to RPC approach...')
+            // Don't return here - let's continue to try the RPC function approach
+            
+          } else {
+            console.log('Debug - No class_student info found:', classStudentError)
+          }
+          
+        } catch (e) {
+          console.log('Debug - Alternative table approach failed:', e)
+        }
+        
+        // SOLUTION: Create a simple RPC function call
+        try {
+          console.log('Debug - Attempting RPC function solution...')
+          
+          // This is the REAL solution - we need an RPC function that bypasses RLS
+          const { data: rpcResult, error: rpcError } = await supabase
+            .rpc('get_student_class_name', { 
+              student_id: user.id,
+              class_id: firstClassRecord.class_id 
+            })
+          
+          if (!rpcError && rpcResult) {
+            console.log('Debug - RPC function returned data:', rpcResult)
+            
+            // RPC function returns an array, so we need to handle that
+            let className = null
+            if (Array.isArray(rpcResult) && rpcResult.length > 0) {
+              className = rpcResult[0].class_name
+            } else if (rpcResult && typeof rpcResult === 'object' && rpcResult.class_name) {
+              className = rpcResult.class_name
+            }
+            
+            if (className) {
+              console.log('Debug - SUCCESS! Got real class name from RPC:', className)
+              setClassInfo({
+                id: firstClassRecord.class_id,
+                name: className  // This should be "6A", "6B", "6C" etc.
+              })
+              // Load teacher info
+              void loadTeacherInfo(firstClassRecord.class_id)
+              return
+            } else {
+              console.log('Debug - RPC function returned data but no class_name found:', rpcResult)
+            }
+          } else {
+            console.log('Debug - RPC function failed:', rpcError, rpcResult)
+          }
+        } catch (e) {
+          console.log('Debug - RPC function approach failed:', e)
+        }
+        
+        // REMOVED: Duplicated code that was causing the issue
+        
+        // FINAL FALLBACK: Show a clear message about what's needed
+        console.log('Debug - FINAL FALLBACK: Cannot get real class name due to RLS policies')
+        console.log('Debug - SOLUTION: Create RPC function in Supabase to bypass RLS')
+        console.log('Debug - Expected result: Student should see "6A", "6B", "6C" etc.')
+        
+        const classId = firstClassRecord.class_id
+        
+        // For now, show a placeholder that makes it clear this is not the real name
+        const className = 'Class Name Unavailable'
+        
+        console.log('Debug - Using placeholder class name:', className)
+        console.log('Debug - This indicates the RPC function needs to be created')
+        
+        setClassInfo({
+          id: classId,
+          name: className
+        })
+        // Load teacher info
+        void loadTeacherInfo(classId)
+      } else {
+        console.log('Debug - No class_id available')
+        setClassInfo(null)
+      }
+    } catch (error) {
+      console.error('Error loading class info:', error)
+      setClassInfo(null)
+    }
+  }
+
   const loadStudentData = async () => {
     try {
       setLoading(true)
@@ -1491,6 +1836,7 @@ export default function StudentDashboard() {
     }
   }
 
+
   const startWordMatchingGame = () => {
     if (homeworks.length === 0 && oldWordSets.length === 0) {
       setMessage('No vocabulary sets available. Please wait for your teacher to assign vocabulary.')
@@ -1746,407 +2092,61 @@ export default function StudentDashboard() {
     }
   }
 
-
-
-  const loadClassInfo = async () => {
-    try {
-      console.log('Debug - loadClassInfo started')
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        console.log('Debug - No user found in loadClassInfo')
-        return
-      }
-      
-      console.log('Debug - User ID for class lookup:', user.id)
-
-      // First, let's see what's in the class_students table for this user
-      const { data: allClassStudents, error: allError } = await supabase
-        .from('class_students')
-        .select('*')
-        .eq('student_id', user.id)
-
-      console.log('Debug - All class_students records for user:', allClassStudents)
-      console.log('Debug - All class_students error:', allError)
-
-      if (allError) {
-        console.log('Debug - Error loading all class_students:', allError)
-        setClassInfo(null)
-        return
-      }
-
-      if (!allClassStudents || allClassStudents.length === 0) {
-        console.log('Debug - No class_students records found for user')
-        setClassInfo(null)
-        return
-      }
-
-      // Get the first class record
-      const firstClassRecord = allClassStudents[0]
-      console.log('Debug - First class record:', firstClassRecord)
-
-      // Try to get the real class name using a simpler approach
-      // We'll try to read from the classes table with a different method
-      
-      if (firstClassRecord.class_id) {
-        console.log('Debug - Attempting to get real class name for:', firstClassRecord.class_id)
-        
-        // Try approach 1: Simple direct query to classes table
-        try {
-          console.log('Debug - Attempting direct query to classes table...')
-          
-          // Try to read the actual class name from the classes table
-          const { data: classData, error: classError } = await supabase
-            .from('classes')
-            .select('name')
-            .eq('id', firstClassRecord.class_id)
-            .maybeSingle()
-          
-          if (!classError && classData && classData.name) {
-            console.log('Debug - SUCCESS! Got real class name from classes table:', classData.name)
-            setClassInfo({
-              id: firstClassRecord.class_id,
-              name: classData.name  // This should be "6A", "6B", "6C" etc.
-            })
-            // Load teacher info
-            void loadTeacherInfo(firstClassRecord.class_id)
-            return
-          } else {
-            console.log('Debug - Direct query failed or no data:', classError, classData)
-            
-            // If direct query fails, let's try to see what the actual error is
-            if (classError) {
-              console.log('Debug - RLS Error details:', classError.message, classError.code)
-            }
-          }
-        } catch (e) {
-          console.log('Debug - Direct query approach failed:', e)
-        }
-        
-        // Try approach 2: Use a join query to get class name from class_students
-        try {
-          console.log('Debug - Attempting join query approach...')
-          
-          // Try to get class name through a join query
-          // This might work better with RLS policies than direct access
-          const { data: joinData, error: joinError } = await supabase
-            .from('class_students')
-            .select(`
-              class_id,
-              classes!inner (
-                id,
-                name
-              )
-            `)
-            .eq('student_id', user.id)
-            .eq('class_id', firstClassRecord.class_id)
-            .maybeSingle()
-          
-          if (!joinError && joinData && joinData.classes) {
-            const classInfo = joinData.classes as any
-            console.log('Debug - SUCCESS! Got class name from join query:', classInfo.name)
-            setClassInfo({
-              id: firstClassRecord.class_id,
-              name: classInfo.name  // This should be "6A", "6B", "6C" etc.
-            })
-            // Load teacher info
-            void loadTeacherInfo(firstClassRecord.class_id)
-            return
-          } else {
-            console.log('Debug - Join query failed or no data:', joinError, joinData)
-            
-            // If join query fails, let's try a different approach
-            if (joinError) {
-              console.log('Debug - Join query error details:', joinError.message, joinError.code)
-            }
-          }
-        } catch (e) {
-          console.log('Debug - Join query approach failed:', e)
-        }
-        
-        // Try approach 2b: Use a different join syntax
-        try {
-          console.log('Debug - Attempting alternative join syntax...')
-          
-          // Try a different join approach that might work better
-          const { data: altJoinData, error: altJoinError } = await supabase
-            .from('class_students')
-            .select(`
-              class_id,
-              classes (
-                id,
-                name
-              )
-            `)
-            .eq('student_id', user.id)
-            .eq('class_id', firstClassRecord.class_id)
-            .maybeSingle()
-          
-          if (!altJoinError && altJoinData && altJoinData.classes) {
-            const classInfo = altJoinData.classes as any
-            console.log('Debug - SUCCESS! Got class name from alternative join:', classInfo.name)
-            setClassInfo({
-              id: firstClassRecord.class_id,
-              name: classInfo.name  // This should be "6A", "6B", "6C" etc.
-            })
-            // Load teacher info
-            void loadTeacherInfo(firstClassRecord.class_id)
-            return
-          } else {
-            console.log('Debug - Alternative join failed or no data:', altJoinError, altJoinData)
-          }
-        } catch (e) {
-          console.log('Debug - Alternative join approach failed:', e)
-        }
-        
-        // Try approach 3: Try to get class name through a different table or method
-        try {
-          console.log('Debug - Attempting alternative table approach...')
-          
-          // Since we can't access the classes table directly due to RLS,
-          // let's try to find the class name through other means
-          
-          // Let's check if we can get any information from the class_students table
-          const { data: classStudentInfo, error: classStudentError } = await supabase
-            .from('class_students')
-            .select('*')
-            .eq('student_id', user.id)
-            .eq('class_id', firstClassRecord.class_id)
-            .maybeSingle()
-          
-          if (!classStudentError && classStudentInfo) {
-            console.log('Debug - Found class_student record:', classStudentInfo)
-            
-            // Maybe we can find the class name in other accessible data
-            // For now, let's create a temporary name that's at least consistent
-            const classId = firstClassRecord.class_id
-            
-            // IMPORTANT: This is just a fallback - we really need the real class name!
-            // The real class name should be "6A", "6B", "6C" etc. from the classes table
-            let className = 'Class'
-            
-            // Extract the first number for a simple name
-            const numbers = classId.match(/\d+/g)
-            if (numbers && numbers.length > 0) {
-              className = `Class ${numbers[0]}`
-            } else {
-              className = `Class ${classId.slice(0, 4)}`
-            }
-            
-            console.log('Debug - Found class_student record, but continuing to RPC approach...')
-            // Don't return here - let's continue to try the RPC function approach
-            
-          } else {
-            console.log('Debug - No class_student info found:', classStudentError)
-          }
-          
-        } catch (e) {
-          console.log('Debug - Alternative table approach failed:', e)
-        }
-        
-        // SOLUTION: Create a simple RPC function call
-        try {
-          console.log('Debug - Attempting RPC function solution...')
-          
-          // This is the REAL solution - we need an RPC function that bypasses RLS
-          const { data: rpcResult, error: rpcError } = await supabase
-            .rpc('get_student_class_name', { 
-              student_id: user.id,
-              class_id: firstClassRecord.class_id 
-            })
-          
-          if (!rpcError && rpcResult) {
-            console.log('Debug - RPC function returned data:', rpcResult)
-            
-            // RPC function returns an array, so we need to handle that
-            let className = null
-            if (Array.isArray(rpcResult) && rpcResult.length > 0) {
-              className = rpcResult[0].class_name
-            } else if (rpcResult && typeof rpcResult === 'object' && rpcResult.class_name) {
-              className = rpcResult.class_name
-            }
-            
-            if (className) {
-              console.log('Debug - SUCCESS! Got real class name from RPC:', className)
-              setClassInfo({
-                id: firstClassRecord.class_id,
-                name: className  // This should be "6A", "6B", "6C" etc.
-              })
-              // Load teacher info
-              void loadTeacherInfo(firstClassRecord.class_id)
-              return
-            } else {
-              console.log('Debug - RPC function returned data but no class_name found:', rpcResult)
-            }
-          } else {
-            console.log('Debug - RPC function failed:', rpcError, rpcResult)
-          }
-        } catch (e) {
-          console.log('Debug - RPC function approach failed:', e)
-        }
-        
-        // REMOVED: Duplicated code that was causing the issue
-        
-        // FINAL FALLBACK: Show a clear message about what's needed
-        console.log('Debug - FINAL FALLBACK: Cannot get real class name due to RLS policies')
-        console.log('Debug - SOLUTION: Create RPC function in Supabase to bypass RLS')
-        console.log('Debug - Expected result: Student should see "6A", "6B", "6C" etc.')
-        
-        const classId = firstClassRecord.class_id
-        
-        // For now, show a placeholder that makes it clear this is not the real name
-        const className = 'Class Name Unavailable'
-        
-        console.log('Debug - Using placeholder class name:', className)
-        console.log('Debug - This indicates the RPC function needs to be created')
-        
-        setClassInfo({
-          id: classId,
-          name: className
-        })
-        // Load teacher info
-        void loadTeacherInfo(classId)
-      } else {
-        console.log('Debug - No class_id available')
-        setClassInfo(null)
-      }
-    } catch (error) {
-      console.error('Error loading class info:', error)
-      setClassInfo(null)
-    }
-  }
-
-  const loadTeacherInfo = async (classId: string) => {
-    try {
-      console.log('Loading teacher info for class:', classId)
-      
-      // First, try to get teacher_id from class_students join (most reliable for students)
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        console.log('No user found for teacher info')
-        return
-      }
-      
-      // Try approach 1: Get teacher info through class_students -> classes -> profiles
-      const { data: studentClassData, error: studentClassError } = await supabase
-        .from('class_students')
-        .select(`
-          classes!inner(
-            teacher_id,
-            profiles:teacher_id(
-              displayName,
-              username,
-              email
-            )
-          )
-        `)
-        .eq('student_id', user.id)
-        .eq('class_id', classId)
-        .maybeSingle()
-      
-      console.log('Teacher info query result:', { studentClassData, studentClassError })
-      
-      if (!studentClassError && studentClassData) {
-        const data = studentClassData as any
-        if (data.classes) {
-          const classes = data.classes
-          // Check if profiles is an array or object
-          let profile = null
-          if (Array.isArray(classes.profiles) && classes.profiles.length > 0) {
-            profile = classes.profiles[0]
-          } else if (classes.profiles && typeof classes.profiles === 'object') {
-            profile = classes.profiles
-          }
-          
-          if (profile) {
-            const teacherName = profile.displayName || profile.username || profile.email?.split('@')[0] || 'Teacher'
-            console.log('Found teacher name:', teacherName)
-            setTeacherInfo({ name: teacherName })
-            return
-          }
-        }
-      }
-      
-      // Fallback: Try to get teacher_id directly and then fetch profile
-      if (studentClassData && (studentClassData as any).classes?.teacher_id) {
-        const teacherId = (studentClassData as any).classes.teacher_id
-        console.log('Trying to fetch teacher profile directly for teacher_id:', teacherId)
-        
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('displayName, username, email')
-          .eq('id', teacherId)
-          .maybeSingle()
-        
-        console.log('Direct profile query result:', { profileData, profileError })
-        
-        if (!profileError && profileData) {
-          const teacherName = profileData.displayName || profileData.username || profileData.email?.split('@')[0] || 'Teacher'
-          console.log('Found teacher name from direct query:', teacherName)
-          setTeacherInfo({ name: teacherName })
-          return
-        }
-      }
-      
-      console.log('Could not load teacher info')
-    } catch (error) {
-      console.error('Error loading teacher info:', error)
-    }
-  }
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Laddar...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800">
+    <div className="min-h-screen text-white">
       <LogoutHandler />
       <SaveStatusIndicator />
 
       <div className="container mx-auto px-6 py-8 max-w-7xl">
         {/* Hero Section - Welcome & Summary */}
         <div className="mb-8">
-          <div className="relative rounded-2xl p-8 text-white shadow-xl overflow-hidden">
+          <div className="relative rounded-3xl p-8 text-white shadow-2xl overflow-hidden border border-white/10">
+            {/* Magical gradient background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-violet-600/30 via-cyan-600/20 to-fuchsia-600/30 z-0" />
+            <div className="absolute inset-0 backdrop-blur-sm z-0" />
             {/* Dynamic Background Image - Changes every minute */}
             <DynamicBackground />
-            {/* Very subtle dark overlay only for text readability if needed */}
-            <div className="absolute inset-0 bg-black/10 z-0" />
+            <div className="absolute inset-0 bg-black/40 z-0" />
             <div className="relative z-10">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div className="flex-1">
                 <h1 className="text-3xl md:text-4xl font-bold mb-2">
-                  Welcome back, {user?.user_metadata?.username || user?.email?.split('@')[0] || 'Student'}!
+                  Välkommen, {user?.user_metadata?.username || user?.email?.split('@')[0] || 'Elev'}!
                 </h1>
-                <p className="text-purple-100 text-lg">
-                  {wizardTitle?.title || 'Novice Learner'} • Level {leveling.level}
+                <p className="text-gray-200 text-lg">
+                  {wizardTitle?.title || 'Lärling'} • Level {leveling.level}
                 </p>
                 {teacherInfo && classInfo && (
-                  <p className="text-purple-100 text-sm mt-2">
+                  <p className="text-gray-300 text-sm mt-2">
                     {teacherInfo.name} • {classInfo.name}
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-4">
-                <div className="text-center">
-                  <div className="text-3xl font-bold">{points.toLocaleString()}</div>
-                  <div className="text-sm text-purple-100">Total XP</div>
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="text-center px-4 py-2 bg-white/10 rounded-xl backdrop-blur-sm border border-white/10">
+                  <div className="text-3xl font-bold text-amber-400">{points.toLocaleString()}</div>
+                  <div className="text-sm text-gray-300">Total XP</div>
                 </div>
                 {currentStreak > 0 && (
-                  <>
-                    <div className="w-px h-12 bg-white/30"></div>
-                    <div className="text-center">
-                      <div className="text-3xl font-bold">🔥 {currentStreak}</div>
-                      <div className="text-sm text-purple-100">Day Streak</div>
-                    </div>
-                  </>
+                  <div className="text-center px-4 py-2 bg-white/10 rounded-xl backdrop-blur-sm border border-white/10">
+                    <div className="text-3xl font-bold text-orange-400">🔥 {currentStreak}</div>
+                    <div className="text-sm text-gray-300">Dagars streak</div>
+                  </div>
                 )}
-                <div className="w-px h-12 bg-white/30"></div>
                 <Link
                   href="/session/join"
-                  className="px-4 py-2 bg-white/20 backdrop-blur-sm border border-white/30 rounded-lg hover:bg-white/30 transition-all flex items-center gap-2 text-sm font-medium text-white"
+                  className="px-4 py-3 bg-gradient-to-r from-violet-500 to-cyan-500 rounded-xl hover:from-violet-400 hover:to-cyan-400 transition-all flex items-center gap-2 text-sm font-semibold text-white shadow-lg shadow-violet-500/30"
                 >
                   <Gamepad2 className="w-4 h-4" />
                   Gå med i session
@@ -2157,23 +2157,23 @@ export default function StudentDashboard() {
             {/* XP Progress Bar */}
             <div className="mt-6">
               <div className="flex items-center justify-between text-sm mb-2">
-                <span className="text-purple-100">Progress to Level {leveling.level + 1}</span>
-                <span className="font-semibold">
+                <span className="text-gray-300">Framsteg till Level {leveling.level + 1}</span>
+                <span className="font-semibold text-white">
                   {leveling.nextDelta > 0 
                     ? `${Math.round(leveling.progressToNext * leveling.nextDelta)} / ${leveling.nextDelta} XP`
-                    : 'Max level reached!'
+                    : 'Max level nådd!'
                   }
                 </span>
               </div>
-              <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden">
+              <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-white rounded-full transition-all duration-1000 ease-out shadow-lg"
+                  className="h-full bg-gradient-to-r from-violet-500 to-cyan-500 rounded-full transition-all duration-1000 ease-out shadow-lg"
                   style={{ width: `${leveling.progressToNext * 100}%` }}
                 />
               </div>
               {leveling.nextDelta > 0 && (
-                <div className="text-xs text-purple-100 mt-1 text-right">
-                  {leveling.nextDelta - Math.round(leveling.progressToNext * leveling.nextDelta)} XP to next level
+                <div className="text-xs text-gray-400 mt-1 text-right">
+                  {leveling.nextDelta - Math.round(leveling.progressToNext * leveling.nextDelta)} XP kvar till nästa level
                 </div>
               )}
             </div>
@@ -2184,17 +2184,17 @@ export default function StudentDashboard() {
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Daily Quest Highlight */}
-          <div className="lg:col-span-2 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg p-6">
+          <div className="lg:col-span-2 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 shadow-xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                <Target className="w-5 h-5 text-purple-600" />
-                Today's Focus
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Target className="w-5 h-5 text-cyan-400" />
+                Dagens uppdrag
               </h2>
               <Link 
                 href="/student/quests"
-                className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+                className="text-sm text-cyan-400 hover:text-cyan-300 font-medium"
               >
-                View all →
+                Visa alla →
               </Link>
             </div>
             <div className="space-y-3">
@@ -2206,42 +2206,44 @@ export default function StudentDashboard() {
                 return (
                   <div
                     key={quest.id}
-                    className={`p-4 rounded-lg border-2 transition-all ${
+                    className={`p-4 rounded-xl border transition-all ${
                       isCompleted
-                        ? 'bg-green-50 border-green-300'
-                        : 'bg-gray-50 border-gray-200 hover:border-purple-300'
+                        ? 'bg-emerald-500/20 border-emerald-500/30'
+                        : 'bg-white/5 border-white/10 hover:border-cyan-500/30'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl">{quest.icon}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">{quest.icon}</span>
                         <div>
-                          <div className="font-semibold text-gray-800">{quest.title}</div>
-                          <div className="text-xs text-gray-600">{quest.description}</div>
+                          <div className="font-semibold text-white">{quest.title}</div>
+                          <div className="text-xs text-gray-400">{quest.description}</div>
                         </div>
                       </div>
                       <div className="text-right">
                         {isCompleted ? (
-                          <span className="text-green-600 font-bold">✓</span>
+                          <span className="text-emerald-400 font-bold text-lg">✓</span>
                         ) : (
-                          <span className="text-sm font-semibold text-purple-600">+{quest.xp} XP</span>
+                          <span className="text-sm font-semibold text-amber-400">+{quest.xp} XP</span>
                         )}
                       </div>
                     </div>
                     {!isCompleted && (
-                      <div className="mt-2">
-                        <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-                          <span>Progress: {quest.progress}/{quest.target}</span>
-                          <span className="capitalize">{difficulty}</span>
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+                          <span>Framsteg: {quest.progress}/{quest.target}</span>
+                          <span className="capitalize px-2 py-0.5 rounded-full bg-white/5 text-gray-300">
+                            {difficulty === 'easy' ? 'Enkel' : difficulty === 'medium' ? 'Medel' : 'Svår'}
+                          </span>
                         </div>
-                        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all duration-500 ${
                               difficulty === 'easy'
-                                ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                                ? 'bg-gradient-to-r from-emerald-500 to-green-500'
                                 : difficulty === 'medium'
-                                ? 'bg-gradient-to-r from-yellow-500 to-orange-500'
-                                : 'bg-gradient-to-r from-red-500 to-pink-500'
+                                ? 'bg-gradient-to-r from-amber-500 to-orange-500'
+                                : 'bg-gradient-to-r from-rose-500 to-pink-500'
                             }`}
                             style={{ width: `${progressPercent}%` }}
                           />
@@ -2252,12 +2254,12 @@ export default function StudentDashboard() {
                 )
               })}
               {dailyQuests.every(q => q.completed) && (
-                <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-300 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">🏆</span>
+                <div className="p-4 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">🏆</span>
                     <div>
-                      <div className="font-bold text-purple-800">All Quests Complete!</div>
-                      <div className="text-sm text-purple-600">+100 XP Bonus earned</div>
+                      <div className="font-bold text-amber-400">Alla uppdrag klara!</div>
+                      <div className="text-sm text-amber-300/80">+100 XP Bonus intjänad</div>
                     </div>
                   </div>
                 </div>
@@ -2266,25 +2268,25 @@ export default function StudentDashboard() {
           </div>
 
           {/* Progress Snapshot */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-purple-600" />
-              Progress Snapshot
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 shadow-xl p-6">
+            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-amber-400" />
+              Dina framsteg
             </h2>
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-                <span className="text-sm text-gray-700">Badges Earned</span>
-                <span className="text-lg font-bold text-purple-600">{badgeStats?.earned || 0}</span>
+              <div className="flex items-center justify-between p-4 bg-cyan-500/10 rounded-xl border border-cyan-500/20">
+                <span className="text-sm text-gray-300">Trofeer intjänade</span>
+                <span className="text-2xl font-bold text-cyan-400">{badgeStats?.earned || 0}</span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-indigo-50 rounded-lg">
-                <span className="text-sm text-gray-700">Total Badges</span>
-                <span className="text-lg font-bold text-indigo-600">{badgeStats?.total || 0}</span>
+              <div className="flex items-center justify-between p-4 bg-violet-500/10 rounded-xl border border-violet-500/20">
+                <span className="text-sm text-gray-300">Totalt antal</span>
+                <span className="text-2xl font-bold text-violet-400">{badgeStats?.total || 0}</span>
               </div>
               <Link
                 href="/student/badges"
-                className="block w-full text-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                className="block w-full text-center px-4 py-3 bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-xl hover:from-violet-400 hover:to-cyan-400 transition-all text-sm font-semibold shadow-lg shadow-violet-500/20"
               >
-                View Collection →
+                Visa samling →
               </Link>
             </div>
           </div>
@@ -2292,17 +2294,17 @@ export default function StudentDashboard() {
                       
         {/* Active Assignments */}
         <div className="mb-8">
-          <div className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-lg p-6">
+          <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm shadow-xl p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-purple-600" />
-                Active Assignments
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-fuchsia-400" />
+                Aktiva ordlistor
               </h2>
               <Link 
                 href="/student/word-sets"
-                className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+                className="text-sm text-fuchsia-400 hover:text-fuchsia-300 font-medium"
               >
-                View all →
+                Visa alla →
               </Link>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -2318,19 +2320,19 @@ export default function StudentDashboard() {
                 if (activeAssignments.length === 0) {
                   return (
                     <div className="col-span-full text-center py-12">
-                      <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                        <BookOpen className="w-8 h-8 text-gray-400" />
+                      <div className="w-16 h-16 bg-white/5 rounded-xl flex items-center justify-center mx-auto mb-4 border border-white/10">
+                        <BookOpen className="w-8 h-8 text-gray-500" />
                       </div>
-                      <p className="text-gray-500 text-lg">No active assignments</p>
-                      <p className="text-gray-400 text-sm mt-2">All assignments are completed or past due</p>
+                      <p className="text-gray-400 text-lg">Inga aktiva ordlistor</p>
+                      <p className="text-gray-500 text-sm mt-2">Alla är klara eller har passerat</p>
                     </div>
                   )
                 }
                 
-                return activeAssignments.slice(0, 10).map((homework) => (
+                return activeAssignments.slice(0, 4).map((homework) => (
                   <div 
                     key={homework.id} 
-                    className="border border-gray-200 bg-white/60 rounded-lg p-4 hover:bg-white/80 transition-colors cursor-pointer"
+                    className="border border-white/10 bg-white/5 rounded-xl p-4 hover:bg-white/10 hover:border-fuchsia-500/30 transition-all cursor-pointer group"
                     onClick={() => {
                       console.log('Clicked homework:', homework)
                       console.log('Homework words:', homework.words)
@@ -2339,19 +2341,19 @@ export default function StudentDashboard() {
                     }}
                   >
                     <div className="flex items-center gap-3 mb-3">
-                      <span className="w-4 h-4 rounded-full" style={{ backgroundColor: homework.color || '#6b7280' }} />
-                      <span className="text-sm font-semibold text-gray-800 truncate">{homework.title}</span>
-                        </div>
+                      <span className="w-4 h-4 rounded-full shadow-lg" style={{ backgroundColor: homework.color || '#a855f7' }} />
+                      <span className="text-sm font-semibold text-white truncate group-hover:text-fuchsia-400 transition-colors">{homework.title}</span>
+                    </div>
                     <div className="text-xs text-gray-500">
-                      Due: {homework.due_date ? new Date(homework.due_date).toLocaleDateString('en-US') : 'No due date'}
-                        </div>
-                      </div>
+                      Deadline: {homework.due_date ? new Date(homework.due_date).toLocaleDateString('sv-SE') : 'Ingen deadline'}
+                    </div>
+                  </div>
                 ))
               })()}
               {homeworks.length > 10 && (
                 <div className="col-span-full text-center pt-4">
-                  <a href="/student/word-sets" className="text-sm text-indigo-600 hover:text-indigo-800 underline">
-                    View all assignments ({homeworks.length})
+                  <a href="/student/word-sets" className="text-sm text-fuchsia-400 hover:text-fuchsia-300 underline">
+                    Visa alla ordlistor ({homeworks.length})
                   </a>
                 </div>
               )}
@@ -2362,21 +2364,21 @@ export default function StudentDashboard() {
         {/* Games Recommendation & Leaderboard */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Games Recommendation */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg p-6">
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 shadow-xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 <span className="text-2xl">🎮</span>
-                Practice Games
+                Träningsspel
               </h2>
               <Link 
                 href="/student/games"
-                className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+                className="text-sm text-violet-400 hover:text-violet-300 font-medium"
               >
-                View all →
+                Visa alla →
               </Link>
             </div>
-            <p className="text-sm text-gray-600 mb-4">
-              Ready to practice? Choose a game to improve your vocabulary skills.
+            <p className="text-sm text-gray-400 mb-4">
+              Redo att träna? Välj ett spel för att förbättra ditt ordförråd.
             </p>
             <div className="grid grid-cols-2 gap-3">
               <GameCard
@@ -2395,120 +2397,90 @@ export default function StudentDashboard() {
           </div>
 
           {/* Leaderboard Snippet - Level Leaderboard Grid */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg p-6">
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 shadow-xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                <Users className="w-5 h-5 text-purple-600" />
-                Leaderboard
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Users className="w-5 h-5 text-amber-400" />
+                Topplista
               </h2>
               <Link 
                 href="/student/leaderboard"
-                className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+                className="text-sm text-amber-400 hover:text-amber-300 font-medium"
               >
-                View all →
+                Visa alla →
               </Link>
             </div>
             {leaderboardPlayers && leaderboardPlayers.length > 0 ? (
-              <div className="rounded-2xl border border-gray-100 bg-gradient-to-br from-white via-white to-gray-50 p-4 shadow-sm">
-                <div className="mb-3">
-                  <h3 className="text-lg font-semibold text-gray-800">Highest Level</h3>
-                  <p className="text-xs text-gray-500">Total XP levels</p>
-                </div>
-                <div className="space-y-2">
-                  {leaderboardPlayers
-                    .slice()
-                    .sort((a, b) => (b.level || 0) - (a.level || 0))
-                    .slice(0, Math.min(5, leaderboardPlayers.length))
-                    .map((player, index) => {
-                      const rank = index + 1
-                      const isTopThree = rank <= 3
-                      const isCurrentUser = player.id === leaderboardData?.currentUserId
-                      
-                      // Medal colors and styles
-                      const medalStyles = {
-                        1: {
-                          badge: 'bg-gradient-to-br from-yellow-400 to-yellow-600 border-yellow-500 text-white shadow-lg shadow-yellow-500/50',
-                          border: 'border-yellow-300',
-                          bg: 'bg-gradient-to-r from-yellow-50/80 to-yellow-100/40',
-                          glow: 'shadow-lg shadow-yellow-500/30'
-                        },
-                        2: {
-                          badge: 'bg-gradient-to-br from-gray-300 to-gray-500 border-gray-400 text-white shadow-lg shadow-gray-400/50',
-                          border: 'border-gray-300',
-                          bg: 'bg-gradient-to-r from-gray-50/80 to-gray-100/40',
-                          glow: 'shadow-lg shadow-gray-400/30'
-                        },
-                        3: {
-                          badge: 'bg-gradient-to-br from-amber-600 to-amber-800 border-amber-700 text-white shadow-lg shadow-amber-600/50',
-                          border: 'border-amber-400',
-                          bg: 'bg-gradient-to-r from-amber-50/80 to-amber-100/40',
-                          glow: 'shadow-lg shadow-amber-500/30'
-                        }
-                      }
-                      
-                      const medalStyle = isTopThree ? medalStyles[rank as 1 | 2 | 3] : null
-                      
-                      return (
-                        <div
-                          key={`level-${player.id}`}
-                          className={`flex items-center justify-between rounded-xl border px-3 py-2 transition-all ${
-                            isCurrentUser
-                              ? isTopThree
-                                ? `${medalStyle?.border} ${medalStyle?.bg} ${medalStyle?.glow}`
-                                : 'border-indigo-200 bg-indigo-50/60'
-                              : isTopThree
-                                ? `${medalStyle?.border} ${medalStyle?.bg} ${medalStyle?.glow}`
-                                : 'border-gray-200 bg-white'
-                          } ${isTopThree ? 'shadow-md' : 'shadow-sm'}`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <div className="relative">
-                              <img
-                                src={player.wizardImage}
-                                alt={player.displayName || 'Student'}
-                                className={`w-10 h-10 rounded-full object-cover border-2 shadow ${
-                                  isTopThree ? 'border-white shadow-lg' : 'border-white'
-                                }`}
-                              />
-                              <div className={`absolute -top-1 -left-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                                isTopThree 
-                                  ? medalStyle?.badge 
-                                  : 'bg-white border border-gray-200 text-gray-600'
-                              }`}>
-                                {rank}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                                {player.displayName || 'Student'}
-                                {isCurrentUser && (
-                                  <span className="text-xs font-semibold text-indigo-500 bg-indigo-100 px-2 py-0.5 rounded-full">
-                                    You
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                {player.totalPoints.toLocaleString()} XP
-                              </div>
+              <div className="space-y-2">
+                {leaderboardPlayers
+                  .slice()
+                  .sort((a, b) => (b.level || 0) - (a.level || 0))
+                  .slice(0, Math.min(5, leaderboardPlayers.length))
+                  .map((player, index) => {
+                    const rank = index + 1
+                    const isTopThree = rank <= 3
+                    const isCurrentUser = player.id === leaderboardData?.currentUserId
+                    
+                    const medalColors = {
+                      1: 'from-amber-400 to-yellow-500 shadow-amber-500/50',
+                      2: 'from-gray-300 to-gray-400 shadow-gray-400/50',
+                      3: 'from-orange-400 to-amber-500 shadow-orange-500/50'
+                    }
+                    
+                    return (
+                      <div
+                        key={`level-${player.id}`}
+                        className={`flex items-center justify-between rounded-xl border px-3 py-2.5 transition-all ${
+                          isCurrentUser
+                            ? 'border-violet-500/50 bg-violet-500/20'
+                            : 'border-white/10 bg-white/5 hover:bg-white/10'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <img
+                              src={player.wizardImage}
+                              alt={player.displayName || 'Elev'}
+                              className={`w-10 h-10 rounded-full object-cover border-2 ${
+                                isTopThree ? 'border-white shadow-lg' : 'border-white/30'
+                              }`}
+                            />
+                            <div className={`absolute -top-1 -left-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shadow-lg ${
+                              isTopThree 
+                                ? `bg-gradient-to-br ${medalColors[rank as 1 | 2 | 3]} text-white`
+                                : 'bg-[#1a1a2e] border border-white/20 text-gray-400'
+                            }`}>
+                              {rank}
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className={`text-sm font-bold ${
-                              isTopThree ? 'text-gray-900' : 'text-gray-900'
-                            }`}>
-                              Lv {player.level}
+                          <div>
+                            <div className="text-sm font-semibold text-white flex items-center gap-2">
+                              {player.displayName || 'Elev'}
+                              {isCurrentUser && (
+                                <span className="text-xs font-medium text-violet-400 bg-violet-500/20 px-2 py-0.5 rounded-full">
+                                  Du
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {player.totalPoints.toLocaleString()} XP
                             </div>
                           </div>
                         </div>
-                      )
-                    })}
-                </div>
+                        <div className="text-right">
+                          <div className="text-sm font-bold text-amber-400">
+                            Lv {player.level}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
               </div>
             ) : (
               <div className="text-center py-8">
-                <Users className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">No leaderboard data yet</p>
-                <p className="text-xs text-gray-400 mt-1">Start playing to appear on the leaderboard!</p>
+                <Users className="w-12 h-12 text-gray-600 mx-auto mb-2" />
+                <p className="text-sm text-gray-400">Ingen topplista ännu</p>
+                <p className="text-xs text-gray-500 mt-1">Börja spela för att hamna på topplistan!</p>
               </div>
             )}
           </div>
@@ -2519,11 +2491,11 @@ export default function StudentDashboard() {
           {/* Games Section */}
           <div className="space-y-8" data-section="games">
           {/* Games */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-lg">
+          <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-8 shadow-xl">
             <div className="flex items-center mb-6">
               <div>
-                <h2 className="text-xl font-bold text-gray-800">Games</h2>
-                <p className="text-sm text-gray-600">Practice vocabulary with engaging games</p>
+                <h2 className="text-xl font-bold text-white">Spel</h2>
+                <p className="text-sm text-gray-400">Träna ordförråd med engagerande spel</p>
               </div>
             </div>
             
@@ -2565,10 +2537,10 @@ export default function StudentDashboard() {
                 onClick={startWordMatchingGame}
               />
 
-              {/* Matching Pairs (purple) */}
+              {/* Matching Pairs (teal) */}
               <GameCard
                 title="Matching Pairs"
-                color="purple"
+                color="teal"
                 icon={<span className="text-3xl">🔗</span>}
                 onClick={() => {
                   if (homeworks.length === 0 && oldWordSets.length === 0) {
@@ -2684,79 +2656,83 @@ export default function StudentDashboard() {
                   }
                 }}
               />
+
             </div>
           </div>
 
           {/* Class Leaderboards */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-lg" data-section="leaderboard">
+          <div className="rounded-2xl border border-white/10 bg-[#12122a]/80 p-8 shadow-xl backdrop-blur-sm" data-section="leaderboard">
             <div className="flex items-center mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center mr-4 shadow-lg shadow-amber-500/30">
+                <Trophy className="w-6 h-6 text-white" />
+              </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-800">Leaderboard</h2>
-                <p className="text-sm text-gray-600">
-                  See which classmates lead in different categories
+                <h2 className="text-xl font-bold text-white">Leaderboard</h2>
+                <p className="text-sm text-gray-400">
+                  Se vilka klasskompisar som leder i olika kategorier
                 </p>
               </div>
             </div>
 
             {!classInfo?.id ? (
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-center text-sm text-gray-500">
-                Join a class to unlock leaderboards.
+              <div className="bg-white/5 border border-white/10 rounded-xl p-6 text-center text-sm text-gray-400">
+                Gå med i en klass för att låsa upp leaderboards.
               </div>
             ) : leaderboardLoading ? (
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-center text-sm text-gray-500">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500 mx-auto mb-4"></div>
-                Loading leaderboards...
+              <div className="bg-white/5 border border-white/10 rounded-xl p-6 text-center text-sm text-gray-400">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-cyan-500 mx-auto mb-4"></div>
+                Laddar leaderboards...
               </div>
             ) : leaderboardError ? (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center text-sm text-red-600">
+              <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center text-sm text-red-400">
                 {leaderboardError}
               </div>
             ) : leaderboardPlayers.length === 0 ? (
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-center text-sm text-gray-500">
-                No results yet – play some games to kickstart the leaderboards!
+              <div className="bg-white/5 border border-white/10 rounded-xl p-6 text-center text-sm text-gray-400">
+                Inga resultat ännu – spela några spel för att kickstarta leaderboards!
               </div>
             ) : (
               <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
                 {[
                   {
                     key: 'level',
-                    title: 'Highest Level',
-                    description: 'Total XP levels',
+                    title: 'Högsta nivå',
+                    description: 'Totala XP-nivåer',
                     metric: (player: any) => player.level,
                     renderValue: (player: any) => `Lv ${player.level}`
                   },
                   {
                     key: 'badges',
-                    title: 'Most Badges',
-                    description: 'Collector\'s favorite',
+                    title: 'Flest märken',
+                    description: 'Samlarens favorit',
                     metric: (player: any) => player.badgeCount,
-                    renderValue: (player: any) => `${player.badgeCount} badges`
+                    renderValue: (player: any) => `${player.badgeCount} märken`
                   },
                   {
                     key: 'streak',
-                    title: 'Current Streak',
-                    description: 'Days in a row right now',
+                    title: 'Nuvarande streak',
+                    description: 'Dagar i rad just nu',
                     metric: (player: any) => player.longestStreak,
-                    renderValue: (player: any) => `${player.longestStreak} days`
+                    renderValue: (player: any) => `${player.longestStreak} dagar`
                   },
                   {
                     key: 'sessions',
-                    title: 'Games Played',
-                    description: 'Total number of games',
+                    title: 'Spel spelade',
+                    description: 'Totalt antal spel',
                     metric: (player: any) => player.sessionCount,
-                    renderValue: (player: any) => `${player.sessionCount} games`
+                    renderValue: (player: any) => `${player.sessionCount} spel`
                   },
                   {
                     key: 'kpm',
-                    title: 'Fastest Typist',
-                    description: 'Best Typing Challenge KPM',
+                    title: 'Snabbast typist',
+                    description: 'Bästa Typing Challenge KPM',
                     metric: (player: any) => player.bestKpm,
                     renderValue: (player: any) => `${Math.round(player.bestKpm)} KPM`
                   },
                   {
                     key: 'accuracy',
-                    title: 'Best Accuracy',
-                    description: 'Highest average accuracy',
+                    title: 'Bäst träffsäkerhet',
+                    description: 'Högsta genomsnittliga träffsäkerhet',
                     metric: (player: any) => player.averageAccuracy,
                     renderValue: (player: any) => `${Math.round(player.averageAccuracy)}%`
                   }
@@ -2767,39 +2743,39 @@ export default function StudentDashboard() {
                     .slice(0, 5)
 
                   return (
-                    <div key={category.key} className="rounded-2xl border border-gray-100 bg-gradient-to-br from-white via-white to-gray-50 p-6 shadow-sm">
+                    <div key={category.key} className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-lg">
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-800">
+                          <h3 className="text-lg font-semibold text-white">
                             {category.title}
                           </h3>
                           <p className="text-xs text-gray-500">{category.description}</p>
                         </div>
                       </div>
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {topPlayers.map((player, index) => {
                           const rank = index + 1
                           const isTopThree = rank <= 3
                           
-                          // Medal colors and styles
+                          // Medal colors and styles - dark theme
                           const medalStyles = {
                             1: {
-                              badge: 'bg-gradient-to-br from-yellow-400 to-yellow-600 border-yellow-500 text-white shadow-lg shadow-yellow-500/50',
-                              border: 'border-yellow-300',
-                              bg: 'bg-gradient-to-r from-yellow-50/80 to-yellow-100/40',
-                              glow: 'shadow-lg shadow-yellow-500/30'
+                              badge: 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-lg shadow-yellow-500/50',
+                              border: 'border-yellow-500/50',
+                              bg: 'bg-yellow-500/10',
+                              glow: 'shadow-lg shadow-yellow-500/20'
                             },
                             2: {
-                              badge: 'bg-gradient-to-br from-gray-300 to-gray-500 border-gray-400 text-white shadow-lg shadow-gray-400/50',
-                              border: 'border-gray-300',
-                              bg: 'bg-gradient-to-r from-gray-50/80 to-gray-100/40',
-                              glow: 'shadow-lg shadow-gray-400/30'
+                              badge: 'bg-gradient-to-br from-gray-300 to-gray-500 text-white shadow-lg shadow-gray-400/50',
+                              border: 'border-gray-400/50',
+                              bg: 'bg-gray-500/10',
+                              glow: 'shadow-lg shadow-gray-400/20'
                             },
                             3: {
-                              badge: 'bg-gradient-to-br from-amber-600 to-amber-800 border-amber-700 text-white shadow-lg shadow-amber-600/50',
-                              border: 'border-amber-400',
-                              bg: 'bg-gradient-to-r from-amber-50/80 to-amber-100/40',
-                              glow: 'shadow-lg shadow-amber-500/30'
+                              badge: 'bg-gradient-to-br from-amber-600 to-amber-800 text-white shadow-lg shadow-amber-600/50',
+                              border: 'border-amber-500/50',
+                              bg: 'bg-amber-500/10',
+                              glow: 'shadow-lg shadow-amber-500/20'
                             }
                           }
                           
@@ -2808,51 +2784,49 @@ export default function StudentDashboard() {
                           return (
                             <div
                               key={`${category.key}-${player.id}`}
-                              className={`flex items-center justify-between rounded-xl border px-3 py-3 transition-all ${
+                              className={`flex items-center justify-between rounded-xl border px-3 py-2.5 transition-all ${
                                 player.id === leaderboardData?.currentUserId
                                   ? isTopThree
                                     ? `${medalStyle?.border} ${medalStyle?.bg} ${medalStyle?.glow}`
-                                    : 'border-indigo-200 bg-indigo-50/60'
+                                    : 'border-cyan-500/50 bg-cyan-500/10'
                                   : isTopThree
                                     ? `${medalStyle?.border} ${medalStyle?.bg} ${medalStyle?.glow}`
-                                    : 'border-gray-200 bg-white'
-                              } ${isTopThree ? 'shadow-md' : 'shadow-sm'}`}
+                                    : 'border-white/5 bg-white/5'
+                              }`}
                             >
                               <div className="flex items-center gap-3">
                                 <div className="relative">
                                   <img
                                     src={player.wizardImage}
                                     alt={player.displayName || 'Student'}
-                                    className={`w-12 h-12 rounded-full object-cover border-2 shadow ${
-                                      isTopThree ? 'border-white shadow-lg' : 'border-white'
+                                    className={`w-10 h-10 rounded-full object-cover border-2 ${
+                                      isTopThree ? 'border-white/50 shadow-lg' : 'border-white/20'
                                     }`}
                                   />
-                                  <div className={`absolute -top-2 -left-2 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                                  <div className={`absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
                                     isTopThree 
                                       ? medalStyle?.badge 
-                                      : 'bg-white border border-gray-200 text-gray-600'
+                                      : 'bg-[#12122a] border border-white/20 text-gray-400'
                                   }`}>
                                     {rank}
                                   </div>
                                 </div>
                                 <div>
-                                  <div className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                                  <div className="text-sm font-semibold text-white flex items-center gap-2">
                                     {player.displayName || 'Student'}
                                     {player.id === leaderboardData?.currentUserId && (
-                                      <span className="text-xs font-semibold text-indigo-500 bg-indigo-100 px-2 py-0.5 rounded-full">
-                                        You
+                                      <span className="text-xs font-semibold text-cyan-400 bg-cyan-500/20 px-2 py-0.5 rounded-full">
+                                        Du
                                       </span>
                                     )}
                                   </div>
                                   <div className="text-xs text-gray-500">
-                                    Level {player.level} · {player.totalPoints} XP
+                                    Nivå {player.level} · {player.totalPoints} XP
                                   </div>
                                 </div>
                               </div>
                               <div className="text-right">
-                                <div className={`text-base font-bold ${
-                                  isTopThree ? 'text-gray-900' : 'text-gray-900'
-                                }`}>
+                                <div className="text-base font-bold text-white">
                                   {category.renderValue(player)}
                                 </div>
                               </div>
@@ -2861,7 +2835,7 @@ export default function StudentDashboard() {
                         })}
                         {topPlayers.length === 0 && (
                           <div className="text-xs text-gray-500 text-center py-4">
-                            No statistics yet
+                            Ingen statistik ännu
                           </div>
                         )}
                       </div>
@@ -2959,6 +2933,7 @@ export default function StudentDashboard() {
             gridConfig={getCurrentGameData()!.grid_config}
           />
         )}
+
 
         {showRoulette && getCurrentGameData() && (
           <RouletteGame
@@ -3069,17 +3044,22 @@ export default function StudentDashboard() {
 
         {/* Homework Selection Modal */}
         {showHomeworkSelection && (
-          <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="bg-white rounded-3xl p-6 w-full max-w-4xl shadow-2xl border border-gray-100 relative my-4 max-h-[90vh] flex flex-col">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <div className="relative w-full max-w-4xl my-4">
+              <div className="absolute -inset-1 bg-gradient-to-br from-violet-500/30 via-cyan-500/20 to-fuchsia-500/30 rounded-3xl blur-xl" />
+              <div className="relative bg-[#12122a] rounded-3xl p-6 shadow-2xl border border-white/10 max-h-[90vh] flex flex-col">
               {/* Header */}
               <div className="flex items-center justify-between mb-6 flex-shrink-0">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-                    <BookOpen className="w-6 h-6 text-white" />
+                <div className="flex items-center space-x-4">
+                  <div className="relative">
+                    <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/30">
+                      <BookOpen className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="absolute -inset-1 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-xl blur opacity-30" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-800">Choose Vocabulary Set</h2>
-                    <p className="text-sm text-gray-600">Select which vocabulary list you want to practice with</p>
+                    <h2 className="text-2xl font-bold text-white">Välj ordlista</h2>
+                    <p className="text-sm text-gray-400">Välj vilken ordlista du vill träna med</p>
                   </div>
                 </div>
                 <button 
@@ -3087,9 +3067,9 @@ export default function StudentDashboard() {
                     setShowHomeworkSelection(false)
                     setActiveTab('active')
                   }}
-                  className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-colors"
+                  className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center transition-colors"
                 >
-                  <span className="text-gray-600 text-xl">×</span>
+                  <span className="text-gray-400 text-xl">×</span>
                 </button>
               </div>
               
@@ -3097,17 +3077,17 @@ export default function StudentDashboard() {
               <div className="flex gap-3 mb-6 flex-shrink-0">
                 <button
                   onClick={() => setActiveTab('active')}
-                  className={`flex-1 px-6 py-3 text-center font-semibold rounded-2xl border-2 transition-all flex items-center justify-center gap-2 ${
+                  className={`flex-1 px-6 py-3 text-center font-semibold rounded-xl border transition-all flex items-center justify-center gap-2 ${
                     activeTab === 'active'
-                      ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 text-blue-900 shadow-lg'
-                      : 'bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200 text-gray-700 hover:from-blue-50 hover:to-indigo-50 hover:border-blue-300'
+                      ? 'bg-violet-500/20 border-violet-500/50 text-violet-400'
+                      : 'bg-white/5 border-white/10 text-gray-400 hover:bg-violet-500/10 hover:border-violet-500/30'
                   }`}
                 >
-                  <Star className={`w-5 h-5 ${activeTab === 'active' ? 'text-blue-600' : 'text-gray-500'}`} />
-                  Active Assignments
+                  <Star className={`w-5 h-5 ${activeTab === 'active' ? 'text-violet-400' : 'text-gray-500'}`} />
+                  Aktiva ordlistor
                   {homeworks.length > 0 && (
                     <span className={`ml-1 px-2 py-1 rounded-lg text-xs font-medium ${
-                      activeTab === 'active' ? 'bg-blue-200 text-blue-800' : 'bg-gray-200 text-gray-600'
+                      activeTab === 'active' ? 'bg-violet-500/30 text-violet-300' : 'bg-white/10 text-gray-500'
                     }`}>
                       {homeworks.length}
                     </span>
@@ -3115,17 +3095,17 @@ export default function StudentDashboard() {
                 </button>
                 <button
                   onClick={() => setActiveTab('old')}
-                  className={`flex-1 px-6 py-3 text-center font-semibold rounded-2xl border-2 transition-all flex items-center justify-center gap-2 ${
+                  className={`flex-1 px-6 py-3 text-center font-semibold rounded-xl border transition-all flex items-center justify-center gap-2 ${
                     activeTab === 'old'
-                      ? 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300 text-amber-900 shadow-lg'
-                      : 'bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200 text-gray-700 hover:from-amber-50 hover:to-orange-50 hover:border-amber-300'
+                      ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
+                      : 'bg-white/5 border-white/10 text-gray-400 hover:bg-amber-500/10 hover:border-amber-500/30'
                   }`}
                 >
-                  <BookOpen className={`w-5 h-5 ${activeTab === 'old' ? 'text-amber-600' : 'text-gray-500'}`} />
-                  Old Word Sets
+                  <BookOpen className={`w-5 h-5 ${activeTab === 'old' ? 'text-amber-400' : 'text-gray-500'}`} />
+                  Äldre ordlistor
                   {oldWordSets.length > 0 && (
                     <span className={`ml-1 px-2 py-1 rounded-lg text-xs font-medium ${
-                      activeTab === 'old' ? 'bg-amber-200 text-amber-800' : 'bg-gray-200 text-gray-600'
+                      activeTab === 'old' ? 'bg-amber-500/30 text-amber-300' : 'bg-white/10 text-gray-500'
                     }`}>
                       {oldWordSets.length}
                     </span>
@@ -3142,22 +3122,22 @@ export default function StudentDashboard() {
                           <button
                             key={homework.id}
                             onClick={() => selectHomeworkForGame(homework)}
-                            className="text-left p-5 rounded-2xl border-2 border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-blue-50 hover:to-indigo-50 hover:border-blue-300 transition-all shadow-md hover:shadow-lg"
+                            className="text-left p-5 rounded-xl border border-white/10 bg-white/5 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all group"
                           >
                             <div className="flex items-center gap-3 mb-3">
                               {homework.color && (
                                 <div 
-                                  className="w-4 h-4 rounded-full border-2 border-white shadow-sm" 
+                                  className="w-4 h-4 rounded-full shadow-lg" 
                                   style={{ backgroundColor: homework.color }}
                                 />
                               )}
-                              <h3 className="font-semibold text-lg text-gray-800">{homework.title}</h3>
+                              <h3 className="font-semibold text-lg text-white group-hover:text-violet-400 transition-colors">{homework.title}</h3>
                             </div>
                             {homework.due_date && (
                               <div className="flex items-center gap-2 text-sm">
-                                <Calendar className="w-4 h-4 text-blue-600" />
-                                <span className="text-blue-600 font-medium">
-                                  Due: {new Date(homework.due_date).toLocaleDateString('en-US')}
+                                <Calendar className="w-4 h-4 text-cyan-400" />
+                                <span className="text-cyan-400 font-medium">
+                                  Deadline: {new Date(homework.due_date).toLocaleDateString('sv-SE')}
                                 </span>
                               </div>
                             )}
@@ -3166,11 +3146,11 @@ export default function StudentDashboard() {
                       </div>
                     ) : (
                       <div className="text-center py-12">
-                        <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                          <BookOpen className="w-10 h-10 text-gray-400" />
+                        <div className="w-20 h-20 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10">
+                          <BookOpen className="w-10 h-10 text-gray-600" />
                         </div>
-                        <p className="text-gray-700 text-lg font-semibold mb-2">No active assignments</p>
-                        <p className="text-gray-500 text-sm">All assignments are completed or past due</p>
+                        <p className="text-gray-400 text-lg font-semibold mb-2">Inga aktiva ordlistor</p>
+                        <p className="text-gray-500 text-sm">Alla ordlistor är klara eller förfallna</p>
                       </div>
                     )}
                   </>
@@ -3184,22 +3164,22 @@ export default function StudentDashboard() {
                           <button
                             key={homework.id}
                             onClick={() => selectHomeworkForGame(homework)}
-                            className="text-left p-5 rounded-2xl border-2 border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-amber-50 hover:to-orange-50 hover:border-amber-300 transition-all shadow-md hover:shadow-lg opacity-90"
+                            className="text-left p-5 rounded-xl border border-white/10 bg-white/5 hover:bg-amber-500/10 hover:border-amber-500/30 transition-all opacity-80 group"
                           >
                             <div className="flex items-center gap-3 mb-3">
                               {homework.color && (
                                 <div 
-                                  className="w-4 h-4 rounded-full border-2 border-white shadow-sm" 
+                                  className="w-4 h-4 rounded-full" 
                                   style={{ backgroundColor: homework.color }}
                                 />
                               )}
-                              <h3 className="font-semibold text-lg text-gray-800">{homework.title}</h3>
+                              <h3 className="font-semibold text-lg text-gray-300 group-hover:text-amber-400 transition-colors">{homework.title}</h3>
                             </div>
                             {homework.due_date && (
                               <div className="flex items-center gap-2 text-sm">
                                 <Calendar className="w-4 h-4 text-gray-500" />
                                 <span className="text-gray-500 italic">
-                                  Past due: {new Date(homework.due_date).toLocaleDateString('en-US')}
+                                  Förfallen: {new Date(homework.due_date).toLocaleDateString('sv-SE')}
                                 </span>
                               </div>
                             )}
@@ -3208,16 +3188,17 @@ export default function StudentDashboard() {
                       </div>
                     ) : (
                       <div className="text-center py-12">
-                        <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                          <BookOpen className="w-10 h-10 text-gray-400" />
+                        <div className="w-20 h-20 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10">
+                          <BookOpen className="w-10 h-10 text-gray-600" />
                         </div>
-                        <p className="text-gray-700 text-lg font-semibold mb-2">No old word sets</p>
-                        <p className="text-gray-500 text-sm">All word sets are currently active</p>
+                        <p className="text-gray-400 text-lg font-semibold mb-2">Inga äldre ordlistor</p>
+                        <p className="text-gray-500 text-sm">Alla ordlistor är aktiva</p>
                       </div>
                     )}
                   </>
                 )}
               </div>
+            </div>
             </div>
           </div>
         )}
@@ -3233,32 +3214,41 @@ export default function StudentDashboard() {
       )}
 
       {showWizardModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowWizardModal(false)}>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowWizardModal(false)}>
           <div className="relative">
-            <div className="w-80 h-80 rounded-full border-8 border-purple-300 bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center overflow-hidden shadow-2xl">
+            {/* Glow effect */}
+            <div className="absolute -inset-4 bg-gradient-to-br from-violet-500/30 to-fuchsia-500/30 rounded-full blur-2xl" />
+            <div className="relative w-80 h-80 rounded-full border-4 border-violet-500/50 bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 flex items-center justify-center overflow-hidden shadow-2xl">
               {wizardTitle.image ? (
                 <img src={wizardTitle.image} alt={wizardTitle.title} className="w-72 h-72 rounded-full object-cover" />
               ) : (
-                <Star className="w-32 h-32 text-purple-500" />
+                <Star className="w-32 h-32 text-violet-400" />
               )}
             </div>
             <button 
-              className="absolute top-4 right-4 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center text-gray-600 hover:bg-white transition-colors"
+              className="absolute top-4 right-4 w-10 h-10 bg-[#12122a] border border-white/10 rounded-full flex items-center justify-center text-gray-400 hover:bg-white/10 transition-colors"
               onClick={() => setShowWizardModal(false)}
             >
               ×
             </button>
+            {/* Title below */}
+            <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 text-center">
+              <div className="text-xl font-bold text-white">{wizardTitle.title}</div>
+              <div className="text-sm text-gray-400">Level {leveling.level}</div>
+            </div>
           </div>
         </div>
       )}
 
       {showWordSetModal && selectedWordSet && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowWordSetModal(false)}>
-          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[80vh] overflow-hidden shadow-xl border border-gray-200" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-5 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">{selectedWordSet.title}</h2>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowWordSetModal(false)}>
+          <div className="relative w-full max-w-4xl max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
+            <div className="absolute -inset-1 bg-gradient-to-br from-violet-500/30 to-fuchsia-500/30 rounded-3xl blur-xl" />
+            <div className="relative bg-[#12122a] rounded-2xl overflow-hidden shadow-xl border border-white/10">
+            <div className="flex items-center justify-between p-5 border-b border-white/10">
+              <h2 className="text-xl font-semibold text-white">{selectedWordSet.title}</h2>
               <button 
-                className="text-gray-400 hover:text-gray-600 text-2xl transition-colors"
+                className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 text-2xl transition-colors"
                 onClick={() => setShowWordSetModal(false)}
               >
                 ×
@@ -3340,11 +3330,11 @@ export default function StudentDashboard() {
                 if (totalGrids === 0) {
                   return (
                     <div className="text-center py-12">
-                      <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                        <BookOpen className="w-8 h-8 text-gray-400" />
+                      <div className="w-16 h-16 bg-white/5 rounded-xl flex items-center justify-center mx-auto mb-4 border border-white/10">
+                        <BookOpen className="w-8 h-8 text-gray-600" />
                       </div>
-                      <p className="text-gray-500 text-lg">No words available</p>
-                      <p className="text-gray-400 text-sm mt-2">This word set doesn't have any words yet</p>
+                      <p className="text-gray-400 text-lg">Inga ord tillgängliga</p>
+                      <p className="text-gray-500 text-sm mt-2">Den här ordlistan har inga ord ännu</p>
                     </div>
                   )
                 }
@@ -3365,28 +3355,25 @@ export default function StudentDashboard() {
                               className={`
                                 relative w-16 h-16 rounded-xl transition-all transform
                                 ${isActive 
-                                  ? 'shadow-lg scale-110' 
-                                  : 'opacity-60 hover:opacity-90 hover:scale-105'
+                                  ? 'scale-110 ring-2 ring-white/50' 
+                                  : 'opacity-60 hover:opacity-100 hover:scale-105'
                                 }
                                 cursor-pointer
                               `}
                               style={{
                                 backgroundColor: colorHex,
-                                border: isActive 
-                                  ? `4px solid white`
-                                  : '2px solid rgba(255, 255, 255, 0.3)',
                                 boxShadow: isActive 
-                                  ? `0 10px 25px -5px ${colorHex}40, 0 0 0 4px white, 0 0 0 8px ${colorHex}30, inset 0 2px 4px rgba(0,0,0,0.1)`
-                                  : '0 2px 8px rgba(0,0,0,0.1)'
+                                  ? `0 0 30px ${colorHex}60`
+                                  : `0 4px 15px ${colorHex}30`
                               }}
                             >
                               {/* Grid number */}
-                              <div className="absolute top-1 left-1/2 transform -translate-x-1/2 bg-white/90 text-gray-800 px-2 py-0.5 rounded-full text-xs font-bold shadow-sm">
+                              <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-[#12122a] text-white px-2.5 py-0.5 rounded-full text-xs font-bold border border-white/20">
                                 {idx + 1}
                               </div>
                               {isActive && (
-                                <div className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-lg animate-bounce">
-                                  <span className="text-green-600 text-xs font-bold">✓</span>
+                                <div className="absolute -top-2 -right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg border-2 border-[#12122a]">
+                                  <span className="text-white text-xs font-bold">✓</span>
                                 </div>
                               )}
                             </button>
@@ -3447,26 +3434,27 @@ export default function StudentDashboard() {
               
               {(!selectedWordSet.words || selectedWordSet.words.length === 0) && (
                 <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <BookOpen className="w-8 h-8 text-gray-400" />
+                  <div className="w-16 h-16 bg-white/5 rounded-xl flex items-center justify-center mx-auto mb-4 border border-white/10">
+                    <BookOpen className="w-8 h-8 text-gray-600" />
                   </div>
-                  <p className="text-gray-500 text-lg">No words available</p>
-                  <p className="text-gray-400 text-sm mt-2">This word set doesn't have any words yet</p>
+                  <p className="text-gray-400 text-lg">Inga ord tillgängliga</p>
+                  <p className="text-gray-500 text-sm mt-2">Den här ordlistan har inga ord ännu</p>
                 </div>
               )}
             </div>
+          </div>
           </div>
         </div>
       )}
 
       {/* Daily Quest Bonus Notification */}
       {showBonusNotification && (
-        <div className="fixed top-4 right-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 rounded-lg shadow-lg z-50 animate-bounce">
+        <div className="fixed top-4 right-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white p-4 rounded-xl shadow-lg shadow-amber-500/30 z-50 animate-bounce border border-amber-400/50">
           <div className="flex items-center gap-3">
             <span className="text-2xl">🏆</span>
             <div>
-              <div className="font-bold text-lg">All Quests Complete!</div>
-              <div className="text-sm opacity-90">+100 XP Bonus earned!</div>
+              <div className="font-bold text-lg">Alla uppdrag klara!</div>
+              <div className="text-sm opacity-90">+100 XP Bonus intjänad!</div>
             </div>
           </div>
         </div>

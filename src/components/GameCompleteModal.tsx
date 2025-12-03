@@ -1,6 +1,7 @@
 'use client'
 
-import { RotateCcw, ArrowLeft, Star, Trophy, Target, Clock, Gamepad2, XCircle } from 'lucide-react'
+import { RotateCcw, ArrowLeft, Star, Trophy, Target, Clock, Gamepad2, XCircle, Zap } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 interface GameCompleteModalProps {
   score: number
@@ -44,207 +45,227 @@ export default function GameCompleteModal({
   }
 
   const getScoreColor = () => {
-    if (score >= 100) return 'text-yellow-400'
-    if (score >= 60) return 'text-green-400'
-    if (score >= 30) return 'text-blue-400'
+    if (score >= 100) return 'text-amber-400'
+    if (score >= 60) return 'text-emerald-400'
+    if (score >= 30) return 'text-cyan-400'
     return 'text-orange-400'
   }
 
   const getAccuracyColor = (acc: number) => {
-    if (acc >= 90) return 'text-green-400'
-    if (acc >= 75) return 'text-green-500'
-    if (acc >= 60) return 'text-yellow-400'
+    if (acc >= 90) return 'text-emerald-400'
+    if (acc >= 75) return 'text-green-400'
+    if (acc >= 60) return 'text-amber-400'
     if (acc >= 40) return 'text-orange-400'
     return 'text-red-400'
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-      <div className="rounded-2xl p-8 max-w-md w-full text-center shadow-2xl relative bg-gray-900 text-white border border-white/10">
-        {themeColor && <div className="h-1 rounded-md mb-4" style={{ backgroundColor: themeColor }}></div>}
+    <motion.div 
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      <motion.div 
+        className="relative w-full max-w-md"
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        transition={{ type: "spring", damping: 20, stiffness: 300 }}
+      >
+        {/* Glow effect */}
+        <div className="absolute -inset-2 bg-gradient-to-br from-violet-500/30 via-cyan-500/20 to-fuchsia-500/30 rounded-3xl blur-xl" />
         
-        {/* Trophy Icon */}
-        <div className="mb-6">
-          <div className="text-6xl mb-4">{getTrophyIcon()}</div>
-          <h2 className="text-2xl font-bold mb-2">
-            {gameType === 'flashcards' && details.testMode 
-              ? 'Test Complete!' 
-              : gameType === 'flashcards' 
-              ? 'Training Complete!' 
-              : 'Game Complete!'}
-          </h2>
-          <p className="text-gray-300">
-            {gameType === 'flashcards' && details.testMode
-              ? `Du har klarat ${details.correctWords || 0} av ${details.totalWords || 0} ord!`
-              : gameType === 'flashcards' 
-              ? `You've reviewed all ${details.wordsReviewed || 0} vocabulary words!`
-              : `You scored ${score} points!`
-            }
-          </p>
-        </div>
+        <div className="relative rounded-2xl p-8 text-center shadow-2xl bg-[#12122a] border border-white/10">
+          {themeColor && <div className="h-1.5 rounded-md mb-6 bg-gradient-to-r from-violet-500 to-cyan-500"></div>}
+          
+          {/* Trophy Icon */}
+          <motion.div 
+            className="mb-6"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+          >
+            <div className="text-6xl mb-4">{getTrophyIcon()}</div>
+            <h2 className="text-2xl font-bold text-white mb-2">
+              {gameType === 'flashcards' && details.testMode 
+                ? 'Test klart!' 
+                : gameType === 'flashcards' 
+                ? 'Träning klar!' 
+                : 'Spel klart!'}
+            </h2>
+            <p className="text-gray-400">
+              {gameType === 'flashcards' && details.testMode
+                ? `Du har klarat ${details.correctWords || 0} av ${details.totalWords || 0} ord!`
+                : gameType === 'flashcards' 
+                ? `Du har gått igenom alla ${details.wordsReviewed || 0} ord!`
+                : `Du fick ${score} poäng!`
+              }
+            </p>
+          </motion.div>
 
-        {/* Score Highlight */}
-        {gameType !== 'flashcards' && (
-          <div className="mb-6">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Star className={`w-6 h-6 ${getScoreColor()}`} />
-              <span className={`text-2xl font-bold ${getScoreColor()}`}>{score} points</span>
-            </div>
-          </div>
-        )}
-        
-        {/* XP Earned Highlight for Test Mode */}
-        {gameType === 'flashcards' && details.testMode && details.xpEarned !== undefined && (
-          <div className="mb-6">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Star className="w-6 h-6 text-yellow-400" />
-              <span className="text-2xl font-bold text-yellow-400">{details.xpEarned} XP</span>
-            </div>
-            <p className="text-sm text-gray-400">2 XP per klarat ord</p>
-          </div>
-        )}
-        
-        {gameType === 'flashcards' && !details.testMode && (
-          <div className="mb-6">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Star className="w-6 h-6 text-blue-500" />
-              <span className="text-lg font-semibold text-blue-300">Training Mode</span>
-            </div>
-          </div>
-        )}
-
-        {/* Game Statistics */}
-        <div className="space-y-2 mb-6 text-sm text-gray-300">
-          {accuracy !== undefined && (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Target className="w-4 h-4" />
-                <span>Accuracy:</span>
+          {/* Score Highlight */}
+          {gameType !== 'flashcards' && (
+            <motion.div 
+              className="mb-6"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/5 rounded-xl border border-white/10">
+                <Star className={`w-6 h-6 ${getScoreColor()}`} />
+                <span className={`text-2xl font-bold ${getScoreColor()}`}>{score} poäng</span>
               </div>
-              <span className={getAccuracyColor(accuracy)}>{accuracy}%</span>
-            </div>
+            </motion.div>
           )}
           
-          {time && (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                <span>Time:</span>
+          {/* XP Earned Highlight for Test Mode */}
+          {gameType === 'flashcards' && details.testMode && details.xpEarned !== undefined && (
+            <motion.div 
+              className="mb-6"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              <div className="inline-flex items-center gap-3 px-6 py-3 bg-amber-500/20 rounded-xl border border-amber-500/30">
+                <Zap className="w-6 h-6 text-amber-400" />
+                <span className="text-2xl font-bold text-amber-400">{details.xpEarned} XP</span>
               </div>
-              <span>{time}</span>
-            </div>
+              <p className="text-sm text-gray-500 mt-2">2 XP per klarat ord</p>
+            </motion.div>
+          )}
+          
+          {gameType === 'flashcards' && !details.testMode && (
+            <motion.div 
+              className="mb-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/20 rounded-xl border border-cyan-500/30">
+                <Star className="w-5 h-5 text-cyan-400" />
+                <span className="text-sm font-semibold text-cyan-400">Träningsläge</span>
+              </div>
+            </motion.div>
           )}
 
-          {details.wrongAttempts !== undefined && (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Target className="w-4 h-4" />
-                <span>Wrong Attempts:</span>
+          {/* Game Statistics */}
+          <motion.div 
+            className="grid grid-cols-2 gap-3 mb-6"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            {accuracy !== undefined && (
+              <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                <div className="flex items-center gap-2 text-gray-400 text-xs mb-1">
+                  <Target className="w-3 h-3" />
+                  <span>Träffsäkerhet</span>
+                </div>
+                <span className={`text-xl font-bold ${getAccuracyColor(accuracy)}`}>{accuracy}%</span>
               </div>
-              <span>{details.wrongAttempts}</span>
-            </div>
-          )}
+            )}
+            
+            {time && (
+              <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                <div className="flex items-center gap-2 text-gray-400 text-xs mb-1">
+                  <Clock className="w-3 h-3" />
+                  <span>Tid</span>
+                </div>
+                <span className="text-xl font-bold text-white">{time}</span>
+              </div>
+            )}
 
-          {details.streak !== undefined && (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Trophy className="w-4 h-4" />
-                <span>Best Streak:</span>
+            {details.wrongAttempts !== undefined && (
+              <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                <div className="flex items-center gap-2 text-gray-400 text-xs mb-1">
+                  <XCircle className="w-3 h-3" />
+                  <span>Fel försök</span>
+                </div>
+                <span className="text-xl font-bold text-orange-400">{details.wrongAttempts}</span>
               </div>
-              <span>{details.streak}</span>
-            </div>
-          )}
+            )}
 
-          {details.correctAnswers !== undefined && details.totalAttempts !== undefined && (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Gamepad2 className="w-4 h-4" />
-                <span>Correct Answers:</span>
+            {details.streak !== undefined && (
+              <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                <div className="flex items-center gap-2 text-gray-400 text-xs mb-1">
+                  <Trophy className="w-3 h-3" />
+                  <span>Bästa streak</span>
+                </div>
+                <span className="text-xl font-bold text-violet-400">{details.streak}</span>
               </div>
-              <span>{details.correctAnswers}/{details.totalAttempts}</span>
-            </div>
-          )}
+            )}
 
-          {details.incorrectWords !== undefined && details.testMode && (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <XCircle className="w-4 h-4 text-red-400" />
-                <span>Incorrect Words:</span>
+            {details.correctAnswers !== undefined && details.totalAttempts !== undefined && (
+              <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                <div className="flex items-center gap-2 text-gray-400 text-xs mb-1">
+                  <Gamepad2 className="w-3 h-3" />
+                  <span>Rätta svar</span>
+                </div>
+                <span className="text-xl font-bold text-emerald-400">{details.correctAnswers}/{details.totalAttempts}</span>
               </div>
-              <span className="text-red-400">{details.incorrectWords}</span>
-            </div>
-          )}
+            )}
 
-          {details.blocksCompleted !== undefined && details.totalBlocks !== undefined && (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Trophy className="w-4 h-4" />
-                <span>Blocks Completed:</span>
+            {details.xpEarned !== undefined && !details.testMode && (
+              <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                <div className="flex items-center gap-2 text-gray-400 text-xs mb-1">
+                  <Star className="w-3 h-3 text-amber-400" />
+                  <span>XP intjänat</span>
+                </div>
+                <span className="text-xl font-bold text-amber-400">{details.xpEarned}</span>
               </div>
-              <span>{details.blocksCompleted}/{details.totalBlocks}</span>
-            </div>
-          )}
+            )}
+          </motion.div>
 
-          {details.xpEarned !== undefined && (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Star className="w-4 h-4 text-yellow-400" />
-                <span>XP Earned:</span>
-              </div>
-              <span className="text-yellow-400 font-bold">{details.xpEarned} XP</span>
-            </div>
-          )}
-
-          {details.finalScore !== undefined && details.finalScore !== score && (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Star className="w-4 h-4" />
-                <span>Final Score:</span>
-              </div>
-              <span>{details.finalScore} points</span>
-            </div>
-          )}
+          {/* Action Buttons */}
+          <motion.div 
+            className="space-y-3"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            {gameType === 'flashcards' && details.testMode && details.failedWordsCount && details.failedWordsCount > 0 && onRedoFailed ? (
+              <>
+                <button
+                  onClick={onRedoFailed}
+                  className="w-full relative group"
+                >
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl blur opacity-60 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative bg-gradient-to-r from-orange-500 to-amber-500 text-white py-3.5 px-6 rounded-xl font-semibold flex items-center justify-center gap-2">
+                    <RotateCcw className="w-5 h-5" />
+                    <span>Gör om {details.failedWordsCount} ord</span>
+                  </div>
+                </button>
+                <button
+                  onClick={onBackToDashboard}
+                  className="w-full bg-white/5 border border-white/10 text-gray-400 py-3.5 px-6 rounded-xl font-medium hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                  <span>Tillbaka till startsidan</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={onPlayAgain}
+                  className="w-full relative group"
+                >
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-500 to-cyan-500 rounded-xl blur opacity-60 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative bg-gradient-to-r from-violet-500 to-cyan-500 text-white py-3.5 px-6 rounded-xl font-semibold flex items-center justify-center gap-2">
+                    <RotateCcw className="w-5 h-5" />
+                    <span>{gameType === 'flashcards' ? 'Träna igen' : 'Spela igen'}</span>
+                  </div>
+                </button>
+                <button
+                  onClick={onBackToDashboard}
+                  className="w-full bg-white/5 border border-white/10 text-gray-400 py-3.5 px-6 rounded-xl font-medium hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                  <span>Tillbaka till startsidan</span>
+                </button>
+              </>
+            )}
+          </motion.div>
         </div>
-
-        {/* Action Buttons */}
-        <div className="space-y-3">
-          {gameType === 'flashcards' && details.testMode && details.failedWordsCount && details.failedWordsCount > 0 && onRedoFailed ? (
-            <>
-              <button
-                onClick={onRedoFailed}
-                className="w-full bg-orange-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2 shadow-lg"
-              >
-                <RotateCcw className="w-4 h-4" />
-                <span>Gör om de {details.failedWordsCount} orden du inte klarade</span>
-              </button>
-              <button
-                onClick={onBackToDashboard}
-                className="w-full bg-white/10 border border-white/10 text-white py-3 px-6 rounded-lg font-medium hover:bg-white/15 transition-colors flex items-center justify-center space-x-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Gå tillbaka till dashboard</span>
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={onPlayAgain}
-                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 shadow-lg"
-              >
-                <RotateCcw className="w-4 h-4" />
-                <span>{gameType === 'flashcards' ? 'Practice Again' : 'Play Again'}</span>
-              </button>
-              <button
-                onClick={onBackToDashboard}
-                className="w-full bg-white/10 border border-white/10 text-white py-3 px-6 rounded-lg font-medium hover:bg-white/15 transition-colors flex items-center justify-center space-x-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Back to Dashboard</span>
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }

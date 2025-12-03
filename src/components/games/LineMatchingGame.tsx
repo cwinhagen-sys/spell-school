@@ -482,11 +482,11 @@ export default function LineMatchingGame({ words, translations, onClose, onScore
 
   if (floatingWords.length === 0) {
     return (
-      <div className="fixed inset-0 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl border border-gray-100">
+      <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50">
+        <div className="bg-[#12122a] rounded-2xl p-8 max-w-md w-full text-center shadow-2xl border border-white/10">
           <div className="text-6xl mb-4">⏳</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Preparing words...</h2>
-          <p className="text-gray-600">Loading your floating word game</p>
+          <h2 className="text-2xl font-bold text-white mb-2">Förbereder ord...</h2>
+          <p className="text-gray-400">Laddar ditt ordspel</p>
         </div>
       </div>
     )
@@ -495,45 +495,49 @@ export default function LineMatchingGame({ words, translations, onClose, onScore
   const correctCount = matchedPairs.length
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-3xl p-6 w-full max-w-7xl h-[90vh] shadow-2xl border border-gray-100 relative flex flex-col">
+    <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50">
+      {/* Aurora background effects */}
+      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-fuchsia-600/20 rounded-full blur-[100px] animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-violet-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+      
+      <div className="relative bg-[#12122a] rounded-2xl p-6 w-full max-w-7xl h-[90vh] shadow-2xl border border-white/10 flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between mb-4 flex-shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg animate-pulse">
+            <div className="w-12 h-12 bg-gradient-to-br from-fuchsia-500 via-violet-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-fuchsia-500/30">
               <Sparkles className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Floating Word Match</h2>
-              <p className="text-sm text-gray-600">Click matching pairs!</p>
+              <h2 className="text-2xl font-bold text-white">Para ihop ord</h2>
+              <p className="text-sm text-gray-400">Klicka på matchande par!</p>
             </div>
           </div>
 
           <div className="flex items-center space-x-4">
-            <div className="bg-purple-50 px-4 py-2 rounded-xl border-2 border-purple-200">
-              <div className="text-xs text-purple-600 font-medium">Progress</div>
-              <div className="text-xl font-bold text-purple-700">
+            <div className="bg-fuchsia-500/10 px-4 py-2 rounded-xl border border-fuchsia-500/30">
+              <div className="text-xs text-fuchsia-400 font-medium">Framsteg</div>
+              <div className="text-xl font-bold text-fuchsia-300">
                 {correctCount} / {pairs.length}
               </div>
             </div>
             
-            <div className="bg-gray-50 px-4 py-2 rounded-xl border-2 border-gray-200">
-              <div className="text-xs text-gray-600 font-medium">Time</div>
-              <div className="text-xl font-bold text-gray-800">
+            <div className="bg-white/5 px-4 py-2 rounded-xl border border-white/10">
+              <div className="text-xs text-gray-400 font-medium">Tid</div>
+              <div className="text-xl font-bold text-white">
                 {Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, '0')}
               </div>
             </div>
             
             <button
               onClick={restartGame}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 p-3 rounded-xl transition-all shadow-sm hover:shadow-md"
+              className="bg-white/5 hover:bg-white/10 text-gray-400 p-3 rounded-xl transition-all border border-white/10"
             >
               <RotateCcw className="w-5 h-5" />
             </button>
             
             <button 
               onClick={onClose} 
-              className="text-gray-400 hover:text-gray-600 transition-colors p-2"
+              className="text-gray-500 hover:text-gray-300 transition-colors p-2"
             >
               <X className="w-6 h-6" />
             </button>
@@ -541,10 +545,10 @@ export default function LineMatchingGame({ words, translations, onClose, onScore
         </div>
 
         {/* Game Area - Two Sides Layout */}
-        <div className="flex-1 relative bg-gradient-to-br from-purple-100/30 via-pink-100/30 to-orange-100/30 rounded-2xl border-2 border-purple-200/50 overflow-hidden" style={{ minHeight: '600px', maxHeight: 'calc(90vh - 200px)' }}>
+        <div className="flex-1 relative bg-gradient-to-br from-fuchsia-500/5 via-violet-500/5 to-cyan-500/5 rounded-2xl border border-white/10 overflow-hidden" style={{ minHeight: '600px', maxHeight: 'calc(90vh - 200px)' }}>
           {/* Left Side Label - Swedish */}
-          <div className="absolute left-4 top-4 bg-yellow-200 px-4 py-2 rounded-lg border-2 border-yellow-400 z-30">
-            <span className="font-bold text-yellow-900 text-sm">🇸🇪 Svenska</span>
+          <div className="absolute left-4 top-4 bg-amber-500/20 px-4 py-2 rounded-lg border border-amber-500/30 z-30">
+            <span className="font-bold text-amber-400 text-sm">🇸🇪 Svenska</span>
           </div>
           
           {/* Right Side Label - English */}

@@ -735,7 +735,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
                   onChange={(e) => setAnswers(prev => ({ ...prev, [gapIndex]: e.target.value }))}
                   onFocus={() => setActiveIndex(gapIndex)}
                   placeholder={`#${gapIndex}`}
-                  className="inline-block align-baseline mx-1 px-2 py-0.5 rounded bg-gray-50 border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 text-gray-800 placeholder:text-gray-500"
+                  className="inline-block align-baseline mx-1 px-2 py-1 rounded-lg bg-white/5 border border-white/10 focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 text-white placeholder:text-gray-500"
                   style={{ minWidth: '7ch', maxWidth: '22ch' }}
                 />
               )
@@ -753,13 +753,13 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
           const frameClass = isCorrect === null
             ? ''
             : isCorrect
-              ? 'border border-emerald-500/70 bg-emerald-100'
-              : 'border border-rose-500/70 bg-red-100'
+              ? 'border border-emerald-500/50 bg-emerald-500/10'
+              : 'border border-red-500/50 bg-red-500/10'
           
           return (
             <div key={`line-${lineIdx}`} className="flex items-start gap-2">
-              <div className="text-xs text-gray-600 pt-1">{lineIdx + 1}.</div>
-              <div className={`whitespace-pre-wrap leading-7 flex-1 rounded-md px-2 ${frameClass}`}>{rendered}</div>
+              <div className="text-xs text-gray-400 pt-1">{lineIdx + 1}.</div>
+              <div className={`whitespace-pre-wrap leading-7 flex-1 rounded-lg px-2 text-white ${frameClass}`}>{rendered}</div>
             </div>
           )
         })}
@@ -769,11 +769,18 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
 
   if (loading && difficulty) {
     return (
-      <div className="fixed inset-0 bg-white flex items-center justify-center p-4 z-50">
-        <div className="rounded-3xl p-8 max-w-lg w-full shadow-2xl relative bg-white border-2 border-gray-200 text-center">
+      <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50">
+        {/* Aurora background effects */}
+        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-violet-600/20 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-fuchsia-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+        
+        <div className="relative rounded-2xl p-8 max-w-lg w-full shadow-2xl bg-[#12122a] border border-white/10 text-center">
           <div className="mb-6">
-            <div className="text-2xl text-gray-800 font-bold mb-2">Spell School</div>
-            <div className="text-sm text-gray-600">Preparing your word set...</div>
+            <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/30">
+              <FileText className="w-8 h-8 text-white" />
+            </div>
+            <div className="text-2xl text-white font-bold mb-2">Spell School</div>
+            <div className="text-sm text-gray-400">Förbereder ditt ordset...</div>
           </div>
           <MagicalProgressBar progress={loadingProgress} statusText={loadingStatusText} />
         </div>
@@ -783,20 +790,20 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
 
   if (error) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-        <div className="rounded-2xl p-8 max-w-2xl w-full shadow-2xl relative bg-white text-gray-800 border border-gray-200">
-          <div className="text-red-600 mb-4">
-            <h3 className="font-semibold mb-2">Ett fel uppstod vid generering av meningar</h3>
-            <p className="text-sm">{error}</p>
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="relative rounded-2xl p-8 max-w-2xl w-full shadow-2xl bg-[#12122a] border border-white/10">
+          <div className="text-red-400 mb-4">
+            <h3 className="font-semibold mb-2 text-white">Ett fel uppstod vid generering av meningar</h3>
+            <p className="text-sm text-gray-400">{error}</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             {retryCount < maxRetries && (
               <button 
                 onClick={() => {
                   setError(null)
                   setRetryCount(prev => prev + 1)
                 }} 
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="px-4 py-2 bg-violet-500 hover:bg-violet-600 text-white rounded-xl transition-all"
               >
                 Försök igen ({retryCount + 1}/{maxRetries})
               </button>
@@ -808,11 +815,11 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
                 setRetryCount(0)
                 setError(null)
               }} 
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-all"
             >
               Välj andra ord
             </button>
-            <button onClick={onClose} className="px-4 py-2 bg-gray-100 border border-gray-300 text-gray-800 rounded hover:bg-gray-200">
+            <button onClick={onClose} className="px-4 py-2 bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 rounded-xl transition-all">
               Stäng
             </button>
           </div>
@@ -824,30 +831,34 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
   // In session mode, don't show completion screen - just close automatically if 100% correct
   if (submitted && !sessionMode) {
     return (
-      <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-        <div className="bg-white rounded-xl p-6 w-full max-w-2xl shadow-lg border border-gray-200 relative my-4 text-center">
+      <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50 overflow-y-auto">
+        {/* Aurora background effects */}
+        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-violet-600/20 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-fuchsia-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+        
+        <div className="relative bg-[#12122a] rounded-2xl p-6 w-full max-w-2xl shadow-2xl border border-white/10 my-4 text-center">
           {/* Header */}
           <div className="flex items-center justify-center mb-6">
-            <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/30">
               <FileText className="w-6 h-6 text-white" />
             </div>
             <div className="ml-3">
-              <h2 className="text-2xl font-bold text-gray-900">Sentence Gap</h2>
-              <p className="text-sm text-gray-600">Game Complete!</p>
+              <h2 className="text-2xl font-bold text-white">Meningar med luckor</h2>
+              <p className="text-sm text-gray-400">Spelet klart!</p>
             </div>
           </div>
 
           {/* Score Display */}
-          <div className="bg-teal-50 rounded-lg p-6 mb-6 border border-teal-200">
-            <div className="text-3xl font-bold text-teal-900 mb-2">Score: {score} / {blanks * 2}</div>
-            <div className="text-lg text-teal-700">Correct: {Math.floor(score / 2)} / {blanks}</div>
+          <div className="bg-violet-500/10 rounded-xl p-6 mb-6 border border-violet-500/30">
+            <div className="text-3xl font-bold text-violet-300 mb-2">Poäng: {score} / {blanks * 2}</div>
+            <div className="text-lg text-violet-400">Rätt: {Math.floor(score / 2)} / {blanks}</div>
           </div>
 
           <button 
             onClick={onClose} 
-            className="bg-teal-500 hover:bg-teal-600 text-white py-3 px-8 rounded-lg font-semibold transition-all shadow-md"
+            className="bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-400 hover:to-fuchsia-400 text-white py-3 px-8 rounded-xl font-semibold transition-all shadow-lg shadow-violet-500/30"
           >
-            Close
+            Stäng
           </button>
         </div>
       </div>
@@ -895,90 +906,104 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
   // Difficulty pre-selection screen
   if (!difficulty) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-        <div className="rounded-2xl p-8 max-w-2xl w-full text-center shadow-2xl relative bg-white text-gray-800 border border-gray-200">
-          {/* Top Progress Bar */}
-          <div className="h-1 rounded-md mb-6 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="relative w-full max-w-2xl">
+          {/* Glow effect */}
+          <div className="absolute -inset-1 bg-gradient-to-br from-violet-500/30 via-fuchsia-500/20 to-pink-500/30 rounded-3xl blur-xl" />
           
-          {/* Header */}
-          <div className="mb-8">
-            <div className="text-6xl mb-4">📝</div>
-            <h2 className="text-2xl font-bold mb-2">Sentence Gap</h2>
-            <p className="text-gray-600 text-sm">Choose difficulty level</p>
-          </div>
-
-          <div className="mb-8">
-            <h3 className="text-xl font-semibold mb-2">Välj svårighetsgrad</h3>
-            <p className="text-gray-600 text-sm mb-6">Texten genereras först efter att du valt nivå.</p>
-            
-            <div className="flex items-center justify-center gap-4">
-              <button 
-                className="px-8 py-4 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-800 font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105 flex flex-col items-center gap-2"
-                onClick={() => setDifficulty('green')}
-              >
-                <span className="text-3xl">🟢</span>
-                <span>Green</span>
-              </button>
-              <button 
-                className="px-8 py-4 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-800 font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105 flex flex-col items-center gap-2"
-                onClick={() => setDifficulty('yellow')}
-              >
-                <span className="text-3xl">🟡</span>
-                <span>Yellow</span>
-              </button>
-              <button 
-                className="px-8 py-4 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-800 font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105 flex flex-col items-center gap-2"
-                onClick={() => setDifficulty('red')}
-              >
-                <span className="text-3xl">🔴</span>
-                <span>Red</span>
-              </button>
+          <div className="relative rounded-2xl p-8 shadow-2xl bg-[#12122a] border border-white/10 text-center">
+            {/* Header */}
+            <div className="mb-8">
+              <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/30">
+                <FileText className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">Meningar med luckor</h2>
+              <p className="text-gray-400 text-sm">Välj svårighetsgrad</p>
             </div>
-          </div>
 
-          <button 
-            onClick={onClose} 
-            className="px-6 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-          >
-            Avbryt
-          </button>
+            <div className="mb-8">
+              <h3 className="text-xl font-semibold mb-2 text-white">Välj svårighetsgrad</h3>
+              <p className="text-gray-400 text-sm mb-6">Texten genereras först efter att du valt nivå.</p>
+              
+              <div className="flex items-center justify-center gap-4">
+                <button 
+                  className="px-8 py-6 rounded-xl border transition-all shadow-lg hover:shadow-xl hover:scale-105 flex flex-col items-center gap-3 bg-emerald-500/10 border-emerald-500/30 hover:border-emerald-500/50"
+                  onClick={() => setDifficulty('green')}
+                >
+                  <div className="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
+                    <span className="text-white text-xl font-bold">L</span>
+                  </div>
+                  <span className="text-emerald-400 font-semibold">Lätt</span>
+                </button>
+                <button 
+                  className="px-8 py-6 rounded-xl border transition-all shadow-lg hover:shadow-xl hover:scale-105 flex flex-col items-center gap-3 bg-amber-500/10 border-amber-500/30 hover:border-amber-500/50"
+                  onClick={() => setDifficulty('yellow')}
+                >
+                  <div className="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center shadow-lg">
+                    <span className="text-white text-xl font-bold">M</span>
+                  </div>
+                  <span className="text-amber-400 font-semibold">Medel</span>
+                </button>
+                <button 
+                  className="px-8 py-6 rounded-xl border transition-all shadow-lg hover:shadow-xl hover:scale-105 flex flex-col items-center gap-3 bg-red-500/10 border-red-500/30 hover:border-red-500/50"
+                  onClick={() => setDifficulty('red')}
+                >
+                  <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center shadow-lg">
+                    <span className="text-white text-xl font-bold">S</span>
+                  </div>
+                  <span className="text-red-400 font-semibold">Svår</span>
+                </button>
+              </div>
+            </div>
+
+            <button 
+              onClick={onClose} 
+              className="px-6 py-3 bg-white/5 border border-white/10 text-gray-400 rounded-xl font-medium hover:bg-white/10 transition-colors"
+            >
+              Avbryt
+            </button>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-3xl p-6 w-full max-w-6xl shadow-2xl border border-gray-100 relative my-4">
+    <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50 overflow-y-auto">
+      {/* Aurora background effects */}
+      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-violet-600/20 rounded-full blur-[100px] animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-fuchsia-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+      
+      <div className="relative bg-[#12122a] rounded-2xl p-6 w-full max-w-6xl shadow-2xl border border-white/10 my-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-              <span className="text-white text-lg">📝</span>
+            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/30">
+              <FileText className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-800">Sentence Gap</h2>
-              <p className="text-sm text-gray-600">Fill in the missing words</p>
+              <h2 className="text-2xl font-bold text-white">Meningar med luckor</h2>
+              <p className="text-sm text-gray-400">Fyll i de saknade orden</p>
             </div>
           </div>
           <button 
             onClick={onClose} 
-            className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-colors"
+            className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center transition-colors border border-white/10"
           >
-            <span className="text-gray-600 text-xl">×</span>
+            <span className="text-gray-400 text-xl">×</span>
           </button>
         </div>
 
         {/* Error Display */}
         {error && (
           <div className="mb-6">
-            <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 text-center">
-              <div className="text-red-600 text-lg mb-3">⚠️</div>
-              <div className="text-red-800 font-semibold mb-4">{error}</div>
+            <div className="bg-red-500/10 border-2 border-red-500/30 rounded-2xl p-6 text-center">
+              <div className="text-red-400 text-lg mb-3">⚠️</div>
+              <div className="text-red-300 font-semibold mb-4">{error}</div>
               <button
                 onClick={retryGeneration}
                 disabled={isRetrying}
-                className="px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl disabled:shadow-lg"
+                className="px-6 py-3 bg-red-500 hover:bg-red-600 disabled:bg-red-500/50 text-white rounded-xl font-semibold transition-all shadow-lg shadow-red-500/30 hover:shadow-xl disabled:shadow-lg"
               >
                 {isRetrying ? 'Försöker igen...' : 'Försök igen'}
               </button>
@@ -988,28 +1013,35 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
 
         {/* Difficulty Indicator */}
         <div className="mb-6">
-          <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-100 to-indigo-100 px-4 py-2 rounded-2xl border border-blue-200">
-            <span className="text-blue-600">📊</span>
-            <span className="text-sm font-medium text-blue-800">
-              {difficulty ? `Current level: ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}` : 'Välj svårighetsgrad för att generera meningarna.'}
+          <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-xl border ${
+            difficulty === 'green' ? 'bg-emerald-500/10 border-emerald-500/30' :
+            difficulty === 'yellow' ? 'bg-amber-500/10 border-amber-500/30' :
+            'bg-red-500/10 border-red-500/30'
+          }`}>
+            <span className={`text-sm font-medium ${
+              difficulty === 'green' ? 'text-emerald-400' :
+              difficulty === 'yellow' ? 'text-amber-400' :
+              'text-red-400'
+            }`}>
+              {difficulty ? `Nuvarande nivå: ${difficulty === 'green' ? 'Lätt' : difficulty === 'yellow' ? 'Medel' : 'Svår'}` : 'Välj svårighetsgrad för att generera meningarna.'}
             </span>
           </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6 mb-8">
           <div className="lg:col-span-2">
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border-2 border-gray-200 p-6">
+            <div className="bg-gradient-to-br from-white/5 to-white/10 rounded-2xl border border-white/10 p-6">
               {renderGapSentences()}
             </div>
-            <div className="mt-3 text-sm text-gray-600 font-medium">Active blank: {activeIndex ?? '—'}</div>
+            <div className="mt-3 text-sm text-gray-400 font-medium">Aktiv lucka: {activeIndex ?? '—'}</div>
             {/* Hints removed per requirements */}
           </div>
 
           <div>
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl border-2 border-blue-200 p-6">
-              <div className="text-lg font-bold mb-4 text-gray-800 flex items-center">
-                <span className="mr-2">📚</span>
-                Available words
+            <div className="bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 rounded-2xl border border-violet-500/20 p-6">
+              <div className="text-lg font-bold mb-4 text-white flex items-center">
+                <FileText className="w-5 h-5 mr-2 text-violet-400" />
+                Tillgängliga ord
               </div>
               <div className="flex flex-wrap gap-3">
                 {usedWords.map((w, i) => {
@@ -1018,50 +1050,50 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
                   return (
                     <span
                       key={`${w}-${i}`}
-                      className={`select-none px-4 py-2 rounded-2xl border-2 text-sm font-medium transition-all ${
+                      className={`select-none px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
                         isUsed 
-                          ? 'bg-gradient-to-r from-blue-500 to-indigo-500 border-blue-400 text-white shadow-lg' 
-                          : 'bg-white border-gray-300 text-gray-800 hover:bg-gray-50 hover:border-gray-400'
+                          ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500 border-violet-400 text-white shadow-lg' 
+                          : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/20'
                       }`}
-                      title={isUsed ? 'Used in a blank' : 'Not used yet'}
+                      title={isUsed ? 'Används i en lucka' : 'Ej använt ännu'}
                     >
                       {w}
                     </span>
                   )
                 })}
               </div>
-              <div className="mt-4 text-sm text-blue-600 font-medium">💡 Type the words into the blanks. Used words stay blue.</div>
+              <div className="mt-4 text-sm text-violet-400 font-medium">Skriv orden i luckorna. Använda ord blir violetta.</div>
             </div>
           </div>
         </div>
 
         {/* Progress and Actions */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="bg-gradient-to-r from-purple-100 to-pink-100 px-4 py-2 rounded-2xl border border-purple-200">
-            <span className="text-sm font-medium text-purple-800">
-              Blanks: {blanks} • Filled: {Object.values(answers).filter(v => String(v || '').trim()).length}
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <div className="bg-violet-500/10 px-4 py-2 rounded-xl border border-violet-500/30">
+            <span className="text-sm font-medium text-violet-300">
+              Luckor: {blanks} • Fyllda: {Object.values(answers).filter(v => String(v || '').trim()).length}
             </span>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             <button 
               onClick={checkAnswersVisual} 
               disabled={!allAnswered || submitted} 
-              className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-2xl font-semibold disabled:bg-gray-300 disabled:text-gray-500 transition-all shadow-lg hover:shadow-xl disabled:shadow-lg"
+              className="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl font-semibold disabled:bg-white/5 disabled:text-gray-600 disabled:border-white/5 transition-all"
             >
-              Check
+              Kontrollera
             </button>
             <button 
               onClick={submit} 
               disabled={!allAnswered || submitted} 
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl font-semibold disabled:bg-gray-300 disabled:text-gray-500 transition-all shadow-lg hover:shadow-xl disabled:shadow-lg"
+              className="px-6 py-3 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-400 hover:to-fuchsia-400 text-white rounded-xl font-semibold disabled:bg-white/5 disabled:text-gray-600 transition-all shadow-lg shadow-violet-500/30 hover:shadow-xl"
             >
-              Submit
+              Skicka in
             </button>
             <button 
               onClick={onClose} 
-              className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-2xl font-semibold transition-all shadow-lg hover:shadow-xl"
+              className="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 rounded-xl font-semibold transition-all"
             >
-              Close
+              Stäng
             </button>
           </div>
         </div>

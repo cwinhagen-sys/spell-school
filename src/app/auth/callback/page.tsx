@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { isWorkspaceEmail, extractDomain } from '@/lib/google-auth'
+import { Sparkles } from 'lucide-react'
 
 function AuthCallbackContent() {
   const router = useRouter()
@@ -303,9 +304,33 @@ function AuthCallbackContent() {
   }, [router, searchParams])
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <div className="text-center">
-        <p className="text-gray-700 text-lg">{status}</p>
+    <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center p-6">
+      {/* Animated Background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0f0f2a] via-[#0a0a1a] to-[#050510]" />
+        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-purple-600/20 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-amber-500/15 rounded-full blur-[80px]" style={{ animationDelay: '1s' }} />
+      </div>
+      
+      <div className="relative text-center">
+        {/* Animated Logo */}
+        <div className="relative inline-block mb-8">
+          <div className="w-20 h-20 bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 rounded-3xl flex items-center justify-center mx-auto animate-pulse">
+            <Sparkles className="w-10 h-10 text-white" />
+          </div>
+          <div className="absolute -inset-2 bg-gradient-to-br from-amber-400 to-rose-500 rounded-3xl blur-xl opacity-40 animate-pulse" />
+        </div>
+        
+        {/* Spinner */}
+        <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-6" />
+        
+        {/* Status text */}
+        <p className="text-gray-300 text-lg font-medium">{status}</p>
+        
+        {/* Brand name */}
+        <p className="mt-6 text-gray-600 text-sm">
+          Spell<span className="text-amber-500">School</span>
+        </p>
       </div>
     </div>
   )
@@ -314,8 +339,17 @@ function AuthCallbackContent() {
 export default function AuthCallback() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <p className="text-gray-700">Laddar...</p>
+      <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center p-6">
+        {/* Animated Background */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0f0f2a] via-[#0a0a1a] to-[#050510]" />
+          <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-purple-600/20 rounded-full blur-[100px]" />
+        </div>
+        
+        <div className="relative text-center">
+          <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Laddar...</p>
+        </div>
       </div>
     }>
       <AuthCallbackContent />

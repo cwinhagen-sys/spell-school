@@ -2,15 +2,17 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { AlertTriangle, X, Trash2, Plus, Users, FileText, ChevronLeft, Check } from 'lucide-react'
+import { AlertTriangle, X, Trash2, Plus, Users, Check, ArrowRight, RefreshCw, GripVertical, Sparkles, UserMinus, Key } from 'lucide-react'
 import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
+import { canCreateClass, canAddStudentsToClass } from '@/lib/subscription'
+import DeleteStudentModal from '@/components/DeleteStudentModal'
 
 type ClassRow = {
   id: string
   teacher_id: string
   name: string
   created_at: string
-  join_code?: string | null
 }
 
 type ProfileRow = {
@@ -27,7 +29,7 @@ interface StudentData {
 
 export default function TeacherClassesPage() {
   const [loading, setLoading] = useState(true)
-  const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+  const [message, setMessage] = useState<{type: 'success' | 'error' | 'warning', text: string} | null>(null)
   const [classes, setClasses] = useState<ClassRow[]>([])
   const [newClassName, setNewClassName] = useState('')
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null)
@@ -37,18 +39,33 @@ export default function TeacherClassesPage() {
   
   // Create class modal states
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [createMethod, setCreateMethod] = useState<'manual' | 'google'>('manual')
   const [newClassStudents, setNewClassStudents] = useState<StudentData[]>([{ username: '', password: '' }])
   const [pasteText, setPasteText] = useState('')
   const [creatingClass, setCreatingClass] = useState(false)
   const bottomButtonRef = useRef<HTMLDivElement>(null)
   
-  // Google Classroom states
-  const [googleClassroomCourses, setGoogleClassroomCourses] = useState<any[]>([])
-  const [selectedGoogleCourse, setSelectedGoogleCourse] = useState<string | null>(null)
-  const [googleClassroomStudents, setGoogleClassroomStudents] = useState<any[]>([])
-  const [loadingGoogleCourses, setLoadingGoogleCourses] = useState(false)
-  const [googleClassroomConnected, setGoogleClassroomConnected] = useState(false)
+  // Move student modal states
+  const [showMoveModal, setShowMoveModal] = useState(false)
+  const [studentToMove, setStudentToMove] = useState<ProfileRow | null>(null)
+  const [targetClassId, setTargetClassId] = useState<string>('')
+  
+  // Delete student modal states
+  const [showDeleteStudentModal, setShowDeleteStudentModal] = useState(false)
+  const [studentToDelete, setStudentToDelete] = useState<ProfileRow | null>(null)
+  
+  // Bulk password reset states
+  const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set())
+  const [showBulkPasswordModal, setShowBulkPasswordModal] = useState(false)
+  const [bulkPassword, setBulkPassword] = useState('')
+  const [resettingPassword, setResettingPassword] = useState(false)
+  
+  // Bulk delete states
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false)
+  const [deletingStudents, setDeletingStudents] = useState(false)
+  
+  // Drag and drop states
+  const [draggedStudent, setDraggedStudent] = useState<ProfileRow | null>(null)
+  const [dragOverClass, setDragOverClass] = useState<string | null>(null)
 
   useEffect(() => {
     const init = async () => {
@@ -61,22 +78,6 @@ export default function TeacherClassesPage() {
         .single()
       if (!profile || profile.role !== 'teacher') { window.location.href = '/student'; return }
       await fetchClasses()
-      
-      // Check for Google Classroom callback messages
-      const urlParams = new URLSearchParams(window.location.search)
-      const googleClassroomConnected = urlParams.get('googleClassroomConnected')
-      const error = urlParams.get('error')
-      
-      if (googleClassroomConnected === 'true') {
-        setMessage({ type: 'success', text: 'Google Classroom anslutning lyckades!' })
-        // Clear URL params
-        window.history.replaceState({}, '', window.location.pathname)
-      } else if (error) {
-        setMessage({ type: 'error', text: decodeURIComponent(error) })
-        // Clear URL params
-        window.history.replaceState({}, '', window.location.pathname)
-      }
-      
       setLoading(false)
     }
     init()
@@ -89,7 +90,7 @@ export default function TeacherClassesPage() {
       
       const { data, error } = await supabase
         .from('classes')
-        .select('id, teacher_id, name, created_at, join_code')
+        .select('id, teacher_id, name, created_at')
         .eq('teacher_id', user.id)
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
@@ -101,14 +102,78 @@ export default function TeacherClassesPage() {
       setMessage({ type: 'error', text: 'Kunde inte ladda klasser' })
     }
   }
-
-  const generateJoinCode = (length = 6) => {
-    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-    let result = ''
-    for (let i = 0; i < length; i++) {
-      result += alphabet[Math.floor(Math.random() * alphabet.length)]
+  
+  // Get unassigned students (students without active class)
+  const getUnassignedStudents = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return []
+      
+      const { data: teacherClasses } = await supabase
+        .from('classes')
+        .select('id')
+        .eq('teacher_id', user.id)
+      
+      if (!teacherClasses || teacherClasses.length === 0) return []
+      
+      const classIds = teacherClasses.map(c => c.id)
+      
+      const { data: classStudents } = await supabase
+        .from('class_students')
+        .select('student_id, class_id')
+        .in('class_id', classIds)
+        .is('deleted_at', null)
+      
+      const activeStudentIds = new Set((classStudents || []).map(cs => cs.student_id))
+      
+      const { data: deletedClassStudents } = await supabase
+        .from('class_students')
+        .select('student_id, class_id, deleted_at')
+        .in('class_id', classIds)
+        .not('deleted_at', 'is', null)
+      
+      const unassignedStudentIds = new Set<string>()
+      if (deletedClassStudents) {
+        for (const cs of deletedClassStudents) {
+          if (!activeStudentIds.has(cs.student_id)) {
+            unassignedStudentIds.add(cs.student_id)
+          }
+        }
+      }
+      
+      if (unassignedStudentIds.size === 0) return []
+      
+      const studentIdsArray = Array.from(unassignedStudentIds)
+      
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, email, username, name, deleted_at, role')
+        .in('id', studentIdsArray)
+        .eq('role', 'student')
+        .is('deleted_at', null)
+      
+      if (profilesError && profilesError.message) {
+        console.error('Error fetching profiles:', profilesError)
+        return []
+      }
+      
+      const activeProfiles = (profiles || []).filter(p => p.deleted_at === null || p.deleted_at === undefined)
+      
+      return activeProfiles.map(profile => {
+        const username = profile.username || profile.name
+        const displayName = username || profile.email.split('.')[0] || profile.email
+        
+        return {
+          id: profile.id,
+          email: profile.email,
+          username: username,
+          displayName: displayName
+        }
+      })
+    } catch (e) {
+      console.error('Error fetching unassigned students:', e)
+      return []
     }
-    return result
   }
 
   const addStudentRow = () => {
@@ -129,7 +194,7 @@ export default function TeacherClassesPage() {
 
   const handlePasteStudents = () => {
     if (!pasteText.trim()) {
-      setMessage({ type: 'error', text: 'Vänligen klistra in elevdata' })
+      setMessage({ type: 'error', text: 'Klistra in elevdata först' })
       return
     }
 
@@ -165,199 +230,104 @@ export default function TeacherClassesPage() {
 
       setNewClassStudents([...newClassStudents, ...parsedStudents])
       setPasteText('')
-      setMessage({ type: 'success', text: `Lade till ${parsedStudents.length} elev(ar) från klistring` })
+      setMessage({ type: 'success', text: `Lade till ${parsedStudents.length} elev(er) från inklistrad text` })
       
       setTimeout(() => {
         bottomButtonRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
       }, 100)
     } catch (error: any) {
-      setMessage({ type: 'error', text: `Fel vid parsning av klistrad data: ${error.message}` })
+      setMessage({ type: 'error', text: `Fel vid parsning: ${error.message}` })
     }
   }
 
-  const connectGoogleClassroom = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.access_token) {
-        setMessage({ type: 'error', text: 'Inte autentiserad. Vänligen logga in igen.' })
-        return
-      }
-
-      const response = await fetch('/api/auth/google-classroom/authorize', {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`
-        }
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        setMessage({ 
-          type: 'error', 
-          text: data.message || 'Kunde inte initiera Google Classroom-anslutning.' 
-        })
-        return
-      }
-
-      // Redirect to Google OAuth
-      if (data.authUrl) {
-        window.location.href = data.authUrl
-      }
-    } catch (error: any) {
-      setMessage({ 
-        type: 'error', 
-        text: `Fel: ${error.message || 'Kunde inte ansluta till Google Classroom'}` 
-      })
-    }
-  }
-
-  const loadGoogleClassroomCourses = async () => {
-    try {
-      setLoadingGoogleCourses(true)
-      setMessage(null)
-
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.access_token) {
-        setMessage({ type: 'error', text: 'Inte autentiserad. Vänligen logga in igen.' })
-        return
-      }
-
-      const response = await fetch('/api/google-classroom/courses', {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`
-        }
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        if (data.configured === false) {
-          setMessage({ 
-            type: 'error', 
-            text: 'Google Classroom-integration är inte konfigurerad ännu. Kontakta support.' 
-          })
-        } else if (data.connected === false) {
-          // Not connected, show connect button
-          setGoogleClassroomConnected(false)
-          setGoogleClassroomCourses([])
-        } else {
-          setMessage({ 
-            type: 'error', 
-            text: data.message || 'Kunde inte hämta Google Classroom-kurser.' 
-          })
-        }
-        return
-      }
-
-      if (data.error === 'Not connected') {
-        setGoogleClassroomConnected(false)
-        setGoogleClassroomCourses([])
-        return
-      }
-
-      setGoogleClassroomConnected(true)
-      setGoogleClassroomCourses(data.courses || [])
-
-      if (data.courses && data.courses.length === 0) {
-        setMessage({ 
-          type: 'error', 
-          text: 'Inga aktiva kurser hittades i Google Classroom.' 
-        })
-      }
-
-    } catch (error: any) {
-      setMessage({ 
-        type: 'error', 
-        text: `Fel: ${error.message || 'Kunde inte hämta Google Classroom-kurser'}` 
-      })
-    } finally {
-      setLoadingGoogleCourses(false)
-    }
-  }
-
-  const handleGoogleClassroomImport = async () => {
-    await loadGoogleClassroomCourses()
-  }
-
-  const selectGoogleCourse = async (courseId: string) => {
-    try {
-      setSelectedGoogleCourse(courseId)
-      setMessage(null)
-
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.access_token) {
-        setMessage({ type: 'error', text: 'Inte autentiserad. Vänligen logga in igen.' })
-        return
-      }
-
-      const response = await fetch(`/api/google-classroom/students?courseId=${courseId}`, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`
-        }
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        setMessage({ 
-          type: 'error', 
-          text: data.message || 'Kunde inte hämta elever från Google Classroom.' 
-        })
-        return
-      }
-
-      setGoogleClassroomStudents(data.students || [])
-
-      if (data.students && data.students.length === 0) {
-        setMessage({ 
-          type: 'error', 
-          text: 'Inga elever hittades i denna kurs.' 
-        })
-      }
-
-    } catch (error: any) {
-      setMessage({ 
-        type: 'error', 
-        text: `Fel: ${error.message || 'Kunde inte hämta elever'}` 
-      })
-    }
-  }
-
-  const importGoogleClassroomStudents = () => {
-    if (!selectedGoogleCourse || googleClassroomStudents.length === 0) {
-      setMessage({ type: 'error', text: 'Välj en kurs och vänta tills elever laddas.' })
+  const moveStudent = async (student?: ProfileRow, targetClass?: string) => {
+    const studentToMoveLocal = student || studentToMove
+    const targetClassIdLocal = targetClass || targetClassId
+    
+    if (!studentToMoveLocal || !targetClassIdLocal) {
+      setMessage({ type: 'error', text: 'Välj en klass att flytta eleven till' })
       return
     }
 
-    // Convert Google Classroom students to StudentData format
-    const students: StudentData[] = googleClassroomStudents.map((student: any) => {
-      const email = student.profile?.emailAddress || ''
-      const name = student.profile?.name || ''
-      
-      // Generate username from email or name
-      let username = ''
-      if (email) {
-        username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '')
-      } else if (name) {
-        username = name.toLowerCase().replace(/[^a-z0-9]/g, '')
-      } else {
-        username = `student${student.userId.slice(0, 8)}`
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setMessage({ type: 'error', text: 'Inte autentiserad' })
+        return
       }
 
-      // Generate password (can be changed later)
-      const password = `${username}123`
+      const { data: targetClassData, error: classError } = await supabase
+        .from('classes')
+        .select('id, teacher_id')
+        .eq('id', targetClassIdLocal)
+        .eq('teacher_id', user.id)
+        .single()
 
-      return { username, password }
-    })
+      if (classError || !targetClassData) {
+        setMessage({ type: 'error', text: 'Ogiltig klass' })
+        return
+      }
 
-    // Add to newClassStudents
-    setNewClassStudents([...newClassStudents.filter(s => s.username.trim() && s.password.trim()), ...students])
-    setMessage({ type: 'success', text: `Importerade ${students.length} elev(ar) från Google Classroom.` })
-    
-    // Scroll to bottom
-    setTimeout(() => {
-      bottomButtonRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-    }, 100)
+      if (selectedClassId && selectedClassId !== 'unassigned') {
+        const { error: removeError } = await supabase
+          .from('class_students')
+          .update({ deleted_at: new Date().toISOString() })
+          .match({ class_id: selectedClassId, student_id: studentToMoveLocal.id })
+
+        if (removeError) throw removeError
+      }
+
+      const { data: existing, error: checkError } = await supabase
+        .from('class_students')
+        .select('class_id, student_id, deleted_at')
+        .eq('class_id', targetClassIdLocal)
+        .eq('student_id', studentToMoveLocal.id)
+        .maybeSingle()
+
+      if (checkError) throw checkError
+
+      if (existing) {
+        const { error: updateError } = await supabase
+          .from('class_students')
+          .update({ deleted_at: null })
+          .eq('class_id', targetClassIdLocal)
+          .eq('student_id', studentToMoveLocal.id)
+
+        if (updateError) throw updateError
+      } else {
+        const { error: addError } = await supabase
+          .from('class_students')
+          .insert({
+            class_id: targetClassIdLocal,
+            student_id: studentToMoveLocal.id
+          })
+
+        if (addError) throw addError
+      }
+
+      setMessage({ type: 'success', text: `${studentToMoveLocal.displayName} har flyttats till ny klass` })
+      setShowMoveModal(false)
+      if (!student && !targetClass) {
+        setStudentToMove(null)
+        setTargetClassId('')
+      }
+      
+      if (selectedClassId === 'unassigned') {
+        const remainingStudents = selectedClassStudents.filter(s => s.id !== studentToMoveLocal.id)
+        setSelectedClassStudents(remainingStudents)
+      } else if (selectedClassId) {
+        await fetchClassStudents(selectedClassId)
+      }
+    } catch (error: any) {
+      console.error('Error moving student:', error)
+      setMessage({ type: 'error', text: error.message || 'Kunde inte flytta eleven' })
+    }
+  }
+
+  const openMoveModal = (student: ProfileRow) => {
+    setStudentToMove(student)
+    setTargetClassId('')
+    setShowMoveModal(true)
   }
 
   const createClassWithStudents = async () => {
@@ -376,17 +346,24 @@ export default function TeacherClassesPage() {
         return
       }
 
-      // Create class
-      const joinCode = generateJoinCode(6)
+      const canCreate = await canCreateClass(user.id, classes.length)
+      if (!canCreate) {
+        setMessage({ 
+          type: 'error', 
+          text: 'Du har nått maxgränsen för klasser på din plan. Uppgradera för fler klasser.' 
+        })
+        setCreatingClass(false)
+        return
+      }
+
       const { data: newClass, error: classError } = await supabase
         .from('classes')
-        .insert({ name: newClassName.trim(), teacher_id: user.id, join_code: joinCode })
+        .insert({ name: newClassName.trim(), teacher_id: user.id })
         .select()
         .single()
 
       if (classError) throw classError
 
-      // Add students if any
       const validStudents = newClassStudents.filter(s => s.username.trim() && s.password.trim())
       if (validStudents.length > 0) {
         const { data: { session } } = await supabase.auth.getSession()
@@ -416,11 +393,11 @@ export default function TeacherClassesPage() {
         }
       }
 
-      setMessage({ type: 'success', text: `Klass "${newClassName}" skapad${validStudents.length > 0 ? ` med ${validStudents.length} elev(ar)` : ''}!` })
+      setMessage({ type: 'success', text: `Klass "${newClassName}" skapad${validStudents.length > 0 ? ` med ${validStudents.length} elev(er)` : ''}!` })
       setNewClassName('')
       setNewClassStudents([{ username: '', password: '' }])
       setShowCreateModal(false)
-      setCreateMethod('manual')
+      setPasteText('')
       await fetchClasses()
       setSelectedClassId(newClass.id)
       await fetchClassStudents(newClass.id)
@@ -443,18 +420,37 @@ export default function TeacherClassesPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       
+      const { data: classStudents } = await supabase
+        .from('class_students')
+        .select('student_id')
+        .eq('class_id', classToDelete.id)
+        .is('deleted_at', null)
+      
+      if (classStudents && classStudents.length > 0) {
+        await supabase
+          .from('class_students')
+          .update({ deleted_at: new Date().toISOString() })
+          .eq('class_id', classToDelete.id)
+          .is('deleted_at', null)
+      }
+      
       const { error } = await supabase
         .from('classes')
         .update({ deleted_at: new Date().toISOString() })
         .eq('id', classToDelete.id)
         .eq('teacher_id', user.id)
       if (error) throw error
+      
       if (selectedClassId === classToDelete.id) {
         setSelectedClassId(null)
         setSelectedClassStudents([])
       }
+      
       fetchClasses()
-      setMessage({ type: 'success', text: `Klass "${classToDelete.name}" har raderats` })
+      setMessage({ 
+        type: 'success', 
+        text: `Klass "${classToDelete.name}" har raderats. ${classStudents?.length || 0} elev(er) flyttades till Otilldelade.` 
+      })
     } catch {
       setMessage({ type: 'error', text: 'Kunde inte radera klass' })
     } finally {
@@ -471,7 +467,13 @@ export default function TeacherClassesPage() {
   const openClass = async (id: string) => {
     setSelectedClassId(id)
     setMessage(null)
-    await fetchClassStudents(id)
+    setSelectedStudents(new Set())
+    if (id === 'unassigned') {
+      const unassignedStudents = await getUnassignedStudents()
+      setSelectedClassStudents(unassignedStudents)
+    } else {
+      await fetchClassStudents(id)
+    }
   }
 
   const fetchClassStudents = async (classId: string) => {
@@ -495,6 +497,7 @@ export default function TeacherClassesPage() {
         .select('*')
         .in('id', studentIds)
         .eq('role', 'student')
+        .is('deleted_at', null)
       
       if (profilesError) throw profilesError
       
@@ -518,500 +521,1042 @@ export default function TeacherClassesPage() {
     }
   }
 
-  const removeStudent = async (studentId: string) => {
-    if (!selectedClassId) return
+  const handleDeleteStudentClick = (student: ProfileRow) => {
+    setStudentToDelete(student)
+    setShowDeleteStudentModal(true)
+  }
+
+  const removeStudent = async () => {
+    if (!selectedClassId || !studentToDelete) return
+    
+    const action = selectedClassId === 'unassigned' ? 'delete_student' : 'remove_from_class'
+    
     try {
-      const { error } = await supabase
-        .from('class_students')
-        .update({ deleted_at: new Date().toISOString() })
-        .match({ class_id: selectedClassId, student_id: studentId })
-      if (error) throw error
-      fetchClassStudents(selectedClassId)
-      setMessage({ type: 'success', text: 'Elev borttagen' })
-    } catch {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        setMessage({ type: 'error', text: 'Inte autentiserad' })
+        return
+      }
+
+      const response = await fetch('/api/teacher/students', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          action: action,
+          studentId: studentToDelete.id,
+          studentEmail: studentToDelete.email,
+          classId: selectedClassId === 'unassigned' ? null : selectedClassId
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        if (action === 'delete_student') {
+          setMessage({ type: 'success', text: 'Elevkonto raderat' })
+          const remainingStudents = selectedClassStudents.filter(s => s.id !== studentToDelete.id)
+          setSelectedClassStudents(remainingStudents)
+        } else {
+          setMessage({ type: 'success', text: 'Elev borttagen från klass' })
+          await fetchClassStudents(selectedClassId)
+        }
+        
+        setShowDeleteStudentModal(false)
+        setStudentToDelete(null)
+        setSelectedStudents(new Set())
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Kunde inte ta bort elev' })
+      }
+    } catch (error) {
       setMessage({ type: 'error', text: 'Kunde inte ta bort elev' })
     }
   }
+  
+  const handleBulkPasswordReset = async () => {
+    if (selectedStudents.size === 0 || !bulkPassword.trim()) {
+      setMessage({ type: 'error', text: 'Välj elever och ange ett lösenord' })
+      return
+    }
+    
+    if (bulkPassword.length < 6) {
+      setMessage({ type: 'error', text: 'Lösenordet måste vara minst 6 tecken' })
+      return
+    }
+    
+    setResettingPassword(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        setMessage({ type: 'error', text: 'Inte autentiserad' })
+        return
+      }
+      
+      const response = await fetch('/api/teacher/bulk-reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          studentIds: Array.from(selectedStudents),
+          newPassword: bulkPassword
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (response.ok) {
+        setMessage({ type: 'success', text: `Lösenord återställt för ${selectedStudents.size} elev(er)` })
+        setShowBulkPasswordModal(false)
+        setBulkPassword('')
+        setSelectedStudents(new Set())
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Kunde inte återställa lösenord' })
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Kunde inte återställa lösenord' })
+    } finally {
+      setResettingPassword(false)
+    }
+  }
+  
+  const toggleStudentSelection = (studentId: string) => {
+    const newSelection = new Set(selectedStudents)
+    if (newSelection.has(studentId)) {
+      newSelection.delete(studentId)
+    } else {
+      newSelection.add(studentId)
+    }
+    setSelectedStudents(newSelection)
+  }
+  
+  const toggleSelectAll = () => {
+    if (selectedStudents.size === selectedClassStudents.length) {
+      setSelectedStudents(new Set())
+    } else {
+      const allIds = new Set(selectedClassStudents.map(s => s.id))
+      setSelectedStudents(allIds)
+    }
+  }
+  
+  const handleBulkDelete = async () => {
+    if (selectedStudents.size === 0) return
+    
+    setDeletingStudents(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        setMessage({ type: 'error', text: 'Inte autentiserad' })
+        return
+      }
+      
+      const studentIds = Array.from(selectedStudents)
+      const deletePromises = studentIds.map(async (studentId) => {
+        const student = selectedClassStudents.find(s => s.id === studentId)
+        if (!student) return { success: false, studentId, error: 'Elev hittades inte' }
+        
+        try {
+          const response = await fetch('/api/teacher/students', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({
+              action: 'delete_student',
+              studentId: student.id,
+              studentEmail: student.email,
+              classId: selectedClassId === 'unassigned' ? null : selectedClassId
+            })
+          })
+          
+          const data = await response.json()
+          
+          if (response.ok) {
+            return { success: true, studentId }
+          } else {
+            return { success: false, studentId, error: data.error || 'Okänt fel' }
+          }
+        } catch (error: any) {
+          return { success: false, studentId, error: error.message || 'Nätverksfel' }
+        }
+      })
+      
+      const results = await Promise.all(deletePromises)
+      const successful = results.filter(r => r.success).length
+      const failed = results.filter(r => !r.success)
+      const deletedStudentIds = results.filter(r => r.success).map(r => r.studentId)
+      
+      if (successful > 0) {
+        const remainingStudents = selectedClassStudents.filter(
+          student => !deletedStudentIds.includes(student.id)
+        )
+        setSelectedClassStudents(remainingStudents)
+        
+        if (failed.length > 0) {
+          setMessage({ type: 'warning', text: `Raderade ${successful} konton. ${failed.length} misslyckades.` })
+        } else {
+          setMessage({ type: 'success', text: `Raderade ${successful} elevkonto(n)` })
+        }
+        
+        setShowBulkDeleteModal(false)
+        setSelectedStudents(new Set())
+      } else {
+        setMessage({ type: 'error', text: 'Kunde inte radera elevkonton' })
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Kunde inte radera elevkonton' })
+    } finally {
+      setDeletingStudents(false)
+    }
+  }
+  
+  const handleDragStart = (student: ProfileRow) => {
+    setDraggedStudent(student)
+  }
+  
+  const handleDragOver = (e: React.DragEvent, classId: string | 'unassigned') => {
+    e.preventDefault()
+    setDragOverClass(classId)
+  }
+  
+  const handleDragLeave = () => {
+    setDragOverClass(null)
+  }
+  
+  const handleDrop = async (e: React.DragEvent, targetClassId: string | 'unassigned') => {
+    e.preventDefault()
+    setDragOverClass(null)
+    
+    if (!draggedStudent) return
+    
+    if (targetClassId === 'unassigned') {
+      const tempStudent = draggedStudent
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session?.access_token) {
+          setMessage({ type: 'error', text: 'Inte autentiserad' })
+          setDraggedStudent(null)
+          return
+        }
+
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          setDraggedStudent(null)
+          return
+        }
+
+        const { data: teacherClasses } = await supabase
+          .from('classes')
+          .select('id')
+          .eq('teacher_id', user.id)
+          .is('deleted_at', null)
+
+        if (!teacherClasses || teacherClasses.length === 0) {
+          setMessage({ type: 'error', text: 'Inga klasser hittades' })
+          setDraggedStudent(null)
+          return
+        }
+
+        const classIds = teacherClasses.map(c => c.id)
+
+        const { data: classStudents } = await supabase
+          .from('class_students')
+          .select('class_id')
+          .eq('student_id', tempStudent.id)
+          .in('class_id', classIds)
+          .is('deleted_at', null)
+          .limit(1)
+
+        if (!classStudents || classStudents.length === 0) {
+          setMessage({ type: 'error', text: 'Eleven hittades inte i någon klass' })
+          setDraggedStudent(null)
+          return
+        }
+
+        const studentClassId = classStudents[0].class_id
+
+        const response = await fetch('/api/teacher/students', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({
+            action: 'remove_from_class',
+            studentId: tempStudent.id,
+            studentEmail: tempStudent.email,
+            classId: studentClassId
+          })
+        })
+
+        const data = await response.json()
+
+        if (response.ok) {
+          if (selectedClassId === studentClassId) {
+            const remainingStudents = selectedClassStudents.filter(s => s.id !== tempStudent.id)
+            setSelectedClassStudents(remainingStudents)
+          }
+
+          if (selectedClassId === 'unassigned') {
+            const studentAlreadyInList = selectedClassStudents.find(s => s.id === tempStudent.id)
+            if (!studentAlreadyInList) {
+              setSelectedClassStudents([...selectedClassStudents, tempStudent])
+            }
+          }
+
+          setTimeout(async () => {
+            const unassignedStudents = await getUnassignedStudents()
+            if (selectedClassId === 'unassigned') {
+              setSelectedClassStudents(unassignedStudents)
+            }
+          }, 500)
+
+          setMessage({ type: 'success', text: `${tempStudent.displayName} flyttades till otilldelade` })
+        } else {
+          setMessage({ type: 'error', text: data.error || 'Kunde inte flytta eleven' })
+        }
+      } catch (error) {
+        setMessage({ type: 'error', text: 'Kunde inte flytta eleven' })
+      }
+      
+      setDraggedStudent(null)
+      return
+    }
+    
+    if (targetClassId !== selectedClassId && targetClassId !== 'unassigned') {
+      const tempStudent = draggedStudent
+      const tempTargetClassId = targetClassId
+      
+      await moveStudent(tempStudent, tempTargetClassId)
+      
+      if (selectedClassId === 'unassigned' || selectedClassId) {
+        const remainingStudents = selectedClassStudents.filter(s => s.id !== tempStudent.id)
+        setSelectedClassStudents(remainingStudents)
+      }
+      
+      setDraggedStudent(null)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Laddar klasser...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link href="/teacher" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <ChevronLeft className="w-5 h-5 text-gray-600" />
-              </Link>
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <Users className="w-5 h-5 text-white" />
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="w-14 h-14 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-2xl flex items-center justify-center">
+                <Users className="w-7 h-7 text-white" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-800">Klasser</h1>
-                <p className="text-sm text-gray-600">Hantera dina klasser och elever</p>
-              </div>
+              <div className="absolute -inset-1 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-2xl blur opacity-30" />
             </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition-colors shadow-md"
-            >
-              <Plus className="w-4 h-4" />
+            <div>
+              <h1 className="text-2xl font-bold text-white">Hantera elever och klasser</h1>
+              <p className="text-gray-400">Organisera elever, återställ lösenord och hantera klasser</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="group relative inline-flex items-center justify-center gap-2"
+          >
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl blur opacity-60 group-hover:opacity-100 transition-opacity" />
+            <span className="relative bg-gradient-to-r from-amber-500 to-orange-600 text-white px-5 py-3 rounded-xl font-semibold inline-flex items-center gap-2 hover:from-amber-400 hover:to-orange-500 transition-all">
+              <Plus className="w-5 h-5" />
               Skapa klass
-            </button>
-          </div>
+            </span>
+          </button>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="container mx-auto px-6 py-8">
-        {/* Message */}
+      {/* Message */}
+      <AnimatePresence>
         {message && (
-          <div className={`mb-6 p-4 rounded-lg ${
-            message.type === 'success' 
-              ? 'bg-green-50 border border-green-200 text-green-700' 
-              : 'bg-red-50 border border-red-200 text-red-700'
-          }`}>
-            <div className="flex items-center gap-2">
-              {message.type === 'success' ? (
-                <Check className="w-5 h-5" />
-              ) : (
-                <X className="w-5 h-5" />
-              )}
-              {message.text}
-            </div>
-          </div>
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className={`mb-6 p-4 rounded-xl border flex items-center gap-3 ${
+              message.type === 'success' 
+                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                : message.type === 'warning'
+                ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                : 'bg-red-500/10 border-red-500/20 text-red-400'
+            }`}
+          >
+            {message.type === 'success' ? (
+              <Check className="w-5 h-5 flex-shrink-0" />
+            ) : message.type === 'warning' ? (
+              <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+            ) : (
+              <X className="w-5 h-5 flex-shrink-0" />
+            )}
+            <span className="flex-1">{message.text}</span>
+            <button onClick={() => setMessage(null)} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
         )}
+      </AnimatePresence>
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Classes List */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">Dina klasser</h2>
-              <div className="space-y-2">
-                {classes.map((c) => (
-                  <div
-                    key={c.id}
-                    className={`w-full p-4 rounded-lg border-2 transition-all ${
-                      selectedClassId === c.id
-                        ? 'border-indigo-500 bg-indigo-50 shadow-md'
-                        : 'border-gray-200 bg-gray-50 hover:border-indigo-300 hover:bg-indigo-50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <button
-                        onClick={() => openClass(c.id)}
-                        className="flex-1 text-left"
-                      >
-                        <div className="font-medium text-gray-800">{c.name}</div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          Join code: <span className="font-mono font-semibold">{c.join_code ?? '—'}</span>
-                        </div>
-                      </button>
-                      <button
-                        onClick={() => confirmDeleteClass(c)}
-                        className="p-1 text-red-400 hover:text-red-600 transition-colors flex-shrink-0"
-                        title="Radera klass"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Classes List */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.1 }}
+          className="lg:col-span-1"
+        >
+          <div className="bg-[#12122a] border border-white/5 rounded-2xl p-6">
+            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-amber-500" />
+              Dina klasser
+            </h2>
+            <div className="space-y-2">
+              {/* Unassigned */}
+              <div
+                className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                  selectedClassId === 'unassigned'
+                    ? 'border-amber-500/50 bg-amber-500/10'
+                    : 'border-white/5 bg-white/5 hover:border-white/10 hover:bg-white/10'
+                } ${dragOverClass === 'unassigned' ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-[#12122a]' : ''}`}
+                onClick={() => openClass('unassigned')}
+                onDragOver={(e) => handleDragOver(e, 'unassigned')}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, 'unassigned')}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gray-600/50 flex items-center justify-center">
+                    <UserMinus className="w-5 h-5 text-gray-400" />
                   </div>
-                ))}
-                {classes.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Inga klasser ännu</p>
-                    <p className="text-xs mt-1">Klicka på "Skapa klass" för att börja</p>
+                  <div>
+                    <div className="font-medium text-white">Otilldelade</div>
+                    <div className="text-xs text-gray-500">Elever utan aktiv klass</div>
                   </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Class Details */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-800">
-                  {selectedClassId ? 'Elever i klassen' : 'Välj en klass'}
-                </h2>
-                {selectedClassId && (
-                  <Link
-                    href={`/teacher/add-students?class=${selectedClassId}`}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Lägg till elever
-                  </Link>
-                )}
+                </div>
               </div>
               
-              {!selectedClassId ? (
-                <div className="text-center py-12 text-gray-500">
-                  <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p>Välj en klass för att se elever</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {selectedClassStudents.map(s => (
-                    <div key={s.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-indigo-50 hover:border-indigo-300 transition-all">
-                      <div>
-                        <div className="font-medium text-sm text-gray-800">{s.displayName}</div>
-                        {(!/@local\.local$/i.test(s.email)) && (
-                          <div className="text-gray-500 text-xs">{s.email}</div>
-                        )}
+              {classes.map((c, index) => (
+                <motion.div
+                  key={c.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                    selectedClassId === c.id
+                      ? 'border-teal-500/50 bg-teal-500/10'
+                      : 'border-white/5 bg-white/5 hover:border-white/10 hover:bg-white/10'
+                  } ${dragOverClass === c.id ? 'ring-2 ring-teal-400 ring-offset-2 ring-offset-[#12122a]' : ''}`}
+                  onClick={() => openClass(c.id)}
+                  onDragOver={(e) => handleDragOver(e, c.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, c.id)}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center flex-shrink-0">
+                        <Users className="w-5 h-5 text-white" />
                       </div>
-                      <button 
-                        onClick={() => removeStudent(s.id)} 
-                        className="p-1 text-red-400 hover:text-red-600 transition-colors"
-                        title="Ta bort elev"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="min-w-0">
+                        <div className="font-medium text-white truncate">{c.name}</div>
+                      </div>
                     </div>
-                  ))}
-                  {selectedClassStudents.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">Inga elever i denna klass</p>
-                      <Link
-                        href={`/teacher/add-students?class=${selectedClassId}`}
-                        className="mt-4 inline-block px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
-                      >
-                        Lägg till elever
-                      </Link>
-                    </div>
-                  )}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); confirmDeleteClass(c) }}
+                      className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors flex-shrink-0"
+                      title="Radera klass"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+              
+              {classes.length === 0 && (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                    <Users className="w-8 h-8 text-gray-500" />
+                  </div>
+                  <p className="text-gray-500 text-sm">Inga klasser ännu</p>
+                  <p className="text-gray-600 text-xs mt-1">Klicka "Skapa klass" för att börja</p>
                 </div>
               )}
             </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
 
-      {/* Create Class Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowCreateModal(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-800">Skapa ny klass</h2>
-                <button
-                  onClick={() => {
-                    setShowCreateModal(false)
-                    setNewClassName('')
-                    setNewClassStudents([{ username: '', password: '' }])
-                    setCreateMethod('manual')
-                    setPasteText('')
-                    setGoogleClassroomCourses([])
-                    setSelectedGoogleCourse(null)
-                    setGoogleClassroomStudents([])
-                    setGoogleClassroomConnected(false)
-                  }}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        {/* Class Details */}
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+          className="lg:col-span-2"
+        >
+          <div className="bg-[#12122a] border border-white/5 rounded-2xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white">
+                {selectedClassId === 'unassigned' 
+                  ? 'Otilldelade elever' 
+                  : selectedClassId 
+                  ? `Elever i ${classes.find(c => c.id === selectedClassId)?.name || 'klass'}`
+                  : 'Välj en klass'}
+              </h2>
+              {selectedClassId && selectedClassId !== 'unassigned' && selectedClassStudents.length > 0 && (
+                <Link
+                  href={`/teacher/add-students?class=${selectedClassId}`}
+                  className="text-sm text-amber-500 hover:text-amber-400 font-medium"
                 >
-                  <X className="w-5 h-5 text-gray-600" />
-                </button>
-              </div>
+                  Lägg till elever
+                </Link>
+              )}
             </div>
-
-            <div className="p-6 space-y-6">
-              {/* Class Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Klassnamn *
-                </label>
-                <input
-                  type="text"
-                  value={newClassName}
-                  onChange={(e) => setNewClassName(e.target.value)}
-                  placeholder="t.ex. 5A, Engelska A, etc."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
-              </div>
-
-              {/* Import Method */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Lägg till elever (valfritt)
-                </label>
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <button
-                    onClick={() => setCreateMethod('manual')}
-                    className={`p-4 rounded-lg border-2 transition-all ${
-                      createMethod === 'manual'
-                        ? 'border-indigo-600 bg-indigo-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <Plus className="w-6 h-6 mx-auto mb-2 text-indigo-600" />
-                    <div className="font-medium text-gray-800 text-sm">Manuellt</div>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setCreateMethod('google')
-                      setGoogleClassroomCourses([])
-                      setSelectedGoogleCourse(null)
-                      setGoogleClassroomStudents([])
-                      handleGoogleClassroomImport()
-                    }}
-                    className={`p-4 rounded-lg border-2 transition-all ${
-                      createMethod === 'google'
-                        ? 'border-indigo-600 bg-indigo-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <FileText className="w-6 h-6 mx-auto mb-2 text-indigo-600" />
-                    <div className="font-medium text-gray-800 text-sm">Google Classroom</div>
-                  </button>
+            
+            {/* Bulk actions bar */}
+            {selectedClassId && (
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3 p-3 bg-white/5 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedClassStudents.length > 0 && selectedStudents.size === selectedClassStudents.length}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 text-amber-500 bg-white/10 border-white/20 rounded focus:ring-amber-500 focus:ring-offset-0"
+                  />
+                  <span className="text-sm text-gray-400">
+                    {selectedStudents.size > 0 
+                      ? `${selectedStudents.size} av ${selectedClassStudents.length} valda`
+                      : 'Markera alla'}
+                  </span>
                 </div>
-
-                {/* Paste Area */}
-                {createMethod === 'manual' && (
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Klistra in elevlista (format: användarnamn,lösenord - en per rad)
-                    </label>
-                    <textarea
-                      value={pasteText}
-                      onChange={(e) => setPasteText(e.target.value)}
-                      placeholder="alice,lösenord123&#10;bob,lösenord456&#10;charlie,lösenord789"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"
-                      rows={4}
-                    />
+                {selectedStudents.size > 0 && (
+                  <div className="flex flex-wrap gap-2">
                     <button
-                      onClick={handlePasteStudents}
-                      className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm"
+                      onClick={() => setShowBulkPasswordModal(true)}
+                      className="px-3 py-1.5 bg-amber-500/20 text-amber-400 rounded-lg text-sm font-medium hover:bg-amber-500/30 transition-colors flex items-center gap-2"
                     >
-                      Importera elever
+                      <Key className="w-4 h-4" />
+                      Återställ lösenord
+                    </button>
+                    <button
+                      onClick={() => setShowBulkDeleteModal(true)}
+                      className="px-3 py-1.5 bg-red-500/20 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/30 transition-colors flex items-center gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Radera konton
+                    </button>
+                    <button
+                      onClick={() => setSelectedStudents(new Set())}
+                      className="px-3 py-1.5 bg-white/10 text-gray-400 rounded-lg text-sm font-medium hover:bg-white/20 transition-colors"
+                    >
+                      Rensa
                     </button>
                   </div>
                 )}
-
-                {/* Google Classroom Import */}
-                {createMethod === 'google' && (
-                  <div className="mt-4 space-y-4">
-                    {!googleClassroomConnected ? (
-                      <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded-lg">
-                        <FileText className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                        <p className="text-sm text-gray-600 mb-4">
-                          Anslut ditt Google Classroom-konto för att importera elever
-                        </p>
-                        <button
-                          onClick={connectGoogleClassroom}
-                          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
-                        >
-                          Anslut Google Classroom
-                        </button>
+              </div>
+            )}
+            
+            {!selectedClassId ? (
+              <div className="text-center py-16">
+                <div className="w-20 h-20 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Users className="w-10 h-10 text-gray-500" />
+                </div>
+                <p className="text-gray-400">Välj en klass för att se elever</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {selectedClassStudents.map((s, index) => (
+                  <motion.div
+                    key={s.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.02 }}
+                    draggable
+                    onDragStart={() => handleDragStart(s)}
+                    className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-move ${
+                      selectedStudents.has(s.id) 
+                        ? 'bg-amber-500/10 border-amber-500/30' 
+                        : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={selectedStudents.has(s.id)}
+                        onChange={() => toggleStudentSelection(s.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-4 h-4 text-amber-500 bg-white/10 border-white/20 rounded focus:ring-amber-500 focus:ring-offset-0"
+                      />
+                      <GripVertical className="w-4 h-4 text-gray-600" />
+                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                        {s.displayName?.[0]?.toUpperCase() || '?'}
                       </div>
-                    ) : (
-                      <>
-                        <div className="flex items-center justify-between">
-                          <label className="block text-sm font-medium text-gray-700">
-                            Välj Google Classroom-kurs
-                          </label>
-                          <button
-                            onClick={loadGoogleClassroomCourses}
-                            disabled={loadingGoogleCourses}
-                            className="text-sm text-indigo-600 hover:text-indigo-700 disabled:opacity-50"
+                      <div className="min-w-0">
+                        <div className="font-medium text-white truncate">{s.displayName}</div>
+                        {(!/@local\.local$/i.test(s.email)) && (
+                          <div className="text-gray-500 text-xs truncate">{s.email}</div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {selectedClassId !== 'unassigned' && (
+                        <>
+                          <button 
+                            onClick={() => openMoveModal(s)} 
+                            className="p-2 text-gray-500 hover:text-teal-400 hover:bg-teal-500/10 rounded-lg transition-colors"
+                            title="Flytta till annan klass"
                           >
-                            {loadingGoogleCourses ? 'Laddar...' : 'Uppdatera'}
+                            <ArrowRight className="w-4 h-4" />
                           </button>
-                        </div>
-                        
-                        {loadingGoogleCourses ? (
-                          <div className="text-center py-4 text-gray-500">
-                            <p>Laddar kurser...</p>
-                          </div>
-                        ) : googleClassroomCourses.length === 0 ? (
-                          <div className="text-center py-4 text-gray-500">
-                            <p>Inga kurser hittades</p>
-                          </div>
-                        ) : (
-                          <div className="space-y-2 max-h-48 overflow-y-auto">
-                            {googleClassroomCourses.map((course: any) => (
-                              <button
-                                key={course.id}
-                                onClick={() => selectGoogleCourse(course.id)}
-                                className={`w-full p-3 text-left rounded-lg border-2 transition-all ${
-                                  selectedGoogleCourse === course.id
-                                    ? 'border-indigo-500 bg-indigo-50'
-                                    : 'border-gray-200 hover:border-indigo-300 hover:bg-indigo-50'
-                                }`}
-                              >
-                                <div className="font-medium text-sm text-gray-800">{course.name}</div>
-                                {course.section && (
-                                  <div className="text-xs text-gray-500 mt-1">{course.section}</div>
-                                )}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-
-                        {selectedGoogleCourse && googleClassroomStudents.length > 0 && (
-                          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                            <p className="text-sm text-green-800 mb-2">
-                              {googleClassroomStudents.length} elev(ar) hittades i denna kurs
-                            </p>
-                            <button
-                              onClick={importGoogleClassroomStudents}
-                              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                            >
-                              Importera elever
-                            </button>
-                          </div>
-                        )}
-                      </>
+                          <button 
+                            onClick={() => handleDeleteStudentClick(s)} 
+                            className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                            title="Ta bort elev"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+                {selectedClassStudents.length === 0 && (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <Users className="w-8 h-8 text-gray-500" />
+                    </div>
+                    <p className="text-gray-500 text-sm">
+                      {selectedClassId === 'unassigned' 
+                        ? 'Inga otilldelade elever' 
+                        : 'Inga elever i denna klass'}
+                    </p>
+                    {selectedClassId && selectedClassId !== 'unassigned' && (
+                      <Link
+                        href={`/teacher/add-students?class=${selectedClassId}`}
+                        className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-amber-500/20 text-amber-400 rounded-xl text-sm font-medium hover:bg-amber-500/30 transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Lägg till elever
+                      </Link>
                     )}
                   </div>
                 )}
-
-                {/* Manual Entry */}
-                {createMethod === 'manual' && (
-                  <div className="mt-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Elever ({newClassStudents.length})
-                      </label>
-                      <button
-                        onClick={addStudentRow}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 transition-colors"
-                      >
-                        <Plus className="w-3 h-3" />
-                        Lägg till
-                      </button>
-                    </div>
-
-                    <div className="space-y-3 max-h-64 overflow-y-auto">
-                      {newClassStudents.map((student, index) => (
-                        <div key={index} className="grid grid-cols-2 gap-3">
-                          <input
-                            type="text"
-                            value={student.username}
-                            onChange={(e) => updateStudent(index, 'username', e.target.value)}
-                            placeholder="Användarnamn"
-                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                          />
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              value={student.password}
-                              onChange={(e) => updateStudent(index, 'password', e.target.value)}
-                              placeholder="Lösenord"
-                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                            />
-                            {newClassStudents.length > 1 && (
-                              <button
-                                onClick={() => removeStudentRow(index)}
-                                className="p-2 text-red-400 hover:text-red-600 transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Bottom Add Button */}
-                    <div ref={bottomButtonRef} className="mt-4 pt-4 border-t border-gray-200">
-                      <button
-                        onClick={() => {
-                          addStudentRow()
-                          setTimeout(() => {
-                            bottomButtonRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-                          }, 100)
-                        }}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors border-2 border-dashed border-indigo-300"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span className="font-medium text-sm">Lägg till fler elever</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
-
-              {/* Actions */}
-              <div className="flex gap-3 pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => {
-                    setShowCreateModal(false)
-                    setNewClassName('')
-                    setNewClassStudents([{ username: '', password: '' }])
-                    setCreateMethod('manual')
-                    setPasteText('')
-                    setGoogleClassroomCourses([])
-                    setSelectedGoogleCourse(null)
-                    setGoogleClassroomStudents([])
-                    setGoogleClassroomConnected(false)
-                  }}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
-                >
-                  Avbryt
-                </button>
-                <button
-                  onClick={createClassWithStudents}
-                  disabled={creatingClass || !newClassName.trim()}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                >
-                  {creatingClass ? 'Skapar...' : 'Skapa klass'}
-                </button>
-              </div>
-            </div>
+            )}
           </div>
-        </div>
-      )}
+        </motion.div>
+      </div>
+
+      {/* Create Class Modal */}
+      <AnimatePresence>
+        {showCreateModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowCreateModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-3xl blur-xl" />
+              <div className="relative bg-[#12122a] border border-white/10 rounded-3xl">
+                <div className="p-6 border-b border-white/5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+                        <Plus className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold text-white">Skapa ny klass</h2>
+                        <p className="text-sm text-gray-500">Ge klassen ett namn</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowCreateModal(false)
+                        setNewClassName('')
+                        setNewClassStudents([{ username: '', password: '' }])
+                        setPasteText('')
+                      }}
+                      className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+                    >
+                      <X className="w-5 h-5 text-gray-400" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-6 space-y-6">
+                  {/* Class Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Klassnamn *
+                    </label>
+                    <input
+                      type="text"
+                      value={newClassName}
+                      onChange={(e) => setNewClassName(e.target.value)}
+                      placeholder="t.ex. 5A, Engelska A, etc."
+                      className="w-full px-4 py-4 bg-white/5 border border-white/10 rounded-xl text-white text-lg placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all"
+                      autoFocus
+                    />
+                    <p className="mt-2 text-xs text-gray-500">
+                      Du kan lägga till elever efter att klassen har skapats
+                    </p>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={() => {
+                        setShowCreateModal(false)
+                        setNewClassName('')
+                        setNewClassStudents([{ username: '', password: '' }])
+                        setPasteText('')
+                      }}
+                      className="flex-1 px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-gray-400 hover:bg-white/10 transition-colors font-medium"
+                    >
+                      Avbryt
+                    </button>
+                    <button
+                      onClick={createClassWithStudents}
+                      disabled={creatingClass || !newClassName.trim()}
+                      className="flex-1 px-4 py-3.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl font-semibold hover:from-amber-400 hover:to-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-amber-500/20"
+                    >
+                      {creatingClass ? 'Skapar...' : 'Skapa klass'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Delete Warning Modal */}
-      {showDeleteWarning && classToDelete && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                <AlertTriangle className="w-6 h-6 text-red-600" />
+      <AnimatePresence>
+        {showDeleteWarning && classToDelete && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-md"
+            >
+              <div className="absolute -inset-1 bg-gradient-to-br from-red-500/20 to-rose-500/20 rounded-3xl blur-xl" />
+              <div className="relative bg-[#12122a] border border-white/10 rounded-3xl p-6">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-14 h-14 bg-red-500/20 rounded-2xl flex items-center justify-center">
+                    <AlertTriangle className="w-7 h-7 text-red-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">Radera klass</h3>
+                    <p className="text-sm text-gray-400">Detta kan inte ångras</p>
+                  </div>
+                </div>
+                
+                <div className="mb-6">
+                  <p className="text-gray-300 mb-4">
+                    Är du säker på att du vill radera <strong className="text-white">"{classToDelete.name}"</strong>?
+                  </p>
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
+                    <h4 className="font-semibold text-red-400 mb-2 flex items-center gap-2">
+                      <Trash2 className="w-4 h-4" />
+                      Varning: Detta raderar:
+                    </h4>
+                    <ul className="text-sm text-red-300/80 space-y-1">
+                      <li>• Alla elevers progress och poäng</li>
+                      <li>• Alla tilldelningar för klassen</li>
+                      <li>• Klassens inställningar</li>
+                    </ul>
+                  </div>
+                </div>
+                
+                <div className="flex gap-3">
+                  <button
+                    onClick={cancelDelete}
+                    className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-gray-400 hover:bg-white/10 transition-colors font-medium"
+                  >
+                    Avbryt
+                  </button>
+                  <button
+                    onClick={deleteClass}
+                    className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Radera
+                  </button>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800">Radera klass</h3>
-                <p className="text-sm text-gray-600">Denna åtgärd kan inte ångras</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Move Student Modal */}
+      <AnimatePresence>
+        {showMoveModal && studentToMove && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowMoveModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="absolute -inset-1 bg-gradient-to-br from-teal-500/20 to-emerald-500/20 rounded-3xl blur-xl" />
+              <div className="relative bg-[#12122a] border border-white/10 rounded-3xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-white">Flytta elev</h3>
+                  <button
+                    onClick={() => { setShowMoveModal(false); setStudentToMove(null); setTargetClassId('') }}
+                    className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-400" />
+                  </button>
+                </div>
+                
+                <div className="mb-6">
+                  <p className="text-gray-300 mb-4">
+                    Flytta <strong className="text-white">{studentToMove.displayName}</strong> till:
+                  </p>
+                  <select
+                    value={targetClassId}
+                    onChange={(e) => setTargetClassId(e.target.value)}
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500/50 outline-none transition-all"
+                  >
+                    <option value="" className="bg-[#12122a]">Välj klass...</option>
+                    {classes.filter(c => c.id !== selectedClassId).map(c => (
+                      <option key={c.id} value={c.id} className="bg-[#12122a]">{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => { setShowMoveModal(false); setStudentToMove(null); setTargetClassId('') }}
+                    className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-gray-400 hover:bg-white/10 transition-colors font-medium"
+                  >
+                    Avbryt
+                  </button>
+                  <button
+                    onClick={() => moveStudent()}
+                    disabled={!targetClassId}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-xl font-medium hover:from-teal-400 hover:to-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                  >
+                    <ArrowRight className="w-4 h-4" />
+                    Flytta
+                  </button>
+                </div>
               </div>
-            </div>
-            
-            <div className="mb-6">
-              <p className="text-gray-700 mb-3">
-                Är du säker på att du vill radera klassen <strong>"{classToDelete.name}"</strong>?
-              </p>
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <h4 className="font-semibold text-red-800 mb-2 flex items-center gap-2">
-                  <Trash2 className="w-4 h-4" />
-                  Varning: Detta kommer att radera:
-                </h4>
-                <ul className="text-sm text-red-700 space-y-1">
-                  <li>• All elevframsteg och poäng</li>
-                  <li>• Alla tilldelningar för denna klass</li>
-                  <li>• Alla elev-klass-kopplingar</li>
-                  <li>• Klassens join-kod och inställningar</li>
-                </ul>
-              </div>
-            </div>
-            
-            <div className="flex gap-3">
-              <button
-                onClick={cancelDelete}
-                className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Avbryt
-              </button>
-              <button
-                onClick={deleteClass}
-                className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
-              >
-                <Trash2 className="w-4 h-4" />
-                Radera klass
-              </button>
-            </div>
-          </div>
-        </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Student Modal */}
+      {showDeleteStudentModal && studentToDelete && selectedClassId && (
+        <DeleteStudentModal
+          student={{
+            id: studentToDelete.id,
+            name: studentToDelete.displayName,
+            email: studentToDelete.email,
+            class_name: selectedClassId === 'unassigned' ? 'Otilldelade' : classes.find(c => c.id === selectedClassId)?.name || 'Okänd klass'
+          }}
+          isOpen={showDeleteStudentModal}
+          onClose={() => { setShowDeleteStudentModal(false); setStudentToDelete(null) }}
+          onConfirm={removeStudent}
+          isUnassigned={selectedClassId === 'unassigned'}
+        />
       )}
-    </div>
+
+      {/* Bulk Password Reset Modal */}
+      <AnimatePresence>
+        {showBulkPasswordModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowBulkPasswordModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-3xl blur-xl" />
+              <div className="relative bg-[#12122a] border border-white/10 rounded-3xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-white">Återställ lösenord för {selectedStudents.size} elev(er)</h3>
+                  <button
+                    onClick={() => { setShowBulkPasswordModal(false); setBulkPassword('') }}
+                    className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-400" />
+                  </button>
+                </div>
+                
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Nytt lösenord (minst 6 tecken)
+                  </label>
+                  <input
+                    type="password"
+                    value={bulkPassword}
+                    onChange={(e) => setBulkPassword(e.target.value)}
+                    placeholder="Ange nytt lösenord"
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all"
+                    autoFocus
+                  />
+                  <p className="mt-2 text-xs text-gray-500">
+                    Detta lösenord kommer att appliceras på alla {selectedStudents.size} valda elever.
+                  </p>
+                </div>
+                
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => { setShowBulkPasswordModal(false); setBulkPassword('') }}
+                    className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-gray-400 hover:bg-white/10 transition-colors font-medium"
+                  >
+                    Avbryt
+                  </button>
+                  <button
+                    onClick={handleBulkPasswordReset}
+                    disabled={resettingPassword || !bulkPassword.trim() || bulkPassword.length < 6}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:from-amber-400 hover:to-orange-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                  >
+                    {resettingPassword ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Återställer...
+                      </>
+                    ) : (
+                      <>
+                        <Key className="w-4 h-4" />
+                        Återställ
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Bulk Delete Modal */}
+      <AnimatePresence>
+        {showBulkDeleteModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowBulkDeleteModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="absolute -inset-1 bg-gradient-to-br from-red-500/20 to-rose-500/20 rounded-3xl blur-xl" />
+              <div className="relative bg-[#12122a] border border-white/10 rounded-3xl p-6">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-14 h-14 bg-red-500/20 rounded-2xl flex items-center justify-center">
+                    <AlertTriangle className="w-7 h-7 text-red-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">Radera {selectedStudents.size} elevkonto(n)</h3>
+                    <p className="text-sm text-gray-400">Detta kan inte ångras</p>
+                  </div>
+                </div>
+                
+                <div className="mb-6">
+                  <p className="text-gray-300 mb-4">
+                    Är du säker på att du vill permanent radera {selectedStudents.size} elevkonto(n)?
+                  </p>
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
+                    <h4 className="font-semibold text-red-400 mb-2 flex items-center gap-2">
+                      <Trash2 className="w-4 h-4" />
+                      Detta raderar permanent:
+                    </h4>
+                    <ul className="text-sm text-red-300/80 space-y-1">
+                      <li>• All elevprogress och poäng</li>
+                      <li>• Alla spelsessioner och resultat</li>
+                      <li>• Alla quiz-resultat</li>
+                      <li>• Elevkontot och inloggningsuppgifter</li>
+                    </ul>
+                  </div>
+                </div>
+                
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowBulkDeleteModal(false)}
+                    className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-gray-400 hover:bg-white/10 transition-colors font-medium"
+                  >
+                    Avbryt
+                  </button>
+                  <button
+                    onClick={handleBulkDelete}
+                    disabled={deletingStudents}
+                    className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                  >
+                    {deletingStudents ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Raderar...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4" />
+                        Radera {selectedStudents.size} konto(n)
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   )
 }

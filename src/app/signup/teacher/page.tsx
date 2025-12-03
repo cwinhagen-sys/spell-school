@@ -1,18 +1,20 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import SpellSchoolSignup from '@/components/SpellSchoolSignup'
 import { getGoogleOAuthOptions, getGoogleAuthErrorMessage } from '@/lib/google-auth'
 
-export default function TeacherSignupPage() {
+function TeacherSignupContent() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const tierParam = searchParams?.get('tier')
 
   const handleGoogleSignup = async () => {
     try {
@@ -37,7 +39,7 @@ export default function TeacherSignupPage() {
     }
   }
 
-  const handleEmailSignup = async (e: React.FormEvent<HTMLFormElement>, nameValue: string, emailValue: string, passwordValue: string) => {
+  const handleEmailSignup = async (e: React.FormEvent<HTMLFormElement>, nameValue: string, emailValue: string, passwordValue: string, tier?: string) => {
     e.preventDefault()
     setLoading(true)
     setMessage('')
@@ -49,21 +51,23 @@ export default function TeacherSignupPage() {
         password: passwordValue,
         options: {
           data: {
-            name: nameValue
+            name: nameValue,
+            tier: tier || 'free' // Default to free if no tier selected
           }
         }
       })
 
       if (error) throw error
 
-      // Create profile with teacher role
+      // Create profile with teacher role and tier
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
           id: data.user?.id,
           email: emailValue,
           role: 'teacher',
-          name: nameValue
+          name: nameValue,
+          tier: tier || 'free' // Store tier in profile
         })
 
       if (profileError) throw profileError
@@ -121,6 +125,19 @@ export default function TeacherSignupPage() {
       setPassword={setPassword}
       isStudent={false}
       showGoogle={true}
+      initialTier={tierParam}
     />
+  )
+}
+
+export default function TeacherSignupPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center">
+        <div className="text-gray-400">Laddar...</div>
+      </div>
+    }>
+      <TeacherSignupContent />
+    </Suspense>
   )
 }

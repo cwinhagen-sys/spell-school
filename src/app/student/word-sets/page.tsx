@@ -178,78 +178,85 @@ export default function StudentWordSetsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800">
+    <>
       <LogoutHandler />
       <div className="container mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
-              <BookOpen className="w-6 h-6 text-white" />
+            <div className="relative">
+              <div className="w-14 h-14 bg-gradient-to-br from-fuchsia-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg shadow-fuchsia-500/30">
+                <BookOpen className="w-7 h-7 text-white" />
+              </div>
+              <div className="absolute -inset-1 bg-gradient-to-br from-fuchsia-500 to-pink-500 rounded-2xl blur opacity-30" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Old Word Sets</h1>
+            <div>
+              <h1 className="text-3xl font-bold text-white">Ordlistor</h1>
+              <p className="text-gray-400">Dina tilldelade ordlistor</p>
+            </div>
           </div>
           <a 
             href="/student" 
-            className="px-4 py-2 rounded-md border border-violet-600 text-violet-700 hover:bg-gradient-to-r hover:from-violet-600 hover:to-fuchsia-600 hover:text-white transition-all flex items-center space-x-2"
+            className="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/10 text-gray-300 rounded-xl hover:bg-white/10 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back to Dashboard</span>
+            <span>Tillbaka</span>
           </a>
         </div>
 
         {loading && (
-          <div className="rounded-2xl p-6 border border-gray-200 bg-white/80 backdrop-blur-sm shadow-sm">
+          <div className="rounded-2xl p-6 border border-white/10 bg-white/5 backdrop-blur-sm">
             <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600"></div>
-              <span className="ml-3 text-gray-600">Loading...</span>
+              <div className="w-8 h-8 border-2 border-fuchsia-500/30 border-t-fuchsia-500 rounded-full animate-spin"></div>
+              <span className="ml-3 text-gray-400">Laddar...</span>
             </div>
           </div>
         )}
 
         {error && (
-          <div className="rounded-2xl p-6 border border-red-200 bg-red-50 text-red-700">{error}</div>
+          <div className="rounded-2xl p-6 border border-red-500/30 bg-red-500/20 text-red-400">{error}</div>
         )}
 
         {!loading && !error && (
           assigned.length === 0 ? (
-            <div className="rounded-2xl p-8 border border-gray-200 bg-white/80 backdrop-blur-sm shadow-sm text-center text-gray-600">
-              <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-lg">No word sets assigned yet. Check back later!</p>
+            <div className="rounded-2xl p-12 border border-white/10 bg-white/5 backdrop-blur-sm text-center">
+              <BookOpen className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+              <p className="text-lg text-gray-400">Inga ordlistor tilldelade ännu.</p>
+              <p className="text-sm text-gray-500 mt-2">Kom tillbaka senare!</p>
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {assigned.map((rec) => (
                 <div 
                   key={rec.id} 
-                  className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-sm p-6 hover:shadow-lg hover:border-violet-300 transition-all cursor-pointer group"
+                  className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 hover:bg-white/10 hover:border-fuchsia-500/30 transition-all cursor-pointer group"
                   onClick={() => rec.word_sets && handleWordSetClick(rec.word_sets)}
                 >
                   <div className="flex items-center gap-3 mb-3">
                     {rec.word_sets?.color && (
                       <div 
-                        className="w-3 h-3 rounded-full" 
+                        className="w-4 h-4 rounded-full shadow-lg" 
                         style={{ backgroundColor: rec.word_sets.color }}
                       />
                     )}
-                    <h3 className="text-lg font-semibold text-gray-900 group-hover:text-violet-700 transition-colors">
+                    <h3 className="text-lg font-semibold text-white group-hover:text-fuchsia-400 transition-colors">
                       {rec.word_sets?.title}
                     </h3>
                   </div>
-                  <p className="text-sm text-gray-500 mb-4">Assigned {new Date(rec.created_at).toLocaleDateString('en-US')}</p>
+                  <p className="text-sm text-gray-500 mb-4">Tilldelad {new Date(rec.created_at).toLocaleDateString('sv-SE')}</p>
                   <div className="flex flex-wrap gap-2">
                     {renderWordPreview(rec.word_sets?.words).map((w, idx) => (
-                      <span key={idx} className="bg-violet-100 text-violet-700 text-xs px-2 py-1 rounded-full border border-violet-200">
+                      <span key={idx} className="bg-fuchsia-500/20 text-fuchsia-400 text-xs px-2 py-1 rounded-full border border-fuchsia-500/30">
                         {w}
                       </span>
                     ))}
                     {Array.isArray(rec.word_sets?.words) && rec.word_sets!.words.length > 5 && (
-                      <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full border border-gray-200">
-                        +{rec.word_sets!.words.length - 5} more
+                      <span className="bg-white/5 text-gray-400 text-xs px-2 py-1 rounded-full border border-white/10">
+                        +{rec.word_sets!.words.length - 5} till
                       </span>
                     )}
                   </div>
-                  <div className="mt-4 text-xs text-violet-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                    Click to view all words →
+                  <div className="mt-4 text-xs text-fuchsia-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                    Klicka för att se alla ord →
                   </div>
                 </div>
               ))}
@@ -259,63 +266,66 @@ export default function StudentWordSetsPage() {
 
         {/* Word Set Detail Modal */}
         {showWordSetModal && selectedWordSet && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-            <div className="rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] shadow-2xl relative bg-white text-gray-800 border border-gray-200 overflow-hidden">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  {selectedWordSet.color && (
-                    <div 
-                      className="w-4 h-4 rounded-full" 
-                      style={{ backgroundColor: selectedWordSet.color }}
-                    />
-                  )}
-                  <h2 className="text-2xl font-bold text-gray-900">{selectedWordSet.title}</h2>
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="relative w-full max-w-4xl max-h-[90vh]">
+              <div className="absolute -inset-1 bg-gradient-to-br from-fuchsia-500/30 to-pink-500/30 rounded-3xl blur-xl" />
+              <div className="relative rounded-2xl p-8 shadow-2xl bg-[#12122a] border border-white/10 overflow-hidden">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    {selectedWordSet.color && (
+                      <div 
+                        className="w-4 h-4 rounded-full shadow-lg" 
+                        style={{ backgroundColor: selectedWordSet.color }}
+                      />
+                    )}
+                    <h2 className="text-2xl font-bold text-white">{selectedWordSet.title}</h2>
+                  </div>
+                  <button
+                    onClick={() => setShowWordSetModal(false)}
+                    className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-400" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setShowWordSetModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <div className="overflow-y-auto max-h-[60vh] pr-2">
-                <div className="grid gap-4">
-                  {normalizeWords(selectedWordSet.words).map((word, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-                      <div className="flex-1">
-                        <div className="font-semibold text-gray-900 text-lg">{word.en}</div>
-                        {word.sv && (
-                          <div className="text-gray-600 mt-1">{word.sv}</div>
+                
+                <div className="overflow-y-auto max-h-[60vh] pr-2">
+                  <div className="grid gap-3">
+                    {normalizeWords(selectedWordSet.words).map((word, index) => (
+                      <div key={index} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
+                        <div className="flex-1">
+                          <div className="font-semibold text-white text-lg">{word.en}</div>
+                          {word.sv && (
+                            <div className="text-gray-400 mt-1">{word.sv}</div>
+                          )}
+                        </div>
+                        {word.image_url && (
+                          <div className="ml-4">
+                            <img 
+                              src={word.image_url} 
+                              alt={word.en}
+                              className="w-16 h-16 object-cover rounded-lg border border-white/10"
+                            />
+                          </div>
                         )}
                       </div>
-                      {word.image_url && (
-                        <div className="ml-4">
-                          <img 
-                            src={word.image_url} 
-                            alt={word.en}
-                            className="w-16 h-16 object-cover rounded-lg border border-gray-200"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-              
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={() => setShowWordSetModal(false)}
-                  className="px-6 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
-                >
-                  Close
-                </button>
+                
+                <div className="mt-6 flex justify-end">
+                  <button
+                    onClick={() => setShowWordSetModal(false)}
+                    className="px-6 py-3 bg-gradient-to-r from-fuchsia-500 to-pink-500 text-white rounded-xl hover:from-fuchsia-400 hover:to-pink-400 transition-all font-semibold shadow-lg shadow-fuchsia-500/20"
+                  >
+                    Stäng
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         )}
       </div>
-    </div>
+    </>
   )
 }
 

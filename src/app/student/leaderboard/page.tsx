@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { levelForXp } from '@/lib/leveling'
 import { titleForLevel } from '@/lib/wizardTitles'
-import { Trophy } from 'lucide-react'
+import { Trophy, Users, Crown, Zap, Target, Flame, Keyboard, TrendingUp } from 'lucide-react'
 
 interface LeaderboardPlayer {
   id: string
@@ -41,7 +41,6 @@ export default function LeaderboardPage() {
           return
         }
 
-        // Load class leaderboard
         const { data: classLinks } = await supabase
           .from('class_students')
           .select('class_id')
@@ -66,15 +65,15 @@ export default function LeaderboardPage() {
             if (data.success && data.players) {
               setLeaderboardData(data)
             } else {
-              setError('Could not load leaderboard data')
+              setError('Kunde inte ladda topplistan')
             }
           }
         } else {
-          setError('You are not in a class')
+          setError('Du är inte med i någon klass')
         }
       } catch (error) {
         console.error('Error loading leaderboard:', error)
-        setError('Failed to load leaderboard')
+        setError('Kunde inte ladda topplistan')
       } finally {
         setLoading(false)
       }
@@ -86,7 +85,6 @@ export default function LeaderboardPage() {
     if (!leaderboardData?.players) return []
     return leaderboardData.players
       .filter(player => {
-        // Only show players who have played at least one session
         const sessionCount = player.sessionCount || 0
         return sessionCount > 0
       })
@@ -94,7 +92,7 @@ export default function LeaderboardPage() {
         const totalPoints = player.totalPoints || 0
         const levelInfo = levelForXp(totalPoints)
         const wizard = titleForLevel(levelInfo.level)
-        const displayName = player.displayName || player.username || player.name || 'Student'
+        const displayName = player.displayName || player.username || player.name || 'Elev'
         return {
           ...player,
           displayName,
@@ -112,160 +110,178 @@ export default function LeaderboardPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-6 py-12 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600"></div>
+      <div className="container mx-auto px-6 py-12 flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Laddar topplista...</p>
+        </div>
       </div>
     )
   }
 
+  const categories = [
+    {
+      key: 'level',
+      title: 'Högsta level',
+      description: 'Totala XP-nivåer',
+      icon: <Crown className="w-5 h-5" />,
+      iconColor: 'text-amber-400',
+      bgColor: 'from-amber-500/20 to-orange-500/20',
+      borderColor: 'border-amber-500/30',
+      metric: (player: LeaderboardPlayer) => player.level,
+      renderValue: (player: LeaderboardPlayer) => `Lv ${player.level}`
+    },
+    {
+      key: 'badges',
+      title: 'Flest trofeer',
+      description: 'Samlare\'s favorit',
+      icon: <Trophy className="w-5 h-5" />,
+      iconColor: 'text-violet-400',
+      bgColor: 'from-violet-500/20 to-purple-500/20',
+      borderColor: 'border-violet-500/30',
+      metric: (player: LeaderboardPlayer) => player.badgeCount,
+      renderValue: (player: LeaderboardPlayer) => `${player.badgeCount} trofeer`
+    },
+    {
+      key: 'streak',
+      title: 'Längsta streak',
+      description: 'Dagar i rad just nu',
+      icon: <Flame className="w-5 h-5" />,
+      iconColor: 'text-orange-400',
+      bgColor: 'from-orange-500/20 to-red-500/20',
+      borderColor: 'border-orange-500/30',
+      metric: (player: LeaderboardPlayer) => player.longestStreak,
+      renderValue: (player: LeaderboardPlayer) => `${player.longestStreak} dagar`
+    },
+    {
+      key: 'sessions',
+      title: 'Flest spel',
+      description: 'Totalt antal spel',
+      icon: <Zap className="w-5 h-5" />,
+      iconColor: 'text-cyan-400',
+      bgColor: 'from-cyan-500/20 to-blue-500/20',
+      borderColor: 'border-cyan-500/30',
+      metric: (player: LeaderboardPlayer) => player.sessionCount,
+      renderValue: (player: LeaderboardPlayer) => `${player.sessionCount} spel`
+    },
+    {
+      key: 'kpm',
+      title: 'Snabbast skrivare',
+      description: 'Bästa skrivhastighet',
+      icon: <Keyboard className="w-5 h-5" />,
+      iconColor: 'text-fuchsia-400',
+      bgColor: 'from-fuchsia-500/20 to-pink-500/20',
+      borderColor: 'border-fuchsia-500/30',
+      metric: (player: LeaderboardPlayer) => player.bestKpm,
+      renderValue: (player: LeaderboardPlayer) => `${Math.round(player.bestKpm)} KPM`
+    },
+    {
+      key: 'accuracy',
+      title: 'Bästa träffsäkerhet',
+      description: 'Högsta genomsnitt',
+      icon: <Target className="w-5 h-5" />,
+      iconColor: 'text-emerald-400',
+      bgColor: 'from-emerald-500/20 to-green-500/20',
+      borderColor: 'border-emerald-500/30',
+      metric: (player: LeaderboardPlayer) => player.averageAccuracy,
+      renderValue: (player: LeaderboardPlayer) => `${Math.round(player.averageAccuracy)}%`
+    }
+  ]
+
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="max-w-7xl mx-auto">
+        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Leaderboard</h1>
-          <p className="text-gray-600">See which classmates lead in different categories</p>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="relative">
+              <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/30">
+                <Users className="w-7 h-7 text-white" />
+              </div>
+              <div className="absolute -inset-1 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl blur opacity-30" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white">Topplista</h1>
+              <p className="text-gray-400">Se vilka klasskompisar som leder i olika kategorier</p>
+            </div>
+          </div>
         </div>
 
         {error ? (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center text-sm text-red-600">
+          <div className="bg-red-500/20 border border-red-500/30 rounded-2xl p-6 text-center text-red-400">
             {error}
           </div>
         ) : leaderboardPlayers.length === 0 ? (
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg p-12 text-center">
-            <Trophy className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">No leaderboard data available</p>
-            <p className="text-gray-400 text-sm mt-2">Start playing games to appear on the leaderboard!</p>
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 shadow-xl p-12 text-center">
+            <Trophy className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+            <p className="text-gray-400 text-lg">Ingen topplista tillgänglig</p>
+            <p className="text-gray-500 text-sm mt-2">Börja spela spel för att hamna på topplistan!</p>
           </div>
         ) : (
           <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
-            {[
-              {
-                key: 'level',
-                title: 'Highest Level',
-                description: 'Total XP levels',
-                metric: (player: LeaderboardPlayer) => player.level,
-                renderValue: (player: LeaderboardPlayer) => `Lv ${player.level}`
-              },
-              {
-                key: 'badges',
-                title: 'Most Badges',
-                description: 'Collector\'s favorite',
-                metric: (player: LeaderboardPlayer) => player.badgeCount,
-                renderValue: (player: LeaderboardPlayer) => `${player.badgeCount} badges`
-              },
-              {
-                key: 'streak',
-                title: 'Current Streak',
-                description: 'Days in a row right now',
-                metric: (player: LeaderboardPlayer) => player.longestStreak,
-                renderValue: (player: LeaderboardPlayer) => `${player.longestStreak} days`
-              },
-              {
-                key: 'sessions',
-                title: 'Games Played',
-                description: 'Total number of games',
-                metric: (player: LeaderboardPlayer) => player.sessionCount,
-                renderValue: (player: LeaderboardPlayer) => `${player.sessionCount} games`
-              },
-              {
-                key: 'kpm',
-                title: 'Fastest Typist',
-                description: 'Best Typing Challenge KPM',
-                metric: (player: LeaderboardPlayer) => player.bestKpm,
-                renderValue: (player: LeaderboardPlayer) => `${Math.round(player.bestKpm)} KPM`
-              },
-              {
-                key: 'accuracy',
-                title: 'Best Accuracy',
-                description: 'Highest average accuracy',
-                metric: (player: LeaderboardPlayer) => player.averageAccuracy,
-                renderValue: (player: LeaderboardPlayer) => `${Math.round(player.averageAccuracy)}%`
-              }
-            ].map(category => {
-              // Filter and sort players for this category
+            {categories.map(category => {
               const sortedPlayers = leaderboardPlayers
                 .slice()
                 .sort((a, b) => (category.metric(b) || 0) - (category.metric(a) || 0))
               
-              // Take top 5 (or fewer if less than 5 players have data in this category)
               const topPlayers = sortedPlayers.slice(0, 5)
 
               return (
-                <div key={category.key} className="rounded-2xl border border-gray-100 bg-gradient-to-br from-white via-white to-gray-50 p-6 shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
+                <div 
+                  key={category.key} 
+                  className={`rounded-2xl border bg-gradient-to-br ${category.bgColor} ${category.borderColor} p-6 backdrop-blur-sm`}
+                >
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className={category.iconColor}>{category.icon}</div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-800">
-                        {category.title}
-                      </h3>
-                      <p className="text-xs text-gray-500">{category.description}</p>
+                      <h3 className="text-lg font-semibold text-white">{category.title}</h3>
+                      <p className="text-xs text-gray-400">{category.description}</p>
                     </div>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {topPlayers.map((player, index) => {
                       const rank = index + 1
                       const isTopThree = rank <= 3
                       const isCurrentUser = player.id === leaderboardData?.currentUserId
                       
-                      // Medal colors and styles
-                      const medalStyles = {
-                        1: {
-                          badge: 'bg-gradient-to-br from-yellow-400 to-yellow-600 border-yellow-500 text-white shadow-lg shadow-yellow-500/50',
-                          border: 'border-yellow-300',
-                          bg: 'bg-gradient-to-r from-yellow-50/80 to-yellow-100/40',
-                          glow: 'shadow-lg shadow-yellow-500/30'
-                        },
-                        2: {
-                          badge: 'bg-gradient-to-br from-gray-300 to-gray-500 border-gray-400 text-white shadow-lg shadow-gray-400/50',
-                          border: 'border-gray-300',
-                          bg: 'bg-gradient-to-r from-gray-50/80 to-gray-100/40',
-                          glow: 'shadow-lg shadow-gray-400/30'
-                        },
-                        3: {
-                          badge: 'bg-gradient-to-br from-amber-600 to-amber-800 border-amber-700 text-white shadow-lg shadow-amber-600/50',
-                          border: 'border-amber-400',
-                          bg: 'bg-gradient-to-r from-amber-50/80 to-amber-100/40',
-                          glow: 'shadow-lg shadow-amber-500/30'
-                        }
+                      const medalColors = {
+                        1: 'from-amber-400 to-yellow-500 text-white shadow-amber-500/50',
+                        2: 'from-gray-300 to-gray-400 text-gray-800 shadow-gray-400/50',
+                        3: 'from-orange-400 to-amber-500 text-white shadow-orange-500/50'
                       }
-                      
-                      const medalStyle = isTopThree ? medalStyles[rank as 1 | 2 | 3] : null
                       
                       return (
                         <div
                           key={`${category.key}-${player.id}`}
-                          className={`flex items-center justify-between rounded-xl border px-3 py-3 transition-all ${
+                          className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-all ${
                             isCurrentUser
-                              ? isTopThree
-                                ? `${medalStyle?.border} ${medalStyle?.bg} ${medalStyle?.glow}`
-                                : 'border-indigo-200 bg-indigo-50/60'
-                              : isTopThree
-                                ? `${medalStyle?.border} ${medalStyle?.bg} ${medalStyle?.glow}`
-                                : 'border-gray-200 bg-white'
-                          } ${isTopThree ? 'shadow-md' : 'shadow-sm'}`}
+                              ? 'border-violet-500/50 bg-violet-500/20'
+                              : 'border-white/10 bg-white/5 hover:bg-white/10'
+                          }`}
                         >
                           <div className="flex items-center gap-3">
                             <div className="relative">
                               <img
                                 src={player.wizardImage}
-                                alt={player.displayName || 'Student'}
-                                className={`w-12 h-12 rounded-full object-cover border-2 shadow ${
-                                  isTopThree ? 'border-white shadow-lg' : 'border-white'
+                                alt={player.displayName || 'Elev'}
+                                className={`w-10 h-10 rounded-full object-cover border-2 ${
+                                  isTopThree ? 'border-white shadow-lg' : 'border-white/30'
                                 }`}
                               />
-                              <div className={`absolute -top-2 -left-2 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                              <div className={`absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shadow-lg ${
                                 isTopThree 
-                                  ? medalStyle?.badge 
-                                  : 'bg-white border border-gray-200 text-gray-600'
+                                  ? `bg-gradient-to-br ${medalColors[rank as 1 | 2 | 3]}`
+                                  : 'bg-[#1a1a2e] border border-white/20 text-gray-400'
                               }`}>
                                 {rank}
                               </div>
                             </div>
                             <div>
-                              <div className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                                {player.displayName || 'Student'}
+                              <div className="text-sm font-semibold text-white flex items-center gap-2">
+                                {player.displayName}
                                 {isCurrentUser && (
-                                  <span className="text-xs font-semibold text-indigo-500 bg-indigo-100 px-2 py-0.5 rounded-full">
-                                    You
+                                  <span className="text-xs font-medium text-violet-400 bg-violet-500/20 px-2 py-0.5 rounded-full">
+                                    Du
                                   </span>
                                 )}
                               </div>
@@ -275,9 +291,7 @@ export default function LeaderboardPage() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className={`text-base font-bold ${
-                              isTopThree ? 'text-gray-900' : 'text-gray-900'
-                            }`}>
+                            <div className="text-base font-bold text-white">
                               {category.renderValue(player)}
                             </div>
                           </div>
@@ -286,7 +300,7 @@ export default function LeaderboardPage() {
                     })}
                     {topPlayers.length === 0 && (
                       <div className="text-xs text-gray-500 text-center py-4">
-                        No statistics yet
+                        Ingen statistik ännu
                       </div>
                     )}
                   </div>
@@ -296,8 +310,8 @@ export default function LeaderboardPage() {
           </div>
         )}
 
-        <div className="mt-8 p-4 bg-white/60 rounded-lg text-center text-sm text-gray-600">
-          <p>Leaderboard updates after each game session</p>
+        <div className="mt-8 p-4 bg-white/5 backdrop-blur-sm rounded-xl text-center text-sm text-gray-500 border border-white/10">
+          <p>Topplistan uppdateras efter varje spelade spel</p>
         </div>
       </div>
     </div>

@@ -79,6 +79,8 @@ export default function SessionPlayPage() {
   const [quizResult, setQuizResult] = useState<{ score: number; total: number; percentage: number } | null>(null)
   const [showQuizDetails, setShowQuizDetails] = useState(false)
   const [quizDetails, setQuizDetails] = useState<Array<{ word_en: string; word_sv: string; student_answer: string; score: number }>>([])
+  const [quizSubmitted, setQuizSubmitted] = useState(false) // Track if quiz has been submitted
+  const [quizGraded, setQuizGraded] = useState(false) // Track if quiz has been graded
 
   useEffect(() => {
     if (sessionId) {
@@ -125,7 +127,7 @@ export default function SessionPlayPage() {
         }
 
         // Load quiz result if quiz is enabled
-        // Only show result if it's been graded (for manual grading, only show if graded_at is set)
+        // Check if quiz has been submitted and if it's been graded
         if (session?.quiz_enabled) {
           const { data: quizResponses } = await supabase
             .from('session_quiz_responses')
@@ -134,12 +136,17 @@ export default function SessionPlayPage() {
             .eq('participant_id', participantId)
           
           if (quizResponses && quizResponses.length > 0) {
-            // For manual grading, only show result if teacher has graded (graded_at is set)
-            // For AI grading, show result if any responses exist
+            // Quiz has been submitted
+            setQuizSubmitted(true)
+            
+            // Check if quiz has been graded
             const hasGradedResponses = session.quiz_grading_type === 'manual' 
               ? quizResponses.some(r => r.graded_at !== null)
-              : true
+              : true // AI grading is automatically graded
             
+            setQuizGraded(hasGradedResponses)
+            
+            // Only show result if it's been graded
             if (hasGradedResponses) {
               // Calculate score: each response has score 0-100, convert to points (0-2 per question)
               const totalPoints = quizResponses.reduce((sum, r) => {
@@ -155,9 +162,13 @@ export default function SessionPlayPage() {
                 percentage: percentage
               })
             } else {
+              // Quiz submitted but not graded yet
               setQuizResult(null)
             }
           } else {
+            // Quiz not submitted yet
+            setQuizSubmitted(false)
+            setQuizGraded(false)
             setQuizResult(null)
           }
         }
@@ -398,30 +409,44 @@ export default function SessionPlayPage() {
       if (session?.quiz_enabled) {
         const { data: quizResponses } = await supabase
           .from('session_quiz_responses')
-          .select('score')
+          .select('score, graded_at')
           .eq('session_id', sessionId)
           .eq('participant_id', participantIdToUse)
         
         if (quizResponses && quizResponses.length > 0) {
-          const totalPoints = quizResponses.reduce((sum, r) => {
-            const points = r.score === 100 ? 2 : r.score === 50 ? 1 : 0
-            return sum + points
-          }, 0)
-          const totalPossible = quizResponses.length * 2
-          const percentage = totalPossible > 0 ? Math.round((totalPoints / totalPossible) * 100) : 0
+          setQuizSubmitted(true)
           
-          setQuizResult({
-            score: totalPoints,
-            total: totalPossible,
-            percentage: percentage
-          })
+          const hasGradedResponses = session.quiz_grading_type === 'manual' 
+            ? quizResponses.some(r => r.graded_at !== null)
+            : true
           
-          console.log('✅ Quiz result loaded in loadProgress:', {
-            score: totalPoints,
-            total: totalPossible,
-            percentage: percentage
-          })
+          setQuizGraded(hasGradedResponses)
+          
+          if (hasGradedResponses) {
+            const totalPoints = quizResponses.reduce((sum, r) => {
+              const points = r.score === 100 ? 2 : r.score === 50 ? 1 : 0
+              return sum + points
+            }, 0)
+            const totalPossible = quizResponses.length * 2
+            const percentage = totalPossible > 0 ? Math.round((totalPoints / totalPossible) * 100) : 0
+            
+            setQuizResult({
+              score: totalPoints,
+              total: totalPossible,
+              percentage: percentage
+            })
+            
+            console.log('✅ Quiz result loaded in loadProgress:', {
+              score: totalPoints,
+              total: totalPossible,
+              percentage: percentage
+            })
+          } else {
+            setQuizResult(null)
+          }
         } else {
+          setQuizSubmitted(false)
+          setQuizGraded(false)
           setQuizResult(null)
         }
       }
@@ -686,7 +711,8 @@ export default function SessionPlayPage() {
     if (!session) {
       return (
         <div className="text-center p-8">
-          <p className="text-gray-600">Laddar session...</p>
+          <div className="w-12 h-12 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Laddar session...</p>
         </div>
       )
     }
@@ -770,8 +796,11 @@ export default function SessionPlayPage() {
         return <TranslateGame {...gameProps} sessionMode={true} />
       default:
         return (
-          <div className="text-center p-8">
-            <p className="text-gray-600">Spel "{currentGame}" är inte implementerat än</p>
+          <div className="text-center p-12">
+            <div className="w-16 h-16 bg-amber-500/20 border border-amber-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">🎮</span>
+            </div>
+            <p className="text-gray-400">Spel "{currentGame}" är inte implementerat än</p>
           </div>
         )
     }
@@ -779,10 +808,15 @@ export default function SessionPlayPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Laddar session...</p>
+      <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center relative overflow-hidden">
+        {/* Aurora background effects */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-violet-900/30 via-cyan-900/20 to-fuchsia-900/30 blur-3xl animate-pulse-slow" />
+          <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl animate-pulse-slow-reverse" />
+        </div>
+        <div className="text-center relative z-10">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
+          <p className="text-gray-300">Laddar session...</p>
         </div>
       </div>
     )
@@ -790,12 +824,17 @@ export default function SessionPlayPage() {
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center text-red-600">
+      <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center relative overflow-hidden">
+        {/* Aurora background effects */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-violet-900/30 via-cyan-900/20 to-fuchsia-900/30 blur-3xl animate-pulse-slow" />
+          <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl animate-pulse-slow-reverse" />
+        </div>
+        <div className="text-center text-red-400 relative z-10">
           <p>Session hittades inte</p>
           <button
             onClick={() => router.push('/session/join')}
-            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg"
+            className="mt-4 px-4 py-2 bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-lg hover:from-violet-400 hover:to-cyan-400 shadow-lg shadow-violet-500/30"
           >
             Gå tillbaka
           </button>
@@ -844,6 +883,8 @@ export default function SessionPlayPage() {
         showQuizDetails={showQuizDetails}
         allGamesCompleted={sessionComplete}
         isQuizUnlocked={isQuizUnlocked()}
+        quizSubmitted={quizSubmitted}
+        quizGraded={quizGraded}
         onChangeBlocks={() => setStep('blocks')}
         onExitSession={() => {
           if (confirm('Är du säker på att du vill avsluta sessionen?')) {
@@ -866,8 +907,15 @@ export default function SessionPlayPage() {
           }
         }}
         onQuizClick={() => {
-          setStep('quiz')
-          setShowQuiz(true)
+          // If quiz is already submitted, show details instead of allowing retake
+          if (quizSubmitted && quizGraded) {
+            handleQuizDetailsClick()
+          } else if (!quizSubmitted) {
+            // Only allow taking quiz if it hasn't been submitted
+            setStep('quiz')
+            setShowQuiz(true)
+          }
+          // If quiz is submitted but not graded, do nothing (locked)
         }}
         onQuizDetailsClick={handleQuizDetailsClick}
         onCloseQuizDetails={() => setShowQuizDetails(false)}
@@ -880,10 +928,17 @@ export default function SessionPlayPage() {
     // Show loading state if session is still loading or colorBlocks haven't been created yet
     if (loading || !session) {
       return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading session...</p>
+        <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center relative overflow-hidden">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-violet-900/30 via-cyan-900/20 to-fuchsia-900/30 blur-3xl" />
+            <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl" />
+          </div>
+          <div className="text-center relative z-10">
+            <div className="w-16 h-16 mx-auto mb-4 relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-xl blur-lg opacity-50 animate-pulse" />
+              <div className="relative w-16 h-16 border-2 border-violet-500/30 border-t-violet-500 rounded-xl animate-spin" />
+            </div>
+            <p className="text-gray-400">Laddar session...</p>
           </div>
         </div>
       )
@@ -892,16 +947,22 @@ export default function SessionPlayPage() {
     // If session is loaded but no color blocks, show error
     if (colorBlocks.length === 0) {
       return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center max-w-md mx-auto p-6">
-            <div className="text-red-500 text-5xl mb-4">⚠️</div>
-            <h2 className="text-xl font-bold text-gray-800 mb-2">Inga ord hittades</h2>
-            <p className="text-gray-600 mb-4">
+        <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center relative overflow-hidden">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-violet-900/30 via-cyan-900/20 to-fuchsia-900/30 blur-3xl" />
+            <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl" />
+          </div>
+          <div className="text-center max-w-md mx-auto p-6 relative z-10">
+            <div className="w-20 h-20 bg-red-500/20 border border-red-500/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <span className="text-4xl">⚠️</span>
+            </div>
+            <h2 className="text-xl font-bold text-white mb-3">Inga ord hittades</h2>
+            <p className="text-gray-400 mb-6">
               Sessionen har inga ord att visa. Kontakta din lärare.
             </p>
             <button
               onClick={() => router.push('/session/join')}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+              className="px-6 py-3 bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-xl font-semibold hover:from-violet-400 hover:to-cyan-400 shadow-lg shadow-violet-500/30 transition-all"
             >
               Gå tillbaka
             </button>
@@ -925,7 +986,13 @@ export default function SessionPlayPage() {
     const { wordsArray, translations, wordObjects } = wordsAndTranslations
     
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+      <div className="min-h-screen bg-[#0a0a1a] relative overflow-hidden">
+        {/* Aurora background effects */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-violet-900/30 via-cyan-900/20 to-fuchsia-900/30 blur-3xl animate-pulse-slow" />
+          <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl animate-pulse-slow-reverse" />
+        </div>
+        <div className="relative z-10">
         <QuizGame
           words={wordsArray}
           translations={translations}
@@ -949,31 +1016,45 @@ export default function SessionPlayPage() {
               if (session?.quiz_enabled) {
                 const { data: quizResponses } = await supabase
                   .from('session_quiz_responses')
-                  .select('score')
+                  .select('score, graded_at')
                   .eq('session_id', sessionId)
                   .eq('participant_id', participantId)
                 
                 if (quizResponses && quizResponses.length > 0) {
-                  const totalPoints = quizResponses.reduce((sum, r) => {
-                    const points = r.score === 100 ? 2 : r.score === 50 ? 1 : 0
-                    return sum + points
-                  }, 0)
-                  const totalPossible = quizResponses.length * 2
-                  const percentage = totalPossible > 0 ? Math.round((totalPoints / totalPossible) * 100) : 0
+                  setQuizSubmitted(true)
                   
-                  setQuizResult({
-                    score: totalPoints,
-                    total: totalPossible,
-                    percentage: percentage
-                  })
+                  const hasGradedResponses = session.quiz_grading_type === 'manual' 
+                    ? quizResponses.some(r => r.graded_at !== null)
+                    : true
                   
-                  console.log('✅ Quiz result loaded from database:', {
-                    score: totalPoints,
-                    total: totalPossible,
-                    percentage: percentage
-                  })
+                  setQuizGraded(hasGradedResponses)
+                  
+                  if (hasGradedResponses) {
+                    const totalPoints = quizResponses.reduce((sum, r) => {
+                      const points = r.score === 100 ? 2 : r.score === 50 ? 1 : 0
+                      return sum + points
+                    }, 0)
+                    const totalPossible = quizResponses.length * 2
+                    const percentage = totalPossible > 0 ? Math.round((totalPoints / totalPossible) * 100) : 0
+                    
+                    setQuizResult({
+                      score: totalPoints,
+                      total: totalPossible,
+                      percentage: percentage
+                    })
+                    
+                    console.log('✅ Quiz result loaded from database:', {
+                      score: totalPoints,
+                      total: totalPossible,
+                      percentage: percentage
+                    })
+                  } else {
+                    setQuizResult(null)
+                  }
                 } else {
                   // No responses found - clear result
+                  setQuizSubmitted(false)
+                  setQuizGraded(false)
                   setQuizResult(null)
                 }
               }
@@ -1127,25 +1208,38 @@ export default function SessionPlayPage() {
                 } else {
                   console.log(`✅ Saved ${responses.length} quiz responses`)
                   
-                  // Recalculate and update quiz result after saving to ensure accuracy
-                  const savedTotalPoints = responses.reduce((sum, r) => {
-                    if (!r) return sum
-                    const points = r.score === 100 ? 2 : r.score === 50 ? 1 : 0
-                    return sum + points
-                  }, 0)
-                  const savedTotalPossible = responses.length * 2
-                  const savedPercentage = savedTotalPossible > 0 ? Math.round((savedTotalPoints / savedTotalPossible) * 100) : 0
+                  // Mark quiz as submitted
+                  setQuizSubmitted(true)
                   
-                  // Update quiz result with saved data - this ensures it persists
-                  const quizResultData = {
-                    score: savedTotalPoints,
-                    total: savedTotalPossible,
-                    percentage: savedPercentage
+                  // For AI grading, mark as graded immediately
+                  if (session.quiz_grading_type === 'ai') {
+                    setQuizGraded(true)
+                    
+                    // Recalculate and update quiz result after saving to ensure accuracy
+                    const savedTotalPoints = responses.reduce((sum, r) => {
+                      if (!r) return sum
+                      const points = r.score === 100 ? 2 : r.score === 50 ? 1 : 0
+                      return sum + points
+                    }, 0)
+                    const savedTotalPossible = responses.length * 2
+                    const savedPercentage = savedTotalPossible > 0 ? Math.round((savedTotalPoints / savedTotalPossible) * 100) : 0
+                    
+                    // Update quiz result with saved data - this ensures it persists
+                    const quizResultData = {
+                      score: savedTotalPoints,
+                      total: savedTotalPossible,
+                      percentage: savedPercentage
+                    }
+                    
+                    setQuizResult(quizResultData)
+                    
+                    console.log('✅ Quiz result saved and set (AI grading):', quizResultData)
+                  } else {
+                    // Manual grading - wait for teacher to grade
+                    setQuizGraded(false)
+                    setQuizResult(null)
+                    console.log('⏳ Quiz submitted, waiting for teacher to grade')
                   }
-                  
-                  setQuizResult(quizResultData)
-                  
-                  console.log('✅ Quiz result saved and set:', quizResultData)
                 }
                 
                 // Always close quiz component after processing
@@ -1189,6 +1283,7 @@ export default function SessionPlayPage() {
               }
             })}
         />
+        </div>
       </div>
     )
   }
@@ -1196,8 +1291,15 @@ export default function SessionPlayPage() {
   // Playing view - just show the game directly
   if (step === 'playing') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
-        {renderGameComponent()}
+      <div className="min-h-screen bg-[#0a0a1a] relative overflow-hidden">
+        {/* Aurora background effects */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-violet-900/30 via-cyan-900/20 to-fuchsia-900/30 blur-3xl animate-pulse-slow" />
+          <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl animate-pulse-slow-reverse" />
+        </div>
+        <div className="relative z-10">
+          {renderGameComponent()}
+        </div>
       </div>
     )
   }

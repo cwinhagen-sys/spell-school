@@ -48,7 +48,7 @@ export default function JoinClassPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800 flex items-start justify-center px-4 pt-20">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-teal-50 text-gray-800 flex items-start justify-center px-4 pt-20">
       <div className="max-w-lg w-full">
         {/* Back button */}
         <div className="mb-8">

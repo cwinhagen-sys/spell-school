@@ -17,6 +17,11 @@ type LeaderboardPlayer = {
 const supabaseUrl = 'https://edbbestqdwldryxuxkma.supabase.co'
 const supabaseAnonKey = 'sb_publishable_bx81qdFnpcX79ovYbCL98Q_eirRtByp'
 
+// Simple in-memory cache for leaderboard data
+// In production, consider using Redis or Vercel KV
+const leaderboardCache = new Map<string, { data: any; timestamp: number }>()
+const CACHE_TTL_MS = 30000 // 30 seconds cache
+
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
@@ -62,6 +67,17 @@ export async function POST(request: NextRequest) {
 
     if (membershipError || !membership) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    }
+
+    // Check cache first
+    const cacheKey = `leaderboard_${classId}`
+    const cached = leaderboardCache.get(cacheKey)
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      // Return cached data with current user ID
+      return NextResponse.json({
+        ...cached.data,
+        currentUserId: user.id
+      })
     }
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
@@ -161,7 +177,8 @@ export async function POST(request: NextRequest) {
         .from('game_sessions')
         .select('student_id, finished_at')
         .in('student_id', studentIds)
-        .not('finished_at', 'is', null),
+        .not('finished_at', 'is', null)
+        .gte('finished_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()), // Last 30 days only
       supabaseAdmin
         .from('typing_leaderboard')
         .select('student_id, kpm')
@@ -171,6 +188,7 @@ export async function POST(request: NextRequest) {
         .select('student_id, accuracy_pct')
         .in('student_id', studentIds)
         .not('accuracy_pct', 'is', null)
+        .gte('finished_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()) // Last 30 days only
     ])
 
     const playersMap = new Map<string, LeaderboardPlayer>()
@@ -312,11 +330,27 @@ export async function POST(request: NextRequest) {
 
     const players = Array.from(playersMap.values())
 
-    return NextResponse.json({
+    const result = {
       success: true,
       currentUserId: user.id,
       players
+    }
+
+    // Cache the result (without currentUserId as it's user-specific)
+    leaderboardCache.set(cacheKey, {
+      data: { success: true, players },
+      timestamp: Date.now()
     })
+
+    // Clean up old cache entries (older than 5 minutes)
+    const now = Date.now()
+    for (const [key, value] of leaderboardCache.entries()) {
+      if (now - value.timestamp > 300000) {
+        leaderboardCache.delete(key)
+      }
+    }
+
+    return NextResponse.json(result)
   } catch (error) {
     console.error('Error in POST /api/student/leaderboards:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

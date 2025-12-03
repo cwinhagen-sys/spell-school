@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState } from "react";
-import { motion } from "framer-motion";
-import { Mail, Lock, ArrowRight, BookOpen, Users, Gamepad2, BarChart3, Sparkles, CheckCircle2, ChevronDown, Trophy, Mic } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Mail, Lock, ArrowRight, Sparkles, CheckCircle2, Trophy, Mic, X, Play, Star, Zap, Target, BookOpen, Users, ChevronDown, Menu } from "lucide-react";
 import Link from "next/link";
 
 interface SpellSchoolLandingProps {
@@ -18,6 +18,34 @@ interface SpellSchoolLandingProps {
   setPassword?: (value: string) => void;
 }
 
+// Floating magical particles
+function MagicParticles() {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {[...Array(20)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-1 h-1 bg-amber-400 rounded-full"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+          }}
+          animate={{
+            y: [0, -30, 0],
+            opacity: [0.2, 1, 0.2],
+            scale: [1, 1.5, 1],
+          }}
+          transition={{
+            duration: 3 + Math.random() * 2,
+            repeat: Infinity,
+            delay: Math.random() * 2,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function SpellSchoolLanding({
   logoUrl = "/images/memory-card-back.png",
   posterUrl = "/images/memory-card-back.png",
@@ -31,694 +59,638 @@ export default function SpellSchoolLanding({
   setPassword,
 }: SpellSchoolLandingProps) {
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToFeatures = () => {
+    document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen bg-[#0a0a1a] text-white overflow-x-hidden">
+      {/* Animated Background */}
+      <div className="fixed inset-0 pointer-events-none">
+        {/* Deep gradient base */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0f0f2a] via-[#0a0a1a] to-[#050510]" />
+        
+        {/* Magical aurora effect */}
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-purple-600/30 rounded-full blur-[120px] animate-pulse" />
+          <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-cyan-500/20 rounded-full blur-[100px]" style={{ animationDelay: '1s' }} />
+          <div className="absolute bottom-1/4 left-1/3 w-[400px] h-[400px] bg-amber-500/15 rounded-full blur-[80px]" style={{ animationDelay: '2s' }} />
+        </div>
+        
+        {/* Subtle grid pattern */}
+        <div 
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                             linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+            backgroundSize: '60px 60px'
+          }}
+        />
+      </div>
+
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      <motion.header 
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+          scrolled ? 'bg-[#0a0a1a]/90 backdrop-blur-xl border-b border-white/5' : ''
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-20">
             {/* Logo */}
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
-                Spell School
+            <Link href="/" className="flex items-center gap-3 group">
+              <div className="relative">
+                <div className="w-10 h-10 bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 rounded-xl flex items-center justify-center transform group-hover:scale-110 transition-transform">
+                  <span className="text-white font-bold text-lg">S</span>
+                </div>
+                <div className="absolute -inset-1 bg-gradient-to-br from-amber-400 to-rose-500 rounded-xl blur opacity-30 group-hover:opacity-50 transition-opacity" />
               </div>
+              <span className="text-2xl font-bold tracking-tight">
+                Spell<span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">School</span>
+              </span>
             </Link>
 
-
-            {/* Auth Buttons */}
-            <div className="flex items-center space-x-4">
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center gap-8">
+              <button 
+                onClick={scrollToFeatures}
+                className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
+              >
+                Funktioner
+              </button>
               <button
                 onClick={() => setShowLoginModal(true)}
-                className="text-gray-700 hover:text-teal-600 font-medium transition-colors"
+                className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
               >
                 Logga in
               </button>
               <Link
                 href="/signup/teacher"
-                className="bg-gradient-to-r from-teal-600 to-emerald-600 text-white px-4 py-2 rounded-lg font-medium hover:from-teal-700 hover:to-emerald-700 transition-all shadow-sm"
+                className="relative group"
               >
-                Skapa lärarkonto
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl blur opacity-60 group-hover:opacity-100 transition-opacity" />
+                <span className="relative bg-gradient-to-r from-amber-500 to-orange-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm inline-block hover:from-amber-400 hover:to-orange-500 transition-all">
+                  Kom igång gratis
+                </span>
               </Link>
-            </div>
+            </nav>
+
+            {/* Mobile menu button */}
+            <button 
+              className="md:hidden p-2 text-gray-400 hover:text-white"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              <Menu className="w-6 h-6" />
+            </button>
           </div>
         </div>
-      </header>
+
+        {/* Mobile Navigation */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden bg-[#0a0a1a]/95 backdrop-blur-xl border-t border-white/5"
+            >
+              <div className="px-4 py-4 space-y-3">
+                <button onClick={scrollToFeatures} className="block w-full text-left text-gray-400 hover:text-white py-2">Funktioner</button>
+                <button onClick={() => { setShowLoginModal(true); setMobileMenuOpen(false); }} className="block w-full text-left text-gray-400 hover:text-white py-2">Logga in</button>
+                <Link href="/signup/teacher" className="block bg-gradient-to-r from-amber-500 to-orange-600 text-white px-5 py-3 rounded-xl font-semibold text-center">
+                  Kom igång gratis
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.header>
 
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Left Column - Text Content */}
-          <div className="text-center lg:text-left">
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6"
-            >
-              Förbättra dina elevers ordförråd
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-xl md:text-2xl text-teal-600 font-semibold mb-4"
-            >
-              Det är gratis.
-            </motion.p>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-lg md:text-xl text-gray-600 mb-8"
-            >
-              Låt dina elever öva glosor på engagerande och roliga sätt genom att samla poäng, tjäna troféer och klättra i rank allt eftersom de blir mästare på orden du tilldelar. 
-              Med interaktiva övningar, direkt feedback på uttal och tydlig progression får både du och dina elever bättre koll på framstegen.
-            </motion.p>
-        <motion.div
-              initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
-            >
-              <Link
-                href="/signup/teacher"
-                className="bg-gradient-to-r from-teal-600 to-emerald-600 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:from-teal-700 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl text-center"
+      <section className="relative min-h-screen flex items-center pt-20">
+        <MagicParticles />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            {/* Left Column - Text */}
+            <div className="text-center lg:text-left relative z-10">
+              {/* Badge */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-4 py-2 mb-8"
               >
-                Skapa lärarkonto gratis
-              </Link>
-              <Link
-                href="/session/join"
-                className="bg-white border-2 border-teal-600 text-teal-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-teal-50 transition-all shadow-lg hover:shadow-xl text-center"
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span className="text-sm text-gray-300">Ny: Automatisk uttalsrättning med AI</span>
+              </motion.div>
+
+              <motion.h1
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.6 }}
+                className="text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] mb-8"
               >
-                Gå med i session
-              </Link>
+                Glosor blir
+                <br />
+                <span className="relative">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500">
+                    magiska
+                  </span>
+                  <motion.svg
+                    className="absolute -bottom-2 left-0 w-full"
+                    viewBox="0 0 200 12"
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ delay: 0.8, duration: 0.8 }}
+                  >
+                    <motion.path
+                      d="M2 8 Q50 2, 100 8 T 198 6"
+                      fill="none"
+                      stroke="url(#gradient)"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                    />
+                    <defs>
+                      <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#fbbf24" />
+                        <stop offset="100%" stopColor="#f43f5e" />
+                      </linearGradient>
+                    </defs>
+                  </motion.svg>
+                </span>
+              </motion.h1>
+
+              <motion.p
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.6 }}
+                className="text-xl text-gray-400 mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed"
+              >
+                Engagera dina elever med interaktiva spel, poängsystem och AI-driven feedback. 
+                Följ deras framsteg i realtid medan de samlar XP och klättrar i rank.
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.6 }}
+                className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
+              >
+                <Link
+                  href="/signup/teacher"
+                  className="group relative inline-flex items-center justify-center gap-2"
+                >
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl blur opacity-60 group-hover:opacity-100 transition-opacity" />
+                  <span className="relative bg-gradient-to-r from-amber-500 to-orange-600 text-white px-8 py-4 rounded-2xl font-semibold text-lg inline-flex items-center gap-2 hover:from-amber-400 hover:to-orange-500 transition-all">
+                    Skapa lärarkonto
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </span>
+                </Link>
+                
+                <Link
+                  href="/session/join"
+                  className="inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white px-8 py-4 rounded-2xl font-semibold text-lg transition-all"
+                >
+                  <Play className="w-5 h-5" />
+                  Gå med i session
+                </Link>
+              </motion.div>
+
+              {/* Social proof */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className="mt-12 flex items-center gap-6 justify-center lg:justify-start"
+              >
+                <div className="flex -space-x-3">
+                  {[...Array(4)].map((_, i) => (
+                    <div 
+                      key={i} 
+                      className="w-10 h-10 rounded-full border-2 border-[#0a0a1a] bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-xs font-bold"
+                    >
+                      {['A', 'S', 'M', 'K'][i]}
+                    </div>
+                  ))}
+                </div>
+                <div className="text-sm text-gray-400">
+                  <span className="text-white font-semibold">500+</span> lärare använder Spell School
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Right Column - Wizard Stack */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3, duration: 0.8 }}
+              className="relative"
+            >
+              <div className="relative w-full aspect-square max-w-lg mx-auto">
+                {/* Glow effect behind wizards */}
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 via-purple-500/10 to-cyan-500/20 rounded-full blur-3xl" />
+                
+                {/* Wizard cards in a floating stack */}
+                <motion.div
+                  className="absolute left-[5%] top-[5%] w-[45%]"
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <div className="relative group">
+                    <div className="absolute -inset-2 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-3xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity" />
+                    <div className="relative bg-gradient-to-br from-[#1a1a2e] to-[#16162a] rounded-3xl p-3 border border-white/10 transform hover:scale-105 transition-transform">
+                      <img
+                        src="/assets/wizard/wizard_novice.png"
+                        alt="Wizard Novice"
+                        className="w-full h-auto object-contain"
+                      />
+                    </div>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  className="absolute right-[5%] top-[0%] w-[50%]"
+                  animate={{ y: [0, -15, 0] }}
+                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                >
+                  <div className="relative group">
+                    <div className="absolute -inset-2 bg-gradient-to-br from-orange-500 to-rose-500 rounded-3xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity" />
+                    <div className="relative bg-gradient-to-br from-[#1a1a2e] to-[#16162a] rounded-3xl p-3 border border-white/10 transform hover:scale-105 transition-transform">
+                      <img
+                        src="/assets/wizard/wizard_torch.png"
+                        alt="Wizard Torch"
+                        className="w-full h-auto object-contain"
+                      />
+                    </div>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  className="absolute left-[0%] bottom-[5%] w-[50%]"
+                  animate={{ y: [0, -12, 0] }}
+                  transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                >
+                  <div className="relative group">
+                    <div className="absolute -inset-2 bg-gradient-to-br from-yellow-500 to-amber-500 rounded-3xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity" />
+                    <div className="relative bg-gradient-to-br from-[#1a1a2e] to-[#16162a] rounded-3xl p-3 border border-white/10 transform hover:scale-105 transition-transform">
+                      <img
+                        src="/assets/wizard/wizard_energy.png"
+                        alt="Wizard Energy"
+                        className="w-full h-auto object-contain"
+                      />
+                    </div>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  className="absolute right-[0%] bottom-[10%] w-[52%]"
+                  animate={{ y: [0, -8, 0] }}
+                  transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+                >
+                  <div className="relative group">
+                    <div className="absolute -inset-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-3xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity" />
+                    <div className="relative bg-gradient-to-br from-[#1a1a2e] to-[#16162a] rounded-3xl p-3 border border-white/10 transform hover:scale-105 transition-transform">
+                      <img
+                        src="/assets/wizard/wizard_staff.png"
+                        alt="Wizard Staff"
+                        className="w-full h-auto object-contain"
+                      />
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
             </motion.div>
           </div>
 
-          {/* Right Column - Wizard Images Grid */}
+          {/* Scroll indicator */}
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="relative flex items-center justify-center min-h-[500px]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1 }}
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
           >
-            <div className="relative w-full max-w-2xl">
-              {/* Wizard Novice - Top left, tilted left */}
-              <motion.div
-                initial={{ opacity: 0, rotate: -20, scale: 0.8 }}
-                animate={{ opacity: 1, rotate: -12, scale: 1 }}
-                transition={{ duration: 0.8, delay: 0.3 }}
-                className="absolute left-0 top-0 z-10"
-                style={{ transform: 'translate(-8px, -5px)' }}
-              >
-                <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-teal-200 bg-white p-2 transform hover:scale-105 transition-transform duration-300">
-                  <img
-                    src="/assets/wizard/wizard_novice.png"
-                    alt="Wizard Novice"
-                    className="w-48 h-48 object-contain"
-                  />
-                </div>
-              </motion.div>
-
-              {/* Wizard Torch - Top right, tilted right */}
-              <motion.div
-                initial={{ opacity: 0, rotate: 20, scale: 0.8 }}
-                animate={{ opacity: 1, rotate: 15, scale: 1 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
-                className="absolute right-0 top-0 z-20"
-                style={{ transform: 'translate(8px, -8px)' }}
-              >
-                <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-orange-200 bg-white p-2 transform hover:scale-105 transition-transform duration-300">
-                  <img
-                    src="/assets/wizard/wizard_torch.png"
-                    alt="Wizard Torch"
-                    className="w-52 h-52 object-contain"
-                  />
-                </div>
-              </motion.div>
-
-              {/* Wizard Energy - Bottom left, tilted right */}
-              <motion.div
-                initial={{ opacity: 0, rotate: 18, scale: 0.8 }}
-                animate={{ opacity: 1, rotate: 10, scale: 1 }}
-                transition={{ duration: 0.8, delay: 0.5 }}
-                className="absolute left-0 bottom-0 z-30"
-                style={{ transform: 'translate(-5px, 10px)' }}
-              >
-                <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-yellow-200 bg-white p-2 transform hover:scale-105 transition-transform duration-300">
-                  <img
-                    src="/assets/wizard/wizard_energy.png"
-                    alt="Wizard Energy"
-                    className="w-52 h-52 object-contain"
-                  />
-                </div>
-              </motion.div>
-
-              {/* Wizard Staff - Bottom right, tilted left */}
-              <motion.div
-                initial={{ opacity: 0, rotate: -18, scale: 0.8 }}
-                animate={{ opacity: 1, rotate: -10, scale: 1 }}
-                transition={{ duration: 0.8, delay: 0.6 }}
-                className="absolute right-0 bottom-0 z-40"
-                style={{ transform: 'translate(10px, 8px)' }}
-              >
-                <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-emerald-200 bg-white p-2 transform hover:scale-105 transition-transform duration-300">
-                  <img
-                    src="/assets/wizard/wizard_staff.png"
-                    alt="Wizard Staff"
-                    className="w-56 h-56 object-contain"
-                  />
-                </div>
-              </motion.div>
-
-              {/* Decorative background elements */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-96 h-96 bg-gradient-to-br from-teal-100 via-orange-50 to-emerald-100 rounded-full blur-3xl opacity-30"></div>
-              </div>
-            </div>
+            <span className="text-xs text-gray-500 uppercase tracking-widest">Scroll</span>
+            <motion.div
+              animate={{ y: [0, 8, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            >
+              <ChevronDown className="w-5 h-5 text-gray-500" />
+            </motion.div>
           </motion.div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features-section" className="bg-white py-16 lg:py-24">
+      <section id="features-section" className="relative py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4">
-            Så här fungerar Spell School
-          </h2>
-          <p className="text-lg text-gray-600 text-center max-w-3xl mx-auto mb-12">
-            Ett enkelt och effektivt system för att organisera och öva glosor
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {/* Feature 1: Poängsystem & Ranking */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="bg-gradient-to-br from-teal-50 to-emerald-50 rounded-2xl p-6 border border-teal-100"
-            >
-              <div className="bg-teal-600 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <Trophy className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Poäng & Ranking</h3>
-              <p className="text-gray-600">
-                Elever samlar poäng, tjäna troféer och klättrar i rank allt eftersom de blir mästare på orden. 
-                Ett motiverande system som gör inlärningen rolig och engagerande.
-              </p>
-            </motion.div>
-
-            {/* Feature 2: Interaktiva övningar */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-6 border border-purple-100"
-            >
-              <div className="bg-purple-600 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <Sparkles className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Interaktiva övningar</h3>
-              <p className="text-gray-600">
-                Träna uttal och få direkt feedback med automatisk bedömning. 
-                Skapa kontext kring ord genom anpassningsbara övningar som anpassar sig efter elevernas behov.
-              </p>
-            </motion.div>
-
-            {/* Feature 3: Färgblocksindelning */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-6 border border-blue-100"
-            >
-              <div className="bg-blue-600 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <div className="grid grid-cols-2 gap-1">
-                  <div className="w-3 h-3 bg-white rounded"></div>
-                  <div className="w-3 h-3 bg-white rounded"></div>
-                  <div className="w-3 h-3 bg-white rounded"></div>
-                  <div className="w-3 h-3 bg-white rounded"></div>
-                </div>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Färgblocksindelning</h3>
-              <p className="text-gray-600">
-                Dela in långa gloslistor i färgkodade block. Varje elev väljer själv hur många block de vill öva på för personlig inlärning i egen takt.
-              </p>
-            </motion.div>
-
-            {/* Feature 4: Session Mode */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-2xl p-6 border border-orange-100"
-            >
-              <div className="bg-orange-500 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <Gamepad2 className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Session Mode</h3>
-              <p className="text-gray-600">
-                Ge läxor i session mode där du bygger upp en kedja av övningar som eleverna gör i följd. 
-                Följ deras progression under hela läxveckan.
-              </p>
-            </motion.div>
-          </div>
-
-          {/* Detailed Feature Sections */}
-          <div className="space-y-6">
-            {/* Färgblocksindelning - Detaljerad förklaring */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-8 border-2 border-blue-200"
-            >
-              <div className="max-w-4xl mx-auto">
-                <div className="flex items-start gap-6">
-                  <div className="flex-shrink-0">
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center">
-                      <div className="grid grid-cols-3 gap-1">
-                        <div className="w-3 h-3 bg-white rounded"></div>
-                        <div className="w-3 h-3 bg-white rounded"></div>
-                        <div className="w-3 h-3 bg-white rounded"></div>
-                        <div className="w-3 h-3 bg-white rounded"></div>
-                        <div className="w-3 h-3 bg-white rounded"></div>
-                        <div className="w-3 h-3 bg-white rounded"></div>
-                        <div className="w-3 h-3 bg-white rounded"></div>
-                        <div className="w-3 h-3 bg-white rounded"></div>
-                        <div className="w-3 h-3 bg-white rounded"></div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-3">Färgblocksindelning för personlig inlärning</h3>
-                    <div className="space-y-4 text-gray-700">
-                      <p className="leading-relaxed">
-                        <strong className="text-blue-700">Dela upp långa gloslistor:</strong> Organisera ord i färgkodade block för tematisk eller svårighetsbaserad indelning. Varje block har sin egen färg som gör det visuellt tydligt vilka ord som hör ihop.
-                      </p>
-                      <p className="leading-relaxed">
-                        <strong className="text-blue-700">Elever väljer själva:</strong> Varje elev har möjlighet att välja hur många block de vill öva på. Detta ger dem kontroll över sin inlärning och möjliggör fokuserad träning på områden där de behöver mer övning.
-                      </p>
-                      <p className="leading-relaxed">
-                        <strong className="text-blue-700">Flexibel övning:</strong> Perfekt för både strukturerad undervisning där läraren organiserar ord i block och självständig träning där elever väljer sina egna kombinationer.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Session Mode - Detaljerad förklaring */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-2xl p-8 border-2 border-orange-200"
-            >
-              <div className="max-w-4xl mx-auto">
-                <div className="flex items-start gap-6">
-                  <div className="flex-shrink-0">
-                    <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl flex items-center justify-center">
-                      <Gamepad2 className="w-8 h-8 text-white" />
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-3">Session Mode - Läxor som kedja av övningar</h3>
-                    <div className="space-y-4 text-gray-700">
-                      <p className="leading-relaxed">
-                        <strong className="text-orange-700">Bygg upp en kedja av övningar:</strong> Ge läxor i session mode där du enkelt och smidigt bygger upp en kedja av övningar som eleverna måste göra i följd. Varje övning låser upp nästa när den är klar.
-                      </p>
-                      <p className="leading-relaxed">
-                        <strong className="text-orange-700">Följ progression under läxveckan:</strong> Se hur dina elever framstår genom hela läxveckan med tydlig översikt över vilka övningar som är klara och vilka som återstår.
-                      </p>
-                      <p className="leading-relaxed">
-                        <strong className="text-orange-700">Avsluta med quiz:</strong> Välj själv om du vill avsluta sessionen med självrättande quiz eller manuellt rättade quiz i ett enkelt poängsystem.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Interaktiva övningar & Feedback - Detaljerad förklaring */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-8 border-2 border-purple-200"
-            >
-              <div className="max-w-4xl mx-auto">
-                <div className="flex items-start gap-6">
-                  <div className="flex-shrink-0">
-                    <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center">
-                      <Mic className="w-8 h-8 text-white" />
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-3">Interaktiva övningar med direkt feedback</h3>
-                    <div className="space-y-4 text-gray-700">
-                      <p className="leading-relaxed">
-                        <strong className="text-purple-700">Träna uttal och få direkt feedback:</strong> Elever får omedelbar feedback på sitt uttal med automatisk bedömning. Systemet analyserar uttalet och ger konstruktiv feedback för att förbättra pronunciation.
-                      </p>
-                      <p className="leading-relaxed">
-                        <strong className="text-purple-700">Skapa kontext kring ord:</strong> Använd interaktiva övningar för att skapa kontext kring de ord du tilldelar. Systemet genererar meningar och exempel som hjälper elever att förstå ordets betydelse och användning.
-                      </p>
-                      <p className="leading-relaxed">
-                        <strong className="text-purple-700">Direkt rättning av quiz:</strong> Ge möjlighet till direkt rättning av quiz med automatisk bedömning eller välj manuell rättning där du har full kontroll över poängsättningen.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Progression Tracking - Detaljerad förklaring */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-8 border-2 border-green-200"
-            >
-              <div className="max-w-4xl mx-auto">
-                <div className="flex items-start gap-6">
-                  <div className="flex-shrink-0">
-                    <div className="w-16 h-16 bg-gradient-to-br from-green-600 to-emerald-600 rounded-xl flex items-center justify-center">
-                      <BarChart3 className="w-8 h-8 text-white" />
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-3">Tydlig koll på elevernas framsteg</h3>
-                    <div className="space-y-4 text-gray-700">
-                      <p className="leading-relaxed">
-                        <strong className="text-green-700">Accuracy score över tid:</strong> Få tydlig koll på hur det går för dina elever med accuracy score över tid på både övningar och gloslistor. Se trender och identifiera områden som behöver extra stöd.
-                      </p>
-                      <p className="leading-relaxed">
-                        <strong className="text-green-700">Detaljerad statistik:</strong> Följ elevernas framsteg med omfattande statistik över poäng, antal övningar, tid spenderad och förbättring över tid. Allt på ett och samma ställe.
-                      </p>
-                      <p className="leading-relaxed">
-                        <strong className="text-green-700">Progression per gloslista:</strong> Se exakt hur elever presterar på varje gloslista du tilldelar, med tydlig översikt över vilka ord som behöver mer övning.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Game Screenshots Section */}
-      <section className="bg-gradient-to-b from-white to-gray-50 py-16 lg:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Magiska övningar som gör glosinlärning roligt
+          {/* Section Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-20"
+          >
+            <span className="text-amber-500 font-semibold text-sm uppercase tracking-wider mb-4 block">Funktioner</span>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              Allt du behöver för att göra
+              <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">
+                glosinlärning effektivt
+              </span>
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Utforska våra interaktiva spel där elever lär sig genom lek och engagemang
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+              Ett komplett verktyg designat för lärare som vill engagera sina elever
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {/* Flashcard Game */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="group relative bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 hover:shadow-2xl transition-all duration-300"
-            >
-              <div className="aspect-video bg-gradient-to-br from-purple-100 to-indigo-100 relative overflow-hidden">
-                <img
-                  src="/screenshots/flashcards.png"
-                  alt="Flashcards spel"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  onError={(e) => {
-                    // Fallback om bilden inte finns
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    const parent = target.parentElement;
-                    if (parent) {
-                      parent.innerHTML = `
-                        <div class="w-full h-full flex items-center justify-center text-purple-600">
-                          <div class="text-center">
-                            <div class="text-4xl mb-2">🃏</div>
-                            <div class="text-sm font-semibold">Flashcards</div>
-                          </div>
-                        </div>
-                      `;
-                    }
-                  }}
+          {/* Features Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                icon: Trophy,
+                title: "Poäng & Ranking",
+                description: "Elever samlar XP, tjänar troféer och klättrar i rank. Gamification som motiverar!",
+                gradient: "from-amber-500 to-orange-500",
+                delay: 0
+              },
+              {
+                icon: Sparkles,
+                title: "Interaktiva Övningar",
+                description: "Träna uttal med AI-feedback och skapa kontext kring ord med smarta övningar.",
+                gradient: "from-purple-500 to-pink-500",
+                delay: 0.1
+              },
+              {
+                icon: Target,
+                title: "Färgblocksindelning",
+                description: "Dela upp gloslistor i färgkodade block. Elever väljer själva vad de vill öva på.",
+                gradient: "from-cyan-500 to-blue-500",
+                delay: 0.2
+              },
+              {
+                icon: Zap,
+                title: "Session Mode",
+                description: "Bygg kedjor av övningar som läxor. Följ progression genom hela veckan.",
+                gradient: "from-rose-500 to-red-500",
+                delay: 0.3
+              }
+            ].map((feature, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: feature.delay }}
+                className="group relative"
+              >
+                <div className="absolute -inset-0.5 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl blur"
+                  style={{ backgroundImage: `linear-gradient(to bottom right, var(--tw-gradient-stops))` }}
                 />
-              </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Flashcards</h3>
-                <p className="text-gray-600 text-sm">
-                  Lära sig ord genom att vända kort och öva uttal med automatisk bedömning
-                </p>
-              </div>
-            </motion.div>
-
-            {/* Memory Game */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="group relative bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 hover:shadow-2xl transition-all duration-300"
-            >
-              <div className="aspect-video bg-gradient-to-br from-blue-100 to-cyan-100 relative overflow-hidden">
-                <img
-                  src="/screenshots/memory.png"
-                  alt="Memory spel"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    const parent = target.parentElement;
-                    if (parent) {
-                      parent.innerHTML = `
-                        <div class="w-full h-full flex items-center justify-center text-blue-600">
-                          <div class="text-center">
-                            <div class="text-4xl mb-2">🧠</div>
-                            <div class="text-sm font-semibold">Memory</div>
-                          </div>
-                        </div>
-                      `;
-                    }
-                  }}
-                />
-              </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Memory</h3>
-                <p className="text-gray-600 text-sm">
-                  Matcha ord med sina översättningar i ett klassiskt memory-spel
-                </p>
-              </div>
-            </motion.div>
-
-            {/* Typing Challenge */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="group relative bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 hover:shadow-2xl transition-all duration-300"
-            >
-              <div className="aspect-video bg-gradient-to-br from-orange-100 to-yellow-100 relative overflow-hidden">
-                <img
-                  src="/screenshots/typing.png"
-                  alt="Typing Challenge spel"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    const parent = target.parentElement;
-                    if (parent) {
-                      parent.innerHTML = `
-                        <div class="w-full h-full flex items-center justify-center text-orange-600">
-                          <div class="text-center">
-                            <div class="text-4xl mb-2">⌨️</div>
-                            <div class="text-sm font-semibold">Typing Challenge</div>
-                          </div>
-                        </div>
-                      `;
-                    }
-                  }}
-                />
-              </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Typing Challenge</h3>
-                <p className="text-gray-600 text-sm">
-                  Öva stavning och snabbhet genom att skriva ord så snabbt som möjligt
-                </p>
-              </div>
-            </motion.div>
-
-            {/* Translate Game */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="group relative bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 hover:shadow-2xl transition-all duration-300"
-            >
-              <div className="aspect-video bg-gradient-to-br from-green-100 to-emerald-100 relative overflow-hidden">
-                <img
-                  src="/screenshots/translate.png"
-                  alt="Translate spel"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    const parent = target.parentElement;
-                    if (parent) {
-                      parent.innerHTML = `
-                        <div class="w-full h-full flex items-center justify-center text-green-600">
-                          <div class="text-center">
-                            <div class="text-4xl mb-2">🌐</div>
-                            <div class="text-sm font-semibold">Translate</div>
-                          </div>
-                        </div>
-                      `;
-                    }
-                  }}
-                />
-              </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Translate</h3>
-                <p className="text-gray-600 text-sm">
-                  Översätt ord mellan svenska och engelska för att förstå betydelsen
-                </p>
-              </div>
-            </motion.div>
-
-            {/* Sentence Gap */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              className="group relative bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 hover:shadow-2xl transition-all duration-300"
-            >
-              <div className="aspect-video bg-gradient-to-br from-pink-100 to-rose-100 relative overflow-hidden">
-                <img
-                  src="/screenshots/sentence-gap.png"
-                  alt="Sentence Gap spel"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    const parent = target.parentElement;
-                    if (parent) {
-                      parent.innerHTML = `
-                        <div class="w-full h-full flex items-center justify-center text-pink-600">
-                          <div class="text-center">
-                            <div class="text-4xl mb-2">📝</div>
-                            <div class="text-sm font-semibold">Sentence Gap</div>
-                          </div>
-                        </div>
-                      `;
-                    }
-                  }}
-                />
-              </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Sentence Gap</h3>
-                <p className="text-gray-600 text-sm">
-                  Fyll i luckor i meningar för att lära sig ord i kontext - kontexten visar ordets betydelse
-                </p>
-              </div>
-            </motion.div>
-
-            {/* Word Roulette */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.5 }}
-              className="group relative bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 hover:shadow-2xl transition-all duration-300"
-            >
-              <div className="aspect-video bg-gradient-to-br from-amber-100 to-yellow-100 relative overflow-hidden">
-                <img
-                  src="/screenshots/roulette.png"
-                  alt="Word Roulette spel"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    const parent = target.parentElement;
-                    if (parent) {
-                      parent.innerHTML = `
-                        <div class="w-full h-full flex items-center justify-center text-amber-600">
-                          <div class="text-center">
-                            <div class="text-4xl mb-2">🎯</div>
-                            <div class="text-sm font-semibold">Word Roulette</div>
-                          </div>
-                        </div>
-                      `;
-                    }
-                  }}
-                />
-              </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Word Roulette</h3>
-                <p className="text-gray-600 text-sm">
-                  Skapa meningar med slumpade ord för att öva sammanhang och grammatik
-                </p>
-              </div>
-            </motion.div>
-          </div>
-
-          <div className="text-center mt-8">
-            <p className="text-gray-600 mb-4">
-              Och många fler speltyper för varierad träning!
-            </p>
+                <div className="relative h-full bg-[#12122a] border border-white/5 rounded-3xl p-8 hover:border-white/10 transition-colors">
+                  <div className={`w-14 h-14 bg-gradient-to-br ${feature.gradient} rounded-2xl flex items-center justify-center mb-6`}>
+                    <feature.icon className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
+                  <p className="text-gray-400 leading-relaxed">{feature.description}</p>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
+      {/* Detailed Features */}
+      <section className="relative py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-32">
+          {/* Feature 1 - Pronunciation */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center"
+          >
+            <div>
+              <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 rounded-full px-4 py-2 mb-6">
+                <Mic className="w-4 h-4 text-purple-400" />
+                <span className="text-sm text-purple-300">AI-driven uttalsrättning</span>
+              </div>
+              <h3 className="text-3xl md:text-4xl font-bold mb-6">
+                Direkt feedback på
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500"> uttal</span>
+              </h3>
+              <p className="text-gray-400 text-lg leading-relaxed mb-8">
+                Elever får omedelbar feedback på sitt uttal med automatisk AI-bedömning. 
+                Systemet analyserar uttalet och ger konstruktiv feedback för att förbättra pronunciation.
+              </p>
+              <ul className="space-y-4">
+                {["Realtidsanalys av uttal", "Konstruktiv feedback på fel", "Träna tills det sitter"].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3">
+                    <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center">
+                      <CheckCircle2 className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <span className="text-gray-300">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="relative">
+              <div className="absolute -inset-4 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-3xl blur-2xl" />
+              <div className="relative bg-[#12122a] border border-white/10 rounded-3xl p-8">
+                <div className="aspect-video bg-gradient-to-br from-purple-900/50 to-pink-900/50 rounded-2xl flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                      <Mic className="w-10 h-10 text-white" />
+                    </div>
+                    <p className="text-gray-400">Trycka för att spela in</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Feature 2 - Session Mode */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center"
+          >
+            <div className="order-2 lg:order-1 relative">
+              <div className="absolute -inset-4 bg-gradient-to-br from-orange-500/20 to-rose-500/20 rounded-3xl blur-2xl" />
+              <div className="relative bg-[#12122a] border border-white/10 rounded-3xl p-8">
+                {/* Session chain visualization */}
+                <div className="space-y-4">
+                  {["Flashcards", "Memory", "Typing", "Quiz"].map((step, i) => (
+                    <div key={i} className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                        i < 2 ? 'bg-emerald-500' : i === 2 ? 'bg-amber-500' : 'bg-gray-700'
+                      }`}>
+                        {i < 2 ? <CheckCircle2 className="w-5 h-5 text-white" /> : 
+                         i === 2 ? <Play className="w-5 h-5 text-white" /> :
+                         <Lock className="w-5 h-5 text-gray-400" />}
+                      </div>
+                      <div className="flex-1 h-12 bg-white/5 rounded-xl flex items-center px-4">
+                        <span className={i < 3 ? 'text-white' : 'text-gray-500'}>{step}</span>
+                      </div>
+                      {i < 2 && <span className="text-emerald-400 text-sm">100%</span>}
+                      {i === 2 && <span className="text-amber-400 text-sm animate-pulse">Aktiv</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="order-1 lg:order-2">
+              <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-full px-4 py-2 mb-6">
+                <Zap className="w-4 h-4 text-orange-400" />
+                <span className="text-sm text-orange-300">Session Mode</span>
+              </div>
+              <h3 className="text-3xl md:text-4xl font-bold mb-6">
+                Strukturerade
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-rose-500"> läxkedjor</span>
+              </h3>
+              <p className="text-gray-400 text-lg leading-relaxed mb-8">
+                Bygg upp sekvenser av övningar som elever måste slutföra i ordning. 
+                Perfekt för läxor där du vill säkerställa att alla steg genomförs.
+              </p>
+              <ul className="space-y-4">
+                {["Övningar låser upp i sekvens", "Följ progression i realtid", "Avsluta med quiz för bedömning"].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3">
+                    <div className="w-6 h-6 rounded-full bg-orange-500/20 flex items-center justify-center">
+                      <CheckCircle2 className="w-4 h-4 text-orange-400" />
+                    </div>
+                    <span className="text-gray-300">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Games Section */}
+      <section className="relative py-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <span className="text-cyan-500 font-semibold text-sm uppercase tracking-wider mb-4 block">Spel</span>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              Magiska övningar som
+              <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                gör inlärning rolig
+              </span>
+            </h2>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { name: "Flashcards", img: "/screenshots/flashcards.png", desc: "Vänd kort och öva uttal med AI-bedömning", color: "from-purple-500 to-indigo-500" },
+              { name: "Memory", img: "/screenshots/memory.png", desc: "Matcha ord med sina översättningar", color: "from-cyan-500 to-blue-500" },
+              { name: "Typing Challenge", img: "/screenshots/typing.png", desc: "Öva stavning och snabbhet", color: "from-orange-500 to-amber-500" },
+              { name: "Translate", img: "/screenshots/translate.png", desc: "Översätt mellan svenska och engelska", color: "from-emerald-500 to-teal-500" },
+              { name: "Sentence Gap", img: "/screenshots/sentence-gap.png", desc: "Fyll i luckor för att lära ord i kontext", color: "from-pink-500 to-rose-500" },
+              { name: "Word Roulette", img: "/screenshots/roulette.png", desc: "Skapa meningar med slumpade ord", color: "from-amber-500 to-yellow-500" },
+            ].map((game, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="group relative"
+              >
+                <div className={`absolute -inset-0.5 bg-gradient-to-br ${game.color} opacity-0 group-hover:opacity-50 transition-opacity duration-500 rounded-3xl blur`} />
+                <div className="relative bg-[#12122a] border border-white/5 rounded-3xl overflow-hidden hover:border-white/10 transition-all">
+                  <div className="aspect-video relative overflow-hidden">
+                    <img
+                      src={game.img}
+                      alt={game.name}
+                      className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                    <div className={`absolute inset-0 bg-gradient-to-br ${game.color} opacity-20`} />
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold mb-2">{game.name}</h3>
+                    <p className="text-gray-400 text-sm">{game.desc}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center text-gray-500 mt-12"
+          >
+            ...och flera fler speltyper för varierad träning!
+          </motion.p>
+        </div>
+      </section>
 
       {/* Benefits Section */}
-      <section className="bg-gradient-to-br from-teal-50 to-emerald-50 py-16 lg:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Varför välja Spell School?
+      <section className="relative py-32">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-amber-500/5 to-transparent" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              Varför välja
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500"> Spell School?</span>
             </h2>
-            <p className="text-lg text-gray-600">
-              Ett komplett verktyg för lärare som vill göra glosinlärning roligt och effektivt.
-            </p>
-          </div>
+          </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {[
               "Enkelt att skapa och tilldela glosor",
               "Flera olika speltyper för varierad träning",
               "Automatisk framstegsspårning och statistik",
-              "Motiverande XP-system och nivåer för elever",
-              "Gratis att använda",
-              "Säker och GDPR-kompatibel"
-            ].map((benefit, index) => (
+              "Motiverande XP-system och nivåer",
+              "Säker och GDPR-kompatibel",
+              "Snabb setup - börja på 5 minuter"
+            ].map((benefit, i) => (
               <motion.div
-                key={index}
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
+                key={i}
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="flex items-start space-x-3 bg-white rounded-lg p-4 shadow-sm"
+                transition={{ delay: i * 0.1 }}
+                className="flex items-center gap-4 bg-white/5 border border-white/5 rounded-2xl p-5 hover:bg-white/10 hover:border-white/10 transition-all"
               >
-                <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-                <p className="text-gray-700 font-medium">{benefit}</p>
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center flex-shrink-0">
+                  <CheckCircle2 className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-gray-200 font-medium">{benefit}</span>
               </motion.div>
             ))}
           </div>
@@ -726,114 +698,120 @@ export default function SpellSchoolLanding({
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-to-r from-teal-600 to-emerald-700 py-16 lg:py-24">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Redo att börja?
-          </h2>
-          <p className="text-xl text-teal-100 mb-8">
-            Skapa ditt konto idag och börja tilldela glosor till dina elever.
-          </p>
-          <Link
-            href="/signup/teacher"
-            className="inline-block bg-white text-teal-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-50 transition-all shadow-lg"
+      <section className="relative py-32 overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-br from-amber-500/20 to-rose-500/20 rounded-full blur-3xl" />
+        </div>
+        
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
           >
-            Skapa lärarkonto gratis
-          </Link>
+            <h2 className="text-4xl md:text-6xl font-bold mb-6">
+              Redo att börja?
+            </h2>
+            <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
+              Skapa ditt gratis lärarkonto idag och börja tilldela glosor till dina elever på några minuter.
+            </p>
+            <Link
+              href="/signup/teacher"
+              className="group relative inline-flex items-center justify-center gap-2"
+            >
+              <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl blur-lg opacity-70 group-hover:opacity-100 transition-opacity" />
+              <span className="relative bg-gradient-to-r from-amber-500 to-orange-600 text-white px-10 py-5 rounded-2xl font-bold text-xl inline-flex items-center gap-3 hover:from-amber-400 hover:to-orange-500 transition-all">
+                Skapa lärarkonto
+                <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+              </span>
+            </Link>
+          </motion.div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-12">
+      <footer className="relative border-t border-white/5 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="text-white font-bold text-lg mb-4">Spell School</h3>
-              <p className="text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+            <div className="md:col-span-2">
+              <Link href="/" className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-2xl font-bold">SpellSchool</span>
+              </Link>
+              <p className="text-gray-500 max-w-sm">
                 Ett pedagogiskt verktyg för glosinlärning som gör språkinlärning roligt och engagerande.
               </p>
             </div>
+            
             <div>
-              <h3 className="text-white font-bold text-lg mb-4">Funktioner</h3>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <button
-                    onClick={() => {
-                      const featuresSection = document.getElementById('features-section')
-                      if (featuresSection) {
-                        featuresSection.scrollIntoView({ behavior: 'smooth' })
-                      }
-                    }}
-                    className="hover:text-white transition-colors text-left"
-                  >
-                    Se alla funktioner
-                  </button>
-                </li>
+              <h3 className="text-white font-semibold mb-4">Länkar</h3>
+              <ul className="space-y-3">
+                <li><Link href="/privacy" className="text-gray-400 hover:text-white transition-colors">Integritetspolicy</Link></li>
+                <li><Link href="/terms" className="text-gray-400 hover:text-white transition-colors">Användarvillkor</Link></li>
               </ul>
             </div>
+            
             <div>
-              <h3 className="text-white font-bold text-lg mb-4">Länkar</h3>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <Link href="/privacy" className="hover:text-white transition-colors">
-                    Integritetspolicy
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/terms" className="hover:text-white transition-colors">
-                    Användarvillkor
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-white font-bold text-lg mb-4">För lärare</h3>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <Link href="/signup/teacher" className="hover:text-white transition-colors">
-                    Skapa lärarkonto
-                  </Link>
-                </li>
+              <h3 className="text-white font-semibold mb-4">För lärare</h3>
+              <ul className="space-y-3">
+                <li><Link href="/signup/teacher" className="text-gray-400 hover:text-white transition-colors">Skapa konto</Link></li>
+                <li><button onClick={() => setShowLoginModal(true)} className="text-gray-400 hover:text-white transition-colors">Logga in</button></li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm">
+          
+          <div className="border-t border-white/5 mt-12 pt-8 text-center text-gray-500 text-sm">
             <p>&copy; {new Date().getFullYear()} Spell School. Alla rättigheter förbehållna.</p>
           </div>
         </div>
       </footer>
 
       {/* Login Modal */}
-      {showLoginModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setShowLoginModal(false)}>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8"
+      <AnimatePresence>
+        {showLoginModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowLoginModal(false)}
           >
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Logga in</h2>
-              <button
-                onClick={() => setShowLoginModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
-            </div>
-                    <FormContents 
-                      onEmailLogin={onEmailLogin}
-                      onGoogleLogin={onGoogleLogin}
-                      loading={loading}
-                      message={message}
-                      identifier={identifier}
-                      setIdentifier={setIdentifier}
-                      password={password}
-                      setPassword={setPassword}
-                    />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-md"
+            >
+              <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-3xl blur-xl" />
+              <div className="relative bg-[#12122a] border border-white/10 rounded-3xl p-8">
+                <div className="flex justify-between items-center mb-8">
+                  <h2 className="text-2xl font-bold">Logga in</h2>
+                  <button
+                    onClick={() => setShowLoginModal(false)}
+                    className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-400" />
+                  </button>
+                </div>
+                <FormContents 
+                  onEmailLogin={onEmailLogin}
+                  onGoogleLogin={onGoogleLogin}
+                  loading={loading}
+                  message={message}
+                  identifier={identifier}
+                  setIdentifier={setIdentifier}
+                  password={password}
+                  setPassword={setPassword}
+                />
+              </div>
+            </motion.div>
           </motion.div>
-                  </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -873,57 +851,57 @@ function FormContents({
         type="button"
         onClick={onGoogleLogin}
         disabled={loading}
-        className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="w-full flex items-center justify-center gap-3 rounded-xl bg-white text-gray-900 px-4 py-3.5 font-medium hover:bg-gray-100 transition-colors disabled:opacity-50"
       >
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="h-5 w-5"/>
         Fortsätt med Google
       </button>
 
       {/* Divider */}
-      <div className="relative my-6">
+      <div className="relative my-8">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-300"></div>
+          <div className="w-full border-t border-white/10"></div>
         </div>
         <div className="relative flex justify-center text-sm">
-          <span className="px-4 bg-white text-gray-500">eller</span>
+          <span className="px-4 bg-[#12122a] text-gray-500">eller</span>
         </div>
       </div>
 
       {/* Email/Username */}
       <label className="block">
-        <span className="text-sm font-medium text-gray-700 mb-1.5 block">Användarnamn eller e-post</span>
+        <span className="text-sm font-medium text-gray-300 mb-2 block">Användarnamn eller e-post</span>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none"/>
+          <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none"/>
           <input
             required
             type="text"
             value={identifier}
             onChange={(e) => setIdentifier?.(e.target.value)}
             placeholder="användarnamn eller e-post"
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all"
+            className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all"
           />
         </div>
       </label>
 
       {/* Password */}
       <label className="block">
-        <span className="text-sm font-medium text-gray-700 mb-1.5 block">Lösenord</span>
+        <span className="text-sm font-medium text-gray-300 mb-2 block">Lösenord</span>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none"/>
+          <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none"/>
           <input
             required
             type="password"
             value={password}
             onChange={(e) => setPassword?.(e.target.value)}
             placeholder="••••••••"
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all"
+            className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all"
           />
         </div>
       </label>
 
       {/* Error message */}
       {message && (
-        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+        <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
           {message}
         </div>
       )}
@@ -932,16 +910,16 @@ function FormContents({
       <button
         type="submit"
         disabled={loading}
-        className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-teal-600 to-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg hover:from-teal-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-3.5 rounded-xl font-semibold hover:from-amber-400 hover:to-orange-500 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
       >
         {loading ? 'Loggar in...' : 'Logga in'}
-        {!loading && <ArrowRight className="h-4 w-4"/>}
+        {!loading && <ArrowRight className="h-5 w-5"/>}
       </button>
 
       {/* Sign up link */}
-      <p className="text-center text-sm text-gray-600">
+      <p className="text-center text-sm text-gray-400 pt-2">
         Har du inget konto?{' '}
-        <Link className="font-medium text-teal-600 hover:text-teal-700 underline" href="/signup/teacher">
+        <Link className="font-medium text-amber-500 hover:text-amber-400" href="/signup/teacher">
           Skapa lärarkonto
         </Link>
       </p>

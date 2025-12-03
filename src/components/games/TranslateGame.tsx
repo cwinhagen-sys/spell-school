@@ -440,85 +440,87 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
   // ========== RENDER: Direction Selector ==========
   if (gamePhase === 'select-direction') {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="rounded-xl p-8 max-w-2xl w-full text-center shadow-lg relative bg-white text-gray-900 border border-gray-200">
-          {/* Top Progress Bar */}
-          <div className="h-1 rounded-md mb-6 bg-gradient-to-r from-teal-500 to-emerald-500"></div>
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="relative w-full max-w-2xl">
+          {/* Glow effect */}
+          <div className="absolute -inset-1 bg-gradient-to-br from-violet-500/30 via-cyan-500/20 to-fuchsia-500/30 rounded-3xl blur-xl" />
           
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-center mb-4">
-              <Globe className="w-12 h-12 text-teal-600" />
+          <div className="relative rounded-2xl p-8 shadow-2xl bg-[#12122a] border border-white/10">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/30">
+                <Globe className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">Välj riktning</h2>
+              <p className="text-gray-400 text-sm">Välj vilken riktning du vill översätta</p>
             </div>
-            <h2 className="text-2xl font-bold mb-2">Translate Challenge</h2>
-            <p className="text-gray-600 text-sm">Choose your translation direction</p>
+
+            <div className="space-y-3 mb-8">
+              {/* English to Swedish */}
+              <button
+                onClick={() => startGame('en-to-sv')}
+                className="w-full group p-5 rounded-xl border border-white/10 bg-white/5 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all duration-300"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-violet-500/20 to-cyan-500/20 rounded-xl flex items-center justify-center border border-white/10">
+                      <Languages className="w-6 h-6 text-cyan-400" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-bold text-lg mb-1 text-white group-hover:text-cyan-400 transition-colors">Engelska → Svenska</div>
+                      <div className="text-sm text-gray-400">Översätt från engelska till svenska</div>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-cyan-400 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </button>
+
+              {/* Swedish to English */}
+              <button
+                onClick={() => startGame('sv-to-en')}
+                className="w-full group p-5 rounded-xl border border-white/10 bg-white/5 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all duration-300"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-violet-500/20 to-cyan-500/20 rounded-xl flex items-center justify-center border border-white/10">
+                      <Languages className="w-6 h-6 text-violet-400" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-bold text-lg mb-1 text-white group-hover:text-violet-400 transition-colors">Svenska → Engelska</div>
+                      <div className="text-sm text-gray-400">Översätt från svenska till engelska</div>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-violet-400 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </button>
+
+              {/* Mixed */}
+              <button
+                onClick={() => startGame('mixed')}
+                className="w-full group p-5 rounded-xl border border-white/10 bg-white/5 hover:bg-amber-500/10 hover:border-amber-500/30 transition-all duration-300"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-xl flex items-center justify-center border border-white/10">
+                      <RefreshCw className="w-6 h-6 text-amber-400" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-bold text-lg mb-1 text-white group-hover:text-amber-400 transition-colors">Blandat</div>
+                      <div className="text-sm text-gray-400">Slumpmässig mix av båda riktningarna</div>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-amber-400 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </button>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="w-full px-6 py-3 bg-white/5 border border-white/10 text-gray-400 rounded-xl font-medium hover:bg-white/10 transition-colors"
+            >
+              Avbryt
+            </button>
           </div>
-
-          <div className="space-y-3 mb-8">
-            {/* English to Swedish */}
-            <button
-              onClick={() => startGame('en-to-sv')}
-              className="w-full group p-6 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 hover:border-teal-300 transition-all duration-300 hover:shadow-md"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
-                    <Languages className="w-6 h-6 text-teal-600" />
-                  </div>
-                  <div className="text-left">
-                    <div className="font-bold text-lg mb-1 text-gray-900">English → Swedish</div>
-                    <div className="text-sm text-gray-600">Translate from English to Swedish</div>
-                  </div>
-                </div>
-                <ArrowRight className="w-5 h-5 text-teal-600 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </button>
-
-            {/* Swedish to English */}
-            <button
-              onClick={() => startGame('sv-to-en')}
-              className="w-full group p-6 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 hover:border-teal-300 transition-all duration-300 hover:shadow-md"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
-                    <Languages className="w-6 h-6 text-teal-600" />
-                  </div>
-                  <div className="text-left">
-                    <div className="font-bold text-lg mb-1 text-gray-900">Swedish → English</div>
-                    <div className="text-sm text-gray-600">Translate from Swedish to English</div>
-                  </div>
-                </div>
-                <ArrowRight className="w-5 h-5 text-teal-600 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </button>
-
-            {/* Mixed */}
-            <button
-              onClick={() => startGame('mixed')}
-              className="w-full group p-6 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 hover:border-teal-300 transition-all duration-300 hover:shadow-md"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
-                    <RefreshCw className="w-6 h-6 text-teal-600" />
-                  </div>
-                  <div className="text-left">
-                    <div className="font-bold text-lg mb-1 text-gray-900">Mixed</div>
-                    <div className="text-sm text-gray-600">Random mix of both directions</div>
-                  </div>
-                </div>
-                <ArrowRight className="w-5 h-5 text-teal-600 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </button>
-          </div>
-
-          <button
-            onClick={onClose}
-            className="w-full px-6 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-          >
-            Cancel
-          </button>
         </div>
       </div>
     )
@@ -533,118 +535,123 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
     const missedWordsCount = wordResults.filter(r => !r.firstTryCorrect).length // Include yellow + red
     
     return (
-      <div className="fixed inset-0 bg-gray-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-        <div className="bg-white rounded-xl p-8 max-w-3xl w-full shadow-lg border border-gray-200 my-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-full mb-4 shadow-md">
-              <CheckCircle className="w-10 h-10 text-white" />
+      <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div className="relative w-full max-w-3xl my-8">
+          {/* Glow effect */}
+          <div className="absolute -inset-1 bg-gradient-to-br from-emerald-500/20 via-cyan-500/10 to-violet-500/20 rounded-3xl blur-xl" />
+          
+          <div className="relative bg-[#12122a] rounded-2xl p-8 shadow-2xl border border-white/10">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-2xl mb-4 shadow-lg shadow-emerald-500/30">
+                <CheckCircle className="w-10 h-10 text-white" />
+              </div>
+              <h2 className="text-3xl font-bold text-white mb-2">Spelet klart!</h2>
+              <div className="flex items-center justify-center gap-6 text-lg">
+                <div className="text-gray-300">
+                  <span className="font-bold text-emerald-400">{finalCorrect}</span> / {total} rätt
+                </div>
+                <div className="text-gray-600">•</div>
+                <div className="text-gray-300">
+                  <span className="font-bold text-cyan-400">{scoreResult.accuracy}%</span> träffsäkerhet
+                </div>
+                <div className="text-gray-600">•</div>
+                <div className="text-gray-300">
+                  <span className="font-bold text-amber-400">+{awardedPoints}</span> XP
+                </div>
+              </div>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Game Complete!</h2>
-            <div className="flex items-center justify-center gap-6 text-lg">
-              <div className="text-gray-600">
-                <span className="font-bold text-teal-600">{finalCorrect}</span> / {total} correct
-              </div>
-              <div className="text-gray-400">•</div>
-              <div className="text-gray-600">
-                <span className="font-bold text-teal-600">{scoreResult.accuracy}%</span> accuracy
-              </div>
-              <div className="text-gray-400">•</div>
-              <div className="text-gray-600">
-                <span className="font-bold text-teal-600">+{awardedPoints}</span> XP
-              </div>
-            </div>
-          </div>
 
-          {/* Word Results Checklist */}
-          <div className="mb-8">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Your Results</h3>
-            <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200 max-h-96 overflow-y-auto">
-              <div className="space-y-3">
-                {wordResults.map((result, index) => {
-                  // Determine color: Green (first try), Yellow (eventually correct), Red (failed)
-                  const isGreen = result.firstTryCorrect
-                  const isYellow = result.correct && !result.firstTryCorrect
-                  const isRed = !result.correct
-                  
-                  return (
-                    <div
-                      key={index}
-                      className={`p-4 rounded-xl border-2 transition-all ${
-                        isGreen
-                          ? 'bg-emerald-50 border-emerald-300'
-                          : isYellow
-                          ? 'bg-yellow-50 border-yellow-300'
-                          : 'bg-red-50 border-red-300'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start space-x-3 flex-1">
-                          <div className="mt-1">
-                            {isGreen ? (
-                              <CheckCircle className="w-5 h-5 text-emerald-600" />
-                            ) : isYellow ? (
-                              <CheckCircle className="w-5 h-5 text-yellow-600" />
-                            ) : (
-                              <XCircle className="w-5 h-5 text-red-600" />
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-bold text-gray-900">{result.word}</div>
-                            <div className="text-sm text-gray-600">
-                              Correct answer: <span className="font-medium text-gray-800">{result.translation}</span>
+            {/* Word Results Checklist */}
+            <div className="mb-8">
+              <h3 className="text-xl font-bold text-white mb-4">Dina resultat</h3>
+              <div className="bg-white/5 rounded-2xl p-4 border border-white/10 max-h-96 overflow-y-auto">
+                <div className="space-y-3">
+                  {wordResults.map((result, index) => {
+                    // Determine color: Green (first try), Yellow (eventually correct), Red (failed)
+                    const isGreen = result.firstTryCorrect
+                    const isYellow = result.correct && !result.firstTryCorrect
+                    const isRed = !result.correct
+                    
+                    return (
+                      <div
+                        key={index}
+                        className={`p-4 rounded-xl border transition-all ${
+                          isGreen
+                            ? 'bg-emerald-500/10 border-emerald-500/30'
+                            : isYellow
+                            ? 'bg-amber-500/10 border-amber-500/30'
+                            : 'bg-red-500/10 border-red-500/30'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start space-x-3 flex-1">
+                            <div className="mt-1">
+                              {isGreen ? (
+                                <CheckCircle className="w-5 h-5 text-emerald-400" />
+                              ) : isYellow ? (
+                                <CheckCircle className="w-5 h-5 text-amber-400" />
+                              ) : (
+                                <XCircle className="w-5 h-5 text-red-400" />
+                              )}
                             </div>
-                            {isYellow && (
-                              <div className="text-sm text-yellow-700 mt-1">
-                                ⚠️ Correct, but not on first try
+                            <div className="flex-1">
+                              <div className="font-bold text-white">{result.word}</div>
+                              <div className="text-sm text-gray-400">
+                                Rätt svar: <span className="font-medium text-gray-300">{result.translation}</span>
                               </div>
-                            )}
-                            {isRed && result.userAnswer && (
-                              <div className="text-sm text-red-600 mt-1">
-                                Your last answer: <span className="font-medium">{result.userAnswer}</span>
-                              </div>
-                            )}
+                              {isYellow && (
+                                <div className="text-sm text-amber-400 mt-1">
+                                  ⚠️ Rätt, men inte på första försöket
+                                </div>
+                              )}
+                              {isRed && result.userAnswer && (
+                                <div className="text-sm text-red-400 mt-1">
+                                  Ditt svar: <span className="font-medium">{result.userAnswer}</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                        <div className={`text-xs font-medium mt-1 ${
-                          isGreen ? 'text-emerald-600' : isYellow ? 'text-yellow-600' : 'text-red-600'
-                        }`}>
-                          {result.attempts} {result.attempts === 1 ? 'try' : 'tries'}
+                          <div className={`text-xs font-medium mt-1 ${
+                            isGreen ? 'text-emerald-400' : isYellow ? 'text-amber-400' : 'text-red-400'
+                          }`}>
+                            {result.attempts} försök
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div className="space-y-3">
-            {missedWordsCount > 0 && (
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              {missedWordsCount > 0 && (
+                <button
+                  onClick={playAgainMissedWords}
+                  className="w-full group bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-semibold py-4 px-6 rounded-xl transition-all shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2"
+                >
+                  <RefreshCw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
+                  <span>Öva på ord att förbättra ({missedWordsCount})</span>
+                </button>
+              )}
+              
               <button
-                onClick={playAgainMissedWords}
-                className="w-full group bg-teal-500 hover:bg-teal-600 text-white font-semibold py-4 px-6 rounded-lg transition-all shadow-md flex items-center justify-center gap-2"
+                onClick={playAgainAllWords}
+                className="w-full group bg-gradient-to-r from-violet-500 to-cyan-500 hover:from-violet-400 hover:to-cyan-400 text-white font-semibold py-4 px-6 rounded-xl transition-all shadow-lg shadow-violet-500/30 flex items-center justify-center gap-2"
               >
-                <RefreshCw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
-                <span>Practice Words to Improve ({missedWordsCount})</span>
+                <RotateCcw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
+                <span>Spela igen (alla ord)</span>
               </button>
-            )}
-            
-            <button
-              onClick={playAgainAllWords}
-              className="w-full group bg-teal-500 hover:bg-teal-600 text-white font-semibold py-4 px-6 rounded-lg transition-all shadow-md flex items-center justify-center gap-2"
-            >
-              <RotateCcw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
-              <span>Play Again (All Words)</span>
-            </button>
 
-            <button
-              onClick={onClose}
-              className="w-full px-6 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors"
-            >
-              Back to Dashboard
-            </button>
+              <button
+                onClick={onClose}
+                className="w-full px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 font-medium rounded-xl transition-colors"
+              >
+                Tillbaka till Dashboard
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -654,11 +661,11 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
   // ========== RENDER: Playing ==========
   if (!currentPair) {
     return (
-      <div className="fixed inset-0 bg-gray-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-xl p-8 max-w-md w-full text-center shadow-lg border border-gray-200">
-          <Loader2 className="w-12 h-12 text-gray-400 animate-spin mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Loading...</h2>
-          <p className="text-gray-600">Preparing your translation challenge</p>
+      <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50">
+        <div className="bg-[#12122a] rounded-2xl p-8 max-w-md w-full text-center shadow-2xl border border-white/10">
+          <Loader2 className="w-12 h-12 text-cyan-400 animate-spin mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-white mb-2">Laddar...</h2>
+          <p className="text-gray-400">Förbereder din översättningsutmaning</p>
         </div>
       </div>
     )
@@ -667,154 +674,163 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
   const progressPercent = ((currentWordIndex + 1) / wordPairs.length) * 100
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl border border-gray-100 relative">
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <XCircle className="w-6 h-6" />
-        </button>
+    <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50">
+      {/* Aurora background effects */}
+      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-violet-600/20 rounded-full blur-[100px] animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-cyan-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+      
+      <div className="relative w-full max-w-2xl">
+        {/* Glow effect */}
+        <div className="absolute -inset-1 bg-gradient-to-br from-violet-500/20 via-cyan-500/10 to-fuchsia-500/20 rounded-3xl blur-xl" />
+        
+        <div className="relative bg-[#12122a] rounded-2xl p-8 shadow-2xl border border-white/10">
+          {/* Close Button */}
+          <button
+            onClick={onClose}
+            className="absolute top-6 right-6 text-gray-500 hover:text-gray-300 transition-colors"
+          >
+            <XCircle className="w-6 h-6" />
+          </button>
 
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
-              <Languages className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Translate Challenge</h2>
-              <div className="text-sm text-gray-500">
-                {direction === 'en-to-sv' ? '🇬🇧 → 🇸🇪' : direction === 'sv-to-en' ? '🇸🇪 → 🇬🇧' : '🔀 Mixed'}
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/30">
+                <Languages className="w-6 h-6 text-white" />
               </div>
-            </div>
-        </div>
-          <div className="flex items-center space-x-4">
-            <div className="bg-gray-100 px-4 py-2 rounded-xl border border-gray-200">
-              <span className="text-gray-600 font-medium">
-                {Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, '0')}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">
-              Word {currentWordIndex + 1} of {wordPairs.length}
-            </span>
-            <span className="text-sm font-medium text-indigo-600">{Math.round(progressPercent)}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-            <div 
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 h-3 rounded-full transition-all duration-500 shadow-sm"
-              style={{ width: `${progressPercent}%` }}
-          ></div>
-          </div>
-        </div>
-
-        {/* Word Display Card */}
-        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-8 mb-6 border-2 border-indigo-100">
-          <div className="text-center">
-            <div className="inline-block bg-white px-4 py-2 rounded-lg mb-4 shadow-sm border border-indigo-200">
-              <span className="text-xs font-bold text-indigo-600 uppercase tracking-wide">
-                {currentPair.originalLanguage === 'en' ? '🇬🇧 English' : '🇸🇪 Swedish'}
-            </span>
-          </div>
-            <div className="text-5xl font-bold text-gray-900 mb-6">
-            {currentPair.original}
-          </div>
-            <div className="flex items-center justify-center space-x-2 mb-4">
-              <div className="h-px w-12 bg-gradient-to-r from-transparent to-indigo-300"></div>
-              <ArrowRight className="w-5 h-5 text-indigo-400" />
-              <div className="h-px w-12 bg-gradient-to-r from-indigo-300 to-transparent"></div>
-            </div>
-            <div className="inline-block bg-white px-4 py-2 rounded-lg shadow-sm border border-purple-200">
-              <span className="text-xs font-bold text-purple-600 uppercase tracking-wide">
-                Translate to {currentPair.targetLanguage === 'en' ? '🇬🇧 English' : '🇸🇪 Swedish'}
-            </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Answer Form */}
-        <form onSubmit={handleSubmit} className="mb-6">
-          <div className="flex items-center space-x-3">
-            <input
-              ref={inputRef}
-              type="text"
-              value={userAnswer}
-              onChange={(e) => setUserAnswer(e.target.value)}
-              placeholder="Type your answer..."
-              className="flex-1 px-5 py-4 text-lg border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 focus:outline-none transition-all text-gray-900 placeholder:text-gray-400 bg-white shadow-sm"
-              disabled={showFeedback}
-              autoFocus
-            />
-            <button
-              type="submit"
-              disabled={!userAnswer.trim() || showFeedback}
-              className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl hover:scale-105 disabled:hover:scale-100"
-            >
-              Submit
-            </button>
-          </div>
-        </form>
-
-        {/* Feedback */}
-        {showFeedback && (
-          <div className={`rounded-2xl p-5 mb-6 border-2 ${
-            isCorrect 
-              ? 'bg-emerald-50 border-emerald-300' 
-              : 'bg-red-50 border-red-300'
-          }`}>
-            {isCorrect ? (
-              <div className="flex items-center justify-center space-x-3 text-emerald-700">
-                <CheckCircle className="w-6 h-6" />
-                <span className="font-bold text-lg">Correct! Well done! 🎉</span>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center justify-center space-x-3 text-red-700">
-                  <XCircle className="w-6 h-6" />
-                  <span className="font-bold text-lg">
-                    {solutionRevealed ? 'Not quite!' : `Try again (${3 - attemptsForCurrent} attempts left)`}
-                  </span>
+              <div>
+                <h2 className="text-2xl font-bold text-white">Översätt</h2>
+                <div className="text-sm text-gray-400">
+                  {direction === 'en-to-sv' ? '🇬🇧 → 🇸🇪' : direction === 'sv-to-en' ? '🇸🇪 → 🇬🇧' : '🔀 Blandat'}
                 </div>
-                {solutionRevealed && (
-                  <>
-                    <div className="text-center bg-white p-4 rounded-xl border border-red-200">
-                      <div className="text-sm text-gray-600 mb-1">Correct answer:</div>
-                      <div className="text-xl font-bold text-gray-900">{currentPair.target}</div>
-                    </div>
-                  <button
-                    type="button"
-                    onClick={goToNextWord}
-                      className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold hover:from-indigo-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
-                  >
-                      <span>Continue</span>
-                      <ArrowRight className="w-4 h-4" />
-                  </button>
-                  </>
-                )}
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="bg-white/5 px-4 py-2 rounded-xl border border-white/10">
+                <span className="text-gray-300 font-medium">
+                  {Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, '0')}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-400">
+                Ord {currentWordIndex + 1} av {wordPairs.length}
+              </span>
+              <span className="text-sm font-medium text-cyan-400">{Math.round(progressPercent)}%</span>
+            </div>
+            <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
+              <div 
+                className="bg-gradient-to-r from-violet-500 to-cyan-500 h-3 rounded-full transition-all duration-500 shadow-sm"
+                style={{ width: `${progressPercent}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Word Display Card */}
+          <div className="bg-gradient-to-br from-violet-500/10 to-cyan-500/10 rounded-2xl p-8 mb-6 border border-white/10">
+            <div className="text-center">
+              <div className="inline-block bg-white/10 px-4 py-2 rounded-lg mb-4 border border-white/10">
+                <span className="text-xs font-bold text-violet-400 uppercase tracking-wide">
+                  {currentPair.originalLanguage === 'en' ? '🇬🇧 Engelska' : '🇸🇪 Svenska'}
+                </span>
+              </div>
+              <div className="text-5xl font-bold text-white mb-6">
+                {currentPair.original}
+              </div>
+              <div className="flex items-center justify-center space-x-2 mb-4">
+                <div className="h-px w-12 bg-gradient-to-r from-transparent to-cyan-500/50"></div>
+                <ArrowRight className="w-5 h-5 text-cyan-400" />
+                <div className="h-px w-12 bg-gradient-to-r from-cyan-500/50 to-transparent"></div>
+              </div>
+              <div className="inline-block bg-white/10 px-4 py-2 rounded-lg border border-white/10">
+                <span className="text-xs font-bold text-cyan-400 uppercase tracking-wide">
+                  Översätt till {currentPair.targetLanguage === 'en' ? '🇬🇧 Engelska' : '🇸🇪 Svenska'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Answer Form */}
+          <form onSubmit={handleSubmit} className="mb-6">
+            <div className="flex items-center space-x-3">
+              <input
+                ref={inputRef}
+                type="text"
+                value={userAnswer}
+                onChange={(e) => setUserAnswer(e.target.value)}
+                placeholder="Skriv ditt svar..."
+                className="flex-1 px-5 py-4 text-lg border border-white/10 rounded-xl focus:border-cyan-500/50 focus:ring-4 focus:ring-cyan-500/20 focus:outline-none transition-all text-white placeholder:text-gray-500 bg-white/5 shadow-sm"
+                disabled={showFeedback}
+                autoFocus
+              />
+              <button
+                type="submit"
+                disabled={!userAnswer.trim() || showFeedback}
+                className="px-8 py-4 bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-bold rounded-xl hover:from-violet-400 hover:to-cyan-400 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed transition-all shadow-lg shadow-violet-500/30 hover:shadow-xl hover:scale-105 disabled:hover:scale-100 disabled:shadow-none"
+              >
+                Skicka
+              </button>
+            </div>
+          </form>
+
+          {/* Feedback */}
+          {showFeedback && (
+            <div className={`rounded-2xl p-5 mb-6 border ${
+              isCorrect 
+                ? 'bg-emerald-500/10 border-emerald-500/30' 
+                : 'bg-red-500/10 border-red-500/30'
+            }`}>
+              {isCorrect ? (
+                <div className="flex items-center justify-center space-x-3 text-emerald-400">
+                  <CheckCircle className="w-6 h-6" />
+                  <span className="font-bold text-lg">Rätt! Bra jobbat! 🎉</span>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-center space-x-3 text-red-400">
+                    <XCircle className="w-6 h-6" />
+                    <span className="font-bold text-lg">
+                      {solutionRevealed ? 'Inte riktigt!' : `Försök igen (${3 - attemptsForCurrent} försök kvar)`}
+                    </span>
+                  </div>
+                  {solutionRevealed && (
+                    <>
+                      <div className="text-center bg-white/5 p-4 rounded-xl border border-white/10">
+                        <div className="text-sm text-gray-400 mb-1">Rätt svar:</div>
+                        <div className="text-xl font-bold text-white">{currentPair.target}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={goToNextWord}
+                        className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-bold hover:from-violet-400 hover:to-cyan-400 transition-all shadow-lg shadow-violet-500/30 hover:shadow-xl flex items-center justify-center space-x-2"
+                      >
+                        <span>Fortsätt</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Score Display */}
+          <div className="flex items-center justify-center space-x-6 text-sm">
+            <div className="flex items-center space-x-2 bg-emerald-500/10 px-4 py-2 rounded-lg border border-emerald-500/30">
+              <CheckCircle className="w-4 h-4 text-emerald-400" />
+              <span className="font-bold text-emerald-400">{correctCount} / {wordPairs.length} ord</span>
+            </div>
+            {wrongClicks > 0 && (
+              <div className="flex items-center space-x-2 bg-red-500/10 px-4 py-2 rounded-lg border border-red-500/30">
+                <XCircle className="w-4 h-4 text-red-400" />
+                <span className="font-bold text-red-400">{wrongClicks} missade</span>
               </div>
             )}
           </div>
-        )}
-
-        {/* Score Display */}
-        <div className="flex items-center justify-center space-x-6 text-sm">
-          <div className="flex items-center space-x-2 bg-emerald-50 px-4 py-2 rounded-lg border border-emerald-200">
-            <CheckCircle className="w-4 h-4 text-emerald-600" />
-            <span className="font-bold text-emerald-700">{correctCount} / {wordPairs.length} words</span>
-          </div>
-          {wrongClicks > 0 && (
-            <div className="flex items-center space-x-2 bg-red-50 px-4 py-2 rounded-lg border border-red-200">
-              <XCircle className="w-4 h-4 text-red-600" />
-              <span className="font-bold text-red-700">{wrongClicks} fully missed</span>
-            </div>
-          )}
         </div>
       </div>
     </div>

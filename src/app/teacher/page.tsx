@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { BookOpen, Calendar, FileText, Users, Clock, ArrowRight, Plus, TrendingUp, Activity, Gamepad2 } from 'lucide-react'
+import { BookOpen, Calendar, FileText, Users, Clock, ArrowRight, Plus, TrendingUp, Activity, Gamepad2, Sparkles, Zap } from 'lucide-react'
 import Link from 'next/link'
-import { Homework } from '@/types'
+import { motion } from 'framer-motion'
 import SaveStatusIndicator from '@/components/SaveStatusIndicator'
 
 interface Assignment {
@@ -30,6 +30,7 @@ export default function TeacherDashboard() {
   const [activeStudents, setActiveStudents] = useState<any[]>([])
   const [studentActivity, setStudentActivity] = useState<any[]>([])
   const [sessionsCount, setSessionsCount] = useState<number>(0)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const init = async () => {
@@ -51,12 +52,16 @@ export default function TeacherDashboard() {
         window.location.href = '/student'
         return
       }
-      await loadClasses()
-      await loadWordSets()
-      await loadActiveStudents()
-      await loadStudentActivity()
-      await fetchHomeworks()
-      await loadSessionsCount()
+      
+      await Promise.all([
+        loadClasses(),
+        loadWordSets(),
+        loadActiveStudents(),
+        loadStudentActivity(),
+        fetchHomeworks(),
+        loadSessionsCount()
+      ])
+      setLoading(false)
     }
     init()
     
@@ -175,7 +180,6 @@ export default function TeacherDashboard() {
       }
       
       const studentIds = classStudents.map(cs => cs.student_id)
-      // Type assertion needed because Supabase join returns nested structure
       const classMap = new Map(classStudents.map(cs => {
         const classes = (cs as any).classes
         return [cs.student_id, classes?.name]
@@ -265,237 +269,263 @@ export default function TeacherDashboard() {
     const gameNames: Record<string, string> = {
       flashcards: 'Flashcards',
       memory: 'Memory',
-      typing: 'Typing Challenge',
+      typing: 'Typing',
       translate: 'Translate',
-      pronunciation: 'Pronunciation',
-      sentence_gap: 'Sentence Gap',
-      word_roulette: 'Word Roulette'
+      pronunciation: 'Uttal',
+      sentence_gap: 'Luckor',
+      word_roulette: 'Roulette',
+      match: 'Memory',
+      connect: 'Connect',
+      choice: 'Flerval',
+      quiz: 'Quiz'
     }
     return gameNames[type] || type
   }
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    window.location.href = '/'
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Laddar dashboard...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
     <>
       {/* Welcome section for new teachers */}
       {classes.length === 0 && wordSets.length === 0 && (
-          <div className="text-center py-16 mb-8">
-            <div className="max-w-2xl mx-auto bg-white rounded-xl p-8 shadow-md border border-gray-200">
-              <div className="w-20 h-20 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <BookOpen className="w-10 h-10 text-white" />
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center py-16"
+        >
+          <div className="max-w-2xl mx-auto">
+            <div className="relative inline-block mb-8">
+              <div className="w-24 h-24 bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 rounded-3xl flex items-center justify-center mx-auto">
+                <Sparkles className="w-12 h-12 text-white" />
               </div>
-              <h2 className="text-3xl font-bold text-gray-800 mb-4">
-                Välkommen, {user?.email?.split('@')[0] || 'Lärare'}!
-              </h2>
-              <p className="text-lg text-gray-600 mb-8">
-                Kom igång genom att skapa din första klass och ordlista för att börja lära ut glosor.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  href="/teacher/classes"
-                  className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-semibold hover:from-indigo-700 hover:to-purple-700 transition-colors shadow-lg"
-                >
-                  Skapa din första klass
-                </Link>
-                <Link
-                  href="/teacher/word-sets"
-                  className="px-8 py-4 bg-white border-2 border-indigo-600 text-indigo-600 rounded-lg font-semibold hover:bg-indigo-50 transition-colors"
-                >
-                  Skapa ordlista
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Dashboard overview for existing teachers */}
-        {(classes.length > 0 || wordSets.length > 0) && (
-          <>
-            {/* Header */}
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                Välkommen tillbaka, {user?.email?.split('@')[0] || 'Lärare'}!
-              </h2>
-              <p className="text-gray-600">Här är en översikt av din verksamhet</p>
+              <div className="absolute -inset-2 bg-gradient-to-br from-amber-500 to-rose-500 rounded-3xl blur-xl opacity-40" />
             </div>
             
-            {/* Main Stats Grid - Symmetrical 3x2 layout */}
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <h2 className="text-4xl font-bold text-white mb-4">
+              Välkommen, {user?.email?.split('@')[0] || 'Lärare'}!
+            </h2>
+            <p className="text-xl text-gray-400 mb-10 max-w-lg mx-auto">
+              Kom igång genom att skapa din första klass och gloslista för att börja undervisa.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/teacher/classes"
-                className="bg-white rounded-xl p-6 shadow-md border border-gray-200 hover:shadow-lg hover:border-teal-300 transition-all group"
+                className="group relative inline-flex items-center justify-center gap-2"
               >
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="w-14 h-14 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
-                    <Users className="w-7 h-7 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-600 mb-1">Classes</p>
-                    <p className="text-3xl font-bold text-gray-900">{classes.length}</p>
-                  </div>
-                </div>
-                <div className="flex items-center text-teal-600 font-medium text-sm">
-                  Manage classes <ArrowRight className="w-4 h-4 ml-2" />
-                </div>
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl blur opacity-60 group-hover:opacity-100 transition-opacity" />
+                <span className="relative bg-gradient-to-r from-amber-500 to-orange-600 text-white px-8 py-4 rounded-2xl font-semibold text-lg inline-flex items-center gap-2 hover:from-amber-400 hover:to-orange-500 transition-all">
+                  <Plus className="w-5 h-5" />
+                  Skapa din första klass
+                </span>
               </Link>
-
+              
               <Link
                 href="/teacher/word-sets"
-                className="bg-white rounded-xl p-6 shadow-md border border-gray-200 hover:shadow-lg hover:border-teal-300 transition-all group"
+                className="inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white px-8 py-4 rounded-2xl font-semibold text-lg transition-all"
               >
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
-                    <FileText className="w-7 h-7 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-600 mb-1">Word Sets</p>
-                    <p className="text-3xl font-bold text-gray-900">{wordSets.length}</p>
-                  </div>
-                </div>
-                <div className="flex items-center text-blue-600 font-medium text-sm">
-                  Create vocabulary <ArrowRight className="w-4 h-4 ml-2" />
-                </div>
-              </Link>
-
-              <Link
-                href="/teacher/assign"
-                className="bg-white rounded-xl p-6 shadow-md border border-gray-200 hover:shadow-lg hover:border-teal-300 transition-all group"
-              >
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
-                    <Calendar className="w-7 h-7 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-600 mb-1">Assignments</p>
-                    <p className="text-3xl font-bold text-gray-900">{homeworks.length}</p>
-                  </div>
-                </div>
-                <div className="flex items-center text-green-600 font-medium text-sm">
-                  Assign vocabulary <ArrowRight className="w-4 h-4 ml-2" />
-                </div>
-              </Link>
-
-              <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Activity className="w-7 h-7 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-600 mb-1">Active Now</p>
-                    <p className="text-3xl font-bold text-gray-900">{activeStudents.length}</p>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500">Students playing</p>
-              </div>
-
-              <Link
-                href="/teacher/sessions"
-                className="bg-white rounded-xl p-6 shadow-md border border-gray-200 hover:shadow-lg hover:border-teal-300 transition-all group"
-              >
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
-                    <Gamepad2 className="w-7 h-7 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-600 mb-1">Sessions</p>
-                    <p className="text-3xl font-bold text-gray-900">{sessionsCount}</p>
-                  </div>
-                </div>
-                <div className="flex items-center text-purple-600 font-medium text-sm">
-                  Manage sessions <ArrowRight className="w-4 h-4 ml-2" />
-                </div>
-              </Link>
-
-              <Link
-                href="/teacher/students"
-                className="bg-white rounded-xl p-6 shadow-md border border-gray-200 hover:shadow-lg hover:border-teal-300 transition-all group"
-              >
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
-                    <TrendingUp className="w-7 h-7 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-600 mb-1">Progress</p>
-                    <p className="text-3xl font-bold text-gray-900">—</p>
-                  </div>
-                </div>
-                <div className="flex items-center text-indigo-600 font-medium text-sm">
-                  View analytics <ArrowRight className="w-4 h-4 ml-2" />
-                </div>
+                <FileText className="w-5 h-5" />
+                Skapa gloslista
               </Link>
             </div>
+          </div>
+        </motion.div>
+      )}
 
-            {/* Activity Feed - Unified section */}
-            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-teal-500" />
-                  Recent Activity
-                </h3>
-                <div className="flex items-center gap-2 text-xs text-gray-600">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span>{activeStudents.length} active</span>
-                </div>
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Active Students */}
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Currently Playing</h4>
-                  {activeStudents.length > 0 ? (
-                    <div className="space-y-2">
-                      {activeStudents.slice(0, 5).map((student) => (
-                        <div key={student.id} className="flex items-center justify-between p-2.5 bg-gray-50 rounded-lg hover:bg-teal-50 transition-colors">
-                          <span className="text-sm text-gray-800 truncate">
-                            {student.username || student.email?.split('.')[0] || 'Student'}
-                          </span>
-                          <span className="text-xs text-gray-500 flex items-center gap-1 flex-shrink-0">
-                            <Clock className="w-3 h-3" />
-                            Now
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500">No students playing right now</p>
-                  )}
-                </div>
-
-                {/* Latest Activity */}
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Latest Games</h4>
-                  {studentActivity.length > 0 ? (
-                    <div className="space-y-2">
-                      {studentActivity.slice(0, 5).map((activity, index) => (
-                        <div key={`${activity.student_id}-${activity.timestamp}-${index}`} className="p-2.5 bg-gray-50 rounded-lg hover:bg-teal-50 transition-colors">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm text-gray-800 truncate">
-                              {activity.student_name}
-                            </span>
-                            <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
-                              {new Date(activity.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                            </span>
+      {/* Dashboard overview for existing teachers */}
+      {(classes.length > 0 || wordSets.length > 0) && (
+        <>
+          {/* Header */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <h2 className="text-3xl font-bold text-white mb-2">
+              Välkommen tillbaka, {user?.email?.split('@')[0] || 'Lärare'}!
+            </h2>
+            <p className="text-gray-400">Här är en översikt av din verksamhet</p>
+          </motion.div>
+          
+          {/* Main Stats Grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            {[
+              { href: '/teacher/classes', icon: Users, label: 'Klasser', value: classes.length, gradient: 'from-teal-500 to-emerald-500', action: 'Hantera klasser' },
+              { href: '/teacher/word-sets', icon: FileText, label: 'Gloslistor', value: wordSets.length, gradient: 'from-blue-500 to-cyan-500', action: 'Skapa glosor' },
+              { href: '/teacher/assign', icon: Calendar, label: 'Tilldelningar', value: homeworks.length, gradient: 'from-green-500 to-emerald-500', action: 'Tilldela glosor' },
+              { href: null, icon: Activity, label: 'Aktiva nu', value: activeStudents.length, gradient: 'from-orange-500 to-amber-500', action: null, pulse: true },
+              { href: '/teacher/sessions', icon: Gamepad2, label: 'Sessions', value: sessionsCount, gradient: 'from-purple-500 to-indigo-500', action: 'Hantera sessions' },
+              { href: '/teacher/students', icon: TrendingUp, label: 'Progress', value: '—', gradient: 'from-rose-500 to-pink-500', action: 'Se statistik' },
+            ].map((item, index) => (
+              <motion.div
+                key={item.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+              >
+                {item.href ? (
+                  <Link
+                    href={item.href}
+                    className="group block h-full"
+                  >
+                    <div className="relative h-full bg-[#12122a] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-all overflow-hidden">
+                      <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${item.gradient} opacity-10 blur-2xl group-hover:opacity-20 transition-opacity`} />
+                      
+                      <div className="relative">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className={`w-12 h-12 bg-gradient-to-br ${item.gradient} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                            <item.icon className="w-6 h-6 text-white" />
                           </div>
-                          {activity.game_type && (
-                            <p className="text-xs text-gray-500">
-                              {formatGameType(activity.game_type)}
-                            </p>
+                          {item.pulse && (
+                            <span className="flex h-3 w-3">
+                              <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-green-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                            </span>
                           )}
                         </div>
-                      ))}
+                        
+                        <p className="text-sm text-gray-400 mb-1">{item.label}</p>
+                        <p className="text-3xl font-bold text-white mb-3">{item.value}</p>
+                        
+                        {item.action && (
+                          <div className="flex items-center text-sm font-medium text-gray-400 group-hover:text-white transition-colors">
+                            {item.action}
+                            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  ) : (
-                    <p className="text-sm text-gray-500">No recent activity</p>
-                  )}
-                </div>
+                  </Link>
+                ) : (
+                  <div className="relative h-full bg-[#12122a] border border-white/5 rounded-2xl p-6 overflow-hidden">
+                    <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${item.gradient} opacity-10 blur-2xl`} />
+                    
+                    <div className="relative">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className={`w-12 h-12 bg-gradient-to-br ${item.gradient} rounded-xl flex items-center justify-center`}>
+                          <item.icon className="w-6 h-6 text-white" />
+                        </div>
+                        {item.pulse && (
+                          <span className="flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-green-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                          </span>
+                        )}
+                      </div>
+                      
+                      <p className="text-sm text-gray-400 mb-1">{item.label}</p>
+                      <p className="text-3xl font-bold text-white mb-3">{item.value}</p>
+                      <p className="text-xs text-gray-500">Elever som spelar just nu</p>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Activity Feed */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-[#12122a] border border-white/5 rounded-2xl p-6"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <Activity className="w-5 h-5 text-amber-500" />
+                Senaste aktivitet
+              </h3>
+              <div className="flex items-center gap-2 text-xs text-gray-400">
+                <span className="flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+                <span>{activeStudents.length} aktiva</span>
               </div>
             </div>
-          </>
-        )}
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Active Students */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-amber-500" />
+                  Spelar just nu
+                </h4>
+                {activeStudents.length > 0 ? (
+                  <div className="space-y-2">
+                    {activeStudents.slice(0, 5).map((student) => (
+                      <div key={student.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white text-sm font-bold">
+                            {(student.username || student.email)?.[0]?.toUpperCase()}
+                          </div>
+                          <span className="text-sm text-white">
+                            {student.username || student.email?.split('.')[0] || 'Elev'}
+                          </span>
+                        </div>
+                        <span className="text-xs text-emerald-400 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                          Nu
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <Users className="w-6 h-6 text-gray-500" />
+                    </div>
+                    <p className="text-sm text-gray-500">Inga elever spelar just nu</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Latest Activity */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-cyan-500" />
+                  Senaste spel
+                </h4>
+                {studentActivity.length > 0 ? (
+                  <div className="space-y-2">
+                    {studentActivity.slice(0, 5).map((activity, index) => (
+                      <div key={`${activity.student_id}-${activity.timestamp}-${index}`} className="p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm text-white truncate">
+                            {activity.student_name}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(activity.timestamp).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-400">
+                          {formatGameType(activity.game_type)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <Activity className="w-6 h-6 text-gray-500" />
+                    </div>
+                    <p className="text-sm text-gray-500">Ingen aktivitet ännu</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        </>
+      )}
 
       {/* Save Status Indicator */}
       <SaveStatusIndicator />
