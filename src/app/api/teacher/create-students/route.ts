@@ -123,40 +123,39 @@ export async function POST(request: NextRequest) {
       console.log('Pro tier detected - skipping all student limit checks')
       // No limits for pro tier, continue with student creation
     } else if (tier === 'free' && limits.maxTotalStudents !== null) {
-        // Count total students across all classes
-        const { data: allClasses } = await supabaseAdmin
-          .from('classes')
-          .select('id')
-          .eq('teacher_id', user.id)
+      // Count total students across all classes
+      const { data: allClasses } = await supabaseAdmin
+        .from('classes')
+        .select('id')
+        .eq('teacher_id', user.id)
+        .is('deleted_at', null)
+
+      if (allClasses && allClasses.length > 0) {
+        const classIds = allClasses.map(c => c.id)
+        const { data: allClassStudents } = await supabaseAdmin
+          .from('class_students')
+          .select('student_id')
+          .in('class_id', classIds)
           .is('deleted_at', null)
 
-        if (allClasses && allClasses.length > 0) {
-          const classIds = allClasses.map(c => c.id)
-          const { data: allClassStudents } = await supabaseAdmin
-            .from('class_students')
-            .select('student_id')
-            .in('class_id', classIds)
-            .is('deleted_at', null)
-
-          const totalStudents = new Set(allClassStudents?.map(cs => cs.student_id) || []).size
-          if (totalStudents + studentsToAdd > limits.maxTotalStudents) {
-            const { getTierDisplayName } = await import('@/lib/subscription')
-            const tierName = getTierDisplayName(tier)
-            return NextResponse.json(
-              { error: `${tierName} plan allows max ${limits.maxTotalStudents} students total. You're trying to add ${studentsToAdd} students but already have ${totalStudents}.` },
-              { status: 403 }
-            )
-          }
-        }
-      } else if (tier === 'premium' && limits.maxStudentsPerClass !== null) {
-        if (currentStudentCount + studentsToAdd > limits.maxStudentsPerClass) {
+        const totalStudents = new Set(allClassStudents?.map(cs => cs.student_id) || []).size
+        if (totalStudents + studentsToAdd > limits.maxTotalStudents) {
           const { getTierDisplayName } = await import('@/lib/subscription')
           const tierName = getTierDisplayName(tier)
           return NextResponse.json(
-            { error: `${tierName} plan allows max ${limits.maxStudentsPerClass} students per class. You're trying to add ${studentsToAdd} students but already have ${currentStudentCount}.` },
+            { error: `${tierName} plan allows max ${limits.maxTotalStudents} students total. You're trying to add ${studentsToAdd} students but already have ${totalStudents}.` },
             { status: 403 }
           )
         }
+      }
+    } else if (tier === 'premium' && limits.maxStudentsPerClass !== null) {
+      if (currentStudentCount + studentsToAdd > limits.maxStudentsPerClass) {
+        const { getTierDisplayName } = await import('@/lib/subscription')
+        const tierName = getTierDisplayName(tier)
+        return NextResponse.json(
+          { error: `${tierName} plan allows max ${limits.maxStudentsPerClass} students per class. You're trying to add ${studentsToAdd} students but already have ${currentStudentCount}.` },
+          { status: 403 }
+        )
       }
     }
 
