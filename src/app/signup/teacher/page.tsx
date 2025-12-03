@@ -67,7 +67,8 @@ function TeacherSignupContent() {
           email: emailValue,
           role: 'teacher',
           name: nameValue,
-          tier: tier || 'free' // Store tier in profile
+          tier: tier || 'free', // Keep for backward compatibility
+          subscription_tier: tier || 'free' // Store tier in subscription_tier column
         })
 
       if (profileError) throw profileError

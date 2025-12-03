@@ -113,7 +113,10 @@ export async function POST(request: NextRequest) {
       const tier = await import('@/lib/subscription').then(m => m.getUserSubscriptionTier(user.id))
       const limits = await import('@/lib/subscription').then(m => m.getUserSubscriptionLimits(user.id))
       
-      if (tier === 'free' && limits.maxTotalStudents !== null) {
+      // Pro tier has unlimited students - skip all checks
+      if (tier === 'pro') {
+        // No limits for pro tier, continue with student creation
+      } else if (tier === 'free' && limits.maxTotalStudents !== null) {
         // Count total students across all classes
         const { data: allClasses } = await supabaseAdmin
           .from('classes')
@@ -124,10 +127,10 @@ export async function POST(request: NextRequest) {
         if (allClasses && allClasses.length > 0) {
           const classIds = allClasses.map(c => c.id)
           const { data: allClassStudents } = await supabaseAdmin
-          .from('class_students')
-          .select('student_id')
-          .in('class_id', classIds)
-          .is('deleted_at', null)
+            .from('class_students')
+            .select('student_id')
+            .in('class_id', classIds)
+            .is('deleted_at', null)
 
           const totalStudents = new Set(allClassStudents?.map(cs => cs.student_id) || []).size
           if (totalStudents + studentsToAdd > limits.maxTotalStudents) {
