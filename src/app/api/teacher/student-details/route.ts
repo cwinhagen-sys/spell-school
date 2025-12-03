@@ -369,6 +369,7 @@ export async function GET(request: NextRequest) {
             participant_id,
             score,
             graded_at,
+            created_at,
             sessions!inner(
               id,
               word_set_id,
