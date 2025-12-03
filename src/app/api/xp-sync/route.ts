@@ -44,55 +44,87 @@ export async function POST(request: NextRequest) {
       }, { status: 403 })
     }
 
-    // Insert events directly (ON CONFLICT DO NOTHING for idempotency)
-    const acceptedIds: string[] = []
-    
-    for (const event of events) {
-      try {
-        const { error: insertError } = await supabase
-          .from('xp_events')
-          .insert({
-            id: event.id,
-            student_id: event.student_id,
-            kind: event.kind,
-            delta: event.delta,
-            word_set_id: event.word_set_id || null,
-            homework_id: event.homework_id || null,
-            created_at: event.created_at || new Date().toISOString(),
-            metadata: event.metadata || {}
-          })
+    // OPTIMIZATION: Batch insert all events at once
+    const now = new Date().toISOString()
+    const xpEventRecords = events.map((event: any) => ({
+      id: event.id,
+      student_id: event.student_id,
+      kind: event.kind,
+      delta: event.delta,
+      word_set_id: event.word_set_id || null,
+      homework_id: event.homework_id || null,
+      created_at: event.created_at || now,
+      metadata: event.metadata || {}
+    }))
 
-        if (!insertError) {
-          acceptedIds.push(event.id)
-          console.log(`XP Sync: Event ${event.id} inserted successfully`)
-          
-          // ALSO create game session for this event (så läraren ser både XP och session samtidigt)
-          try {
-            const sessionData: any = {
+    // Batch insert XP events (ON CONFLICT DO NOTHING for idempotency)
+    const { data: insertedEvents, error: insertError } = await supabase
+      .from('xp_events')
+      .upsert(xpEventRecords, { onConflict: 'id', ignoreDuplicates: true })
+      .select('id')
+
+    const acceptedIds = insertedEvents?.map(e => e.id) || []
+    
+    // Handle any events that failed to insert (non-duplicate errors)
+    if (insertError && insertError.code !== '23505') {
+      console.error('XP Sync: Batch insert error:', insertError)
+      // Fall back to individual inserts for error handling
+      for (const event of events) {
+        try {
+          const { error: singleError } = await supabase
+            .from('xp_events')
+            .insert({
+              id: event.id,
               student_id: event.student_id,
-              game_type: event.kind,
+              kind: event.kind,
+              delta: event.delta,
               word_set_id: event.word_set_id || null,
               homework_id: event.homework_id || null,
-              started_at: event.metadata?.game_session?.started_at || event.created_at || new Date().toISOString(),
-              finished_at: event.metadata?.game_session?.finished_at || new Date().toISOString(),
-              score: event.delta,
-              accuracy_pct: event.metadata?.game_session?.accuracy_pct || 100
-            }
-            
-            await supabase.from('game_sessions').insert(sessionData)
-            console.log(`XP Sync: Game session created for event ${event.id}`)
-          } catch (sessionErr) {
-            console.warn(`XP Sync: Game session creation failed (non-critical):`, sessionErr)
+              created_at: event.created_at || now,
+              metadata: event.metadata || {}
+            })
+
+          if (!singleError) {
+            acceptedIds.push(event.id)
+          } else if (singleError.code === '23505') {
+            // Duplicate - already exists, that's okay
+            console.log(`XP Sync: Event ${event.id} already exists (duplicate)`)
           }
-          
-        } else if (insertError.code === '23505') {
-          // Duplicate key - already exists, that's okay (idempotent)
-          console.log(`XP Sync: Event ${event.id} already exists (duplicate)`)
-        } else {
-          console.error(`XP Sync: Failed to insert event ${event.id}:`, insertError)
+        } catch (eventError) {
+          console.error(`XP Sync: Error processing event ${event.id}:`, eventError)
         }
-      } catch (eventError) {
-        console.error(`XP Sync: Error processing event ${event.id}:`, eventError)
+      }
+    }
+
+    console.log(`XP Sync: Inserted ${acceptedIds.length}/${events.length} events`)
+
+    // OPTIMIZATION: Batch insert game sessions for accepted events
+    const sessionRecords = events
+      .filter((e: any) => acceptedIds.includes(e.id))
+      .map((event: any) => ({
+        student_id: event.student_id,
+        game_type: event.kind,
+        word_set_id: event.word_set_id || null,
+        homework_id: event.homework_id || null,
+        started_at: event.metadata?.game_session?.started_at || event.created_at || now,
+        finished_at: event.metadata?.game_session?.finished_at || now,
+        score: event.delta,
+        accuracy_pct: event.metadata?.game_session?.accuracy_pct || 100
+      }))
+
+    if (sessionRecords.length > 0) {
+      try {
+        const { error: sessionError } = await supabase
+          .from('game_sessions')
+          .insert(sessionRecords)
+
+        if (sessionError) {
+          console.warn('XP Sync: Batch game session creation failed (non-critical):', sessionError)
+        } else {
+          console.log(`XP Sync: Created ${sessionRecords.length} game sessions`)
+        }
+      } catch (sessionErr) {
+        console.warn('XP Sync: Batch game session creation exception (non-critical):', sessionErr)
       }
     }
     

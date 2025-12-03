@@ -1075,10 +1075,14 @@ export default function StudentDashboard() {
   }, [homeworks])
 
   useEffect(() => {
+    // OPTIMIZATION: Don't auto-load leaderboards on dashboard
+    // Leaderboards are now only loaded when user visits /student/leaderboard page
+    // This reduces API calls and prevents rate limiting issues
     if (classInfo?.id) {
-      void loadClassLeaderboards(classInfo.id)
       // Load teacher info when class info is available
       void loadTeacherInfo(classInfo.id)
+      // Clear leaderboard data - user must visit leaderboard page to see it
+      setLeaderboardData(null)
     } else {
       setLeaderboardData(null)
     }
@@ -2662,15 +2666,17 @@ export default function StudentDashboard() {
 
           {/* Class Leaderboards */}
           <div className="rounded-2xl border border-white/10 bg-[#12122a]/80 p-8 shadow-xl backdrop-blur-sm" data-section="leaderboard">
-            <div className="flex items-center mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center mr-4 shadow-lg shadow-amber-500/30">
-                <Trophy className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">Leaderboard</h2>
-                <p className="text-sm text-gray-400">
-                  Se vilka klasskompisar som leder i olika kategorier
-                </p>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center mr-4 shadow-lg shadow-amber-500/30">
+                  <Trophy className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">Leaderboard</h2>
+                  <p className="text-sm text-gray-400">
+                    Se vilka klasskompisar som leder i olika kategorier
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -2678,170 +2684,20 @@ export default function StudentDashboard() {
               <div className="bg-white/5 border border-white/10 rounded-xl p-6 text-center text-sm text-gray-400">
                 Gå med i en klass för att låsa upp leaderboards.
               </div>
-            ) : leaderboardLoading ? (
-              <div className="bg-white/5 border border-white/10 rounded-xl p-6 text-center text-sm text-gray-400">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-cyan-500 mx-auto mb-4"></div>
-                Laddar leaderboards...
-              </div>
-            ) : leaderboardError ? (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center text-sm text-red-400">
-                {leaderboardError}
-              </div>
-            ) : leaderboardPlayers.length === 0 ? (
-              <div className="bg-white/5 border border-white/10 rounded-xl p-6 text-center text-sm text-gray-400">
-                Inga resultat ännu – spela några spel för att kickstarta leaderboards!
-              </div>
             ) : (
-              <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
-                {[
-                  {
-                    key: 'level',
-                    title: 'Högsta nivå',
-                    description: 'Totala XP-nivåer',
-                    metric: (player: any) => player.level,
-                    renderValue: (player: any) => `Lv ${player.level}`
-                  },
-                  {
-                    key: 'badges',
-                    title: 'Flest märken',
-                    description: 'Samlarens favorit',
-                    metric: (player: any) => player.badgeCount,
-                    renderValue: (player: any) => `${player.badgeCount} märken`
-                  },
-                  {
-                    key: 'streak',
-                    title: 'Nuvarande streak',
-                    description: 'Dagar i rad just nu',
-                    metric: (player: any) => player.longestStreak,
-                    renderValue: (player: any) => `${player.longestStreak} dagar`
-                  },
-                  {
-                    key: 'sessions',
-                    title: 'Spel spelade',
-                    description: 'Totalt antal spel',
-                    metric: (player: any) => player.sessionCount,
-                    renderValue: (player: any) => `${player.sessionCount} spel`
-                  },
-                  {
-                    key: 'kpm',
-                    title: 'Snabbast typist',
-                    description: 'Bästa Typing Challenge KPM',
-                    metric: (player: any) => player.bestKpm,
-                    renderValue: (player: any) => `${Math.round(player.bestKpm)} KPM`
-                  },
-                  {
-                    key: 'accuracy',
-                    title: 'Bäst träffsäkerhet',
-                    description: 'Högsta genomsnittliga träffsäkerhet',
-                    metric: (player: any) => player.averageAccuracy,
-                    renderValue: (player: any) => `${Math.round(player.averageAccuracy)}%`
-                  }
-                ].map(category => {
-                  const topPlayers = leaderboardPlayers
-                    .slice()
-                    .sort((a, b) => (category.metric(b) || 0) - (category.metric(a) || 0))
-                    .slice(0, 5)
-
-                  return (
-                    <div key={category.key} className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-lg">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <h3 className="text-lg font-semibold text-white">
-                            {category.title}
-                          </h3>
-                          <p className="text-xs text-gray-500">{category.description}</p>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        {topPlayers.map((player, index) => {
-                          const rank = index + 1
-                          const isTopThree = rank <= 3
-                          
-                          // Medal colors and styles - dark theme
-                          const medalStyles = {
-                            1: {
-                              badge: 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-lg shadow-yellow-500/50',
-                              border: 'border-yellow-500/50',
-                              bg: 'bg-yellow-500/10',
-                              glow: 'shadow-lg shadow-yellow-500/20'
-                            },
-                            2: {
-                              badge: 'bg-gradient-to-br from-gray-300 to-gray-500 text-white shadow-lg shadow-gray-400/50',
-                              border: 'border-gray-400/50',
-                              bg: 'bg-gray-500/10',
-                              glow: 'shadow-lg shadow-gray-400/20'
-                            },
-                            3: {
-                              badge: 'bg-gradient-to-br from-amber-600 to-amber-800 text-white shadow-lg shadow-amber-600/50',
-                              border: 'border-amber-500/50',
-                              bg: 'bg-amber-500/10',
-                              glow: 'shadow-lg shadow-amber-500/20'
-                            }
-                          }
-                          
-                          const medalStyle = isTopThree ? medalStyles[rank as 1 | 2 | 3] : null
-                          
-                          return (
-                            <div
-                              key={`${category.key}-${player.id}`}
-                              className={`flex items-center justify-between rounded-xl border px-3 py-2.5 transition-all ${
-                                player.id === leaderboardData?.currentUserId
-                                  ? isTopThree
-                                    ? `${medalStyle?.border} ${medalStyle?.bg} ${medalStyle?.glow}`
-                                    : 'border-cyan-500/50 bg-cyan-500/10'
-                                  : isTopThree
-                                    ? `${medalStyle?.border} ${medalStyle?.bg} ${medalStyle?.glow}`
-                                    : 'border-white/5 bg-white/5'
-                              }`}
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className="relative">
-                                  <img
-                                    src={player.wizardImage}
-                                    alt={player.displayName || 'Student'}
-                                    className={`w-10 h-10 rounded-full object-cover border-2 ${
-                                      isTopThree ? 'border-white/50 shadow-lg' : 'border-white/20'
-                                    }`}
-                                  />
-                                  <div className={`absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
-                                    isTopThree 
-                                      ? medalStyle?.badge 
-                                      : 'bg-[#12122a] border border-white/20 text-gray-400'
-                                  }`}>
-                                    {rank}
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="text-sm font-semibold text-white flex items-center gap-2">
-                                    {player.displayName || 'Student'}
-                                    {player.id === leaderboardData?.currentUserId && (
-                                      <span className="text-xs font-semibold text-cyan-400 bg-cyan-500/20 px-2 py-0.5 rounded-full">
-                                        Du
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="text-xs text-gray-500">
-                                    Nivå {player.level} · {player.totalPoints} XP
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-base font-bold text-white">
-                                  {category.renderValue(player)}
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        })}
-                        {topPlayers.length === 0 && (
-                          <div className="text-xs text-gray-500 text-center py-4">
-                            Ingen statistik ännu
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
+              <div className="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
+                <Trophy className="w-16 h-16 text-amber-500/50 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-white mb-2">Visa topplista</h3>
+                <p className="text-sm text-gray-400 mb-6">
+                  Se vilka klasskompisar som leder i olika kategorier
+                </p>
+                <Link
+                  href="/student/leaderboard"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg shadow-amber-500/30"
+                >
+                  <Trophy className="w-5 h-5" />
+                  Öppna topplista
+                </Link>
               </div>
             )}
           </div>
@@ -2849,8 +2705,8 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-        {/* Message Display */}
-        {message && (
+      {/* Message Display */}
+      {message && (
           <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-blue-700">{message}</p>
             <button

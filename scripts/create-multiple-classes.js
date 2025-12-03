@@ -107,7 +107,24 @@ function makeRequest(url, requestOptions = {}) {
             resolve({ status: res.statusCode, data: data, rawData: data })
           }
         } else {
-          reject(new Error(`HTTP ${res.statusCode}: ${data.substring(0, 200)}`))
+          // Try to parse error response for better error messages
+          let errorMessage = `HTTP ${res.statusCode}`
+          try {
+            const parsed = JSON.parse(data)
+            if (parsed.error) {
+              errorMessage = parsed.error
+            } else if (parsed.message) {
+              errorMessage = parsed.message
+            } else {
+              errorMessage = `HTTP ${res.statusCode}: ${JSON.stringify(parsed)}`
+            }
+          } catch (e) {
+            errorMessage = `HTTP ${res.statusCode}: ${data.substring(0, 200)}`
+          }
+          const error = new Error(errorMessage)
+          error.statusCode = res.statusCode
+          error.responseData = data
+          reject(error)
         }
       })
     })
@@ -207,6 +224,7 @@ async function createClass(teacherToken, className) {
 
 async function createStudents(teacherToken, classId, students) {
   try {
+    console.log(`   Creating ${students.length} students for class ${classId}...`)
     const response = await makeRequest(`${options.baseUrl}/api/teacher/create-students`, {
       method: 'POST',
       headers: {
@@ -218,13 +236,56 @@ async function createStudents(teacherToken, classId, students) {
       }
     })
     
-    if (response.data.success) {
-      return response.data.created || students.length
+    // API returns: { successCount, errorCount, results }
+    if (response.data && typeof response.data.successCount === 'number') {
+      const successCount = response.data.successCount
+      const errorCount = response.data.errorCount || 0
+      
+      if (successCount > 0) {
+        console.log(`   ✅ Successfully created ${successCount} students`)
+        if (errorCount > 0) {
+          console.log(`   ⚠️  ${errorCount} students failed to create`)
+          // Log failed students
+          const failed = (response.data.results || []).filter(r => !r.success)
+          failed.forEach(f => {
+            console.log(`      - ${f.username}: ${f.message || 'Unknown error'}`)
+          })
+        }
+        return successCount
+      } else {
+        // All students failed
+        const errorMsg = response.data.results?.[0]?.message || 'All students failed to create'
+        throw new Error(errorMsg)
+      }
     }
     
-    throw new Error(response.data.error || 'Failed to create students')
+    // Fallback: check for error in response
+    if (response.data?.error) {
+      throw new Error(response.data.error)
+    }
+    
+    // Unknown response format
+    console.error(`   ⚠️  Unexpected response format:`, JSON.stringify(response.data, null, 2))
+    throw new Error('Unexpected response format from API')
   } catch (error) {
-    console.error(`❌ Failed to create students for class ${classId}:`, error.message)
+    // Log more details about the error
+    const errorMsg = error.message || String(error)
+    console.error(`❌ Failed to create students for class ${classId}:`, errorMsg)
+    
+    // If error has response data, log it
+    if (error.responseData) {
+      try {
+        const parsed = JSON.parse(error.responseData)
+        console.error(`   Full error response:`, JSON.stringify(parsed, null, 2))
+      } catch (e) {
+        console.error(`   Raw error response:`, error.responseData.substring(0, 500))
+      }
+    }
+    
+    if (error.statusCode) {
+      console.error(`   HTTP Status: ${error.statusCode}`)
+    }
+    
     throw error
   }
 }
@@ -287,8 +348,14 @@ async function createMultipleClasses() {
               await new Promise(resolve => setTimeout(resolve, 500))
             }
           } catch (error) {
-            console.error(`  ⚠️  Failed to create batch ${i / batchSize + 1}:`, error.message)
-            stats.errors.push(`Class ${classIndex + 1}, batch ${i / batchSize + 1}: ${error.message}`)
+            const batchNum = Math.floor(i / batchSize) + 1
+            const errorMsg = error.message || String(error)
+            console.error(`  ⚠️  Failed to create batch ${batchNum}:`, errorMsg)
+            // Log full error for debugging
+            if (error.stack) {
+              console.error(`  Error stack:`, error.stack)
+            }
+            stats.errors.push(`Class ${classIndex + 1}, batch ${batchNum}: ${errorMsg}`)
           }
         }
         

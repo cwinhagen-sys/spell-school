@@ -99,7 +99,7 @@ function makeRequest(url, options = {}) {
         'Content-Type': 'application/json',
         ...options.headers
       },
-      timeout: 30000
+      timeout: 60000 // Increased timeout to 60 seconds for slower responses
     }, (res) => {
       let data = ''
       res.on('data', chunk => { data += chunk })
@@ -156,20 +156,49 @@ function makeRequest(url, options = {}) {
   })
 }
 
-async function loginStudent(username, password) {
-  try {
-    const response = await makeRequest(`${options.baseUrl}/api/auth/student-login`, {
-      method: 'POST',
-      body: { username, password }
-    })
-    
-    const data = JSON.parse(response.data)
-    if (data.success && data.session) {
-      return data.session.access_token
+async function loginStudent(username, password, retries = 3) {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      // Add exponential backoff delay between retries
+      if (attempt > 0) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000) // Max 5 seconds
+        await new Promise(resolve => setTimeout(resolve, delay))
+      }
+      
+      const response = await makeRequest(`${options.baseUrl}/api/auth/student-login`, {
+        method: 'POST',
+        body: { username, password }
+      })
+      
+      // Parse response data (it comes as a string from makeRequest)
+      let responseData = response.data
+      if (typeof responseData === 'string') {
+        try {
+          responseData = JSON.parse(responseData)
+        } catch (e) {
+          // If parsing fails, it's not JSON
+        }
+      }
+      
+      if (responseData && responseData.success && responseData.session) {
+        return responseData.session.access_token
+      }
+      
+      // If we get here, login didn't succeed but didn't throw an error
+      if (attempt === retries - 1) {
+        throw new Error(responseData?.error || 'Login failed')
+      }
+    } catch (error) {
+      // If it's the last attempt, throw the error
+      if (attempt === retries - 1) {
+        throw new Error(`Login error: ${error.message}`)
+      }
+      // Otherwise, log and retry
+      if (attempt === 0) {
+        // Only log on first attempt to avoid spam
+        console.log(`   ⚠️  Login attempt ${attempt + 1} failed for ${username}, retrying...`)
+      }
     }
-    throw new Error('Login failed')
-  } catch (error) {
-    throw new Error(`Login error: ${error.message}`)
   }
 }
 
@@ -188,20 +217,42 @@ async function simulateClass(classData, classIndex) {
   const students = classData.students.slice(0, options.studentsPerClass)
   const studentTokens = new Map()
   
-  // Login all students
+  // Login all students (with delays to avoid overwhelming the API)
   console.log(`📚 Class ${classIndex + 1} (${classData.classId}): Logging in ${students.length} students...`)
-  for (let i = 0; i < students.length; i++) {
-    const student = students[i]
-    try {
-      const token = await loginStudent(student.username, student.password)
-      studentTokens.set(student.username, token)
-      classStats.studentsLoggedIn++
-      stats.requestsByClass[classData.classId].students++
-      if ((i + 1) % 10 === 0) {
-        console.log(`  ✓ ${i + 1}/${students.length} students logged in`)
+  
+  // Login students in smaller batches to avoid overwhelming the API
+  const batchSize = 5 // Login 5 at a time
+  for (let batchStart = 0; batchStart < students.length; batchStart += batchSize) {
+    const batch = students.slice(batchStart, batchStart + batchSize)
+    
+    // Login batch in parallel (but limited to batchSize)
+    const loginPromises = batch.map(async (student, batchIndex) => {
+      try {
+        // Stagger logins slightly even within batch
+        await new Promise(resolve => setTimeout(resolve, batchIndex * 200))
+        
+        const token = await loginStudent(student.username, student.password)
+        studentTokens.set(student.username, token)
+        classStats.studentsLoggedIn++
+        stats.requestsByClass[classData.classId].students++
+        return { success: true, username: student.username }
+      } catch (error) {
+        console.error(`  ✗ Failed to login ${student.username}:`, error.message)
+        return { success: false, username: student.username, error: error.message }
       }
-    } catch (error) {
-      console.error(`  ✗ Failed to login ${student.username}:`, error.message)
+    })
+    
+    // Wait for batch to complete
+    const results = await Promise.all(loginPromises)
+    const successCount = results.filter(r => r.success).length
+    
+    if ((batchStart + batchSize) % 10 === 0 || batchStart + batchSize >= students.length) {
+      console.log(`  ✓ ${Math.min(batchStart + batchSize, students.length)}/${students.length} students processed (${classStats.studentsLoggedIn} logged in)`)
+    }
+    
+    // Delay between batches to avoid rate limiting
+    if (batchStart + batchSize < students.length) {
+      await new Promise(resolve => setTimeout(resolve, 1000)) // 1 second between batches
     }
   }
   
@@ -215,9 +266,14 @@ async function simulateClass(classData, classIndex) {
       'Authorization': `Bearer ${token}`
     }
     
-    // Leaderboard requests every 10 seconds
+    // Leaderboard requests every 10 seconds (with random jitter to avoid thundering herd)
+    const baseInterval = 10000
+    const jitter = Math.random() * 2000 // 0-2 seconds random delay
     const leaderboardInterval = setInterval(async () => {
       try {
+        // Add small random delay to spread out requests
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 500))
+        
         stats.totalRequests++
         classStats.requests++
         stats.requestsByClass[classData.classId].requests++
@@ -229,8 +285,12 @@ async function simulateClass(classData, classIndex) {
       } catch (error) {
         classStats.errors++
         stats.requestsByClass[classData.classId].errors++
+        // Log error details for debugging
+        if (error.message && !error.message.includes('timeout')) {
+          console.error(`   Leaderboard error for ${username}:`, error.message.substring(0, 100))
+        }
       }
-    }, 10000)
+    }, baseInterval + jitter)
     
     intervals.push(leaderboardInterval)
     

@@ -171,7 +171,11 @@ async function loginStudent(username, password) {
     
     const data = JSON.parse(response.data)
     if (data.success && data.session) {
-      return data.session.access_token
+      return {
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+        expires_at: data.session.expires_at
+      }
     }
     throw new Error('Login failed')
   } catch (error) {
@@ -179,26 +183,64 @@ async function loginStudent(username, password) {
   }
 }
 
+// Refresh token if needed
+async function refreshTokenIfNeeded(session) {
+  // Check if token is expired or will expire soon (within 5 minutes)
+  if (session.expires_at) {
+    const expiresAt = new Date(session.expires_at * 1000) // Supabase uses seconds
+    const now = new Date()
+    const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000)
+    
+    if (expiresAt < fiveMinutesFromNow) {
+      // Token expired or expiring soon, but we can't refresh without Supabase client
+      // For stress test, we'll just re-login if token fails
+      return null
+    }
+  }
+  return session.access_token
+}
+
 // Simulate a single authenticated student
 async function simulateAuthenticatedStudent(credential, index) {
   const studentStats = {
     requests: 0,
     errors: 0,
-    authToken: null
+    authSession: null,
+    lastTokenRefresh: Date.now()
+  }
+  
+  // Helper to get current token or re-login if needed
+  const getAuthToken = async () => {
+    if (!studentStats.authSession) {
+      // Not logged in, login first
+      studentStats.authSession = await loginStudent(credential.username, credential.password)
+      return studentStats.authSession.access_token
+    }
+    
+    // Check if we need to refresh (every 30 minutes or if token might be expired)
+    const timeSinceRefresh = Date.now() - studentStats.lastTokenRefresh
+    if (timeSinceRefresh > 30 * 60 * 1000) {
+      // Try to refresh by re-logging in
+      try {
+        studentStats.authSession = await loginStudent(credential.username, credential.password)
+        studentStats.lastTokenRefresh = Date.now()
+      } catch (error) {
+        // If re-login fails, use old token and hope it still works
+        console.warn(`⚠️  Student ${index + 1} token refresh failed, using old token`)
+      }
+    }
+    
+    return studentStats.authSession.access_token
   }
   
   try {
     // Login
     try {
-      studentStats.authToken = await loginStudent(credential.username, credential.password)
+      studentStats.authSession = await loginStudent(credential.username, credential.password)
       console.log(`✓ Student ${index + 1} logged in`)
     } catch (error) {
       console.error(`✗ Student ${index + 1} login failed:`, error.message)
       return studentStats
-    }
-    
-    const headers = {
-      'Authorization': `Bearer ${studentStats.authToken}`
     }
     
     // Simulate leaderboard requests (every 10 seconds)
@@ -207,13 +249,28 @@ async function simulateAuthenticatedStudent(credential, index) {
         try {
           stats.totalRequests++
           studentStats.requests++
-          await makeRequest(`${options.baseUrl}/api/student/leaderboards`, {
+          
+          // Get fresh token
+          const token = await getAuthToken()
+          const headers = {
+            'Authorization': `Bearer ${token}`
+          }
+          
+          const response = await makeRequest(`${options.baseUrl}/api/student/leaderboards`, {
             method: 'POST',
             headers,
             body: { classId: credential.classId }
           })
         } catch (error) {
           studentStats.errors++
+          // If it's an auth error, try to re-login
+          if (error.message && (error.message.includes('401') || error.message.includes('Unauthorized'))) {
+            // Only log first few auth errors to avoid spam
+            if (studentStats.errors <= 2) {
+              console.warn(`⚠️  Student ${index + 1} auth error: ${error.message.substring(0, 100)}`)
+            }
+            studentStats.authSession = null // Force re-login on next request
+          }
         }
       }, 10000)
       
@@ -227,6 +284,13 @@ async function simulateAuthenticatedStudent(credential, index) {
       try {
         stats.totalRequests++
         studentStats.requests++
+        
+        // Get fresh token
+        const token = await getAuthToken()
+        const headers = {
+          'Authorization': `Bearer ${token}`
+        }
+        
         // Simulate accessing student dashboard
         await makeRequest(`${options.baseUrl}/student`, {
           method: 'GET',
@@ -263,15 +327,37 @@ async function runStressTest() {
     credentialsToUse.push(options.credentials[i % options.credentials.length])
   }
   
-  // Start all student simulations
-  console.log(`Logging in ${credentialsToUse.length} students...`)
-  const loginPromises = credentialsToUse.map((cred, i) => 
-    simulateAuthenticatedStudent(cred, i)
-  )
+  // Start all student simulations with throttling to avoid rate limits
+  // Rate limit: 200 per 5 min = ~40 per minute = ~0.67 per second
+  // To be safe, we'll do 1 login per 100ms = 10 per second max
+  console.log(`Logging in ${credentialsToUse.length} students with throttling...`)
   
-  const studentResults = await Promise.all(loginPromises)
+  const studentResults = []
+  const BATCH_SIZE = 10 // Process 10 logins at a time
+  const DELAY_BETWEEN_BATCHES_MS = 1000 // Wait 1 second between batches
   
-  console.log(`\n${studentResults.filter(s => s.authToken).length} students logged in successfully`)
+  for (let i = 0; i < credentialsToUse.length; i += BATCH_SIZE) {
+    const batch = credentialsToUse.slice(i, i + BATCH_SIZE)
+    const batchIndex = Math.floor(i / BATCH_SIZE) + 1
+    const totalBatches = Math.ceil(credentialsToUse.length / BATCH_SIZE)
+    
+    console.log(`Logging in batch ${batchIndex}/${totalBatches} (${batch.length} students)...`)
+    
+    // Process batch in parallel
+    const batchPromises = batch.map((cred, j) => 
+      simulateAuthenticatedStudent(cred, i + j)
+    )
+    
+    const batchResults = await Promise.all(batchPromises)
+    studentResults.push(...batchResults)
+    
+    // Wait before next batch (except for last batch)
+    if (i + BATCH_SIZE < credentialsToUse.length) {
+      await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES_MS))
+    }
+  }
+  
+  console.log(`\n${studentResults.filter(s => s.authSession).length} students logged in successfully`)
   console.log('Running stress test...\n')
   
   // Wait for test duration

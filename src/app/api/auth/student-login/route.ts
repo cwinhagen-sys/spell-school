@@ -5,6 +5,24 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = 'https://edbbestqdwldryxuxkma.supabase.co'
 const supabaseAnonKey = 'sb_publishable_bx81qdFnpcX79ovYbCL98Q_eirRtByp'
 
+// OPTIMIZATION: Reuse Supabase client instances for better connection pooling
+// Create a shared auth client (stateless, safe to reuse)
+const supabaseAuthClient = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+  },
+  global: {
+    fetch: (url: string, options: RequestInit = {}) => {
+      return fetch(url, {
+        ...options,
+        // Enable keep-alive for connection reuse
+        ...(typeof (globalThis as any).Request !== 'undefined' && { keepalive: true }),
+      })
+    },
+  },
+})
+
 /**
  * Student Login API
  * Allows students to login with just username + password
@@ -77,21 +95,48 @@ export async function POST(request: NextRequest) {
 
     // Try to authenticate with each student's email until one succeeds
     // This handles the case where multiple students have the same username in different classes
+    // OPTIMIZATION: Use shared client and add retry logic for rate limiting
     for (const student of students) {
       try {
         console.log('🔐 Attempting auth with email:', student.email)
         
-        // Use regular client (not service role) for authentication
-        // Service role should not be used for user authentication
-        const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey)
+        // Use shared client (reuses connections, better for concurrent requests)
+        // Retry with exponential backoff if we hit rate limits
+        let authData = null
+        let authError = null
+        const maxRetries = 3
         
-        // Try to sign in with this student's email + the provided password
-        const { data: authData, error: authError } = await supabaseAuth.auth.signInWithPassword({
-          email: student.email,
-          password: password
-        })
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+          const result = await supabaseAuthClient.auth.signInWithPassword({
+            email: student.email,
+            password: password
+          })
+          
+          authData = result.data
+          authError = result.error
+          
+          // Check if it's a rate limit error (429 or specific Supabase rate limit messages)
+          const isRateLimit = authError && (
+            authError.status === 429 ||
+            authError.message?.toLowerCase().includes('rate limit') ||
+            authError.message?.toLowerCase().includes('too many requests') ||
+            authError.message?.toLowerCase().includes('quota')
+          )
+          
+          if (!authError || !isRateLimit) {
+            // Success or non-rate-limit error - break retry loop
+            break
+          }
+          
+          // Rate limit hit - wait with exponential backoff before retrying
+          if (attempt < maxRetries - 1) {
+            const backoffMs = Math.min(1000 * Math.pow(2, attempt), 5000) // Max 5 seconds
+            console.log(`⏳ Rate limit hit, waiting ${backoffMs}ms before retry ${attempt + 1}/${maxRetries}`)
+            await new Promise(resolve => setTimeout(resolve, backoffMs))
+          }
+        }
 
-        if (!authError && authData.user) {
+        if (!authError && authData?.user) {
           // Success! This is the correct student
           console.log('✅ Authentication successful for:', student.email)
           
@@ -105,18 +150,35 @@ export async function POST(request: NextRequest) {
             },
             session: authData.session
           })
+        } else if (authError) {
+          // Log rate limit errors specifically
+          const isRateLimit = authError.status === 429 ||
+            authError.message?.toLowerCase().includes('rate limit') ||
+            authError.message?.toLowerCase().includes('too many requests')
+          
+          if (isRateLimit) {
+            console.warn('⚠️ Rate limit error during auth (after retries):', authError.message)
+          }
         }
       } catch (err) {
         // Continue to next student if this one failed
-        console.log('⏭️ Auth failed for:', student.email, '- trying next...')
+        console.log('⏭️ Auth failed for:', student.email, '- trying next...', err)
         continue
       }
     }
 
     // If we get here, none of the students with this username had the correct password
+    // OR we hit rate limits on all attempts
     console.log('❌ No matching password for any student with username:', normalizedUsername)
+    
+    // Check if the last error was a rate limit (for better error messaging)
+    // Note: We don't expose which specific student failed for security reasons
     return NextResponse.json(
-      { success: false, error: 'Invalid username or password' },
+      { 
+        success: false, 
+        error: 'Invalid username or password',
+        // Don't expose rate limit details to client for security
+      },
       { status: 401 }
     )
 

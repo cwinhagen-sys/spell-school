@@ -60,30 +60,37 @@ export async function POST(request: NextRequest) {
 
     console.log(`Quest Sync: Processing ${events.length} events for user ${user.id}`)
 
-    // Process events in a transaction-like manner using Supabase RPC
-    const results = []
+    // OPTIMIZATION: Batch check all idempotency keys at once
+    const eventIds = events.map(e => e.id)
+    const { data: existingEvents } = await supabaseServer
+      .from('quest_event_applied')
+      .select('idempotency_key')
+      .in('idempotency_key', eventIds)
     
-    for (const event of events) {
+    const processedKeys = new Set(existingEvents?.map(e => e.idempotency_key) || [])
+    
+    // Filter out already processed events
+    const eventsToProcess = events.filter(e => !processedKeys.has(e.id))
+    
+    if (eventsToProcess.length === 0) {
+      console.log(`Quest Sync: All ${events.length} events already processed`)
+      return NextResponse.json({
+        success: true,
+        processed: events.length,
+        results: events.map(e => ({ eventId: e.id, status: 'skipped', reason: 'already_processed' }))
+      })
+    }
+
+    console.log(`Quest Sync: Processing ${eventsToProcess.length} new events (${events.length - eventsToProcess.length} already processed)`)
+
+    // Determine server date once (UTC midnight)
+    const questDate = new Date()
+    questDate.setUTCHours(0, 0, 0, 0)
+    const questDateStr = questDate.toISOString().split('T')[0]
+
+    // OPTIMIZATION: Process all events in parallel
+    const processEvent = async (event: QuestEvent): Promise<any> => {
       try {
-        // Check if event was already processed (idempotency)
-        const { data: existingEvent } = await supabaseServer
-          .from('quest_event_applied')
-          .select('id')
-          .eq('idempotency_key', event.id)
-          .single()
-
-        if (existingEvent) {
-          console.log(`Quest Sync: Event ${event.id} already processed, skipping`)
-          results.push({ eventId: event.id, status: 'skipped', reason: 'already_processed' })
-          continue
-        }
-
-        // Determine server date (UTC midnight)
-        const questDate = new Date()
-        questDate.setUTCHours(0, 0, 0, 0)
-        const questDateStr = questDate.toISOString().split('T')[0]
-
-        // Process the event based on type
         let result: any = { eventId: event.id, status: 'processed' }
 
         if (event.type === 'QUEST_PROGRESS') {
@@ -105,8 +112,7 @@ export async function POST(request: NextRequest) {
         } else if (event.type === 'QUEST_COMPLETE') {
           // Special handling for bonus quest completion
           if (event.questId === 'all_quests_bonus') {
-            // For bonus quest, award XP atomically using the same pattern as regular quests
-            // Use a direct SQL update to add XP instead of upsert to prevent overwriting
+            // For bonus quest, award XP atomically
             const { error: xpError } = await supabaseServer
               .rpc('increment_student_xp', {
                 p_student_id: user.id,
@@ -155,48 +161,79 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Mark event as applied (idempotency) - with error handling for RLS issues
-        try {
-          const { error: idempotencyError } = await supabaseServer
-            .from('quest_event_applied')
-            .insert({
-              idempotency_key: event.id,
-              applied_at: new Date().toISOString(),
-              user_id: user.id,
-              event_type: event.type,
-              quest_id: event.questId
-            })
-
-          if (idempotencyError) {
-            console.error('Quest Sync: Idempotency tracking error:', idempotencyError)
-            // Don't fail the whole request for this - quest completion is more important
-            result.idempotency = { applied: false, error: idempotencyError.message }
-          } else {
-            result.idempotency = { applied: true }
-          }
-        } catch (idempotencyException) {
-          console.error('Quest Sync: Idempotency tracking exception:', idempotencyException)
-          result.idempotency = { applied: false, error: 'Exception during idempotency tracking' }
-        }
-
-        results.push(result)
-
+        return result
       } catch (eventError) {
         console.error(`Quest Sync: Error processing event ${event.id}:`, eventError)
-        results.push({
+        return {
           eventId: event.id,
           status: 'error',
           error: eventError instanceof Error ? eventError.message : 'Unknown error'
+        }
+      }
+    }
+
+    // Process all events in parallel
+    const results = await Promise.all(eventsToProcess.map(processEvent))
+
+    // OPTIMIZATION: Batch insert all idempotency records at once
+    const idempotencyRecords = results
+      .filter(r => r.status !== 'error' && r.status !== 'skipped')
+      .map(r => {
+        const event = events.find(e => e.id === r.eventId)!
+        return {
+          idempotency_key: event.id,
+          applied_at: new Date().toISOString(),
+          user_id: user.id,
+          event_type: event.type,
+          quest_id: event.questId
+        }
+      })
+
+    if (idempotencyRecords.length > 0) {
+      try {
+        const { error: idempotencyError } = await supabaseServer
+          .from('quest_event_applied')
+          .insert(idempotencyRecords)
+
+        if (idempotencyError) {
+          console.error('Quest Sync: Batch idempotency tracking error:', idempotencyError)
+          // Mark idempotency as failed for all affected results
+          results.forEach(r => {
+            if (r.status !== 'error' && r.status !== 'skipped') {
+              r.idempotency = { applied: false, error: idempotencyError.message }
+            }
+          })
+        } else {
+          // Mark idempotency as successful
+          results.forEach(r => {
+            if (r.status !== 'error' && r.status !== 'skipped') {
+              r.idempotency = { applied: true }
+            }
+          })
+        }
+      } catch (idempotencyException) {
+        console.error('Quest Sync: Batch idempotency tracking exception:', idempotencyException)
+        results.forEach(r => {
+          if (r.status !== 'error' && r.status !== 'skipped') {
+            r.idempotency = { applied: false, error: 'Exception during idempotency tracking' }
+          }
         })
       }
     }
 
-    console.log(`Quest Sync: Completed processing ${events.length} events`)
+    // Add skipped events for already processed ones
+    const skippedResults = events
+      .filter(e => processedKeys.has(e.id))
+      .map(e => ({ eventId: e.id, status: 'skipped', reason: 'already_processed' }))
+    
+    const allResults = [...skippedResults, ...results]
+
+    console.log(`Quest Sync: Completed processing ${events.length} events (${eventsToProcess.length} new, ${skippedResults.length} skipped)`)
 
     return NextResponse.json({
       success: true,
-      processed: results.length,
-      results
+      processed: allResults.length,
+      results: allResults
     })
 
   } catch (error) {
