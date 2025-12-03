@@ -151,7 +151,7 @@ export async function canAddStudentsToClass(
       return { allowed: true }
     }
 
-    const classIds = teacherClasses.map(c => c.id)
+    const classIds = teacherClasses.map((c: any) => c.id)
 
     // Count total unique students across all classes (use same client)
     const { data: allClassStudents } = await supabase
@@ -160,7 +160,7 @@ export async function canAddStudentsToClass(
       .in('class_id', classIds)
       .is('deleted_at', null)
 
-    const totalStudents = new Set(allClassStudents?.map(cs => cs.student_id) || []).size
+    const totalStudents = new Set(allClassStudents?.map((cs: any) => cs.student_id) || []).size
 
     if (limits.maxTotalStudents !== null && totalStudents >= limits.maxTotalStudents) {
       const tierName = getTierDisplayName(tier)
