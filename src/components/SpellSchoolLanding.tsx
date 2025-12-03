@@ -142,7 +142,7 @@ export default function SpellSchoolLanding({
               >
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl blur opacity-60 group-hover:opacity-100 transition-opacity" />
                 <span className="relative bg-gradient-to-r from-amber-500 to-orange-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm inline-block hover:from-amber-400 hover:to-orange-500 transition-all">
-                  Kom igång gratis
+                  Skapa konto
                 </span>
               </Link>
             </nav>
@@ -170,7 +170,7 @@ export default function SpellSchoolLanding({
                 <button onClick={scrollToFeatures} className="block w-full text-left text-gray-400 hover:text-white py-2">Funktioner</button>
                 <button onClick={() => { setShowLoginModal(true); setMobileMenuOpen(false); }} className="block w-full text-left text-gray-400 hover:text-white py-2">Logga in</button>
                 <Link href="/signup/teacher" className="block bg-gradient-to-r from-amber-500 to-orange-600 text-white px-5 py-3 rounded-xl font-semibold text-center">
-                  Kom igång gratis
+                  Skapa konto
                 </Link>
               </div>
             </motion.div>
@@ -272,27 +272,6 @@ export default function SpellSchoolLanding({
                 </Link>
               </motion.div>
 
-              {/* Social proof */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 }}
-                className="mt-12 flex items-center gap-6 justify-center lg:justify-start"
-              >
-                <div className="flex -space-x-3">
-                  {[...Array(4)].map((_, i) => (
-                    <div 
-                      key={i} 
-                      className="w-10 h-10 rounded-full border-2 border-[#0a0a1a] bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-xs font-bold"
-                    >
-                      {['A', 'S', 'M', 'K'][i]}
-                    </div>
-                  ))}
-                </div>
-                <div className="text-sm text-gray-400">
-                  <span className="text-white font-semibold">500+</span> lärare använder Spell School
-                </div>
-              </motion.div>
             </div>
 
             {/* Right Column - Wizard Stack */}

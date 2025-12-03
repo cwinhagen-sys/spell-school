@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
           const { getTierDisplayName } = await import('@/lib/subscription')
           const tierName = getTierDisplayName(tier)
           return NextResponse.json(
-            { error: `${tierName} plan allows max ${limits.maxTotalStudents} students total. You're trying to add ${studentsToAdd} students but already have ${totalStudents}.` },
+            { error: `${tierName} plan allows max ${limits.maxTotalStudents} students per class.` },
             { status: 403 }
           )
         }
@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
         const { getTierDisplayName } = await import('@/lib/subscription')
         const tierName = getTierDisplayName(tier)
         return NextResponse.json(
-          { error: `${tierName} plan allows max ${limits.maxStudentsPerClass} students per class. You're trying to add ${studentsToAdd} students but already have ${currentStudentCount}.` },
+          { error: `${tierName} plan allows max ${limits.maxStudentsPerClass} students per class.` },
           { status: 403 }
         )
       }
@@ -167,7 +167,8 @@ export async function POST(request: NextRequest) {
     const results: Array<{ username: string; success: boolean; message: string }> = []
 
     for (const rawStudent of students) {
-      const username = rawStudent.username?.trim().toLowerCase()
+      // Preserve Swedish characters (å, ä, ö) - only trim whitespace, don't lowercase
+      const username = rawStudent.username?.trim()
       const password = rawStudent.password ?? ''
 
       if (!username || !password) {

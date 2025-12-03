@@ -41,7 +41,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const normalizedUsername = username.toLowerCase().trim()
+    // Preserve Swedish characters (å, ä, ö) - only trim whitespace, don't lowercase
+    const normalizedUsername = username.trim()
 
     console.log('🔍 Student login attempt:', { username: normalizedUsername })
 

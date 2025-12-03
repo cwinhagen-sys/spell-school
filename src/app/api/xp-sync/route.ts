@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseServer } from '@/lib/supabase-server'
 
 /**
  * SIMPLIFIED XP Sync Endpoint
@@ -9,28 +9,42 @@ import { supabase } from '@/lib/supabase'
  */
 export async function POST(request: NextRequest) {
   try {
-    // Get authorization header
-    const authHeader = request.headers.get('Authorization')
-    if (!authHeader) {
-      console.error('XP Sync: No authorization header')
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const token = authHeader.replace('Bearer ', '')
-
-    // Verify the user is authenticated using the provided token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-    if (authError || !user) {
-      console.error('XP Sync: Auth error:', authError)
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Parse request body
+    // Parse request body first (same as quest-sync)
     const body = await request.json()
     const { events } = body
 
     if (!Array.isArray(events) || events.length === 0) {
       return NextResponse.json({ error: 'No events provided' }, { status: 400 })
+    }
+
+    // Get authenticated user (try both header and cookie auth - same as quest-sync)
+    let user = null
+    
+    // Try authorization header first (for fetch requests)
+    const authHeader = request.headers.get('authorization')
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7)
+      const { data: { user: headerUser }, error: headerError } = await supabaseServer.auth.getUser(token)
+      if (!headerError && headerUser) {
+        user = headerUser
+      } else {
+        console.error('XP Sync: Header auth error:', headerError?.message || headerError)
+      }
+    }
+    
+    // Try cookie-based auth (for sendBeacon requests)
+    if (!user) {
+      const { data: { user: cookieUser }, error: cookieError } = await supabaseServer.auth.getUser()
+      if (!cookieError && cookieUser) {
+        user = cookieUser
+      } else {
+        console.error('XP Sync: Cookie auth error:', cookieError?.message || cookieError)
+      }
+    }
+    
+    if (!user) {
+      console.error('XP Sync: No authenticated user found')
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     console.log(`XP Sync (Simple): Processing ${events.length} events for user ${user.id}`)
@@ -58,7 +72,7 @@ export async function POST(request: NextRequest) {
     }))
 
     // Batch insert XP events (ON CONFLICT DO NOTHING for idempotency)
-    const { data: insertedEvents, error: insertError } = await supabase
+    const { data: insertedEvents, error: insertError } = await supabaseServer
       .from('xp_events')
       .upsert(xpEventRecords, { onConflict: 'id', ignoreDuplicates: true })
       .select('id')
@@ -71,7 +85,7 @@ export async function POST(request: NextRequest) {
       // Fall back to individual inserts for error handling
       for (const event of events) {
         try {
-          const { error: singleError } = await supabase
+          const { error: singleError } = await supabaseServer
             .from('xp_events')
             .insert({
               id: event.id,
@@ -114,7 +128,7 @@ export async function POST(request: NextRequest) {
 
     if (sessionRecords.length > 0) {
       try {
-        const { error: sessionError } = await supabase
+        const { error: sessionError } = await supabaseServer
           .from('game_sessions')
           .insert(sessionRecords)
 
@@ -134,7 +148,7 @@ export async function POST(request: NextRequest) {
     await new Promise(resolve => setTimeout(resolve, 100))
 
     // Read current totals (AFTER trigger has fired)
-    const { data: totalsData } = await supabase
+    const { data: totalsData } = await supabaseServer
       .from('xp_totals')
       .select('total_xp, games_played')
       .eq('student_id', user.id)

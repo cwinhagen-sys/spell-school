@@ -97,11 +97,25 @@ function TeacherSignupContent() {
           }, 1000)
         }
       } else {
-        setMessage('Account created successfully! Please check your email to verify your account, then you can log in.')
-        // Redirect to login after a short delay
-        setTimeout(() => {
-          router.push('/')
-        }, 3000)
+        setMessage('Account created successfully! Logging you in...')
+        
+        // Sign in the user automatically
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: emailValue,
+          password: passwordValue
+        })
+        
+        if (signInError) {
+          setMessage('Account created successfully! However, automatic login failed. Please log in manually.')
+          setTimeout(() => {
+            router.push('/')
+          }, 2000)
+        } else {
+          // Redirect to teacher dashboard
+          setTimeout(() => {
+            router.push('/teacher')
+          }, 1000)
+        }
       }
 
     } catch (error: any) {

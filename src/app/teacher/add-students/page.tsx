@@ -82,7 +82,8 @@ export default function AddStudentsPage() {
     })
 
     // Check for duplicate usernames
-    const usernames = students.map(s => s.username.trim().toLowerCase())
+    // Preserve Swedish characters (å, ä, ö) - only trim whitespace
+    const usernames = students.map(s => s.username.trim())
     const duplicates = usernames.filter((username, index) => usernames.indexOf(username) !== index)
     if (duplicates.length > 0) {
       errors.push(`Duplicerade användarnamn: ${[...new Set(duplicates)].join(', ')}`)

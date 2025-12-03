@@ -166,7 +166,7 @@ export async function canAddStudentsToClass(
       const tierName = getTierDisplayName(tier)
       return { 
         allowed: false, 
-        reason: `${tierName} plan allows max ${limits.maxTotalStudents} students total. Upgrade to Premium for more students.` 
+        reason: `${tierName} plan allows max ${limits.maxTotalStudents} students per class.` 
       }
     }
   }
@@ -177,7 +177,7 @@ export async function canAddStudentsToClass(
       const tierName = getTierDisplayName(tier)
       return { 
         allowed: false, 
-        reason: `${tierName} plan allows max ${limits.maxStudentsPerClass} students per class. Upgrade to Pro for unlimited students.` 
+        reason: `${tierName} plan allows max ${limits.maxStudentsPerClass} students per class.` 
       }
     }
   }
