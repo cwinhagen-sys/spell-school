@@ -196,6 +196,7 @@ function AuthCallbackContent() {
           email: googleEmail || session.user.email,
           role: userRole,
           name: googleName || session.user.email?.split('@')[0] || undefined,
+          subscription_tier: 'free', // Default to free tier for new accounts
         }
         
         // Add last_active if column exists
@@ -244,7 +245,8 @@ function AuthCallbackContent() {
               id: session.user.id,
               email: googleEmail || session.user.email,
               role: userRole,
-              name: googleName || undefined
+              name: googleName || undefined,
+              subscription_tier: 'free' // Default to free tier for new accounts
             }
             await supabase
               .from('profiles')

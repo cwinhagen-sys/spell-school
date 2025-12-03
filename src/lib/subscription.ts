@@ -52,7 +52,7 @@ export async function getUserSubscriptionTier(userId: string): Promise<Subscript
     const { supabase } = await import('@/lib/supabase')
     const { data, error } = await supabase
       .from('profiles')
-      .select('subscription_tier, tier')
+      .select('subscription_tier')
       .eq('id', userId)
       .single()
 
@@ -60,9 +60,7 @@ export async function getUserSubscriptionTier(userId: string): Promise<Subscript
       return 'free'
     }
 
-    // Check subscription_tier first, fallback to tier for backward compatibility
-    const tier = (data.subscription_tier as SubscriptionTier) || (data.tier as SubscriptionTier) || 'free'
-    return tier
+    return (data.subscription_tier as SubscriptionTier) || 'free'
   } catch (error) {
     console.error('Error getting subscription tier:', error)
     return 'free'
