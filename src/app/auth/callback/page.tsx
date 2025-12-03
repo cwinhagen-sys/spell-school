@@ -120,22 +120,24 @@ function AuthCallbackContent() {
         // For Google OAuth, only allow teacher role
         const requestedRole = searchParams.get('role') || session.user.user_metadata?.role || null
         
-        // Check existing profile for role - check by both ID and email
+        // Check existing profile for role and subscription_tier - check by both ID and email
         let userRole = requestedRole
         let existingProfile = null
+        let existingSubscriptionTier: string | null = null
         let needsRoleUpdate = false
         
         if (!userRole) {
           // First check by user ID
           const { data: profileById } = await supabase
             .from('profiles')
-            .select('role, email')
+            .select('role, email, subscription_tier')
             .eq('id', session.user.id)
             .maybeSingle()
           
           if (profileById?.role) {
             existingProfile = profileById
             userRole = profileById.role
+            existingSubscriptionTier = profileById.subscription_tier || null
             
             // If user logs in with Google OAuth but has student role, update to teacher
             // Google OAuth is only for teachers
@@ -147,7 +149,7 @@ function AuthCallbackContent() {
             // If no profile by ID, check by email (in case user has existing account)
             const { data: profileByEmail } = await supabase
               .from('profiles')
-              .select('role, email, id')
+              .select('role, email, id, subscription_tier')
               .eq('email', googleEmail)
               .maybeSingle()
             
@@ -163,6 +165,7 @@ function AuthCallbackContent() {
               } else {
                 // Same ID, use existing role but update if needed
                 userRole = profileByEmail.role
+                existingSubscriptionTier = profileByEmail.subscription_tier || null
                 if (isGoogleOAuth && userRole === 'student') {
                   userRole = 'teacher'
                   needsRoleUpdate = true
@@ -196,7 +199,8 @@ function AuthCallbackContent() {
           email: googleEmail || session.user.email,
           role: userRole,
           name: googleName || session.user.email?.split('@')[0] || undefined,
-          subscription_tier: 'free', // Default to free tier for new accounts
+          // Preserve existing subscription_tier if profile exists, otherwise default to 'free'
+          subscription_tier: existingSubscriptionTier || 'free',
         }
         
         // Add last_active if column exists
@@ -246,7 +250,8 @@ function AuthCallbackContent() {
               email: googleEmail || session.user.email,
               role: userRole,
               name: googleName || undefined,
-              subscription_tier: 'free' // Default to free tier for new accounts
+              // Preserve existing subscription_tier if profile exists, otherwise default to 'free'
+              subscription_tier: existingSubscriptionTier || 'free'
             }
             await supabase
               .from('profiles')
