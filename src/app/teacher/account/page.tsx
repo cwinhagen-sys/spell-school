@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getUserSubscriptionTier, getTierDisplayName, getTierPrice, TIER_LIMITS, type SubscriptionTier } from '@/lib/subscription'
@@ -274,7 +274,7 @@ function UpgradeButton({ currentTier, targetTier, onUpgrade, isDowngrade = false
   )
 }
 
-export default function TeacherAccountPage() {
+function TeacherAccountPageContent() {
   const [user, setUser] = useState<any>(null)
   const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier>('free')
   const [loading, setLoading] = useState(true)
@@ -1191,5 +1191,20 @@ export default function TeacherAccountPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function TeacherAccountPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Laddar kontoinformation...</p>
+        </div>
+      </div>
+    }>
+      <TeacherAccountPageContent />
+    </Suspense>
   )
 }
