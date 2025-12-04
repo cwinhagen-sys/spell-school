@@ -88,3 +88,4 @@ console.log(`     --base-url=https://www.spellschool.se \\`)
 console.log(`     --credentials-file=${options.outputFile}`)
 console.log('')
 
+

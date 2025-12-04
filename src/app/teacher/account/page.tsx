@@ -1,10 +1,278 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getUserSubscriptionTier, getTierDisplayName, getTierPrice, TIER_LIMITS, type SubscriptionTier } from '@/lib/subscription'
-import { Check, X, Crown, Zap, ArrowRight, ExternalLink, User, Users, BookOpen, Sparkles, Shield, TrendingUp, Gamepad2 } from 'lucide-react'
+import { Check, X, Crown, Zap, ArrowRight, ExternalLink, User, Users, BookOpen, Sparkles, Shield, TrendingUp, Gamepad2, AlertCircle, CreditCard, Settings, Key, Calendar, Clock } from 'lucide-react'
 import Link from 'next/link'
+
+interface UpgradeButtonProps {
+  currentTier: SubscriptionTier
+  targetTier: 'premium' | 'pro'
+  onUpgrade: () => Promise<void>
+  isDowngrade?: boolean
+}
+
+function UpgradeButton({ currentTier, targetTier, onUpgrade, isDowngrade = false }: UpgradeButtonProps) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [yearly, setYearly] = useState(false)
+
+  // Get current price (assume monthly for comparison)
+  const currentPriceMonthly = getTierPrice(currentTier, false)
+  const currentPriceYearly = getTierPrice(currentTier, true)
+  const targetPrice = getTierPrice(targetTier, yearly)
+  const targetPriceMonthly = getTierPrice(targetTier, false)
+  const targetPriceYearly = getTierPrice(targetTier, true)
+  
+  // Calculate price difference
+  // If yearly, compare yearly prices. If monthly, compare monthly prices.
+  const priceDifference = yearly 
+    ? (targetPriceYearly - currentPriceYearly)
+    : (targetPriceMonthly - currentPriceMonthly)
+  
+  // Determine if this is a downgrade based on tier hierarchy
+  const tierOrder: SubscriptionTier[] = ['free', 'premium', 'pro']
+  const currentTierIndex = tierOrder.indexOf(currentTier)
+  const targetTierIndex = tierOrder.indexOf(targetTier)
+  const isActuallyDowngrade = targetTierIndex < currentTierIndex
+
+  const handleUpgrade = async () => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const action = isDowngrade || isActuallyDowngrade ? 'downgrade' : 'upgrade'
+      console.log(`🔄 Starting ${action} to`, targetTier)
+      
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        throw new Error('Not authenticated')
+      }
+
+      console.log('📤 Calling upgrade-subscription API...')
+      const response = await fetch('/api/upgrade-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ 
+          targetTier,
+          yearly: yearly
+        }),
+      })
+
+      const data = await response.json()
+      console.log('📥 Upgrade API response:', { ok: response.ok, data })
+
+      if (!response.ok) {
+        console.error('❌ Upgrade failed:', data)
+        throw new Error(data.error || 'Failed to upgrade subscription')
+      }
+
+      // If we got a URL, redirect to Stripe Checkout
+      if (data.url) {
+        console.log('🔗 Redirecting to Stripe Checkout:', data.url)
+        window.location.href = data.url
+        return
+      }
+
+      // If upgrade/downgrade was successful directly (existing subscription updated)
+      if (data.success) {
+        const action = isDowngrade || isActuallyDowngrade ? 'nedgradering' : 'uppgradering'
+        console.log(`✅ ${action} successful, refreshing tier...`)
+        await onUpgrade()
+        // Reload page to show updated tier
+        window.location.reload()
+      } else {
+        console.warn('⚠️ Response missing success flag:', data)
+        const action = isDowngrade || isActuallyDowngrade ? 'nedgraderingen' : 'uppgraderingen'
+        setError(`${action.charAt(0).toUpperCase() + action.slice(1)} slutfördes men kunde inte bekräftas. Vänligen uppdatera sidan.`)
+        setLoading(false)
+      }
+    } catch (err: any) {
+      const action = isDowngrade || isActuallyDowngrade ? 'nedgradering' : 'uppgradering'
+      console.error(`❌ ${action} error:`, err)
+      setError(err.message || `Ett fel uppstod vid ${action}`)
+      setLoading(false)
+    }
+  }
+
+  return (
+    <>
+      <div className="space-y-3">
+        <button
+          onClick={() => setShowConfirmDialog(true)}
+          disabled={loading}
+          className={`w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${
+            isActuallyDowngrade || isDowngrade
+              ? 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white hover:from-blue-600 hover:to-cyan-700 shadow-blue-500/20'
+              : 'bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700 shadow-amber-500/20'
+          }`}
+        >
+          {isActuallyDowngrade || isDowngrade ? (
+            <>
+              <ArrowRight className="w-5 h-5 rotate-180" />
+              Nedgradera till {getTierDisplayName(targetTier)}
+            </>
+          ) : (
+            <>
+              <Crown className="w-5 h-5" />
+              Uppgradera till {getTierDisplayName(targetTier)}
+              <ArrowRight className="w-4 h-4" />
+            </>
+          )}
+        </button>
+
+        {error && (
+          <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-400 text-sm">
+            {error}
+          </div>
+        )}
+      </div>
+
+      {/* Confirmation Dialog */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#12122a] rounded-2xl border border-white/10 p-6 max-w-md w-full shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-amber-400" />
+              </div>
+              <h3 className="text-xl font-bold text-white">
+                {isActuallyDowngrade || isDowngrade ? 'Bekräfta nedgradering' : 'Bekräfta uppgradering'}
+              </h3>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-gray-400">Nuvarande plan:</span>
+                  <span className="text-white font-semibold">{getTierDisplayName(currentTier)}</span>
+                </div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-gray-400">Pris:</span>
+                  <span className="text-white">{currentPriceMonthly} SEK/månad</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center">
+                <ArrowRight className="w-5 h-5 text-gray-500 rotate-90" />
+              </div>
+
+              <div className="p-4 bg-amber-500/10 rounded-xl border border-amber-500/30">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-gray-300">Ny plan:</span>
+                  <span className="text-amber-400 font-bold">{getTierDisplayName(targetTier)}</span>
+                </div>
+                
+                {/* Billing Period Toggle */}
+                <div className="mb-3 p-3 bg-white/5 rounded-lg border border-white/10">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-300">Faktureringsperiod:</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setYearly(false)}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                        !yearly
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                          : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                      }`}
+                    >
+                      Månadsvis
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setYearly(true)}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                        yearly
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                          : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                      }`}
+                    >
+                      Årsvis
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-gray-300">Pris:</span>
+                  <div className="text-right">
+                    <span className="text-amber-400 font-bold">
+                      {yearly ? `${targetPrice} SEK/år` : `${targetPrice} SEK/månad`}
+                    </span>
+                    {yearly && (
+                      <div className="text-xs text-gray-400 mt-1">
+                        ({Math.round(targetPrice / 12)} SEK/månad)
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {priceDifference !== 0 && (
+                  <div className="pt-3 border-t border-amber-500/20">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-400">
+                        {priceDifference > 0 ? 'Extra kostnad:' : 'Kredit/återbetalning:'}
+                      </span>
+                      <span className={`text-sm font-semibold ${priceDifference > 0 ? 'text-amber-300' : 'text-emerald-300'}`}>
+                        {priceDifference > 0 ? '+' : ''}{priceDifference} SEK/{yearly ? 'år' : 'månad'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                <p className="text-sm text-blue-300">
+                  <strong>Prorata-betalning:</strong> Stripe beräknar automatiskt beloppet baserat på återstående tid i din faktureringsperiod. 
+                  {priceDifference > 0 
+                    ? ' Du debiteras omedelbart för skillnaden.'
+                    : ' Du får kredit för återstående tid som används mot nästa faktura.'
+                  }
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirmDialog(false)}
+                disabled={loading}
+                className="flex-1 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl font-medium transition-colors disabled:opacity-50"
+              >
+                Avbryt
+              </button>
+              <button
+                onClick={async () => {
+                  setShowConfirmDialog(false)
+                  await handleUpgrade()
+                }}
+                disabled={loading}
+                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Uppgraderar...
+                  </>
+                ) : (
+                  <>
+                    {isActuallyDowngrade || isDowngrade ? 'Bekräfta nedgradering' : 'Bekräfta uppgradering'}
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
 
 export default function TeacherAccountPage() {
   const [user, setUser] = useState<any>(null)
@@ -13,6 +281,30 @@ export default function TeacherAccountPage() {
   const [classCount, setClassCount] = useState(0)
   const [totalStudents, setTotalStudents] = useState(0)
   const [wordSetCount, setWordSetCount] = useState(0)
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
+  const [testpilotCode, setTestpilotCode] = useState('')
+  const [showTestpilotInput, setShowTestpilotInput] = useState(false)
+  const [testpilotLoading, setTestpilotLoading] = useState(false)
+  const [testpilotMessage, setTestpilotMessage] = useState('')
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly')
+  const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null)
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false)
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    // Check for success parameter from Stripe checkout
+    const success = searchParams?.get('success')
+    if (success === 'true') {
+      setShowSuccessMessage(true)
+      // Remove success parameter from URL
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href)
+        url.searchParams.delete('success')
+        url.searchParams.delete('session_id')
+        window.history.replaceState({}, '', url.toString())
+      }
+    }
+  }, [searchParams])
 
   useEffect(() => {
     const load = async () => {
@@ -28,6 +320,63 @@ export default function TeacherAccountPage() {
         // Get subscription tier
         const tier = await getUserSubscriptionTier(user.id)
         setSubscriptionTier(tier)
+        
+        // If we just came from Stripe checkout, poll for tier update
+        // Webhooks can take a few seconds to process
+        if (searchParams?.get('success') === 'true') {
+          console.log('🔄 Payment successful, polling for tier update...')
+          console.log('📊 Initial tier:', tier)
+          
+          // Poll every 2 seconds for up to 30 seconds
+          let attempts = 0
+          const maxAttempts = 15
+          let initialTier = tier
+          
+          const pollInterval = setInterval(async () => {
+            attempts++
+            console.log(`🔄 Polling attempt ${attempts}/${maxAttempts}...`)
+            
+            const updatedTier = await getUserSubscriptionTier(user.id)
+            console.log(`📊 Current tier: ${updatedTier}, initial: ${initialTier}`)
+            
+            if (updatedTier !== initialTier && updatedTier !== 'free') {
+              console.log(`✅ Tier updated to ${updatedTier}!`)
+              setSubscriptionTier(updatedTier)
+              clearInterval(pollInterval)
+              
+              // Reload all data
+              const { data: classes } = await supabase
+                .from('classes')
+                .select('id')
+                .eq('teacher_id', user.id)
+                .is('deleted_at', null)
+              setClassCount(classes?.length || 0)
+              
+              if (classes && classes.length > 0) {
+                const classIds = classes.map(c => c.id)
+                const { data: classStudents } = await supabase
+                  .from('class_students')
+                  .select('student_id')
+                  .in('class_id', classIds)
+                const uniqueStudents = new Set(classStudents?.map(cs => cs.student_id) || [])
+                setTotalStudents(uniqueStudents.size)
+              }
+              
+              const { data: wordSets } = await supabase
+                .from('word_sets')
+                .select('id')
+                .eq('teacher_id', user.id)
+              setWordSetCount(wordSets?.length || 0)
+            } else if (attempts >= maxAttempts) {
+              console.log('⏱️ Polling timeout - tier may not have updated yet')
+              console.log('💡 Check server logs and Stripe webhook forwarding')
+              clearInterval(pollInterval)
+            }
+          }, 2000)
+          
+          // Cleanup on unmount
+          return () => clearInterval(pollInterval)
+        }
 
         // Get class count
         const { data: classes } = await supabase
@@ -57,6 +406,29 @@ export default function TeacherAccountPage() {
           .eq('teacher_id', user.id)
 
         setWordSetCount(wordSets?.length || 0)
+
+        // Get subscription info if user has a paid tier
+        if (tier !== 'free') {
+          setSubscriptionLoading(true)
+          try {
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session) {
+              const response = await fetch('/api/get-subscription-info', {
+                headers: {
+                  'Authorization': `Bearer ${session.access_token}`,
+                },
+              })
+              if (response.ok) {
+                const data = await response.json()
+                setSubscriptionInfo(data.subscription)
+              }
+            }
+          } catch (error) {
+            console.error('Error loading subscription info:', error)
+          } finally {
+            setSubscriptionLoading(false)
+          }
+        }
       } catch (error) {
         console.error('Error loading account info:', error)
       } finally {
@@ -64,7 +436,7 @@ export default function TeacherAccountPage() {
       }
     }
     load()
-  }, [])
+  }, [searchParams])
 
   const limits = TIER_LIMITS[subscriptionTier]
   const tierIcon = subscriptionTier === 'free' ? Shield : subscriptionTier === 'premium' ? Zap : Crown
@@ -105,6 +477,47 @@ export default function TeacherAccountPage() {
 
   return (
     <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Success Message */}
+      {showSuccessMessage && (
+        <div className="mb-6 p-4 bg-emerald-500/20 border border-emerald-500/50 rounded-xl flex items-center gap-3 animate-in slide-in-from-top">
+          <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
+            <Check className="w-6 h-6 text-white" />
+          </div>
+          <div className="flex-1">
+            <p className="text-emerald-400 font-semibold">Betalning genomförd!</p>
+            <p className="text-emerald-300/80 text-sm">
+              {subscriptionTier === 'free' 
+                ? 'Väntar på att systemet bearbetar betalningen... (detta kan ta några sekunder)'
+                : `Din prenumeration är nu aktiv! Du har ${getTierDisplayName(subscriptionTier)}-planen.`}
+            </p>
+            {subscriptionTier === 'free' && (
+              <button
+                onClick={async () => {
+                  const { data: { user } } = await supabase.auth.getUser()
+                  if (user) {
+                    const updatedTier = await getUserSubscriptionTier(user.id)
+                    setSubscriptionTier(updatedTier)
+                    if (updatedTier !== 'free') {
+                      // Reload page data
+                      window.location.reload()
+                    }
+                  }
+                }}
+                className="mt-2 text-sm text-emerald-300 hover:text-emerald-200 underline"
+              >
+                Uppdatera nu
+              </button>
+            )}
+          </div>
+          <button
+            onClick={() => setShowSuccessMessage(false)}
+            className="text-emerald-400 hover:text-emerald-300"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+
       {/* Page Header */}
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-2">
@@ -137,20 +550,475 @@ export default function TeacherAccountPage() {
           </div>
           {subscriptionTier !== 'free' && (
             <div className="text-gray-400">
-              {getTierPrice(subscriptionTier, false)} SEK/månad
+              {subscriptionInfo?.price?.amount 
+                ? `${subscriptionInfo.price.amount} SEK/${subscriptionInfo.billingPeriod === 'yearly' ? 'år' : 'månad'}`
+                : `${getTierPrice(subscriptionTier, false)} SEK/månad`}
             </div>
           )}
         </div>
 
+        {/* Subscription Status - only show for paid tiers */}
+        {subscriptionTier !== 'free' && subscriptionInfo && (
+          <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/10">
+            <h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
+              <CreditCard className="w-4 h-4" />
+              Prenumerationsinformation
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-violet-500/20 rounded-lg flex items-center justify-center">
+                  <Calendar className="w-4 h-4 text-violet-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">Nästa fakturering</p>
+                  <p className="text-sm font-medium text-white">
+                    {subscriptionInfo.currentPeriodEnd 
+                      ? new Date(subscriptionInfo.currentPeriodEnd).toLocaleDateString('sv-SE', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })
+                      : 'N/A'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center">
+                  <Clock className="w-4 h-4 text-cyan-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">Status</p>
+                  <p className="text-sm font-medium text-white capitalize">
+                    {subscriptionInfo.status === 'active' ? 'Aktiv' : 
+                     subscriptionInfo.status === 'canceled' ? 'Avbruten' :
+                     subscriptionInfo.status === 'past_due' ? 'Förfallen' :
+                     subscriptionInfo.status === 'trialing' ? 'Testperiod' :
+                     subscriptionInfo.status}
+                    {subscriptionInfo.cancelAtPeriodEnd && (
+                      <span className="ml-2 text-xs text-amber-400">(avslutas vid periodens slut)</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+                  <Calendar className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">Faktureringsperiod</p>
+                  <p className="text-sm font-medium text-white capitalize">
+                    {subscriptionInfo.billingPeriod === 'yearly' ? 'Årsvis' : 'Månadsvis'}
+                  </p>
+                </div>
+              </div>
+              {subscriptionInfo.currentPeriodStart && (
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                    <Calendar className="w-4 h-4 text-purple-400" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">Prenumeration startade</p>
+                    <p className="text-sm font-medium text-white">
+                      {new Date(subscriptionInfo.currentPeriodStart).toLocaleDateString('sv-SE', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {subscriptionTier !== 'free' && subscriptionLoading && (
+          <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/10">
+            <div className="flex items-center gap-3 text-gray-400">
+              <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm">Laddar prenumerationsinformation...</span>
+            </div>
+          </div>
+        )}
+
         {subscriptionTier === 'free' && (
-          <Link
-            href="/pricing"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20"
-          >
-            <Sparkles className="w-5 h-5" />
-            Uppgradera plan
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+          <div className="space-y-4">
+            {/* Tier Selection for logged-in users */}
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4">Välj din plan</h3>
+              
+              {/* Billing Period Toggle */}
+              <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/10">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-gray-300">Faktureringsperiod:</span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setBillingPeriod('monthly')}
+                    className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                      billingPeriod === 'monthly'
+                        ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                        : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                    }`}
+                  >
+                    Månadsvis
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBillingPeriod('yearly')}
+                    className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                      billingPeriod === 'yearly'
+                        ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                        : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                    }`}
+                  >
+                    Årsvis
+                    {billingPeriod === 'yearly' && (
+                      <span className="ml-2 text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded">
+                        Spara 20%
+                      </span>
+                    )}
+                  </button>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+                {/* Premium Tier */}
+                <div className="p-6 bg-white/5 rounded-xl border border-white/10 hover:border-cyan-500/50 transition-all flex flex-col">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Zap className="w-6 h-6 text-cyan-400" />
+                    <h4 className="text-xl font-bold text-white">Premium</h4>
+                  </div>
+                  <div className="mb-4">
+                    {billingPeriod === 'monthly' ? (
+                      <>
+                        <span className="text-3xl font-bold text-white">79</span>
+                        <span className="text-gray-400 ml-1">SEK/månad</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-3xl font-bold text-white">758</span>
+                        <span className="text-gray-400 ml-1">SEK/år</span>
+                        <div className="text-xs text-gray-500 mt-1">
+                          (63 SEK/månad)
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <ul className="space-y-2 mb-4 text-sm text-gray-300 flex-grow">
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      3 klasser
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      30 elever per klass
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      20 ordlistor
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      Session Mode
+                    </li>
+                  </ul>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const { data: { session } } = await supabase.auth.getSession()
+                        if (!session) {
+                          alert('Du måste vara inloggad')
+                          return
+                        }
+
+                        const response = await fetch('/api/create-checkout-session', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session.access_token}`,
+                          },
+                          body: JSON.stringify({
+                            tier: 'premium',
+                            yearly: billingPeriod === 'yearly',
+                          }),
+                        })
+
+                        const data = await response.json()
+
+                        if (!response.ok) {
+                          throw new Error(data.error || 'Kunde inte skapa checkout session')
+                        }
+
+                        if (data.url) {
+                          window.location.href = data.url
+                        }
+                      } catch (error: any) {
+                        console.error('Error creating checkout session:', error)
+                        alert(error.message || 'Ett fel uppstod')
+                      }
+                    }}
+                    className="w-full px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-700 transition-all shadow-lg shadow-cyan-500/20 mt-auto"
+                  >
+                    Välj Premium
+                  </button>
+                </div>
+
+                {/* Pro Tier */}
+                <div className="p-6 bg-white/5 rounded-xl border border-white/10 hover:border-amber-500/50 transition-all relative flex flex-col">
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <span className="bg-gradient-to-r from-amber-500 to-orange-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                      Populär
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 mb-3">
+                    <Crown className="w-6 h-6 text-amber-400" />
+                    <h4 className="text-xl font-bold text-white">Pro</h4>
+                  </div>
+                  <div className="mb-4">
+                    {billingPeriod === 'monthly' ? (
+                      <>
+                        <span className="text-3xl font-bold text-white">129</span>
+                        <span className="text-gray-400 ml-1">SEK/månad</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-3xl font-bold text-white">1238</span>
+                        <span className="text-gray-400 ml-1">SEK/år</span>
+                        <div className="text-xs text-gray-500 mt-1">
+                          (103 SEK/månad)
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <ul className="space-y-2 mb-4 text-sm text-gray-300 flex-grow">
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      Obegränsade klasser
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      Obegränsade elever
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      Obegränsade ordlistor
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      Session Mode
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      Progress & Quiz-statistik
+                    </li>
+                  </ul>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const { data: { session } } = await supabase.auth.getSession()
+                        if (!session) {
+                          alert('Du måste vara inloggad')
+                          return
+                        }
+
+                        const response = await fetch('/api/create-checkout-session', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session.access_token}`,
+                          },
+                          body: JSON.stringify({
+                            tier: 'pro',
+                            yearly: billingPeriod === 'yearly',
+                          }),
+                        })
+
+                        const data = await response.json()
+
+                        if (!response.ok) {
+                          throw new Error(data.error || 'Kunde inte skapa checkout session')
+                        }
+
+                        if (data.url) {
+                          window.location.href = data.url
+                        }
+                      } catch (error: any) {
+                        console.error('Error creating checkout session:', error)
+                        alert(error.message || 'Ett fel uppstod')
+                      }
+                    }}
+                    className="w-full px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg font-semibold hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 mt-auto"
+                  >
+                    Välj Pro
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-gray-400 mt-4 text-center">
+                Du kan också <Link href="/pricing" className="text-violet-400 hover:text-violet-300 underline">jämföra alla planer</Link>
+              </p>
+            </div>
+            
+            {/* Testpilot Code Input */}
+            <div className="pt-4 border-t border-white/10">
+              <button
+                onClick={() => setShowTestpilotInput(!showTestpilotInput)}
+                className="text-sm text-violet-400 hover:text-violet-300 font-medium transition-colors flex items-center gap-2"
+              >
+                <Key className="w-4 h-4" />
+                Har du en testpilot-kod?
+              </button>
+              
+              {showTestpilotInput && (
+                <div className="mt-4 p-4 bg-white/5 rounded-xl border border-white/10 space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Ange testpilot-kod
+                    </label>
+                    <input
+                      type="text"
+                      value={testpilotCode}
+                      onChange={(e) => setTestpilotCode(e.target.value.toUpperCase())}
+                      placeholder="Ange din kod här"
+                      className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 outline-none transition-all"
+                      disabled={testpilotLoading}
+                    />
+                  </div>
+                  
+                  {testpilotMessage && (
+                    <div className={`p-3 rounded-lg text-sm ${
+                      testpilotMessage.includes('✅') || testpilotMessage.includes('aktiverats')
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        : 'bg-red-500/20 text-red-300 border border-red-500/30'
+                    }`}>
+                      {testpilotMessage}
+                    </div>
+                  )}
+                  
+                  <button
+                    onClick={async () => {
+                      if (!testpilotCode.trim()) {
+                        setTestpilotMessage('❌ Ange en kod')
+                        return
+                      }
+                      
+                      setTestpilotLoading(true)
+                      setTestpilotMessage('')
+                      
+                      try {
+                        const { data: { session } } = await supabase.auth.getSession()
+                        if (!session) {
+                          throw new Error('Du måste vara inloggad')
+                        }
+                        
+                        const response = await fetch('/api/redeem-testpilot-code', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session.access_token}`,
+                          },
+                          body: JSON.stringify({ code: testpilotCode.trim() }),
+                        })
+                        
+                        const data = await response.json()
+                        
+                        if (!response.ok) {
+                          throw new Error(data.error || 'Kunde inte aktivera kod')
+                        }
+                        
+                        setTestpilotMessage('✅ Pro-planen har aktiverats!')
+                        setTestpilotCode('')
+                        
+                        // Reload to show updated tier
+                        setTimeout(() => {
+                          window.location.reload()
+                        }, 1500)
+                      } catch (error: any) {
+                        setTestpilotMessage(`❌ ${error.message || 'Ett fel uppstod'}`)
+                      } finally {
+                        setTestpilotLoading(false)
+                      }
+                    }}
+                    disabled={testpilotLoading || !testpilotCode.trim()}
+                    className="w-full px-4 py-2.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-lg font-semibold hover:from-violet-600 hover:to-purple-700 transition-all shadow-lg shadow-violet-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {testpilotLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Aktiverar...
+                      </>
+                    ) : (
+                      <>
+                        <Key className="w-4 h-4" />
+                        Aktivera Pro
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {subscriptionTier === 'premium' && (
+          <UpgradeButton 
+            currentTier="premium" 
+            targetTier="pro"
+            onUpgrade={async () => {
+              const { data: { user } } = await supabase.auth.getUser()
+              if (user) {
+                const updatedTier = await getUserSubscriptionTier(user.id)
+                setSubscriptionTier(updatedTier)
+              }
+            }}
+          />
+        )}
+
+        {/* Customer Portal Button - for managing subscription */}
+        {subscriptionTier !== 'free' && (
+          <div className="mt-6 pt-6 border-t border-white/10">
+            <button
+              onClick={async () => {
+                try {
+                  const { data: { session } } = await supabase.auth.getSession()
+                  if (!session) {
+                    alert('Du måste vara inloggad för att hantera din prenumeration.')
+                    return
+                  }
+
+                  const response = await fetch('/api/create-portal-session', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${session.access_token}`,
+                    },
+                  })
+
+                  const data = await response.json()
+
+                  if (!response.ok) {
+                    throw new Error(data.error || 'Failed to create portal session')
+                  }
+
+                  if (data.url) {
+                    window.open(data.url, '_blank') // Open in new tab
+                  }
+                } catch (error: any) {
+                  console.error('Error opening customer portal:', error)
+                  alert(error.message || 'Ett fel uppstod vid öppning av kundportalen.')
+                }
+              }}
+              className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl font-medium transition-all hover:border-white/20"
+            >
+              <Settings className="w-5 h-5" />
+              Hantera prenumeration
+              <ExternalLink className="w-4 h-4" />
+            </button>
+            <p className="text-xs text-gray-400 mt-2 text-center">
+              Uppdatera betalningsmetod, se fakturor, avsluta prenumeration och mer
+            </p>
+          </div>
         )}
       </div>
 
@@ -310,7 +1178,7 @@ export default function TeacherAccountPage() {
           </div>
         </div>
 
-        {subscriptionTier !== 'pro' && (
+        {subscriptionTier === 'free' && (
           <div className="mt-8 pt-6 border-t border-white/10">
             <Link
               href="/pricing"

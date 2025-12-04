@@ -209,3 +209,4 @@ if (cached) return cached
 - Identifiera flaskhalsar
 - Optimera baserat på resultat
 
+

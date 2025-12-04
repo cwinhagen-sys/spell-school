@@ -207,3 +207,4 @@ Response med resultat
 - Network conditions
 - Supabase plan och kapacitet
 
+

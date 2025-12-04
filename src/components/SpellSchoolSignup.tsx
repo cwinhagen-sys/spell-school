@@ -34,6 +34,7 @@ const tiers = [
     id: 'free',
     name: 'Free',
     monthlyPrice: 0,
+    yearlyPrice: 0,
     description: 'Perfekt för att komma igång',
     color: 'from-gray-400 to-gray-600',
     icon: Sparkles,
@@ -50,6 +51,7 @@ const tiers = [
     id: 'premium',
     name: 'Premium',
     monthlyPrice: 79,
+    yearlyPrice: 758,
     description: 'För lärare som vill ha mer kontroll',
     color: 'from-violet-500 to-cyan-500',
     icon: Zap,
@@ -67,6 +69,7 @@ const tiers = [
     id: 'pro',
     name: 'Pro',
     monthlyPrice: 129,
+    yearlyPrice: 1238,
     description: 'Fullständig kontroll och insikter',
     color: 'from-amber-500 to-orange-500',
     icon: Crown,
@@ -104,6 +107,7 @@ export default function SpellSchoolSignup({
 }: SpellSchoolSignupProps) {
   const [selectedTier, setSelectedTier] = useState<string | null>(initialTier)
   const [showTierSelection, setShowTierSelection] = useState(true)
+  const [yearly, setYearly] = useState(false)
 
   useEffect(() => {
     // Check if tier is provided as prop
@@ -172,8 +176,17 @@ export default function SpellSchoolSignup({
                       <span className="text-3xl font-bold text-white">Gratis</span>
                     ) : (
                       <>
-                        <span className="text-3xl font-bold text-white">{tier.monthlyPrice}</span>
-                        <span className="text-gray-400 ml-1">kr/månad</span>
+                        <span className="text-3xl font-bold text-white">
+                          {yearly ? tier.yearlyPrice : tier.monthlyPrice}
+                        </span>
+                        <span className="text-gray-400 ml-1">
+                          kr/{yearly ? 'år' : 'månad'}
+                        </span>
+                        {yearly && tier.yearlyPrice > 0 && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            ({Math.round(tier.yearlyPrice / 12)} kr/månad)
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
@@ -195,6 +208,44 @@ export default function SpellSchoolSignup({
               )
             })}
           </div>
+
+          {/* Billing Period Toggle - only show for paid tiers */}
+          {selectedTier && selectedTier !== 'free' && (
+            <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/10">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-gray-300">Faktureringsperiod:</span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setYearly(false)}
+                  className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    !yearly
+                      ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                      : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                  }`}
+                >
+                  Månadsvis
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setYearly(true)}
+                  className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    yearly
+                      ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                      : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                  }`}
+                >
+                  Årsvis
+                </button>
+              </div>
+              {yearly && selectedTier !== 'free' && (
+                <p className="text-xs text-gray-400 mt-2 text-center">
+                  Spara {Math.round((tiers.find(t => t.id === selectedTier)?.monthlyPrice || 0) * 12 - (tiers.find(t => t.id === selectedTier)?.yearlyPrice || 0))} kr per år
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="text-center">
             <Link href="/" className="text-gray-400 hover:text-white transition-colors text-sm">
@@ -221,16 +272,55 @@ export default function SpellSchoolSignup({
       >
         {selectedTier && !isStudent && (
           <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/10">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-3">
               <span className="text-sm text-gray-400">Vald plan:</span>
               <span className="text-white font-semibold capitalize">{selectedTier}</span>
             </div>
+            
+            {/* Billing Period Toggle - only show for paid tiers */}
+            {selectedTier !== 'free' && (
+              <div className="mb-3">
+                <span className="text-xs text-gray-400 mb-2 block">Faktureringsperiod:</span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setYearly(false)}
+                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      !yearly
+                        ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                        : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                    }`}
+                  >
+                    Månadsvis
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setYearly(true)}
+                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      yearly
+                        ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                        : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                    }`}
+                  >
+                    Årsvis
+                  </button>
+                </div>
+                {yearly && (
+                  <p className="text-xs text-gray-400 mt-2 text-center">
+                    Spara {Math.round((tiers.find(t => t.id === selectedTier)?.monthlyPrice || 0) * 12 - (tiers.find(t => t.id === selectedTier)?.yearlyPrice || 0))} kr per år
+                  </p>
+                )}
+              </div>
+            )}
+            
             <button
+              type="button"
               onClick={() => {
                 setSelectedTier(null)
                 setShowTierSelection(true)
+                setYearly(false)
               }}
-              className="text-xs text-violet-400 hover:text-violet-300 mt-2"
+              className="text-xs text-violet-400 hover:text-violet-300"
             >
               Ändra plan
             </button>
@@ -266,6 +356,7 @@ export default function SpellSchoolSignup({
           isStudent={isStudent}
           showGoogle={showGoogle}
           selectedTier={selectedTier || undefined}
+          yearly={yearly}
         />
       </motion.div>
     </div>
@@ -274,7 +365,7 @@ export default function SpellSchoolSignup({
 
 interface FormContentsProps {
   onGoogleSignup?: () => Promise<void>;
-  onEmailSignup?: (e: React.FormEvent<HTMLFormElement>, name: string, email: string, password: string, tier?: string) => Promise<void>;
+  onEmailSignup?: (e: React.FormEvent<HTMLFormElement>, name: string, email: string, password: string, tier?: string, yearly?: boolean) => Promise<void>;
   loading?: boolean;
   message?: string;
   name?: string;
@@ -292,6 +383,7 @@ interface FormContentsProps {
   isStudent?: boolean;
   showGoogle?: boolean;
   selectedTier?: string;
+  yearly?: boolean;
 }
 
 function FormContents({
@@ -314,6 +406,7 @@ function FormContents({
   isStudent = false,
   showGoogle = true,
   selectedTier,
+  yearly = false,
 }: FormContentsProps) {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -322,7 +415,7 @@ function FormContents({
         // For students, email is generated automatically, so we pass empty string
         await onEmailSignup(e, username, '', password);
       } else {
-        await onEmailSignup(e, name, email, password, selectedTier);
+        await onEmailSignup(e, name, email, password, selectedTier, yearly);
       }
     }
   };

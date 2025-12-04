@@ -32,3 +32,4 @@ WHERE email = 'ditt-email@example.com';
 
 Efter att ha uppdaterat, testa att lägga till elever igen. Det borde nu fungera utan begränsningar.
 
+

@@ -39,10 +39,12 @@ function TeacherSignupContent() {
     }
   }
 
-  const handleEmailSignup = async (e: React.FormEvent<HTMLFormElement>, nameValue: string, emailValue: string, passwordValue: string, tier?: string) => {
+  const handleEmailSignup = async (e: React.FormEvent<HTMLFormElement>, nameValue: string, emailValue: string, passwordValue: string, tier?: string, yearly?: boolean) => {
     e.preventDefault()
     setLoading(true)
     setMessage('')
+
+    const selectedTier = tier || 'free'
 
     try {
       // Sign up with Supabase
@@ -52,26 +54,80 @@ function TeacherSignupContent() {
         options: {
           data: {
             name: nameValue,
-            tier: tier || 'free' // Default to free if no tier selected
+            tier: selectedTier
           }
         }
       })
 
       if (error) throw error
 
-      // Create profile with teacher role and tier
+      if (!data.user) {
+        throw new Error('User creation failed')
+      }
+
+      // Create profile with teacher role - always start with 'free' tier
+      // Premium/Pro will be upgraded after successful payment via webhook
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
-          id: data.user?.id,
+          id: data.user.id,
           email: emailValue,
           role: 'teacher',
           name: nameValue,
-          subscription_tier: tier || 'free' // Store tier in subscription_tier column
+          subscription_tier: 'free' // Start with free, upgrade after payment
         })
 
       if (profileError) throw profileError
 
+      // If premium or pro tier selected, redirect to Stripe checkout
+      if (selectedTier === 'premium' || selectedTier === 'pro') {
+        // Sign in the user first so they're authenticated for the checkout API call
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: emailValue,
+          password: passwordValue
+        })
+
+        if (signInError) {
+          throw new Error('Failed to sign in for checkout')
+        }
+
+        // Get session token for API call
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+          throw new Error('Failed to get session')
+        }
+
+        // Create checkout session
+        setMessage('Skapar betalningssession...')
+        const response = await fetch('/api/create-checkout-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ 
+            tier: selectedTier,
+            yearly: yearly || false
+          }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to create checkout session')
+        }
+
+        const { url } = await response.json()
+        
+        if (url) {
+          // Redirect to Stripe Checkout
+          window.location.href = url
+          return // Don't continue with normal flow
+        } else {
+          throw new Error('No checkout URL received')
+        }
+      }
+
+      // For free tier, continue with normal signup flow
       // Check if we're in development mode
       const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost'
       
@@ -120,7 +176,6 @@ function TeacherSignupContent() {
 
     } catch (error: any) {
       setMessage(`Error: ${error.message}`)
-    } finally {
       setLoading(false)
     }
   }

@@ -7,7 +7,7 @@ import { BookOpen, Users, FileText, Calendar, UserPlus, LogOut, Gamepad2, Lock, 
 import { supabase } from '@/lib/supabase'
 import { markUserAsLoggedOut } from '@/lib/activity'
 import { syncManager } from '@/lib/syncManager'
-import { hasSessionModeAccess, hasProgressStatsAccess } from '@/lib/subscription'
+import { hasSessionModeAccess, hasProgressStatsAccess, getUserSubscriptionTier, getTierDisplayName, type SubscriptionTier } from '@/lib/subscription'
 
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -18,6 +18,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
   const [checkingAccess, setCheckingAccess] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier>('free')
   
   const isActive = (href: string) => pathname === href || pathname?.startsWith(href + '/')
 
@@ -36,8 +37,10 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
         if (user) {
           const sessionAccess = await hasSessionModeAccess(user.id)
           const progressAccess = await hasProgressStatsAccess(user.id)
+          const tier = await getUserSubscriptionTier(user.id)
           setHasSessionAccess(sessionAccess)
           setHasProgressAccess(progressAccess)
+          setSubscriptionTier(tier)
         }
       } catch (error) {
         console.error('Error checking access:', error)
@@ -197,6 +200,18 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
 
             {/* Right side actions - more spacing */}
             <div className="flex items-center gap-3 flex-shrink-0">
+              {/* Subscription Tier Badge */}
+              {subscriptionTier !== 'free' && (
+                <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold ${
+                  subscriptionTier === 'premium'
+                    ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 border border-cyan-500/30'
+                    : 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border border-amber-500/30'
+                }`}>
+                  <Sparkles className="w-3 h-3" />
+                  <span>{getTierDisplayName(subscriptionTier)}</span>
+                </div>
+              )}
+              
               <Link
                 href="/teacher/account"
                 className={`hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
@@ -233,6 +248,18 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
         {mobileMenuOpen && (
           <div className="lg:hidden bg-[#0a0a1a]/95 backdrop-blur-xl border-t border-white/5">
             <div className="px-4 py-4 space-y-1">
+              {/* Subscription Tier Badge in Mobile */}
+              {subscriptionTier !== 'free' && (
+                <div className={`mb-4 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold ${
+                  subscriptionTier === 'premium'
+                    ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 border border-cyan-500/30'
+                    : 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border border-amber-500/30'
+                }`}>
+                  <Sparkles className="w-3 h-3" />
+                  <span>{getTierDisplayName(subscriptionTier)}</span>
+                </div>
+              )}
+              
               {navItems.map((item) => {
                 const Icon = item.icon
                 const active = item.exact ? pathname === item.href : isActive(item.href)

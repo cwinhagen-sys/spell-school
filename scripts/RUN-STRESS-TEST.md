@@ -193,3 +193,4 @@ När testet är klart:
 3. Optimera de långsamma delarna
 4. Kör testet igen för att verifiera förbättringar
 
+
