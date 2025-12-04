@@ -58,15 +58,19 @@ export async function GET(request: NextRequest) {
     try {
       const subscription = await stripe.subscriptions.retrieve(profile.stripe_subscription_id, {
         expand: ['items.data.price.product']
-      }) as Stripe.Subscription
+      }) as any
 
       // Determine billing period from price interval
-      const price = subscription.items.data[0]?.price
+      const price = subscription.items?.data?.[0]?.price
       const billingPeriod = price?.recurring?.interval === 'year' ? 'yearly' : 'monthly'
 
-      // Format dates
-      const currentPeriodStart = new Date(subscription.current_period_start * 1000)
-      const currentPeriodEnd = new Date(subscription.current_period_end * 1000)
+      // Format dates - handle both old and new API versions
+      const currentPeriodStart = subscription.current_period_start 
+        ? new Date(subscription.current_period_start * 1000)
+        : new Date()
+      const currentPeriodEnd = subscription.current_period_end
+        ? new Date(subscription.current_period_end * 1000)
+        : new Date()
       const cancelAt = subscription.cancel_at ? new Date(subscription.cancel_at * 1000) : null
 
       return NextResponse.json({
