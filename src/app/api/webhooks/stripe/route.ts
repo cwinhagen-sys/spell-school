@@ -193,9 +193,9 @@ export async function POST(request: NextRequest) {
 
     case 'customer.subscription.updated': {
       console.log('🔄 Processing customer.subscription.updated event')
-      const subscription = event.data.object as Stripe.Subscription
-      const customerId = typeof subscription.customer === 'string' 
-        ? subscription.customer 
+      const subscription = event.data.object as any
+      const customerId = typeof subscription.customer === 'string'
+        ? subscription.customer
         : subscription.customer?.id
 
       if (!customerId) {
@@ -263,7 +263,7 @@ export async function POST(request: NextRequest) {
 
     case 'customer.subscription.deleted': {
       console.log('🗑️ Processing customer.subscription.deleted event')
-      const subscription = event.data.object as Stripe.Subscription
+      const subscription = event.data.object as any
       const customerId = typeof subscription.customer === 'string' 
         ? subscription.customer 
         : subscription.customer?.id
@@ -301,7 +301,7 @@ export async function POST(request: NextRequest) {
 
     case 'customer.subscription.created': {
       console.log('🆕 Processing customer.subscription.created event')
-      const subscription = event.data.object as Stripe.Subscription
+      const subscription = event.data.object as any
       const customerId = typeof subscription.customer === 'string' 
         ? subscription.customer 
         : subscription.customer?.id
