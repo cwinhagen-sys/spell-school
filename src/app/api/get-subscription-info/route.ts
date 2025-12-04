@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
     try {
       const subscription = await stripe.subscriptions.retrieve(profile.stripe_subscription_id, {
         expand: ['items.data.price.product']
-      })
+      }) as Stripe.Subscription
 
       // Determine billing period from price interval
       const price = subscription.items.data[0]?.price
