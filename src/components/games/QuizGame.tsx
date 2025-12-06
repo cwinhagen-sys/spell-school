@@ -827,13 +827,14 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
               {aiLoading ? (
                 <div className="space-y-4">
                   <div className="text-4xl mb-4">🤖</div>
-                  <h3 className="text-xl font-bold text-gray-800">Analyzing quiz...</h3>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
+                  <h3 className="text-xl font-bold text-white">Analyzing quiz...</h3>
+                  <div className="w-full max-w-md bg-white/10 rounded-full h-3 overflow-hidden">
                     <div 
-                      className="bg-gradient-to-r from-blue-400 via-blue-500 to-blue-400 rounded-full h-3 transition-all duration-300"
+                      className="bg-gradient-to-r from-violet-500 via-cyan-500 to-violet-500 rounded-full h-3 transition-all duration-300 shadow-lg shadow-violet-500/50"
                       style={{ width: `${loadingProgress}%` }}
                     />
                   </div>
+                  <p className="text-sm text-gray-400 mt-2">AI is grading your answers...</p>
                 </div>
               ) : null}
             </div>
@@ -844,36 +845,41 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
       
       {/* Submit Confirmation Modal */}
       {showSubmitConfirmation && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[60]">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center">
-            <div className="text-6xl mb-4">⚠️</div>
-            <h2 className="text-2xl font-bold mb-4 text-gray-800">Are you sure?</h2>
-            <p className="text-gray-600 mb-6">
-              You're about to submit your quiz. Make sure you've answered all questions you want to answer.
-            </p>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+          <div className="relative bg-[#12122a] rounded-3xl p-8 max-w-md w-full text-center border border-white/10 shadow-2xl">
+            {/* Glow effect */}
+            <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/30 via-orange-500/20 to-red-500/30 rounded-3xl blur-xl" />
             
-            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
-              <div className="text-sm text-yellow-800">
-                <strong>Progress:</strong> {answers.filter(a => a.trim()).length} / {items.length} questions answered
+            <div className="relative">
+              <div className="text-6xl mb-4">⚠️</div>
+              <h2 className="text-2xl font-bold mb-4 text-white">Are you sure?</h2>
+              <p className="text-gray-400 mb-6">
+                You're about to submit your quiz. Make sure you've answered all questions you want to answer.
+              </p>
+              
+              <div className="bg-amber-500/20 border border-amber-500/50 rounded-xl p-4 mb-6">
+                <div className="text-sm text-amber-400">
+                  <strong>Progress:</strong> {answers.filter(a => a.trim()).length} / {items.length} questions answered
+                </div>
               </div>
-            </div>
-            
-            <div className="flex gap-4 justify-center">
-              <button
-                onClick={() => setShowSubmitConfirmation(false)}
-                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-semibold"
-              >
-                Go Back
-              </button>
-              <button
-                onClick={() => {
-                  setShowSubmitConfirmation(false)
-                  handleSubmit()
-                }}
-                className="px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 font-semibold"
-              >
-                Yes, Submit Quiz
-              </button>
+              
+              <div className="flex gap-4 justify-center">
+                <button
+                  onClick={() => setShowSubmitConfirmation(false)}
+                  className="px-6 py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 font-semibold border border-white/20 transition-all"
+                >
+                  Go Back
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSubmitConfirmation(false)
+                    handleSubmit()
+                  }}
+                  className="px-6 py-3 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl hover:from-red-400 hover:to-orange-400 font-semibold transition-all shadow-lg shadow-red-500/30"
+                >
+                  Yes, Submit Quiz
+                </button>
+              </div>
             </div>
           </div>
         </div>

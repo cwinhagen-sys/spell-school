@@ -662,13 +662,41 @@ export async function GET(request: NextRequest) {
           })
         }
         
+        // Recalculate score from word_details if available (to fix old data with incorrect scoring)
+        let finalScore = score
+        let finalTotal = total
+        if (wordDetails.length > 0) {
+          // Calculate score based on 2/1/0 system: 2 for correct, 1 for partial, 0 for wrong/empty
+          const recalculatedScore = wordDetails.reduce((sum, word) => {
+            if (word.verdict === 'correct') return sum + 2
+            if (word.verdict === 'partial') return sum + 1
+            return sum // wrong or empty = 0
+          }, 0)
+          const recalculatedTotal = wordDetails.length * 2 // 2 points per word
+          
+          // Use recalculated score if it differs from stored score (fixes old data)
+          if (recalculatedScore !== score || recalculatedTotal !== total) {
+            console.log('📊 Recalculating quiz score from word_details:', {
+              stored_score: score,
+              stored_total: total,
+              recalculated_score: recalculatedScore,
+              recalculated_total: recalculatedTotal,
+              word_count: wordDetails.length
+            })
+            finalScore = recalculatedScore
+            finalTotal = recalculatedTotal
+          }
+        }
+        
+        const finalAccuracy = finalTotal > 0 ? Math.round((finalScore / finalTotal) * 100) : 0
+        
         return {
           quiz_id: matchingSession?.id || '',
           word_set_title: (qr.word_sets as any)?.title || 'Unknown',
           word_set_id: qr.word_set_id || null,
-          score,
-          total,
-          accuracy,
+          score: finalScore,
+          total: finalTotal,
+          accuracy: finalAccuracy,
           completed_at: qr.last_quiz_at || '',
           word_details: wordDetails.length > 0 ? wordDetails : undefined, // Only include if we have details
           is_session_quiz: false

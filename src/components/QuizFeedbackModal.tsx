@@ -178,20 +178,23 @@ export default function QuizFeedbackModal({
   const currentData = getCurrentCategoryData()
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[1000]">
-      <div className="bg-white rounded-3xl p-8 max-w-4xl w-full max-h-[90vh] overflow-auto shadow-2xl">
-        {/* Header with celebration message */}
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">
-            Great! You learned {learnedCount} new words this week!
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[1000] overflow-y-auto">
+      <div className="relative bg-[#12122a] rounded-3xl p-6 max-w-5xl w-full max-h-[95vh] overflow-y-auto overflow-x-hidden shadow-2xl border border-white/10 my-auto">
+        {/* Glow effect */}
+        <div className="absolute -inset-1 bg-gradient-to-br from-violet-500/30 via-cyan-500/20 to-fuchsia-500/30 rounded-3xl blur-xl" />
+        
+        {/* Header with celebration message - More compact */}
+        <div className="relative text-center mb-6">
+          <h2 className="text-2xl font-bold text-white mb-1">
+            Great! You learned {learnedCount} new words!
           </h2>
-          <p className="text-lg text-gray-600">
-            Keep up the amazing work! Every word you learn brings you closer to fluency.
+          <p className="text-sm text-gray-400">
+            Score: {totalScore}/{maxScore} points
           </p>
         </div>
 
-        {/* Category buttons */}
-        <div className="flex flex-wrap gap-3 mb-8 justify-center">
+        {/* Category buttons - More compact */}
+        <div className="relative flex flex-wrap gap-2 mb-6 justify-center">
           {[
             { key: 'all', count: categorizedEvaluations.length, label: 'All words', color: 'blue' },
             { key: 'perfect', count: perfectAnswers.length, label: 'Perfect', color: 'emerald' },
@@ -202,21 +205,21 @@ export default function QuizFeedbackModal({
             const getButtonColors = () => {
               if (activeCategory === key) {
                 switch (color) {
-                  case 'emerald': return 'bg-emerald-600 text-white shadow-lg'
-                  case 'yellow': return 'bg-yellow-500 text-white shadow-lg'
-                  case 'amber': return 'bg-amber-500 text-white shadow-lg'
-                  case 'blue': return 'bg-blue-600 text-white shadow-lg'
-                  case 'gray': return 'bg-gray-600 text-white shadow-lg'
-                  default: return 'bg-blue-600 text-white shadow-lg'
+                  case 'emerald': return 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 border border-emerald-400'
+                  case 'yellow': return 'bg-yellow-500 text-white shadow-lg shadow-yellow-500/30 border border-yellow-400'
+                  case 'amber': return 'bg-amber-500 text-white shadow-lg shadow-amber-500/30 border border-amber-400'
+                  case 'blue': return 'bg-blue-500 text-white shadow-lg shadow-blue-500/30 border border-blue-400'
+                  case 'gray': return 'bg-gray-500 text-white shadow-lg shadow-gray-500/30 border border-gray-400'
+                  default: return 'bg-blue-500 text-white shadow-lg shadow-blue-500/30 border border-blue-400'
                 }
               } else {
                 switch (color) {
-                  case 'emerald': return 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                  case 'yellow': return 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                  case 'amber': return 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                  case 'blue': return 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                  case 'gray': return 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  default: return 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  case 'emerald': return 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30'
+                  case 'yellow': return 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border border-yellow-500/30'
+                  case 'amber': return 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/30'
+                  case 'blue': return 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/30'
+                  case 'gray': return 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30 border border-gray-500/30'
+                  default: return 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30 border border-gray-500/30'
                 }
               }
             }
@@ -225,7 +228,7 @@ export default function QuizFeedbackModal({
               <button
                 key={key}
                 onClick={() => setActiveCategory(key as Category)}
-                className={`px-6 py-3 rounded-2xl font-semibold transition-all duration-200 ${getButtonColors()}`}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${getButtonColors()}`}
               >
                 {label} ({count})
               </button>
@@ -233,48 +236,48 @@ export default function QuizFeedbackModal({
           })}
         </div>
 
-        {/* Current category description */}
-        <div className="mb-6 text-center">
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">
+        {/* Current category description - More compact */}
+        <div className="relative mb-4 text-center">
+          <h3 className="text-lg font-semibold text-white mb-1">
             {getCategoryTitle(activeCategory, currentData.length)}
           </h3>
-          <p className="text-gray-600">
+          <p className="text-sm text-gray-400">
             {getCategoryDescription(activeCategory)}
           </p>
         </div>
 
-        {/* Words grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        {/* Words grid - More compact, no horizontal scroll, scrollbar only when needed */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-6 max-h-[50vh] overflow-y-auto overflow-x-hidden">
           {currentData.map((item, index) => {
             // Determine color scheme based on category and points
             const getColorScheme = () => {
               if (item.category === 'perfect') {
                 return {
-                  card: 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100',
-                  border: 'border-emerald-300',
-                  accent: 'text-emerald-700',
-                  points: 'text-emerald-600'
+                  card: 'bg-emerald-500/20 border-emerald-500/50 hover:bg-emerald-500/30',
+                  border: 'border-emerald-500/50',
+                  accent: 'text-emerald-400',
+                  points: 'text-emerald-400'
                 }
               } else if (item.category === 'almost_there') {
                 return {
-                  card: 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100',
-                  border: 'border-yellow-300',
-                  accent: 'text-yellow-700',
-                  points: 'text-yellow-600'
+                  card: 'bg-yellow-500/20 border-yellow-500/50 hover:bg-yellow-500/30',
+                  border: 'border-yellow-500/50',
+                  accent: 'text-yellow-400',
+                  points: 'text-yellow-400'
                 }
               } else if (item.category === 'good_try') {
                 return {
-                  card: 'bg-amber-50 border-amber-200 hover:bg-amber-100',
-                  border: 'border-amber-300',
-                  accent: 'text-amber-700',
-                  points: 'text-amber-600'
+                  card: 'bg-amber-500/20 border-amber-500/50 hover:bg-amber-500/30',
+                  border: 'border-amber-500/50',
+                  accent: 'text-amber-400',
+                  points: 'text-amber-400'
                 }
               } else {
                 return {
-                  card: 'bg-gray-50 border-gray-200 hover:bg-gray-100',
-                  border: 'border-gray-300',
-                  accent: 'text-gray-700',
-                  points: 'text-gray-600'
+                  card: 'bg-white/5 border-white/10 hover:bg-white/10',
+                  border: 'border-white/10',
+                  accent: 'text-gray-400',
+                  points: 'text-gray-400'
                 }
               }
             }
@@ -284,45 +287,43 @@ export default function QuizFeedbackModal({
             return (
               <div
                 key={index}
-                className={`p-4 ${colors.card} rounded-xl border-2 ${colors.border} hover:shadow-md transition-all cursor-pointer`}
+                className={`p-3 ${colors.card} rounded-lg border ${colors.border} hover:shadow-md transition-all cursor-pointer`}
                 onClick={() => onWordClick?.(item.prompt)}
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="text-sm text-gray-600 mb-1">Word:</div>
-                    <div className="text-lg font-semibold text-gray-800 mb-2">{item.prompt}</div>
-                    <div className="flex items-center space-x-4">
-                      <div>
-                        <div className="text-sm text-gray-600">Your answer:</div>
-                        <div className="font-medium text-gray-800">{item.given || '—'}</div>
+                <div className="flex items-start justify-between gap-2 min-w-0">
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <div className="text-xs text-gray-400 mb-0.5">Word:</div>
+                    <div className="text-sm font-semibold text-white mb-1.5 truncate break-words">{item.prompt}</div>
+                    <div className="space-y-1">
+                      <div className="min-w-0">
+                        <div className="text-xs text-gray-400">Your answer:</div>
+                        <div className="text-xs font-medium text-white truncate break-words">{item.given || '—'}</div>
                       </div>
                       {item.category !== 'perfect' && (
-                        <div>
-                          <div className="text-sm text-gray-600">Correct answer:</div>
-                          <div className="font-medium text-gray-800">{item.expected}</div>
+                        <div className="min-w-0">
+                          <div className="text-xs text-gray-400">Correct:</div>
+                          <div className="text-xs font-medium text-white truncate break-words">{item.expected}</div>
                         </div>
                       )}
                     </div>
                   </div>
                   {item.points > 0 && (
-                    <div className="ml-4 text-right">
-                      <div className={`text-2xl font-bold ${colors.points}`}>{item.points}</div>
-                      <div className="text-sm text-gray-600">points</div>
+                    <div className="text-right shrink-0 flex-shrink-0">
+                      <div className={`text-lg font-bold ${colors.points}`}>{item.points}</div>
+                      <div className="text-xs text-gray-400">pts</div>
                     </div>
                   )}
                 </div>
-                
-                {/* Feedback text removed - only show categorization */}
               </div>
             )
           })}
         </div>
 
-        {/* Footer */}
-        <div className="pt-6 border-t border-gray-200 text-center">
+        {/* Footer - More compact */}
+        <div className="relative pt-4 border-t border-white/10 text-center">
           <button
             onClick={onClose}
-            className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl"
+            className="px-6 py-2.5 bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-xl font-semibold hover:from-violet-400 hover:to-cyan-400 transition-all shadow-lg shadow-violet-500/30 hover:shadow-xl hover:shadow-violet-500/40 text-sm"
           >
             Continue Learning
           </button>

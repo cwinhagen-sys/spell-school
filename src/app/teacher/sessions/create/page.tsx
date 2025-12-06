@@ -516,23 +516,25 @@ export default function SessionGameSelection() {
     }
 
     const due = new Date(dueDate)
+    due.setHours(0, 0, 0, 0)
     const now = new Date()
     now.setHours(0, 0, 0, 0)
+    const tomorrow = new Date(now)
+    tomorrow.setDate(tomorrow.getDate() + 1)
     const maxDate = new Date()
     maxDate.setDate(maxDate.getDate() + 14)
 
-    if (due < now || due > maxDate) {
-      const todayStart = new Date(now)
-      const todayEnd = new Date(now)
-      todayEnd.setHours(23, 59, 59, 999)
-      
-      if (due >= todayStart && due <= todayEnd) {
-        // Allow today
-      } else if (due > maxDate) {
-        setError('Slutdatum måste vara inom 2 veckor')
-        setLoading(false)
-        return
-      }
+    // Don't allow today or past dates - must be at least tomorrow
+    if (due <= now) {
+      setError('Slutdatum måste vara minst imorgon. Du kan inte välja idag eller ett datum i det förflutna.')
+      setLoading(false)
+      return
+    }
+
+    if (due > maxDate) {
+      setError('Slutdatum måste vara inom 2 veckor')
+      setLoading(false)
+      return
     }
 
     try {
@@ -584,10 +586,10 @@ export default function SessionGameSelection() {
   }
 
   const getMinDate = () => {
-    const today = new Date()
-    const pastDate = new Date()
-    pastDate.setDate(pastDate.getDate() - 7)
-    return pastDate.toISOString().split('T')[0]
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setHours(0, 0, 0, 0)
+    return tomorrow.toISOString().split('T')[0]
   }
 
   const getMaxDate = () => {

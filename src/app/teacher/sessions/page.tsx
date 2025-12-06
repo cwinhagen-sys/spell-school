@@ -90,11 +90,17 @@ export default function TeacherSessionsPage() {
         })
       )
 
-      // Filter out expired sessions (due_date has passed)
+      // Filter out sessions that are more than 48 hours past due_date
+      // This gives teachers time to save results after the due date
       const now = new Date()
       const activeSessions = sessionsWithCounts.filter((session) => {
         const dueDate = new Date(session.due_date)
-        return dueDate >= now
+        dueDate.setHours(0, 0, 0, 0)
+        // Add 48 hours to due_date to allow time for saving results
+        const deletionDate = new Date(dueDate)
+        deletionDate.setHours(deletionDate.getHours() + 48)
+        // Keep session if it hasn't reached the 48-hour deletion threshold
+        return deletionDate >= now
       }) as Session[]
 
       setSessions(activeSessions)

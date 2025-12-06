@@ -199,7 +199,7 @@ export default function UniversalGameCompleteModal({
   return (
     <AnimatePresence>
       <motion.div 
-        className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+        className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -212,7 +212,7 @@ export default function UniversalGameCompleteModal({
         </div>
         
         <motion.div
-          className="relative w-full max-w-lg"
+          className="relative w-full max-w-lg my-auto"
           initial={{ scale: 0.8, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           transition={{ type: "spring", damping: 20, stiffness: 300 }}

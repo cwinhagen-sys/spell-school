@@ -269,9 +269,6 @@ export default function QuizResultsPage() {
     setSortDir(d => (sortKey === key ? (d === 'desc' ? 'asc' : 'desc') : 'desc'))
   }
 
-  const getScoreColor = (score: number): string => {
-    return 'text-gray-800' // Clean design - all scores in same color
-  }
 
   const formatDate = (timestamp: string): string => {
     const date = new Date(timestamp)
@@ -368,99 +365,104 @@ export default function QuizResultsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800">
-      <div className="max-w-6xl mx-auto p-6">
+    <div className="relative z-10 min-h-screen bg-gradient-to-br from-[#0a0a1a] via-[#12122a] to-[#0a0a1a]">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold flex items-center gap-2 text-gray-800">
-            <FileText className="w-6 h-6 text-indigo-600" />
+          <h1 className="text-2xl font-bold flex items-center gap-2 text-white">
+            <FileText className="w-6 h-6 text-violet-400" />
             Quiz Results
           </h1>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 mb-6">
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">Class</label>
-            <select 
-              value={selectedClass} 
-              onChange={e => setSelectedClass(e.target.value)} 
-              className="px-3 py-2 rounded bg-white border border-gray-300 text-gray-800 shadow-sm"
-            >
-              <option value="" className="text-gray-800">All classes</option>
-              {classes.map(c => (
-                <option key={c.id} value={c.id} className="text-gray-800">{c.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">Word Set</label>
-            <select 
-              value={selectedWordSet} 
-              onChange={e => setSelectedWordSet(e.target.value)} 
-              className="px-3 py-2 rounded bg-white border border-gray-300 text-gray-800 shadow-sm"
-            >
-              <option value="" className="text-gray-800">All word sets</option>
-              {wordSets.map(w => (
-                <option key={w.id} value={w.id} className="text-gray-800">{w.title}</option>
-              ))}
-            </select>
+        <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-white/10 p-6 mb-6 shadow-xl">
+          <div className="flex flex-wrap items-center gap-3">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Class</label>
+              <select 
+                value={selectedClass} 
+                onChange={e => setSelectedClass(e.target.value)} 
+                className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:border-violet-500/50 focus:outline-none transition-all"
+              >
+                <option value="" className="bg-[#12122a]">All classes</option>
+                {classes.map(c => (
+                  <option key={c.id} value={c.id} className="bg-[#12122a]">{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Word Set</label>
+              <select 
+                value={selectedWordSet} 
+                onChange={e => setSelectedWordSet(e.target.value)} 
+                className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:border-violet-500/50 focus:outline-none transition-all"
+              >
+                <option value="" className="bg-[#12122a]">All word sets</option>
+                {wordSets.map(w => (
+                  <option key={w.id} value={w.id} className="bg-[#12122a]">{w.title}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
         {loading ? (
-          <div className="p-6 rounded-2xl bg-white/80 border border-gray-200 shadow-lg">Loading…</div>
+          <div className="p-6 rounded-2xl bg-white/5 border border-white/10 shadow-lg text-center">
+            <div className="w-12 h-12 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-gray-400">Loading…</p>
+          </div>
         ) : error ? (
-          <div className="p-6 rounded-2xl bg-red-100 border border-red-300 text-red-700">{error}</div>
+          <div className="p-6 rounded-2xl bg-red-500/20 border border-red-500/30 text-red-400">{error}</div>
         ) : (
-          <div className="rounded-2xl bg-white/80 border border-gray-200 overflow-auto shadow-xl">
+          <div className="rounded-2xl bg-[#12122a]/80 backdrop-blur-sm border border-white/10 overflow-auto shadow-xl">
             <table className="min-w-full">
               <thead>
-                <tr className="bg-gray-100 text-left text-sm text-gray-800 border-b border-gray-300">
-                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-gray-200 transition-colors" onClick={() => sortToggle('student')}>
+                <tr className="bg-white/5 text-left text-sm text-white border-b border-white/10">
+                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-white/10 transition-colors" onClick={() => sortToggle('student')}>
                     <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-indigo-600" />
-                      <span className="font-medium">Student</span>
+                      <Users className="w-4 h-4 text-violet-400" />
+                      <span className="font-medium text-white">Student</span>
                       {sortKey==='student' && (
-                        <span className="text-gray-600">{sortDir==='desc' ? '↓' : '↑'}</span>
+                        <span className="text-gray-400">{sortDir==='desc' ? '↓' : '↑'}</span>
                       )}
                     </div>
                   </th>
-                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-gray-200 transition-colors" onClick={() => sortToggle('score')}>
+                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-white/10 transition-colors" onClick={() => sortToggle('score')}>
                     <div className="flex items-center gap-2">
-                      <Star className="w-4 h-4 text-yellow-600" />
-                      <span className="font-medium">Quiz Score</span>
+                      <Star className="w-4 h-4 text-amber-400" />
+                      <span className="font-medium text-white">Quiz Score</span>
                       {sortKey==='score' && (
-                        <span className="text-gray-600">{sortDir==='desc' ? '↓' : '↑'}</span>
+                        <span className="text-gray-400">{sortDir==='desc' ? '↓' : '↑'}</span>
                       )}
                     </div>
                   </th>
                   <th className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <Target className="w-4 h-4 text-blue-600" />
-                      <span className="font-medium">Percentage</span>
+                      <Target className="w-4 h-4 text-cyan-400" />
+                      <span className="font-medium text-white">Percentage</span>
                     </div>
                   </th>
-                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-gray-200 transition-colors" onClick={() => sortToggle('wordSet')}>
+                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-white/10 transition-colors" onClick={() => sortToggle('wordSet')}>
                     <div className="flex items-center gap-2">
-                      <BookOpen className="w-4 h-4 text-green-600" />
-                      <span className="font-medium">Word Set</span>
+                      <BookOpen className="w-4 h-4 text-emerald-400" />
+                      <span className="font-medium text-white">Word Set</span>
                       {sortKey==='wordSet' && (
-                        <span className="text-gray-600">{sortDir==='desc' ? '↓' : '↑'}</span>
+                        <span className="text-gray-400">{sortDir==='desc' ? '↓' : '↑'}</span>
                       )}
                     </div>
                   </th>
-                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-gray-200 transition-colors" onClick={() => sortToggle('date')}>
+                  <th className="px-6 py-4 cursor-pointer select-none hover:bg-white/10 transition-colors" onClick={() => sortToggle('date')}>
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-gray-500" />
-                      <span className="font-medium">Date</span>
+                      <Calendar className="w-4 h-4 text-gray-400" />
+                      <span className="font-medium text-white">Date</span>
                       {sortKey==='date' && (
-                        <span className="text-gray-600">{sortDir==='desc' ? '↓' : '↑'}</span>
+                        <span className="text-gray-400">{sortDir==='desc' ? '↓' : '↑'}</span>
                       )}
                     </div>
                   </th>
                   <th className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <Eye className="w-4 h-4 text-indigo-600" />
-                      <span className="font-medium">Details</span>
+                      <Eye className="w-4 h-4 text-violet-400" />
+                      <span className="font-medium text-white">Details</span>
                     </div>
                   </th>
                 </tr>
@@ -481,35 +483,59 @@ export default function QuizResultsPage() {
                   const hasDetails = wordDetails.length > 0
                   const counts = hasDetails ? getWordCounts(wordDetails) : null
                   
+                  // Recalculate score from word_details if available (to fix old data with incorrect scoring)
+                  // 2 points for correct, 1 for partial, 0 for wrong/empty
+                  let displayScore = result.last_quiz_score
+                  let displayTotal = result.total_questions || 0
+                  
+                  if (hasDetails && wordDetails.length > 0) {
+                    const recalculatedScore = wordDetails.reduce((sum, word) => {
+                      if (word.verdict === 'correct') return sum + 2
+                      if (word.verdict === 'partial') return sum + 1
+                      return sum // wrong or empty = 0
+                    }, 0)
+                    const recalculatedTotal = wordDetails.length * 2 // 2 points per word
+                    
+                    // Use recalculated score if it differs from stored score (fixes old data)
+                    if (recalculatedScore !== result.last_quiz_score || recalculatedTotal !== displayTotal) {
+                      displayScore = recalculatedScore
+                      displayTotal = recalculatedTotal
+                    }
+                  }
+                  
                   return (
                     <>
-                      <tr key={result.id} className="bg-white hover:bg-gray-50 border-b border-gray-200">
+                      <tr key={result.id} className="bg-white/5 hover:bg-white/10 border-b border-white/10 transition-colors">
                         <td className="px-6 py-4 font-medium">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-xs font-medium text-white">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-xs font-medium text-white shadow-lg shadow-violet-500/30">
                               {result.student_display.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <div className="font-medium text-gray-700">{result.student_display}</div>
+                              <div className="font-medium text-white">{result.student_display}</div>
                               {result.class_name !== 'No Class' && (
-                                <div className="text-xs text-gray-500">{result.class_name}</div>
+                                <div className="text-xs text-gray-400">{result.class_name}</div>
                               )}
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-base text-gray-800">
-                              {result.last_quiz_score}/{result.total_questions || '?'}
+                            <span className="font-medium text-base text-white">
+                              {displayScore}/{displayTotal || '?'}
                             </span>
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            {result.total_questions && result.total_questions > 0 ? (
+                            {displayTotal && displayTotal > 0 ? (
                               <>
-                                <span className={`font-medium text-base ${getScoreColor(Math.round((result.last_quiz_score / result.total_questions) * 100))}`}>
-                                  {Math.round((result.last_quiz_score / result.total_questions) * 100)}%
+                                <span className={`font-medium text-base ${
+                                  Math.round((displayScore / displayTotal) * 100) >= 80 ? 'text-emerald-400' :
+                                  Math.round((displayScore / displayTotal) * 100) >= 60 ? 'text-amber-400' :
+                                  'text-red-400'
+                                }`}>
+                                  {Math.round((displayScore / displayTotal) * 100)}%
                                 </span>
                               </>
                             ) : (
@@ -521,21 +547,21 @@ export default function QuizResultsPage() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <BookOpen className="w-4 h-4 text-gray-500" />
-                            <span className="text-sm text-gray-700">{result.word_set_title}</span>
+                            <BookOpen className="w-4 h-4 text-gray-400" />
+                            <span className="text-sm text-white">{result.word_set_title}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-gray-500" />
-                            <span className="text-sm text-gray-700">{formatDate(result.last_quiz_at)}</span>
+                            <Clock className="w-4 h-4 text-gray-400" />
+                            <span className="text-sm text-white">{formatDate(result.last_quiz_at)}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <button
                             onClick={() => fetchQuizDetails(result)}
                             disabled={loadingDetails[result.id]}
-                            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-indigo-700 hover:text-indigo-900 hover:bg-indigo-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-violet-400 hover:text-violet-300 hover:bg-violet-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-violet-500/30"
                           >
                             {loadingDetails[result.id] ? (
                               <span>Loading...</span>
@@ -558,64 +584,64 @@ export default function QuizResultsPage() {
                         </td>
                       </tr>
                       {isExpanded && hasDetails && (
-                        <tr key={`${result.id}-details`} className="bg-gray-50">
+                        <tr key={`${result.id}-details`} className="bg-white/5">
                           <td colSpan={6} className="px-6 py-4">
-                            <div className="bg-white rounded-lg border-2 border-indigo-200 p-5">
-                              <h4 className="text-lg font-semibold text-gray-900 mb-4">Detaljer per ord</h4>
+                            <div className="bg-white/5 rounded-lg border-2 border-violet-500/30 p-5">
+                              <h4 className="text-lg font-semibold text-white mb-4">Detaljer per ord</h4>
                               
-                              {/* Summary Stats */}
+                              {/* Summary Stats - Compact */}
                               {counts && (
-                                <div className="grid grid-cols-4 gap-3 mb-4">
-                                  <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
-                                    <div className="text-2xl font-bold text-green-700">{counts.correct}</div>
-                                    <div className="text-xs text-green-600">Rätt</div>
+                                <div className="grid grid-cols-4 gap-2 mb-4">
+                                  <div className="text-center p-2 bg-emerald-500/20 rounded-lg border border-emerald-500/50">
+                                    <div className="text-xl font-bold text-emerald-400">{counts.correct}</div>
+                                    <div className="text-xs text-emerald-500">Rätt</div>
                                   </div>
-                                  <div className="text-center p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                                    <div className="text-2xl font-bold text-yellow-700">{counts.partial}</div>
-                                    <div className="text-xs text-yellow-600">Nästan rätt</div>
+                                  <div className="text-center p-2 bg-amber-500/20 rounded-lg border border-amber-500/50">
+                                    <div className="text-xl font-bold text-amber-400">{counts.partial}</div>
+                                    <div className="text-xs text-amber-500">Nästan</div>
                                   </div>
-                                  <div className="text-center p-3 bg-red-50 rounded-lg border border-red-200">
-                                    <div className="text-2xl font-bold text-red-700">{counts.wrong}</div>
-                                    <div className="text-xs text-red-600">Fel</div>
+                                  <div className="text-center p-2 bg-red-500/20 rounded-lg border border-red-500/50">
+                                    <div className="text-xl font-bold text-red-400">{counts.wrong}</div>
+                                    <div className="text-xs text-red-500">Fel</div>
                                   </div>
-                                  <div className="text-center p-3 bg-gray-100 rounded-lg border border-gray-300">
-                                    <div className="text-2xl font-bold text-gray-700">{counts.empty}</div>
-                                    <div className="text-xs text-gray-600">Tomt</div>
+                                  <div className="text-center p-2 bg-white/5 rounded-lg border border-white/10">
+                                    <div className="text-xl font-bold text-gray-400">{counts.empty}</div>
+                                    <div className="text-xs text-gray-500">Tomt</div>
                                   </div>
                                 </div>
                               )}
                               
-                              {/* Word-by-word List */}
-                              <div className="space-y-2 max-h-96 overflow-y-auto">
-                                {wordDetails.map((word, wordIndex) => (
+                              {/* Word-by-word List - Compact Grid Layout */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {wordDetails.slice(0, 8).map((word, wordIndex) => (
                                   <div
                                     key={wordIndex}
-                                    className={`p-3 rounded-lg border-2 ${
-                                      word.verdict === 'correct' ? 'bg-green-50 border-green-200' :
-                                      word.verdict === 'partial' ? 'bg-yellow-50 border-yellow-200' :
-                                      word.verdict === 'wrong' ? 'bg-red-50 border-red-200' :
-                                      'bg-gray-50 border-gray-300'
+                                    className={`p-2 rounded-lg border ${
+                                      word.verdict === 'correct' ? 'bg-emerald-500/20 border-emerald-500/50' :
+                                      word.verdict === 'partial' ? 'bg-amber-500/20 border-amber-500/50' :
+                                      word.verdict === 'wrong' ? 'bg-red-500/20 border-red-500/50' :
+                                      'bg-white/5 border-white/10'
                                     }`}
                                   >
-                                    <div className="flex items-start justify-between gap-3">
-                                      <div className="flex-1">
-                                        <div className="font-semibold text-gray-900 mb-1">{word.prompt}</div>
-                                        <div className="text-sm text-gray-600 mb-1">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex-1 min-w-0">
+                                        <div className="font-semibold text-white text-sm mb-1 truncate">{word.prompt}</div>
+                                        <div className="text-xs text-gray-400 mb-0.5">
                                           <span className="font-medium">Förväntat: </span>
-                                          <span className="text-gray-900">{word.expected}</span>
+                                          <span className="text-gray-300 truncate block">{word.expected}</span>
                                         </div>
-                                        <div className="text-sm text-gray-600">
+                                        <div className="text-xs text-gray-400">
                                           <span className="font-medium">Svar: </span>
-                                          <span className={word.given ? 'text-gray-900' : 'text-gray-400 italic'}>
+                                          <span className={word.given ? 'text-gray-300 truncate block' : 'text-gray-500 italic'}>
                                             {word.given || '(tomt)'}
                                           </span>
                                         </div>
                                       </div>
-                                      <div className={`text-xs font-semibold px-2 py-1 rounded ${
-                                        word.verdict === 'correct' ? 'bg-green-100 text-green-700' :
-                                        word.verdict === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                                        word.verdict === 'wrong' ? 'bg-red-100 text-red-700' :
-                                        'bg-gray-200 text-gray-700'
+                                      <div className={`text-xs font-semibold px-1.5 py-0.5 rounded shrink-0 ${
+                                        word.verdict === 'correct' ? 'bg-emerald-500/30 text-emerald-400' :
+                                        word.verdict === 'partial' ? 'bg-amber-500/30 text-amber-400' :
+                                        word.verdict === 'wrong' ? 'bg-red-500/30 text-red-400' :
+                                        'bg-white/10 text-gray-400'
                                       }`}>
                                         {word.verdict === 'correct' ? 'Rätt' :
                                          word.verdict === 'partial' ? 'Nästan' :
@@ -624,16 +650,21 @@ export default function QuizResultsPage() {
                                     </div>
                                   </div>
                                 ))}
+                                {wordDetails.length > 8 && (
+                                  <div className="col-span-full text-center py-2 text-sm text-gray-400">
+                                    + {wordDetails.length - 8} fler ord
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </td>
                         </tr>
                       )}
                       {isExpanded && !hasDetails && !loadingDetails[result.id] && (
-                        <tr key={`${result.id}-no-details`} className="bg-gray-50">
+                        <tr key={`${result.id}-no-details`} className="bg-white/5">
                           <td colSpan={6} className="px-6 py-4">
-                            <div className="bg-white rounded-lg border-2 border-gray-200 p-5 text-center">
-                              <p className="text-gray-600">Ingen detaljerad information tillgänglig för detta quiz.</p>
+                            <div className="bg-white/5 rounded-lg border-2 border-white/10 p-5 text-center">
+                              <p className="text-gray-400">Ingen detaljerad information tillgänglig för detta quiz.</p>
                               <p className="text-sm text-gray-500 mt-2">Detaljerad information sparas endast för quiz som slutförts efter denna funktion lades till.</p>
                             </div>
                           </td>

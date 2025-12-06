@@ -3111,7 +3111,7 @@ export default function StudentDashboard() {
               </button>
             </div>
             
-            <div className="p-4 overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+            <div className="p-4 overflow-y-auto flex flex-col" style={{ maxHeight: 'calc(100vh - 200px)' }}>
               {(() => {
                 console.log('Modal selectedWordSet:', selectedWordSet)
                 console.log('Modal words array:', selectedWordSet.words)
@@ -3238,8 +3238,8 @@ export default function StudentDashboard() {
                       </div>
                     )}
                     
-                    {/* Words for active tab - 6 words in 2 columns, 3 rows, no scroll */}
-                    <div className="grid grid-cols-2 grid-rows-3 gap-3 flex-1 min-h-0">
+                    {/* Words for active tab - scrollable grid to ensure all words are visible */}
+                    <div className="grid grid-cols-2 gap-3 overflow-y-auto min-h-0">
                       {grids[wordSetTab]?.map((word: { en: string; sv: string }, index: number) => {
                         const globalIndex = wordSetTab * wordsPerGrid + index
                         const colorHex = gridColors[wordSetTab] || COLOR_GRIDS[wordSetTab % COLOR_GRIDS.length].hex
