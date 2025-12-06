@@ -19,12 +19,11 @@ const nextConfig: NextConfig = {
     formats: ['image/webp', 'image/avif'],
   },
   
-  // Disable ESLint during build for deployment
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // Turbopack configuration (Next.js 16 uses Turbopack by default)
+  // Empty config to silence the warning about webpack config
+  turbopack: {},
   
-  // Webpack optimizations
+  // Webpack optimizations (for compatibility, but Turbopack is preferred in Next.js 16)
   webpack: (config, { dev, isServer }) => {
     if (!dev && !isServer) {
       // Optimize bundle size

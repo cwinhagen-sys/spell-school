@@ -1,75 +1,84 @@
 const sharp = require('sharp');
-const fs = require('fs');
 const path = require('path');
+const fs = require('fs');
+
+const sourceImage = path.join(__dirname, '../public/assets/wizard/wizard_novice.png');
+const outputDir = path.join(__dirname, '../public');
+
+// Ensure output directory exists
+if (!fs.existsSync(outputDir)) {
+  fs.mkdirSync(outputDir, { recursive: true });
+}
 
 async function createFavicon() {
-  // Use the Spell School logo as source
-  const logoPath = path.join(__dirname, '../public/assets/spell-school-logo.png');
-  const svgPath = path.join(__dirname, '../public/favicon.svg');
-  const icoPath = path.join(__dirname, '../public/favicon.ico');
-  
   try {
-    // Check if logo exists
-    if (!fs.existsSync(logoPath)) {
-      console.error('❌ Logo file not found:', logoPath);
-      process.exit(1);
-    }
+    console.log('Creating favicon files from wizard_novice.png...');
     
-    // Create SVG favicon from PNG (for modern browsers)
-    // We'll create a simple SVG wrapper
-    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-      <image href="/assets/spell-school-logo.png" width="512" height="512"/>
-    </svg>`;
-    fs.writeFileSync(svgPath, svgContent);
+    // Read the source image
+    const image = sharp(sourceImage);
+    const metadata = await image.metadata();
+    console.log(`Source image: ${metadata.width}x${metadata.height}`);
     
-    // Create ICO and PNG favicons from the logo
-    const logoBuffer = fs.readFileSync(logoPath);
-    
-    // Create 32x32 favicon.ico (most common size)
-    await sharp(logoBuffer)
+    // Create favicon.ico (32x32)
+    await image
       .resize(32, 32, {
         fit: 'contain',
-        background: { r: 0, g: 0, b: 0, alpha: 0 } // Transparent background
+        background: { r: 0, g: 0, b: 0, alpha: 0 }
       })
       .png()
-      .toFile(icoPath);
+      .toFile(path.join(outputDir, 'favicon-32.png'));
+    console.log('✓ Created favicon-32.png (32x32)');
     
-    // Create 16x16 PNG
-    await sharp(logoBuffer)
+    // Create favicon-16.png (16x16)
+    await image
       .resize(16, 16, {
         fit: 'contain',
         background: { r: 0, g: 0, b: 0, alpha: 0 }
       })
       .png()
-      .toFile(icoPath.replace('.ico', '-16.png'));
+      .toFile(path.join(outputDir, 'favicon-16.png'));
+    console.log('✓ Created favicon-16.png (16x16)');
     
-    // Create 32x32 PNG
-    await sharp(logoBuffer)
-      .resize(32, 32, {
-        fit: 'contain',
-        background: { r: 0, g: 0, b: 0, alpha: 0 }
-      })
-      .png()
-      .toFile(icoPath.replace('.ico', '-32.png'));
-    
-    // Create 48x48 PNG
-    await sharp(logoBuffer)
+    // Create favicon-48.png (48x48)
+    await image
       .resize(48, 48, {
         fit: 'contain',
         background: { r: 0, g: 0, b: 0, alpha: 0 }
       })
       .png()
-      .toFile(icoPath.replace('.ico', '-48.png'));
+      .toFile(path.join(outputDir, 'favicon-48.png'));
+    console.log('✓ Created favicon-48.png (48x48)');
     
-    console.log('✅ Favicon created successfully from Spell School logo!');
-    console.log('Created files:');
-    console.log('  - favicon.svg');
-    console.log('  - favicon.ico (32x32 PNG)');
-    console.log('  - favicon-16.png');
-    console.log('  - favicon-32.png');
-    console.log('  - favicon-48.png');
+    // Create favicon.svg (as a simple PNG embedded in SVG for better compatibility)
+    const svg32 = await image
+      .resize(32, 32, {
+        fit: 'contain',
+        background: { r: 0, g: 0, b: 0, alpha: 0 }
+      })
+      .png()
+      .toBuffer();
+    
+    const base64 = svg32.toString('base64');
+    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <image href="data:image/png;base64,${base64}" width="32" height="32"/>
+</svg>`;
+    
+    fs.writeFileSync(path.join(outputDir, 'favicon.svg'), svgContent);
+    console.log('✓ Created favicon.svg');
+    
+    // Create favicon.ico (multi-size ICO file - using 32x32 PNG as fallback)
+    // Note: Creating a proper ICO file requires additional libraries
+    // For now, we'll copy the 32x32 PNG as favicon.ico
+    fs.copyFileSync(
+      path.join(outputDir, 'favicon-32.png'),
+      path.join(outputDir, 'favicon.ico')
+    );
+    console.log('✓ Created favicon.ico (using 32x32 PNG)');
+    
+    console.log('\n✅ All favicon files created successfully!');
+    console.log('📝 Note: favicon.ico is a PNG file. For a proper ICO file, use an online converter.');
   } catch (error) {
-    console.error('❌ Error creating favicon:', error);
+    console.error('❌ Error creating favicon files:', error);
     process.exit(1);
   }
 }
