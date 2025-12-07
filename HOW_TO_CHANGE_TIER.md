@@ -4,10 +4,10 @@
 
 Du kan ändra din prenumerationsplan när som helst. Det finns två sätt att göra detta:
 
-1. **Via Spell School** (Rekommenderat) - Enkel och direkt
-2. **Via Stripe Customer Portal** - Mer avancerade alternativ
+1. **Via Spell School** - Endast för uppgradering (Free → Premium → Pro)
+2. **Via Stripe Customer Portal** - För både uppgradering och nedgradering
 
-## Via Spell School
+## Via Spell School (Endast uppgradering)
 
 ### Uppgradering (Free → Premium → Pro)
 
@@ -19,23 +19,17 @@ Du kan ändra din prenumerationsplan när som helst. Det finns två sätt att g�
 6. Om du inte har en aktiv prenumeration, omdirigeras du till Stripe Checkout för betalning
 7. Om du redan har en prenumeration, uppdateras den automatiskt med proration
 
-### Nedgradering (Pro → Premium)
+**Obs:** Nedgradering (t.ex. Pro → Premium) kan inte göras via Spell School. Använd Stripe Customer Portal istället.
 
-1. Gå till `/teacher/account` (Mitt konto)
-2. Scrolla ner till "Aktuell plan"-kortet
-3. Klicka på knappen **"Nedgradera till Premium"** (blå knapp)
-4. Välj faktureringsperiod (Månadsvis eller Årsvis)
-5. Bekräfta nedgraderingen
-6. Din prenumeration uppdateras automatiskt
-7. Du får kredit för återstående tid som används mot nästa faktura
-
-## Via Stripe Customer Portal
+## Via Stripe Customer Portal (Uppgradering och nedgradering)
 
 1. Gå till `/teacher/account` (Mitt konto)
 2. Klicka på **"Hantera prenumeration"** (öppnas i ny flik)
-3. I Stripe Customer Portal, scrolla ner till "Prenumeration"
-4. Klicka på **"Ändra plan"** eller **"Change plan"**
-5. Välj ny plan och bekräfta
+3. I Stripe Customer Portal kan du:
+   - **Ändra plan**: Klicka på **"Ändra plan"** eller **"Change plan"** för att uppgradera eller nedgradera
+   - **Avsluta prenumeration**: Klicka på **"Avsluta prenumeration"** eller **"Cancel subscription"**
+   - **Uppdatera betalningsmetod**: Hantera dina betalningsmetoder
+   - **Se fakturor**: Visa din fakturahistorik
 
 ## Proration (Automatisk prisskillnad)
 
@@ -71,10 +65,14 @@ När du ändrar plan mitt i en faktureringsperiod, beräknar Stripe automatiskt:
 
 ## Felsökning
 
-### Knappen visas inte?
+### "Hantera prenumeration"-knappen visas inte?
 - Kontrollera att du är inloggad
-- Kontrollera att du har en aktiv Premium eller Pro-prenumeration
-- Free-användare kan bara uppgradera, inte nedgradera
+- Kontrollera att du har en aktiv Premium eller Pro-prenumeration (inte test-pilot)
+- Test-pilot-användare kan inte hantera prenumeration via Stripe Portal
+
+### Nedgradering fungerar inte i Spell School?
+- Det är korrekt - nedgradering kan endast göras via Stripe Customer Portal
+- Använd **"Hantera prenumeration"**-knappen för att öppna Stripe Portal
 
 ### Ändringen fungerar inte?
 - Kontrollera att du har en aktiv Stripe customer ID
@@ -93,11 +91,16 @@ När du ändrar plan mitt i en faktureringsperiod, beräknar Stripe automatiskt:
 A: Ja! Du kan uppgradera till vilken plan som helst direkt.
 
 **Q: Kan jag gå tillbaka till Free?**
-A: Ja, men du måste säga upp din prenumeration via Customer Portal. Free är inte en betald plan.
+A: Ja, men du måste säga upp din prenumeration via Stripe Customer Portal. Free är inte en betald plan.
+
+**Q: Varför kan jag inte nedgradera direkt i Spell School?**
+A: Nedgradering måste göras via Stripe Customer Portal för att säkerställa korrekt hantering av proration och fakturering. Använd **"Hantera prenumeration"**-knappen för att öppna portalen.
 
 **Q: Vad händer med mina data vid nedgradering?**
 A: Alla dina data behålls. Du kan bara inte skapa nya klasser/elever/ordlistor om du överskrider gränserna.
 
 **Q: Kan jag ändra faktureringsperiod?**
 A: Ja, när du ändrar plan kan du välja mellan månadsvis och årsvis fakturering.
+
+
 

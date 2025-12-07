@@ -45,7 +45,59 @@ export const TIER_LIMITS: Record<SubscriptionTier, SubscriptionLimits> = {
 }
 
 /**
+ * Get test pilot information for a user
+ */
+export async function getTestPilotInfo(userId: string, supabaseClient?: any): Promise<{ isTestPilot: boolean; expiresAt: Date | null; usedAt: Date | null }> {
+  try {
+    let supabase = supabaseClient
+    if (!supabase) {
+      const supabaseModule = await import('@/lib/supabase')
+      supabase = supabaseModule.supabase
+    }
+
+    // Check if user has pro tier without stripe subscription (test pilot)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('subscription_tier, stripe_subscription_id')
+      .eq('id', userId)
+      .single()
+
+    if (!profile || profile.subscription_tier !== 'pro' || profile.stripe_subscription_id) {
+      return { isTestPilot: false, expiresAt: null, usedAt: null }
+    }
+
+    // Get test pilot code usage date
+    const { data: testPilotCode } = await supabase
+      .from('testpilot_codes')
+      .select('used_at')
+      .eq('used_by', userId)
+      .order('used_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (!testPilotCode || !testPilotCode.used_at) {
+      return { isTestPilot: true, expiresAt: null, usedAt: null }
+    }
+
+    const usedAt = new Date(testPilotCode.used_at)
+    const expiresAt = new Date(usedAt)
+    expiresAt.setMonth(expiresAt.getMonth() + 1) // 1 month from used_at
+
+    // Check if expired (but don't update here - let getUserSubscriptionTier handle it)
+    if (expiresAt < new Date()) {
+      return { isTestPilot: false, expiresAt: null, usedAt: null }
+    }
+
+    return { isTestPilot: true, expiresAt, usedAt }
+  } catch (error) {
+    console.error('Error getting test pilot info:', error)
+    return { isTestPilot: false, expiresAt: null, usedAt: null }
+  }
+}
+
+/**
  * Get subscription tier for a user (defaults to 'free')
+ * Automatically downgrades test pilot to free when expired
  */
 export async function getUserSubscriptionTier(userId: string, supabaseClient?: any): Promise<SubscriptionTier> {
   try {
@@ -58,7 +110,7 @@ export async function getUserSubscriptionTier(userId: string, supabaseClient?: a
     
     const { data, error } = await supabase
       .from('profiles')
-      .select('subscription_tier')
+      .select('subscription_tier, stripe_subscription_id')
       .eq('id', userId)
       .single()
 
@@ -67,7 +119,27 @@ export async function getUserSubscriptionTier(userId: string, supabaseClient?: a
       return 'free'
     }
 
-    const tier = (data.subscription_tier as SubscriptionTier) || 'free'
+    let tier = (data.subscription_tier as SubscriptionTier) || 'free'
+
+    // Check if user is test pilot and if period has expired
+    if (tier === 'pro' && !data.stripe_subscription_id) {
+      const testPilotInfo = await getTestPilotInfo(userId, supabase)
+      if (!testPilotInfo.isTestPilot) {
+        // Test pilot expired, downgrade to free
+        // Try to update (only works if we have admin client, otherwise will be handled by webhook/cron)
+        try {
+          await supabase
+            .from('profiles')
+            .update({ subscription_tier: 'free' })
+            .eq('id', userId)
+        } catch (error) {
+          // If update fails (e.g., no admin rights), that's ok - will be handled elsewhere
+          console.log('Could not auto-downgrade test pilot (may need admin client):', error)
+        }
+        tier = 'free'
+      }
+    }
+
     console.log(`User ${userId} subscription tier: ${tier}`)
     return tier
   } catch (error) {
@@ -229,5 +301,61 @@ export function getTierPrice(tier: SubscriptionTier, yearly: boolean = false): n
   if (tier === 'premium') return yearly ? 758 : 79
   if (tier === 'pro') return yearly ? 1238 : 129
   return 0
+}
+
+/**
+ * Downgrade expired test pilot subscriptions to free
+ * This function should be called with an admin Supabase client
+ */
+export async function downgradeExpiredTestPilots(supabaseAdmin: any): Promise<{ downgraded: number; errors: string[] }> {
+  const errors: string[] = []
+  let downgraded = 0
+
+  try {
+    // Get all users with pro tier and no stripe subscription (potential test pilots)
+    const { data: profiles, error: profilesError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, subscription_tier, stripe_subscription_id')
+      .eq('subscription_tier', 'pro')
+      .is('stripe_subscription_id', null)
+
+    if (profilesError) {
+      errors.push(`Error fetching profiles: ${profilesError.message}`)
+      return { downgraded: 0, errors }
+    }
+
+    if (!profiles || profiles.length === 0) {
+      return { downgraded: 0, errors: [] }
+    }
+
+    // Check each profile to see if test pilot has expired
+    for (const profile of profiles) {
+      try {
+        const testPilotInfo = await getTestPilotInfo(profile.id, supabaseAdmin)
+        
+        if (!testPilotInfo.isTestPilot) {
+          // Test pilot has expired, downgrade to free
+          const { error: updateError } = await supabaseAdmin
+            .from('profiles')
+            .update({ subscription_tier: 'free' })
+            .eq('id', profile.id)
+
+          if (updateError) {
+            errors.push(`Failed to downgrade user ${profile.id}: ${updateError.message}`)
+          } else {
+            downgraded++
+            console.log(`✅ Downgraded expired test pilot user ${profile.id} to free`)
+          }
+        }
+      } catch (error: any) {
+        errors.push(`Error processing user ${profile.id}: ${error.message}`)
+      }
+    }
+
+    return { downgraded, errors }
+  } catch (error: any) {
+    errors.push(`Fatal error in downgradeExpiredTestPilots: ${error.message}`)
+    return { downgraded, errors }
+  }
 }
 

@@ -18,3 +18,5 @@ CREATE INDEX IF NOT EXISTS idx_profiles_stripe_customer_id ON profiles(stripe_cu
 -- Add comment
 COMMENT ON COLUMN profiles.stripe_customer_id IS 'Stripe customer ID for subscription management';
 
+
+

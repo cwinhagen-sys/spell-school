@@ -97,3 +97,5 @@ Om problemet kvarstår:
 2. Kontrollera Stripe Dashboard > Events för att se vilka events som skickas
 3. Kontrollera Supabase logs för databasfel
 
+
+

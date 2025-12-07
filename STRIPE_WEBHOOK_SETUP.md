@@ -59,3 +59,5 @@ STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxx
 - **Använd test mode** - Alla webhooks i test mode går till din lokala server
 - **För produktion** - Du behöver konfigurera webhook endpoint i Stripe Dashboard istället
 
+
+

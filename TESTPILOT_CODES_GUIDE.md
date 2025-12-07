@@ -223,3 +223,5 @@ INSERT INTO public.testpilot_codes (code, max_uses, notes)
 VALUES ('PARTNER2024', 100, 'Partner program - ingen utgång');
 ```
 
+
+

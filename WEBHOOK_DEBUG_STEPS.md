@@ -97,3 +97,5 @@ Efter att ha följt dessa steg, kopiera:
 3. Resultat från manuell test (`/api/test-webhook`)
 4. Screenshot från Stripe Dashboard > Events
 
+
+

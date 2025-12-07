@@ -26,3 +26,5 @@ Write-Host "- Den måste köras parallellt med din Next.js server (npm run dev)"
 Write-Host "- Låt den köra medan du utvecklar" -ForegroundColor Yellow
 Write-Host ""
 
+
+

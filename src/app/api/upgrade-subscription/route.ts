@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     // Get user's current subscription info
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('subscription_tier, stripe_customer_id')
+      .select('subscription_tier, stripe_customer_id, stripe_subscription_id')
       .eq('id', user.id)
       .single()
 
@@ -64,6 +64,18 @@ export async function POST(request: NextRequest) {
     const customerId = profile.stripe_customer_id as string | null
     
     console.log('📊 Current subscription:', { currentTier, customerId })
+
+    // Prevent downgrading to a lower tier
+    const tierOrder: Record<string, number> = { free: 0, premium: 1, pro: 2 }
+    const currentTierIndex = tierOrder[currentTier] || 0
+    const targetTierIndex = tierOrder[targetTier] || 0
+
+    if (targetTierIndex < currentTierIndex) {
+      console.error('❌ Attempted downgrade prevented:', { currentTier, targetTier })
+      return NextResponse.json({ 
+        error: 'Du kan inte nedgradera till en lägre plan. Kontakta support om du vill avsluta din prenumeration.' 
+      }, { status: 400 })
+    }
 
     // If user doesn't have a Stripe customer ID, create a new checkout session
     if (!customerId) {

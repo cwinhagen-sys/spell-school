@@ -69,6 +69,16 @@ export async function POST(request: NextRequest) {
         tier: tier,
         billingPeriod: yearly ? 'yearly' : 'monthly',
       },
+      payment_intent_data: {
+        statement_descriptor: 'Spell School',
+      },
+      subscription_data: {
+        metadata: {
+          userId: user.id,
+          tier: tier,
+          billingPeriod: yearly ? 'yearly' : 'monthly',
+        },
+      },
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/teacher/account?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/signup/teacher?tier=${tier}&canceled=true`,
     })

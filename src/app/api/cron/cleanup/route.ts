@@ -1,7 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runCleanupProcess } from '@/lib/softDelete'
+import { downgradeExpiredTestPilots } from '@/lib/subscription'
+import { createClient } from '@supabase/supabase-js'
 
-// POST /api/cron/cleanup - Automatisk GDPR cleanup (körs dagligen)
+// Use service role key for admin operations
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://edbbestqdwldryxuxkma.supabase.co'
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'sb_publishable_bx81qdFnpcX79ovYbCL98Q_eirRtByp'
+
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+})
+
+// POST /api/cron/cleanup - Automatisk GDPR cleanup och test pilot nedgradering (körs dagligen)
 export async function POST(request: NextRequest) {
   try {
     // Kontrollera att det är en cron job (från Vercel eller liknande)
@@ -12,27 +25,45 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    console.log('Starting scheduled GDPR cleanup process...')
+    console.log('Starting scheduled cleanup process...')
     
-    const result = await runCleanupProcess()
+    // Run GDPR cleanup
+    const cleanupResult = await runCleanupProcess()
+    
+    // Downgrade expired test pilots
+    console.log('Checking for expired test pilot subscriptions...')
+    const testPilotResult = await downgradeExpiredTestPilots(supabaseAdmin)
     
     console.log('Scheduled cleanup completed:', {
-      success: result.success,
-      processed: result.processed,
-      errors: result.errors.length
+      cleanup: {
+        success: cleanupResult.success,
+        processed: cleanupResult.processed,
+        errors: cleanupResult.errors.length
+      },
+      testPilots: {
+        downgraded: testPilotResult.downgraded,
+        errors: testPilotResult.errors.length
+      }
     })
 
     // Logga resultatet för övervakning
-    if (result.errors.length > 0) {
-      console.error('Cleanup errors:', result.errors)
+    const allErrors = [...cleanupResult.errors, ...testPilotResult.errors]
+    if (allErrors.length > 0) {
+      console.error('Cleanup errors:', allErrors)
     }
 
     return NextResponse.json({
-      success: result.success,
-      processed: result.processed,
-      errors: result.errors,
+      success: cleanupResult.success,
+      cleanup: {
+        processed: cleanupResult.processed,
+        errors: cleanupResult.errors
+      },
+      testPilots: {
+        downgraded: testPilotResult.downgraded,
+        errors: testPilotResult.errors
+      },
       timestamp: new Date().toISOString(),
-      message: `Scheduled cleanup completed. Processed ${result.processed} records.`
+      message: `Scheduled cleanup completed. Processed ${cleanupResult.processed} records, downgraded ${testPilotResult.downgraded} expired test pilots.`
     })
 
   } catch (error) {

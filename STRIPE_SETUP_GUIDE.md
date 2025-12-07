@@ -179,3 +179,5 @@ Eller använd environment variables (rekommenderat) - se steg 4.
 - [Stripe Webhooks](https://stripe.com/docs/webhooks)
 - [Stripe Test Cards](https://stripe.com/docs/testing)
 
+
+

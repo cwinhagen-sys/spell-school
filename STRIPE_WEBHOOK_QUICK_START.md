@@ -66,3 +66,5 @@ Nu är webhook konfigurerad! 🎉
 - Du kommer se webhook events i terminalen där `stripe listen` körs
 - Om något inte fungerar, kontrollera att båda terminalerna kör
 
+
+

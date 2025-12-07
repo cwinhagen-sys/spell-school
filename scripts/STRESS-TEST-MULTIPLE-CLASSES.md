@@ -210,3 +210,5 @@ if (cached) return cached
 - Optimera baserat på resultat
 
 
+
+

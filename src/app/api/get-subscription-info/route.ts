@@ -68,10 +68,33 @@ export async function GET(request: NextRequest) {
       const currentPeriodStart = subscription.current_period_start 
         ? new Date(subscription.current_period_start * 1000)
         : new Date()
-      const currentPeriodEnd = subscription.current_period_end
+      
+      // current_period_end should be 1 month/year from start, but verify it's correct
+      let currentPeriodEnd = subscription.current_period_end
         ? new Date(subscription.current_period_end * 1000)
         : new Date()
+      
+      // If current_period_end is same as start (shouldn't happen, but safety check)
+      if (currentPeriodEnd.getTime() <= currentPeriodStart.getTime()) {
+        // Calculate next billing date based on billing period
+        currentPeriodEnd = new Date(currentPeriodStart)
+        if (billingPeriod === 'yearly') {
+          currentPeriodEnd.setFullYear(currentPeriodEnd.getFullYear() + 1)
+        } else {
+          currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1)
+        }
+        console.warn('⚠️ Stripe current_period_end was invalid, calculated manually:', currentPeriodEnd)
+      }
+      
       const cancelAt = subscription.cancel_at ? new Date(subscription.cancel_at * 1000) : null
+      
+      console.log('📅 Subscription dates:', {
+        start: currentPeriodStart.toISOString(),
+        end: currentPeriodEnd.toISOString(),
+        billingPeriod,
+        stripeStart: subscription.current_period_start,
+        stripeEnd: subscription.current_period_end
+      })
 
       return NextResponse.json({
         subscription: {

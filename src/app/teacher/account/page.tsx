@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { getUserSubscriptionTier, getTierDisplayName, getTierPrice, TIER_LIMITS, type SubscriptionTier } from '@/lib/subscription'
+import { getUserSubscriptionTier, getTierDisplayName, getTierPrice, TIER_LIMITS, getTestPilotInfo, type SubscriptionTier } from '@/lib/subscription'
 import { Check, X, Crown, Zap, ArrowRight, ExternalLink, User, Users, BookOpen, Sparkles, Shield, TrendingUp, Gamepad2, AlertCircle, CreditCard, Settings, Key, Calendar, Clock } from 'lucide-react'
 import Link from 'next/link'
 
@@ -39,12 +39,24 @@ function UpgradeButton({ currentTier, targetTier, onUpgrade, isDowngrade = false
   const targetTierIndex = tierOrder.indexOf(targetTier)
   const isActuallyDowngrade = targetTierIndex < currentTierIndex
 
+  // Prevent downgrading - users should contact support to downgrade
+  if (isActuallyDowngrade || isDowngrade) {
+    return (
+      <div className="p-4 bg-amber-500/20 border border-amber-500/50 rounded-xl">
+        <p className="text-sm text-amber-300">
+          <strong>Nedgradering inte tillåten:</strong> Du kan inte nedgradera till en lägre plan direkt. 
+          Kontakta support om du vill avsluta din prenumeration eller ändra din plan.
+        </p>
+      </div>
+    )
+  }
+
   const handleUpgrade = async () => {
     setLoading(true)
     setError(null)
 
     try {
-      const action = isDowngrade || isActuallyDowngrade ? 'downgrade' : 'upgrade'
+      const action = 'upgrade'
       console.log(`🔄 Starting ${action} to`, targetTier)
       
       const { data: { session } } = await supabase.auth.getSession()
@@ -107,7 +119,7 @@ function UpgradeButton({ currentTier, targetTier, onUpgrade, isDowngrade = false
         <button
           onClick={() => setShowConfirmDialog(true)}
           disabled={loading}
-          className={`w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${
+          className={`w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl font-semibold transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base ${
             isActuallyDowngrade || isDowngrade
               ? 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white hover:from-blue-600 hover:to-cyan-700 shadow-blue-500/20'
               : 'bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700 shadow-amber-500/20'
@@ -242,7 +254,7 @@ function UpgradeButton({ currentTier, targetTier, onUpgrade, isDowngrade = false
               <button
                 onClick={() => setShowConfirmDialog(false)}
                 disabled={loading}
-                className="flex-1 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl font-medium transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 sm:px-6 sm:py-3 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl font-medium transition-colors disabled:opacity-50 text-sm sm:text-base"
               >
                 Avbryt
               </button>
@@ -252,7 +264,7 @@ function UpgradeButton({ currentTier, targetTier, onUpgrade, isDowngrade = false
                   await handleUpgrade()
                 }}
                 disabled={loading}
-                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2.5 sm:px-6 sm:py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
               >
                 {loading ? (
                   <>
@@ -289,6 +301,7 @@ function TeacherAccountPageContent() {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly')
   const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null)
   const [subscriptionLoading, setSubscriptionLoading] = useState(false)
+  const [testPilotInfo, setTestPilotInfo] = useState<{ isTestPilot: boolean; expiresAt: Date | null; usedAt: Date | null } | null>(null)
   const searchParams = useSearchParams()
 
   useEffect(() => {
@@ -407,8 +420,15 @@ function TeacherAccountPageContent() {
 
         setWordSetCount(wordSets?.length || 0)
 
-        // Get subscription info if user has a paid tier
-        if (tier !== 'free') {
+        // Get test pilot info if user has pro tier
+        let testPilot: { isTestPilot: boolean; expiresAt: Date | null; usedAt: Date | null } | null = null
+        if (tier === 'pro') {
+          testPilot = await getTestPilotInfo(user.id)
+          setTestPilotInfo(testPilot)
+        }
+
+        // Get subscription info if user has a paid tier (and not test pilot)
+        if (tier !== 'free' && !testPilot?.isTestPilot) {
           setSubscriptionLoading(true)
           try {
             const { data: { session } } = await supabase.auth.getSession()
@@ -421,6 +441,11 @@ function TeacherAccountPageContent() {
               if (response.ok) {
                 const data = await response.json()
                 setSubscriptionInfo(data.subscription)
+                if (!data.subscription) {
+                  console.log('⚠️ No Stripe subscription found for user (this is normal if you have test-pilot or manually set tier)')
+                }
+              } else {
+                console.error('❌ Failed to fetch subscription info:', response.status, response.statusText)
               }
             }
           } catch (error) {
@@ -557,8 +582,59 @@ function TeacherAccountPageContent() {
           )}
         </div>
 
-        {/* Subscription Status - only show for paid tiers */}
-        {subscriptionTier !== 'free' && subscriptionInfo && (
+        {/* Test Pilot Information */}
+        {testPilotInfo?.isTestPilot && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-xl border border-violet-500/30">
+            <h3 className="text-sm font-semibold text-violet-300 mb-3 flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              Testpilot-period
+            </h3>
+            <div className="space-y-3">
+              <p className="text-sm text-violet-200">
+                Du har Pro-planen som testpilot i 1 månad. Denna period går automatiskt över till Free-planen när den är slut.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {testPilotInfo.usedAt && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-violet-500/20 rounded-lg flex items-center justify-center">
+                      <Calendar className="w-4 h-4 text-violet-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Aktiverades</p>
+                      <p className="text-sm font-medium text-white">
+                        {testPilotInfo.usedAt.toLocaleDateString('sv-SE', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {testPilotInfo.expiresAt && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                      <Clock className="w-4 h-4 text-amber-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Går ut</p>
+                      <p className="text-sm font-medium text-white">
+                        {testPilotInfo.expiresAt.toLocaleDateString('sv-SE', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Subscription Status - only show for paid tiers (not test pilot) */}
+        {subscriptionTier !== 'free' && subscriptionInfo && !testPilotInfo?.isTestPilot && (
           <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/10">
             <h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
               <CreditCard className="w-4 h-4" />
@@ -849,7 +925,7 @@ function TeacherAccountPageContent() {
                         alert(error.message || 'Ett fel uppstod')
                       }
                     }}
-                    className="w-full px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg font-semibold hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 mt-auto"
+                    className="w-full px-4 py-2.5 sm:px-6 sm:py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg font-semibold hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 mt-auto text-sm sm:text-base"
                   >
                     Välj Pro
                   </button>
@@ -975,8 +1051,8 @@ function TeacherAccountPageContent() {
           />
         )}
 
-        {/* Customer Portal Button - for managing subscription */}
-        {subscriptionTier !== 'free' && (
+        {/* Customer Portal Button - for managing subscription (not available for test pilot) */}
+        {subscriptionTier !== 'free' && !testPilotInfo?.isTestPilot && (
           <div className="mt-6 pt-6 border-t border-white/10">
             <button
               onClick={async () => {
@@ -1002,7 +1078,8 @@ function TeacherAccountPageContent() {
                   }
 
                   if (data.url) {
-                    window.open(data.url, '_blank') // Open in new tab
+                    // Use location.href for mobile compatibility instead of window.open
+                    window.location.href = data.url
                   }
                 } catch (error: any) {
                   console.error('Error opening customer portal:', error)
@@ -1020,6 +1097,7 @@ function TeacherAccountPageContent() {
             </p>
           </div>
         )}
+
       </div>
 
       {/* Usage Stats */}

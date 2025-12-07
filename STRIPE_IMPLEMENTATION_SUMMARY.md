@@ -154,3 +154,5 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 - Webhook kan ta några sekunder att processa - account-sidan väntar och uppdaterar
 - Test mode används för utveckling - byt till production keys för live
 
+
+

@@ -84,3 +84,5 @@ NEXT_PUBLIC_BASE_URL=https://din-domän.se
 **Customer Portal öppnas inte?**
 → Kontrollera att Customer Portal är aktiverad i Stripe Dashboard
 
+
+

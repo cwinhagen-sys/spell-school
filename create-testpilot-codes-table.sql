@@ -40,3 +40,5 @@ GRANT SELECT ON public.testpilot_codes TO anon;
 -- INSERT INTO public.testpilot_codes (code, max_uses, expires_at, notes)
 -- VALUES ('BETA2024', 10, NOW() + INTERVAL '90 days', 'Beta tester code for 2024');
 
+
+
