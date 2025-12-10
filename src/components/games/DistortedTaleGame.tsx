@@ -442,12 +442,15 @@ export default function DistortedTaleGame({
         const timeSpent = startedAtRef.current ? Math.round((Date.now() - startedAtRef.current) / 1000) : 0
         const points = Math.round(result.scorePercentage / 10)
         
-        await endGameSession(sessionId, points, {
-          accuracy: result.scorePercentage,
-          wordsUsed: getUsedWords().length,
-          totalWords: targetWords.length,
-          timeSpent,
-          difficulty
+        await endGameSession(sessionId, 'distorted_tale', {
+          score: points,
+          durationSec: timeSpent,
+          accuracyPct: result.scorePercentage,
+          details: {
+            wordsUsed: getUsedWords().length,
+            totalWords: targetWords.length,
+            difficulty
+          }
         })
         
         if (onScoreUpdate) {
