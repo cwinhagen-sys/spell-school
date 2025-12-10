@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { hasQuizStatsAccess, getUserSubscriptionTier } from '@/lib/subscription'
+import PaymentWallModal from '@/components/PaymentWallModal'
 import { FileText, Users, BookOpen, Filter, Calendar, Star, Target, Clock, ChevronDown, ChevronUp, Eye, Lock, Sparkles, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
