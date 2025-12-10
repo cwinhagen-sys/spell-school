@@ -80,55 +80,8 @@ function TeacherSignupContent() {
 
       if (profileError) throw profileError
 
-      // If premium or pro tier selected, redirect to Stripe checkout
-      if (selectedTier === 'premium' || selectedTier === 'pro') {
-        // Sign in the user first so they're authenticated for the checkout API call
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: emailValue,
-          password: passwordValue
-        })
-
-        if (signInError) {
-          throw new Error('Failed to sign in for checkout')
-        }
-
-        // Get session token for API call
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session) {
-          throw new Error('Failed to get session')
-        }
-
-        // Create checkout session
-        setMessage('Skapar betalningssession...')
-        const response = await fetch('/api/create-checkout-session', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ 
-            tier: selectedTier,
-            yearly: yearly || false
-          }),
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to create checkout session')
-        }
-
-        const { url } = await response.json()
-        
-        if (url) {
-          // Redirect to Stripe Checkout
-          window.location.href = url
-          return // Don't continue with normal flow
-        } else {
-          throw new Error('No checkout URL received')
-        }
-      }
-
-      // For free tier, continue with normal signup flow
+      // All signups start with free tier - payment wall will appear when limits are reached
+      // Continue with normal signup flow
       // Check if we're in development mode
       const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost'
       
