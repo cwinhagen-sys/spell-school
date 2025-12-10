@@ -457,7 +457,7 @@ export default function DistortedTaleGame({
           onScoreUpdate(points, undefined, 'distorted_tale')
         }
         
-        await updateStudentProgress(trackingContext)
+        await updateStudentProgress(points, 'distorted_tale', trackingContext)
       }
       
     } catch (err: any) {
