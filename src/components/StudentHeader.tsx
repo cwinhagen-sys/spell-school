@@ -210,7 +210,7 @@ export default function StudentHeader() {
   const navItems: NavItem[] = [
     {
       id: 'profile',
-      label: 'Profil',
+      label: 'Profile',
       href: '/student/profile',
       icon: <User className="w-4 h-4" />
     },
@@ -222,41 +222,41 @@ export default function StudentHeader() {
     },
     {
       id: 'quests',
-      label: 'Uppdrag',
+      label: 'Quests',
       href: '/student/quests',
       icon: <Target className="w-4 h-4" />
     },
     {
       id: 'badges',
-      label: 'Trofeer',
+      label: 'Badges',
       href: '/student/badges',
       icon: <Trophy className="w-4 h-4" />
     },
     {
       id: 'wordsets',
-      label: 'Ordlistor',
+      label: 'Word Sets',
       href: '/student/word-sets',
       icon: <BookOpen className="w-4 h-4" />
     },
     {
       id: 'games',
-      label: 'Spel',
+      label: 'Games',
       href: '/student/games',
       icon: <Gamepad2 className="w-4 h-4" />,
       subItems: [
         { label: 'Flashcards', href: '#flashcards' },
-        { label: 'Flerval', href: '#choice' },
+        { label: 'Multiple Choice', href: '#choice' },
         { label: 'Memory', href: '#match' },
-        { label: 'Para ihop', href: '#connect' },
-        { label: 'Skrivning', href: '#typing' },
-        { label: 'Översätt', href: '#translate' },
-        { label: 'Meningsluckor', href: '#storygap' },
-        { label: 'Ordkarusellen', href: '#roulette' }
+        { label: 'Matching Pairs', href: '#connect' },
+        { label: 'Typing', href: '#typing' },
+        { label: 'Translate', href: '#translate' },
+        { label: 'Sentence Gap', href: '#storygap' },
+        { label: 'Word Roulette', href: '#roulette' }
       ]
     },
     {
       id: 'leaderboard',
-      label: 'Topplista',
+      label: 'Leaderboard',
       href: '/student/leaderboard',
       icon: <Users className="w-4 h-4" />
     }
@@ -284,13 +284,13 @@ export default function StudentHeader() {
           {/* Logo */}
           <Link href="/student" className="flex items-center gap-3 group">
             <div className="relative">
-              <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 via-violet-500 to-fuchsia-500 rounded-xl flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg shadow-violet-500/30">
+              <div className="w-10 h-10 bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 rounded-xl flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg shadow-amber-500/30">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
-              <div className="absolute -inset-1 bg-gradient-to-br from-cyan-400 to-fuchsia-500 rounded-xl blur opacity-30 group-hover:opacity-50 transition-opacity" />
+              <div className="absolute -inset-1 bg-gradient-to-br from-amber-400 to-rose-500 rounded-xl blur opacity-30 group-hover:opacity-50 transition-opacity" />
             </div>
             <span className="text-xl font-bold text-white hidden sm:block">
-              Spell<span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-violet-500">School</span>
+              Spell<span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">School</span>
             </span>
           </Link>
 
@@ -317,14 +317,14 @@ export default function StudentHeader() {
                     className={`
                       flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200
                       ${active
-                        ? 'bg-gradient-to-r from-violet-500/20 to-cyan-500/20 text-white border border-violet-500/30'
+                        ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-white border border-amber-500/30'
                         : 'text-gray-400 hover:text-white hover:bg-white/5'
                       }
                     `}
                     aria-haspopup={item.subItems && item.subItems.length > 0}
                     aria-expanded={openDropdown === item.label}
                   >
-                    <span className={active ? 'text-violet-400' : ''}>{item.icon}</span>
+                    <span className={active ? 'text-amber-400' : ''}>{item.icon}</span>
                     <span>{item.label}</span>
                     {item.subItems && item.subItems.length > 0 && (
                       <ChevronDown 
@@ -346,19 +346,19 @@ export default function StudentHeader() {
                                 startGame(gameType)
                                 setOpenDropdown(null)
                               }}
-                              className="w-full text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-violet-500/10 hover:text-white transition-colors flex items-center gap-2"
+                              className="w-full text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-amber-500/10 hover:text-white transition-colors flex items-center gap-2"
                             >
-                              <Zap className="w-3 h-3 text-violet-400" />
+                              <Zap className="w-3 h-3 text-amber-400" />
                               {subItem.label}
                             </button>
                           )
                         })}
                         <Link
                           href={item.href}
-                          className="block px-4 py-2.5 text-sm font-semibold text-violet-400 bg-violet-500/10 hover:bg-violet-500/20 transition-colors border-t border-white/5 mt-1"
+                          className="block px-4 py-2.5 text-sm font-semibold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 transition-colors border-t border-white/5 mt-1"
                           onClick={() => setOpenDropdown(null)}
                         >
-                          Visa alla spel →
+                          View all games →
                         </Link>
                       </div>
                     </div>
@@ -372,11 +372,11 @@ export default function StudentHeader() {
           <div className="flex items-center gap-3">
             {/* User Avatar/Name */}
             <div className="hidden md:flex items-center gap-2 text-sm">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-white font-semibold text-xs shadow-lg shadow-violet-500/30">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white font-semibold text-xs shadow-lg shadow-amber-500/30">
                 {user?.user_metadata?.username?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'S'}
               </div>
               <span className="text-gray-300 font-medium">
-                {user?.user_metadata?.username || user?.email?.split('@')[0] || 'Elev'}
+                {user?.user_metadata?.username || user?.email?.split('@')[0] || 'Student'}
               </span>
             </div>
 
@@ -393,7 +393,7 @@ export default function StudentHeader() {
               `}
             >
               <LogOut className={`w-4 h-4 ${isLoggingOut ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{isLoggingOut ? 'Sparar...' : 'Logga ut'}</span>
+              <span className="hidden sm:inline">{isLoggingOut ? 'Saving...' : 'Sign out'}</span>
             </button>
 
             {/* Mobile Menu Button */}
@@ -433,13 +433,13 @@ export default function StudentHeader() {
                     className={`
                       w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all
                       ${active
-                        ? 'bg-gradient-to-r from-violet-500/20 to-cyan-500/20 text-white border border-violet-500/30'
+                        ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-white border border-amber-500/30'
                         : 'text-gray-400 hover:text-white hover:bg-white/5'
                       }
                     `}
                   >
                     <div className="flex items-center gap-2">
-                      <span className={active ? 'text-violet-400' : ''}>{item.icon}</span>
+                      <span className={active ? 'text-amber-400' : ''}>{item.icon}</span>
                       <span>{item.label}</span>
                     </div>
                     {item.subItems && item.subItems.length > 0 && (
@@ -464,14 +464,14 @@ export default function StudentHeader() {
                             }}
                             className="w-full text-left px-4 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2"
                           >
-                            <Zap className="w-3 h-3 text-violet-400" />
+                            <Zap className="w-3 h-3 text-amber-400" />
                             {subItem.label}
                           </button>
                         )
                       })}
                       <Link
                         href={item.href}
-                        className="block px-4 py-2.5 text-sm font-semibold text-violet-400 hover:bg-violet-500/10 rounded-lg transition-colors"
+                        className="block px-4 py-2.5 text-sm font-semibold text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors"
                         onClick={() => {
                           setMobileMenuOpen(false)
                           setOpenDropdown(null)

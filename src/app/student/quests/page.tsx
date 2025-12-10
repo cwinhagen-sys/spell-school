@@ -127,8 +127,8 @@ export default function DailyQuestsPage() {
           const quests: Quest[] = [
             {
               id: 'play_3_games',
-              title: 'Ordkrigare',
-              description: 'Klara 3 spel av valfri typ',
+              title: 'Word Warrior',
+              description: 'Complete 3 games of any type',
               target: 3,
               progress: 0,
               xp: 15,
@@ -137,8 +137,8 @@ export default function DailyQuestsPage() {
             },
             {
               id: 'memory_2',
-              title: 'Memory-mästare',
-              description: 'Klara 2 Memory-spel',
+              title: 'Memory Master',
+              description: 'Complete 2 Memory games',
               target: 2,
               progress: 0,
               xp: 15,
@@ -147,8 +147,8 @@ export default function DailyQuestsPage() {
             },
             {
               id: 'typing_1',
-              title: 'Stavningsexpert',
-              description: 'Klara 1 skrivutmaning',
+              title: 'Spelling Expert',
+              description: 'Complete 1 Typing Challenge',
               target: 1,
               progress: 0,
               xp: 10,
@@ -172,8 +172,8 @@ export default function DailyQuestsPage() {
     return (
       <div className="container mx-auto px-6 py-12 flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Laddar uppdrag...</p>
+          <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Loading quests...</p>
         </div>
       </div>
     )
@@ -189,19 +189,19 @@ export default function DailyQuestsPage() {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="w-14 h-14 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/30">
+              <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/30">
                 <Target className="w-7 h-7 text-white" />
               </div>
-              <div className="absolute -inset-1 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl blur opacity-30" />
+              <div className="absolute -inset-1 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl blur opacity-30" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white">Dagliga uppdrag</h1>
-              <p className="text-gray-400">Klara uppdrag för att tjäna XP</p>
+              <h1 className="text-3xl font-bold text-white">Daily Quests</h1>
+              <p className="text-gray-400">Complete quests to earn XP</p>
             </div>
           </div>
           <div className="text-right bg-white/5 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/10">
-            <div className="text-3xl font-bold text-cyan-400">{completedCount}/{dailyQuests.length}</div>
-            <div className="text-sm text-gray-400">Klara</div>
+            <div className="text-3xl font-bold text-amber-400">{completedCount}/{dailyQuests.length}</div>
+            <div className="text-sm text-gray-400">Completed</div>
           </div>
         </div>
 
@@ -215,21 +215,21 @@ export default function DailyQuestsPage() {
                 bg: 'from-emerald-500/20 to-green-500/20',
                 border: 'border-emerald-500/30',
                 progress: 'from-emerald-500 to-green-500',
-                label: 'Enkel',
+                label: 'Easy',
                 labelBg: 'bg-emerald-500/20 text-emerald-400'
               },
               medium: {
                 bg: 'from-amber-500/20 to-orange-500/20',
                 border: 'border-amber-500/30',
                 progress: 'from-amber-500 to-orange-500',
-                label: 'Medel',
+                label: 'Medium',
                 labelBg: 'bg-amber-500/20 text-amber-400'
               },
               hard: {
                 bg: 'from-rose-500/20 to-pink-500/20',
                 border: 'border-rose-500/30',
                 progress: 'from-rose-500 to-pink-500',
-                label: 'Svår',
+                label: 'Hard',
                 labelBg: 'bg-rose-500/20 text-rose-400'
               }
             }
@@ -266,7 +266,7 @@ export default function DailyQuestsPage() {
 
                 <div className="mb-4">
                   <div className="flex items-center justify-between text-sm text-gray-400 mb-2">
-                    <span>Framsteg</span>
+                    <span>Progress</span>
                     <span className="font-semibold text-white">
                       {quest.progress}/{quest.target}
                     </span>
@@ -286,9 +286,9 @@ export default function DailyQuestsPage() {
                   {!quest.completed && (
                     <button
                       onClick={() => startQuestGame(quest.id)}
-                      className="flex items-center gap-2 text-sm font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
+                      className="flex items-center gap-2 text-sm font-semibold text-amber-400 hover:text-amber-300 transition-colors"
                     >
-                      Börja spela
+                      Start playing
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   )}
@@ -302,9 +302,9 @@ export default function DailyQuestsPage() {
         {completedCount === dailyQuests.length && (
           <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-2xl p-8 text-center mb-8">
             <div className="text-5xl mb-3">🏆</div>
-            <h3 className="text-2xl font-bold text-amber-400 mb-2">Alla uppdrag klara!</h3>
+            <h3 className="text-2xl font-bold text-amber-400 mb-2">All quests completed!</h3>
             <p className="text-amber-300/80 font-semibold">+100 XP Bonus!</p>
-            <p className="text-sm text-gray-400 mt-2">Grattis! Du har klarat alla dagliga uppdrag.</p>
+            <p className="text-sm text-gray-400 mt-2">Congratulations! You've completed all daily quests.</p>
           </div>
         )}
 
@@ -312,10 +312,10 @@ export default function DailyQuestsPage() {
         <div className="p-4 bg-white/5 backdrop-blur-sm rounded-xl text-center text-sm text-gray-500 border border-white/10">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Flame className="w-4 h-4 text-orange-400" />
-            <span>Nya uppdrag imorgon kl 06:00</span>
+            <span>New quests tomorrow at 06:00</span>
           </div>
           <p>
-            XP intjänat idag: <span className="font-bold text-cyan-400">{totalXp}</span>
+            XP earned today: <span className="font-bold text-amber-400">{totalXp}</span>
             {completedCount === dailyQuests.length && <span className="text-amber-400"> (+100 bonus)</span>}
           </p>
         </div>

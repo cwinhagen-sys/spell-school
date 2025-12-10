@@ -65,11 +65,11 @@ export default function LeaderboardPage() {
             if (data.success && data.players) {
               setLeaderboardData(data)
             } else {
-              setError('Kunde inte ladda topplistan')
+              setError('Could not load leaderboard')
             }
           }
         } else {
-          setError('Du är inte med i någon klass')
+          setError('You are not in any class')
         }
       } catch (error) {
         console.error('Error loading leaderboard:', error)
@@ -92,7 +92,7 @@ export default function LeaderboardPage() {
         const totalPoints = player.totalPoints || 0
         const levelInfo = levelForXp(totalPoints)
         const wizard = titleForLevel(levelInfo.level)
-        const displayName = player.displayName || player.username || player.name || 'Elev'
+        const displayName = player.displayName || player.username || player.name || 'Student'
         return {
           ...player,
           displayName,
@@ -113,7 +113,7 @@ export default function LeaderboardPage() {
       <div className="container mx-auto px-6 py-12 flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Laddar topplista...</p>
+          <p className="text-gray-400">Loading leaderboard...</p>
         </div>
       </div>
     )
@@ -122,8 +122,8 @@ export default function LeaderboardPage() {
   const categories = [
     {
       key: 'level',
-      title: 'Högsta level',
-      description: 'Totala XP-nivåer',
+      title: 'Highest Level',
+      description: 'Total XP levels',
       icon: <Crown className="w-5 h-5" />,
       iconColor: 'text-amber-400',
       bgColor: 'from-amber-500/20 to-orange-500/20',
@@ -133,41 +133,41 @@ export default function LeaderboardPage() {
     },
     {
       key: 'badges',
-      title: 'Flest trofeer',
-      description: 'Samlare\'s favorit',
+      title: 'Most Badges',
+      description: 'Collector\'s favorite',
       icon: <Trophy className="w-5 h-5" />,
-      iconColor: 'text-violet-400',
-      bgColor: 'from-violet-500/20 to-purple-500/20',
-      borderColor: 'border-violet-500/30',
+      iconColor: 'text-amber-400',
+      bgColor: 'from-amber-500/20 to-orange-500/20',
+      borderColor: 'border-amber-500/30',
       metric: (player: LeaderboardPlayer) => player.badgeCount,
-      renderValue: (player: LeaderboardPlayer) => `${player.badgeCount} trofeer`
+      renderValue: (player: LeaderboardPlayer) => `${player.badgeCount} badges`
     },
     {
       key: 'streak',
-      title: 'Längsta streak',
-      description: 'Dagar i rad just nu',
+      title: 'Longest Streak',
+      description: 'Days in a row right now',
       icon: <Flame className="w-5 h-5" />,
       iconColor: 'text-orange-400',
       bgColor: 'from-orange-500/20 to-red-500/20',
       borderColor: 'border-orange-500/30',
       metric: (player: LeaderboardPlayer) => player.longestStreak,
-      renderValue: (player: LeaderboardPlayer) => `${player.longestStreak} dagar`
+      renderValue: (player: LeaderboardPlayer) => `${player.longestStreak} days`
     },
     {
       key: 'sessions',
-      title: 'Flest spel',
-      description: 'Totalt antal spel',
+      title: 'Most Games',
+      description: 'Total number of games',
       icon: <Zap className="w-5 h-5" />,
       iconColor: 'text-cyan-400',
       bgColor: 'from-cyan-500/20 to-blue-500/20',
       borderColor: 'border-cyan-500/30',
       metric: (player: LeaderboardPlayer) => player.sessionCount,
-      renderValue: (player: LeaderboardPlayer) => `${player.sessionCount} spel`
+      renderValue: (player: LeaderboardPlayer) => `${player.sessionCount} games`
     },
     {
       key: 'kpm',
-      title: 'Snabbast skrivare',
-      description: 'Bästa skrivhastighet',
+      title: 'Fastest Typist',
+      description: 'Best typing speed',
       icon: <Keyboard className="w-5 h-5" />,
       iconColor: 'text-fuchsia-400',
       bgColor: 'from-fuchsia-500/20 to-pink-500/20',
@@ -177,8 +177,8 @@ export default function LeaderboardPage() {
     },
     {
       key: 'accuracy',
-      title: 'Bästa träffsäkerhet',
-      description: 'Högsta genomsnitt',
+      title: 'Best Accuracy',
+      description: 'Highest average',
       icon: <Target className="w-5 h-5" />,
       iconColor: 'text-emerald-400',
       bgColor: 'from-emerald-500/20 to-green-500/20',
@@ -201,8 +201,8 @@ export default function LeaderboardPage() {
               <div className="absolute -inset-1 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl blur opacity-30" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white">Topplista</h1>
-              <p className="text-gray-400">Se vilka klasskompisar som leder i olika kategorier</p>
+              <h1 className="text-3xl font-bold text-white">Leaderboard</h1>
+              <p className="text-gray-400">See which classmates lead in different categories</p>
             </div>
           </div>
         </div>
@@ -214,8 +214,8 @@ export default function LeaderboardPage() {
         ) : leaderboardPlayers.length === 0 ? (
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 shadow-xl p-12 text-center">
             <Trophy className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400 text-lg">Ingen topplista tillgänglig</p>
-            <p className="text-gray-500 text-sm mt-2">Börja spela spel för att hamna på topplistan!</p>
+            <p className="text-gray-400 text-lg">No leaderboard available</p>
+            <p className="text-gray-500 text-sm mt-2">Start playing games to get on the leaderboard!</p>
           </div>
         ) : (
           <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
@@ -255,7 +255,7 @@ export default function LeaderboardPage() {
                           key={`${category.key}-${player.id}`}
                           className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-all ${
                             isCurrentUser
-                              ? 'border-violet-500/50 bg-violet-500/20'
+                              ? 'border-amber-500/50 bg-amber-500/20'
                               : 'border-white/10 bg-white/5 hover:bg-white/10'
                           }`}
                         >
@@ -263,7 +263,7 @@ export default function LeaderboardPage() {
                             <div className="relative">
                               <img
                                 src={player.wizardImage}
-                                alt={player.displayName || 'Elev'}
+                                alt={player.displayName || 'Student'}
                                 className={`w-10 h-10 rounded-full object-cover border-2 ${
                                   isTopThree ? 'border-white shadow-lg' : 'border-white/30'
                                 }`}
@@ -280,8 +280,8 @@ export default function LeaderboardPage() {
                               <div className="text-sm font-semibold text-white flex items-center gap-2">
                                 {player.displayName}
                                 {isCurrentUser && (
-                                  <span className="text-xs font-medium text-violet-400 bg-violet-500/20 px-2 py-0.5 rounded-full">
-                                    Du
+                                  <span className="text-xs font-medium text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded-full">
+                                    You
                                   </span>
                                 )}
                               </div>
@@ -300,7 +300,7 @@ export default function LeaderboardPage() {
                     })}
                     {topPlayers.length === 0 && (
                       <div className="text-xs text-gray-500 text-center py-4">
-                        Ingen statistik ännu
+                        No statistics yet
                       </div>
                     )}
                   </div>
@@ -311,7 +311,7 @@ export default function LeaderboardPage() {
         )}
 
         <div className="mt-8 p-4 bg-white/5 backdrop-blur-sm rounded-xl text-center text-sm text-gray-500 border border-white/10">
-          <p>Topplistan uppdateras efter varje spelade spel</p>
+          <p>The leaderboard updates after each game played</p>
         </div>
       </div>
     </div>

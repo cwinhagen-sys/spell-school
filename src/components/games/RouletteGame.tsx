@@ -823,7 +823,7 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
         {/* Sentence Input */}
         {spinsRemaining === 0 && (
           <div className="mb-8">
-            <div className="bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 rounded-2xl p-6 border border-emerald-500/30">
+            <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-2xl p-6 border border-amber-500/30">
               <h3 className="text-xl font-bold mb-4 text-white flex items-center">
                 <Send className="w-5 h-5 mr-2 text-emerald-400" />
                 Skriv en mening med alla orden:
@@ -856,7 +856,7 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
                     className={`px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg ${
                       !validateSentence(currentSentence) || isSubmitting || hasSubmitted || containsInappropriateWords(currentSentence)
                         ? 'bg-white/5 text-gray-500 cursor-not-allowed border border-white/5'
-                        : 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white hover:from-emerald-400 hover:to-cyan-400 hover:shadow-xl shadow-emerald-500/30'
+                        : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-400 hover:to-orange-400 hover:shadow-xl shadow-amber-500/30'
                     }`}
                   >
                     <Send className="w-4 h-4" />
@@ -873,14 +873,14 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
           <div className={`p-6 rounded-2xl mb-8 border ${
             feedback.type === 'success' ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' :
             feedback.type === 'error' ? 'bg-red-500/10 text-red-300 border-red-500/30' :
-            'bg-cyan-500/10 text-cyan-300 border-cyan-500/30'
+            'bg-amber-500/10 text-amber-300 border-amber-500/30'
           }`}>
             <div className="mb-4 text-lg font-medium">{feedback.message}</div>
             {showFinishButton && (
               <div className="text-center">
                 <button
                   onClick={finishGame}
-                  className="bg-gradient-to-r from-emerald-500 to-cyan-500 text-white py-3 px-8 rounded-xl font-semibold hover:from-emerald-400 hover:to-cyan-400 transition-all shadow-lg shadow-emerald-500/30 hover:shadow-xl"
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3 px-8 rounded-xl font-semibold hover:from-amber-400 hover:to-orange-400 transition-all shadow-lg shadow-amber-500/30 hover:shadow-xl"
                 >
                   Avsluta spel
                 </button>

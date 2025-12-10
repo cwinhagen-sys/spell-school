@@ -167,30 +167,30 @@ export default function UniversalGameCompleteModal({
     switch (gameType) {
       case 'flashcards': return 'Flashcards'
       case 'match': return 'Memory'
-      case 'typing': return 'Skrivutmaning'
-      case 'translate': return 'Översättning'
-      case 'connect': return 'Para ihop'
-      case 'storygap': return 'Meningsluckor'
-      case 'roulette': return 'Ordkarusellen'
-      case 'choice': return 'Flerval'
+      case 'typing': return 'Typing Challenge'
+      case 'translate': return 'Translate'
+      case 'connect': return 'Matching Pairs'
+      case 'storygap': return 'Sentence Gap'
+      case 'roulette': return 'Word Roulette'
+      case 'choice': return 'Multiple Choice'
       case 'spellcasting': return 'Spell Casting'
       case 'quiz': return 'Quiz'
-      default: return 'Spel klart!'
+      default: return 'Game Complete!'
     }
   }
 
   const getPerformanceLevel = () => {
     if (accuracy !== undefined) {
-      if (accuracy >= 100) return { label: 'PERFEKT!', color: 'from-yellow-400 to-amber-500', emoji: '🏆' }
-      if (accuracy >= 90) return { label: 'Fantastiskt!', color: 'from-emerald-400 to-green-500', emoji: '⭐' }
-      if (accuracy >= 80) return { label: 'Bra jobbat!', color: 'from-cyan-400 to-blue-500', emoji: '💪' }
-      if (accuracy >= 70) return { label: 'Fortsätt så!', color: 'from-violet-400 to-purple-500', emoji: '👍' }
-      return { label: 'Fortsätt öva!', color: 'from-orange-400 to-red-500', emoji: '📚' }
+      if (accuracy >= 100) return { label: 'PERFECT!', color: 'from-yellow-400 to-amber-500', emoji: '🏆' }
+      if (accuracy >= 90) return { label: 'Fantastic!', color: 'from-emerald-400 to-green-500', emoji: '⭐' }
+      if (accuracy >= 80) return { label: 'Great job!', color: 'from-amber-400 to-orange-500', emoji: '💪' }
+      if (accuracy >= 70) return { label: 'Keep it up!', color: 'from-orange-400 to-amber-500', emoji: '👍' }
+      return { label: 'Keep practicing!', color: 'from-orange-400 to-red-500', emoji: '📚' }
     }
-    if (pointsAwarded >= 20) return { label: 'Fantastiskt!', color: 'from-yellow-400 to-amber-500', emoji: '⭐' }
-    if (pointsAwarded >= 15) return { label: 'Bra jobbat!', color: 'from-emerald-400 to-green-500', emoji: '💪' }
-    if (pointsAwarded >= 10) return { label: 'Bra!', color: 'from-cyan-400 to-blue-500', emoji: '👍' }
-    return { label: 'Fortsätt öva!', color: 'from-violet-400 to-purple-500', emoji: '📚' }
+    if (pointsAwarded >= 20) return { label: 'Fantastic!', color: 'from-yellow-400 to-amber-500', emoji: '⭐' }
+    if (pointsAwarded >= 15) return { label: 'Great job!', color: 'from-amber-400 to-orange-500', emoji: '💪' }
+    if (pointsAwarded >= 10) return { label: 'Good!', color: 'from-orange-400 to-amber-500', emoji: '👍' }
+    return { label: 'Keep practicing!', color: 'from-orange-400 to-amber-500', emoji: '📚' }
   }
 
   const performance = getPerformanceLevel()
@@ -218,20 +218,20 @@ export default function UniversalGameCompleteModal({
           transition={{ type: "spring", damping: 20, stiffness: 300 }}
         >
           {/* Glowing background effect */}
-          <div className="absolute -inset-4 bg-gradient-to-br from-violet-500/30 via-cyan-500/20 to-fuchsia-500/30 rounded-3xl blur-2xl" />
+          <div className="absolute -inset-4 bg-gradient-to-br from-amber-500/30 via-orange-500/20 to-rose-500/30 rounded-3xl blur-2xl" />
           
           {/* Animated rings */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
-            <GlowingRing color="rgba(168, 85, 247, 0.4)" size={300} delay={0.2} />
-            <GlowingRing color="rgba(34, 211, 238, 0.3)" size={400} delay={0.4} />
-            <GlowingRing color="rgba(244, 114, 182, 0.2)" size={500} delay={0.6} />
+            <GlowingRing color="rgba(245, 158, 11, 0.4)" size={300} delay={0.2} />
+            <GlowingRing color="rgba(249, 115, 22, 0.3)" size={400} delay={0.4} />
+            <GlowingRing color="rgba(251, 146, 60, 0.2)" size={500} delay={0.6} />
           </div>
           
-          <div className="relative bg-[#12122a] border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+          <div className="relative bg-[#12122a] border border-white/10 rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] overflow-y-auto">
             {/* Top gradient bar */}
             <div className={`h-1.5 bg-gradient-to-r ${performance.color}`} />
             
-            <div className="p-8">
+            <div className="p-4 sm:p-6 md:p-8">
               {/* Level Up Notification */}
               <AnimatePresence>
                 {levelUp && (
@@ -249,7 +249,7 @@ export default function UniversalGameCompleteModal({
                       </motion.div>
                       <div className="text-center">
                         <h3 className="text-xl font-bold text-amber-400">Level Up!</h3>
-                        <p className="text-amber-200/80">Du nådde level {levelUp.level}</p>
+                        <p className="text-amber-200/80">You reached level {levelUp.level}</p>
                         <p className="text-sm text-amber-300/60 mt-1">{levelUp.title}</p>
                       </div>
                     </div>
@@ -291,7 +291,7 @@ export default function UniversalGameCompleteModal({
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.3 }}
                     >
-                      <GameIconComponent className="w-5 h-5 text-violet-400" />
+                      <GameIconComponent className="w-5 h-5 text-amber-400" />
                       <span>{getGameTitle()}</span>
                     </motion.div>
                   </motion.div>
@@ -307,7 +307,7 @@ export default function UniversalGameCompleteModal({
                     transition={{ type: "spring", damping: 15, stiffness: 300 }}
                     className="text-center mb-8"
                   >
-                    <div className="relative inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-violet-500/20 to-cyan-500/20 rounded-2xl border border-violet-500/30">
+                    <div className="relative inline-flex items-center gap-3 px-4 sm:px-6 md:px-8 py-3 sm:py-4 bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-2xl border border-amber-500/30">
                       <motion.div
                         animate={{ rotate: 360 }}
                         transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
@@ -315,10 +315,10 @@ export default function UniversalGameCompleteModal({
                         <Star className="w-8 h-8 text-amber-400" />
                       </motion.div>
                       <div>
-                        <div className="text-4xl font-bold text-white">
+                        <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">
                           +<XPCounter value={pointsAwarded} /> XP
                         </div>
-                        <div className="text-sm text-gray-400">Poäng intjänade</div>
+                        <div className="text-xs sm:text-sm text-gray-400">Points earned</div>
                       </div>
                       
                       {/* Sparkle effects around XP */}
@@ -354,19 +354,19 @@ export default function UniversalGameCompleteModal({
                   <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-xl flex items-start gap-3">
                     <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5" />
                     <span className="text-red-300 text-sm">
-                      Spelet avslutades efter tre fel. Försök igen för att få ett resultat!
+                      The game ended after three errors. Try again to get a result!
                     </span>
                   </div>
                 )}
                 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   {accuracy !== undefined && (
-                    <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                      <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
-                        <Target className="w-4 h-4" />
-                        <span>Träffsäkerhet</span>
+                    <div className="bg-white/5 rounded-xl p-2 sm:p-3 md:p-4 border border-white/5">
+                      <div className="flex items-center gap-1 sm:gap-2 text-gray-400 text-xs sm:text-sm mb-1">
+                        <Target className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span>Accuracy</span>
                       </div>
-                      <div className={`text-2xl font-bold ${
+                      <div className={`text-lg sm:text-xl md:text-2xl font-bold ${
                         accuracy >= 80 ? 'text-emerald-400' : 
                         accuracy >= 60 ? 'text-amber-400' : 'text-red-400'
                       }`}>
@@ -376,54 +376,54 @@ export default function UniversalGameCompleteModal({
                   )}
                   
                   {details.correctAnswers !== undefined && details.totalQuestions !== undefined && (
-                    <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                      <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
-                        <CheckCircle className="w-4 h-4" />
-                        <span>Rätta svar</span>
+                    <div className="bg-white/5 rounded-xl p-2 sm:p-3 md:p-4 border border-white/5">
+                      <div className="flex items-center gap-1 sm:gap-2 text-gray-400 text-xs sm:text-sm mb-1">
+                        <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span>Correct</span>
                       </div>
-                      <div className="text-2xl font-bold text-white">
+                      <div className="text-lg sm:text-xl md:text-2xl font-bold text-white">
                         {details.correctAnswers}/{details.totalQuestions}
                       </div>
                     </div>
                   )}
                   
                   {time && (
-                    <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                      <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
-                        <Clock className="w-4 h-4" />
-                        <span>Tid</span>
+                    <div className="bg-white/5 rounded-xl p-2 sm:p-3 md:p-4 border border-white/5">
+                      <div className="flex items-center gap-1 sm:gap-2 text-gray-400 text-xs sm:text-sm mb-1">
+                        <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span>Time</span>
                       </div>
-                      <div className="text-2xl font-bold text-cyan-400">{time}</div>
+                      <div className="text-lg sm:text-xl md:text-2xl font-bold text-amber-400">{time}</div>
                     </div>
                   )}
 
                   {details.streak !== undefined && (
-                    <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                      <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
-                        <Zap className="w-4 h-4" />
-                        <span>Bästa streak</span>
+                    <div className="bg-white/5 rounded-xl p-2 sm:p-3 md:p-4 border border-white/5">
+                      <div className="flex items-center gap-1 sm:gap-2 text-gray-400 text-xs sm:text-sm mb-1">
+                        <Zap className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span>Best streak</span>
                       </div>
-                      <div className="text-2xl font-bold text-violet-400">{details.streak}</div>
+                      <div className="text-lg sm:text-xl md:text-2xl font-bold text-amber-400">{details.streak}</div>
                     </div>
                   )}
 
                   {details.kpm !== undefined && (
-                    <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                      <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
-                        <Keyboard className="w-4 h-4" />
-                        <span>Skrivhastighet</span>
+                    <div className="bg-white/5 rounded-xl p-2 sm:p-3 md:p-4 border border-white/5">
+                      <div className="flex items-center gap-1 sm:gap-2 text-gray-400 text-xs sm:text-sm mb-1">
+                        <Keyboard className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span>Typing speed</span>
                       </div>
-                      <div className="text-2xl font-bold text-fuchsia-400">{details.kpm} KPM</div>
+                      <div className="text-lg sm:text-xl md:text-2xl font-bold text-amber-400">{details.kpm} WPM</div>
                     </div>
                   )}
 
                   {details.wordCount !== undefined && (
-                    <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                      <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
-                        <BookOpen className="w-4 h-4" />
-                        <span>Ord</span>
+                    <div className="bg-white/5 rounded-xl p-2 sm:p-3 md:p-4 border border-white/5">
+                      <div className="flex items-center gap-1 sm:gap-2 text-gray-400 text-xs sm:text-sm mb-1">
+                        <BookOpen className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span>Words</span>
                       </div>
-                      <div className="text-2xl font-bold text-cyan-400">{details.wordCount}</div>
+                      <div className="text-lg sm:text-xl md:text-2xl font-bold text-amber-400">{details.wordCount}</div>
                     </div>
                   )}
                 </div>
@@ -440,29 +440,29 @@ export default function UniversalGameCompleteModal({
                   onClick={onPlayAgain}
                   className="w-full relative group"
                 >
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-500 to-cyan-500 rounded-xl blur opacity-60 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative bg-gradient-to-r from-violet-500 to-cyan-500 text-white py-4 px-6 rounded-xl font-semibold flex items-center justify-center gap-2 hover:from-violet-400 hover:to-cyan-400 transition-all">
-                    <RotateCcw className="w-5 h-5" />
-                    <span>Spela igen</span>
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl blur opacity-60 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-semibold flex items-center justify-center gap-2 hover:from-amber-400 hover:to-orange-400 transition-all text-sm sm:text-base">
+                    <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span>Play again</span>
                   </div>
                 </button>
                 
                 {onViewLeaderboard && (
                   <button
                     onClick={onViewLeaderboard}
-                    className="w-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 py-4 px-6 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 border border-amber-500/30"
+                    className="w-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 border border-amber-500/30 text-sm sm:text-base"
                   >
-                    <Trophy className="w-5 h-5" />
-                    <span>Visa topplista</span>
+                    <Trophy className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span>View leaderboard</span>
                   </button>
                 )}
                 
                 <button
                   onClick={onBackToDashboard}
-                  className="w-full bg-white/5 hover:bg-white/10 text-gray-400 py-4 px-6 rounded-xl font-medium transition-all flex items-center justify-center gap-2 border border-white/10"
+                  className="w-full bg-white/5 hover:bg-white/10 text-gray-400 py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-medium transition-all flex items-center justify-center gap-2 border border-white/10 text-sm sm:text-base"
                 >
-                  <ArrowLeft className="w-5 h-5" />
-                  <span>Tillbaka till startsidan</span>
+                  <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span>Back to dashboard</span>
                 </button>
               </motion.div>
             </div>

@@ -20,3 +20,6 @@ COMMENT ON COLUMN profiles.stripe_customer_id IS 'Stripe customer ID for subscri
 
 
 
+
+
+

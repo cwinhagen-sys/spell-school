@@ -443,12 +443,12 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div className="relative w-full max-w-2xl">
           {/* Glow effect */}
-          <div className="absolute -inset-1 bg-gradient-to-br from-violet-500/30 via-cyan-500/20 to-fuchsia-500/30 rounded-3xl blur-xl" />
+          <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/30 via-orange-500/20 to-rose-500/30 rounded-3xl blur-xl" />
           
           <div className="relative rounded-2xl p-8 shadow-2xl bg-[#12122a] border border-white/10">
             {/* Header */}
             <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/30">
+              <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/30">
                 <Globe className="w-8 h-8 text-white" />
               </div>
               <h2 className="text-2xl font-bold text-white mb-2">Välj riktning</h2>
@@ -538,12 +538,12 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
       <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50 overflow-y-auto">
         <div className="relative w-full max-w-3xl my-8">
           {/* Glow effect */}
-          <div className="absolute -inset-1 bg-gradient-to-br from-emerald-500/20 via-cyan-500/10 to-violet-500/20 rounded-3xl blur-xl" />
+          <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-rose-500/20 rounded-3xl blur-xl" />
           
           <div className="relative bg-[#12122a] rounded-2xl p-8 shadow-2xl border border-white/10">
             {/* Header */}
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-2xl mb-4 shadow-lg shadow-emerald-500/30">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl mb-4 shadow-lg shadow-amber-500/30">
                 <CheckCircle className="w-10 h-10 text-white" />
               </div>
               <h2 className="text-3xl font-bold text-white mb-2">Spelet klart!</h2>
@@ -553,7 +553,7 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
                 </div>
                 <div className="text-gray-600">•</div>
                 <div className="text-gray-300">
-                  <span className="font-bold text-cyan-400">{scoreResult.accuracy}%</span> träffsäkerhet
+                  <span className="font-bold text-amber-400">{scoreResult.accuracy}%</span> accuracy
                 </div>
                 <div className="text-gray-600">•</div>
                 <div className="text-gray-300">
@@ -639,7 +639,7 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
               
               <button
                 onClick={playAgainAllWords}
-                className="w-full group bg-gradient-to-r from-violet-500 to-cyan-500 hover:from-violet-400 hover:to-cyan-400 text-white font-semibold py-4 px-6 rounded-xl transition-all shadow-lg shadow-violet-500/30 flex items-center justify-center gap-2"
+                className="w-full group bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-semibold py-4 px-6 rounded-xl transition-all shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2"
               >
                 <RotateCcw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
                 <span>Spela igen (alla ord)</span>
@@ -663,7 +663,7 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
     return (
       <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50">
         <div className="bg-[#12122a] rounded-2xl p-8 max-w-md w-full text-center shadow-2xl border border-white/10">
-          <Loader2 className="w-12 h-12 text-cyan-400 animate-spin mx-auto mb-4" />
+          <Loader2 className="w-12 h-12 text-amber-400 animate-spin mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-white mb-2">Laddar...</h2>
           <p className="text-gray-400">Förbereder din översättningsutmaning</p>
         </div>
@@ -676,12 +676,12 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
   return (
     <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50">
       {/* Aurora background effects */}
-      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-violet-600/20 rounded-full blur-[100px] animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-cyan-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
       
       <div className="relative w-full max-w-2xl">
         {/* Glow effect */}
-        <div className="absolute -inset-1 bg-gradient-to-br from-violet-500/20 via-cyan-500/10 to-fuchsia-500/20 rounded-3xl blur-xl" />
+        <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-rose-500/20 rounded-3xl blur-xl" />
         
         <div className="relative bg-[#12122a] rounded-2xl p-8 shadow-2xl border border-white/10">
           {/* Close Button */}
@@ -695,7 +695,7 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/30">
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
                 <Languages className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -720,21 +720,21 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
               <span className="text-sm font-medium text-gray-400">
                 Ord {currentWordIndex + 1} av {wordPairs.length}
               </span>
-              <span className="text-sm font-medium text-cyan-400">{Math.round(progressPercent)}%</span>
+              <span className="text-sm font-medium text-amber-400">{Math.round(progressPercent)}%</span>
             </div>
             <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
               <div 
-                className="bg-gradient-to-r from-violet-500 to-cyan-500 h-3 rounded-full transition-all duration-500 shadow-sm"
+                className="bg-gradient-to-r from-amber-500 to-orange-500 h-3 rounded-full transition-all duration-500 shadow-sm"
                 style={{ width: `${progressPercent}%` }}
               ></div>
             </div>
           </div>
 
           {/* Word Display Card */}
-          <div className="bg-gradient-to-br from-violet-500/10 to-cyan-500/10 rounded-2xl p-8 mb-6 border border-white/10">
+          <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-2xl p-8 mb-6 border border-white/10">
             <div className="text-center">
               <div className="inline-block bg-white/10 px-4 py-2 rounded-lg mb-4 border border-white/10">
-                <span className="text-xs font-bold text-violet-400 uppercase tracking-wide">
+                <span className="text-xs font-bold text-amber-400 uppercase tracking-wide">
                   {currentPair.originalLanguage === 'en' ? '🇬🇧 Engelska' : '🇸🇪 Svenska'}
                 </span>
               </div>
@@ -742,12 +742,12 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
                 {currentPair.original}
               </div>
               <div className="flex items-center justify-center space-x-2 mb-4">
-                <div className="h-px w-12 bg-gradient-to-r from-transparent to-cyan-500/50"></div>
-                <ArrowRight className="w-5 h-5 text-cyan-400" />
-                <div className="h-px w-12 bg-gradient-to-r from-cyan-500/50 to-transparent"></div>
+                <div className="h-px w-12 bg-gradient-to-r from-transparent to-amber-500/50"></div>
+                <ArrowRight className="w-5 h-5 text-amber-400" />
+                <div className="h-px w-12 bg-gradient-to-r from-amber-500/50 to-transparent"></div>
               </div>
               <div className="inline-block bg-white/10 px-4 py-2 rounded-lg border border-white/10">
-                <span className="text-xs font-bold text-cyan-400 uppercase tracking-wide">
+                <span className="text-xs font-bold text-amber-400 uppercase tracking-wide">
                   Översätt till {currentPair.targetLanguage === 'en' ? '🇬🇧 Engelska' : '🇸🇪 Svenska'}
                 </span>
               </div>
@@ -763,14 +763,14 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
                 value={userAnswer}
                 onChange={(e) => setUserAnswer(e.target.value)}
                 placeholder="Skriv ditt svar..."
-                className="flex-1 px-5 py-4 text-lg border border-white/10 rounded-xl focus:border-cyan-500/50 focus:ring-4 focus:ring-cyan-500/20 focus:outline-none transition-all text-white placeholder:text-gray-500 bg-white/5 shadow-sm"
+                className="flex-1 px-5 py-4 text-lg border border-white/10 rounded-xl focus:border-amber-500/50 focus:ring-4 focus:ring-amber-500/20 focus:outline-none transition-all text-white placeholder:text-gray-500 bg-white/5 shadow-sm"
                 disabled={showFeedback}
                 autoFocus
               />
               <button
                 type="submit"
                 disabled={!userAnswer.trim() || showFeedback}
-                className="px-8 py-4 bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-bold rounded-xl hover:from-violet-400 hover:to-cyan-400 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed transition-all shadow-lg shadow-violet-500/30 hover:shadow-xl hover:scale-105 disabled:hover:scale-100 disabled:shadow-none"
+                className="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl hover:from-amber-400 hover:to-orange-400 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed transition-all shadow-lg shadow-amber-500/30 hover:shadow-xl hover:scale-105 disabled:hover:scale-100 disabled:shadow-none"
               >
                 Skicka
               </button>
@@ -806,7 +806,7 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
                       <button
                         type="button"
                         onClick={goToNextWord}
-                        className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-bold hover:from-violet-400 hover:to-cyan-400 transition-all shadow-lg shadow-violet-500/30 hover:shadow-xl flex items-center justify-center space-x-2"
+                        className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold hover:from-amber-400 hover:to-orange-400 transition-all shadow-lg shadow-amber-500/30 hover:shadow-xl flex items-center justify-center space-x-2"
                       >
                         <span>Fortsätt</span>
                         <ArrowRight className="w-4 h-4" />

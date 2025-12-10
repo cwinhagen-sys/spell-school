@@ -5,7 +5,8 @@ import { supabase } from '@/lib/supabase'
 import ImageSelector from '@/components/ImageSelector'
 import { FileText, Edit2, Trash2, Plus, X, Save, Sparkles, ArrowLeft, AlertTriangle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { canCreateWordSet } from '@/lib/subscription'
+import { canCreateWordSet, getUserSubscriptionTier, TIER_LIMITS } from '@/lib/subscription'
+import PaymentWallModal from '@/components/PaymentWallModal'
 
 type Word = { en: string; sv: string; image_url?: string }
 type WordSet = { id: string; title: string; words: Word[]; created_at: string }
@@ -21,6 +22,11 @@ export default function TeacherWordSetsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  
+  // Payment wall states
+  const [showPaymentWall, setShowPaymentWall] = useState(false)
+  const [paymentWallLimit, setPaymentWallLimit] = useState<number | null>(null)
+  const [paymentWallTier, setPaymentWallTier] = useState<'premium' | 'pro'>('premium')
 
   const parsePairsFromText = (text: string): Word[] => {
     const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
@@ -114,7 +120,11 @@ export default function TeacherWordSetsPage() {
       
       const canCreate = await canCreateWordSet(user.id, wordSets.length)
       if (!canCreate.allowed) {
-        setMessage({ type: 'error', text: canCreate.reason || 'Du har nått max antal ordlistor för din plan.' })
+        const tier = await getUserSubscriptionTier(user.id)
+        const limits = TIER_LIMITS[tier]
+        setPaymentWallLimit(limits.maxWordSets)
+        setPaymentWallTier(tier === 'free' ? 'premium' : 'pro')
+        setShowPaymentWall(true)
         setSaving(false)
         return
       }
@@ -629,6 +639,16 @@ export default function TeacherWordSetsPage() {
           </div>
         )}
       </motion.div>
+
+      {/* Payment Wall Modal */}
+      <PaymentWallModal
+        isOpen={showPaymentWall}
+        onClose={() => setShowPaymentWall(false)}
+        feature="word lists"
+        currentLimit={paymentWallLimit}
+        upgradeTier={paymentWallTier}
+        upgradeMessage={`You've reached the maximum number of word lists for your current plan. Upgrade to ${paymentWallTier === 'premium' ? 'Premium' : 'Pro'} to create more word lists.`}
+      />
     </>
   )
 }

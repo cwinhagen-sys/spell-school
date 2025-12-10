@@ -5,8 +5,9 @@ import { supabase } from '@/lib/supabase'
 import { AlertTriangle, X, Trash2, Plus, Users, Check, ArrowRight, RefreshCw, GripVertical, Sparkles, UserMinus, Key } from 'lucide-react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { canCreateClass, canAddStudentsToClass } from '@/lib/subscription'
+import { canCreateClass, canAddStudentsToClass, getUserSubscriptionTier, TIER_LIMITS } from '@/lib/subscription'
 import DeleteStudentModal from '@/components/DeleteStudentModal'
+import PaymentWallModal from '@/components/PaymentWallModal'
 
 type ClassRow = {
   id: string
@@ -66,6 +67,12 @@ export default function TeacherClassesPage() {
   // Drag and drop states
   const [draggedStudent, setDraggedStudent] = useState<ProfileRow | null>(null)
   const [dragOverClass, setDragOverClass] = useState<string | null>(null)
+  
+  // Payment wall states
+  const [showPaymentWall, setShowPaymentWall] = useState(false)
+  const [paymentWallFeature, setPaymentWallFeature] = useState('')
+  const [paymentWallLimit, setPaymentWallLimit] = useState<number | null>(null)
+  const [paymentWallTier, setPaymentWallTier] = useState<'premium' | 'pro'>('premium')
 
   useEffect(() => {
     const init = async () => {
@@ -348,10 +355,12 @@ export default function TeacherClassesPage() {
 
       const canCreate = await canCreateClass(user.id, classes.length)
       if (!canCreate) {
-        setMessage({ 
-          type: 'error', 
-          text: 'Du har nått maxgränsen för klasser på din plan. Uppgradera för fler klasser.' 
-        })
+        const tier = await getUserSubscriptionTier(user.id)
+        const limits = TIER_LIMITS[tier]
+        setPaymentWallFeature('classes')
+        setPaymentWallLimit(limits.maxClasses)
+        setPaymentWallTier(tier === 'free' ? 'premium' : 'pro')
+        setShowPaymentWall(true)
         setCreatingClass(false)
         return
       }
@@ -1557,6 +1566,20 @@ export default function TeacherClassesPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Payment Wall Modal */}
+      <PaymentWallModal
+        isOpen={showPaymentWall}
+        onClose={() => setShowPaymentWall(false)}
+        feature={paymentWallFeature}
+        currentLimit={paymentWallLimit}
+        upgradeTier={paymentWallTier}
+        upgradeMessage={
+          paymentWallFeature === 'classes'
+            ? `You've reached the maximum number of classes for your current plan. Upgrade to ${paymentWallTier === 'premium' ? 'Premium' : 'Pro'} to create more classes.`
+            : `You've reached the maximum number of students for your current plan. Upgrade to ${paymentWallTier === 'premium' ? 'Premium' : 'Pro'} to add more students.`
+        }
+      />
     </>
   )
 }

@@ -103,7 +103,7 @@ export default function GamesPage() {
 
   const handleGameClick = (gameType: string) => {
     if (homeworks.length === 0 && oldWordSets.length === 0) {
-      alert('Inga ordlistor tilldelade ännu. Be din lärare tilldela ordlistor.')
+      alert('No word sets assigned yet. Please ask your teacher to assign word sets.')
       return
     }
     if (homeworks.length === 1 && oldWordSets.length === 0) {
@@ -119,8 +119,8 @@ export default function GamesPage() {
     return (
       <div className="container mx-auto px-6 py-12 flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Laddar spel...</p>
+          <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Loading games...</p>
         </div>
       </div>
     )
@@ -133,14 +133,14 @@ export default function GamesPage() {
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
             <div className="relative">
-              <div className="w-14 h-14 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-500/30">
+              <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/30">
                 <Gamepad2 className="w-7 h-7 text-white" />
               </div>
-              <div className="absolute -inset-1 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl blur opacity-30" />
+              <div className="absolute -inset-1 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl blur opacity-30" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white">Spel</h1>
-              <p className="text-gray-400">Träna ordförråd med engagerande spel</p>
+              <h1 className="text-3xl font-bold text-white">Games</h1>
+              <p className="text-gray-400">Practice vocabulary with engaging games</p>
             </div>
           </div>
         </div>
@@ -150,8 +150,8 @@ export default function GamesPage() {
             <div className="w-16 h-16 bg-white/5 rounded-xl flex items-center justify-center mx-auto mb-4 border border-white/10">
               <BookOpen className="w-8 h-8 text-gray-500" />
             </div>
-            <p className="text-gray-400 text-lg mb-2">Inga ordlistor tillgängliga</p>
-            <p className="text-gray-500 text-sm">Vänta på att din lärare tilldelar ordlistor.</p>
+            <p className="text-gray-400 text-lg mb-2">No word sets available</p>
+            <p className="text-gray-500 text-sm">Wait for your teacher to assign word sets.</p>
           </div>
         ) : (
           <>
@@ -163,7 +163,7 @@ export default function GamesPage() {
                 onClick={() => handleGameClick('flashcards')}
               />
               <GameCard
-                title="Flerval"
+                title="Multiple Choice"
                 color="emerald"
                 icon={<span className="text-3xl">✅</span>}
                 onClick={() => handleGameClick('choice')}
@@ -175,31 +175,31 @@ export default function GamesPage() {
                 onClick={() => handleGameClick('match')}
               />
               <GameCard
-                title="Para ihop"
+                title="Matching Pairs"
                 color="violet"
                 icon={<span className="text-3xl">🔗</span>}
                 onClick={() => handleGameClick('connect')}
               />
               <GameCard
-                title="Skrivutmaning"
+                title="Typing Challenge"
                 color="pink"
                 icon={<span className="text-3xl">⌨️</span>}
                 onClick={() => handleGameClick('typing')}
               />
               <GameCard
-                title="Översätt"
+                title="Translate"
                 color="teal"
                 icon={<span className="text-3xl">🌐</span>}
                 onClick={() => handleGameClick('translate')}
               />
               <GameCard
-                title="Meningsluckor"
+                title="Sentence Gap"
                 color="indigo"
                 icon={<span className="text-3xl">📝</span>}
                 onClick={() => handleGameClick('storygap')}
               />
               <GameCard
-                title="Ordkarusellen"
+                title="Word Roulette"
                 color="rose"
                 icon={<span className="text-3xl">🎰</span>}
                 onClick={() => handleGameClick('roulette')}
@@ -207,9 +207,9 @@ export default function GamesPage() {
             </div>
 
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 text-center text-sm text-gray-400 border border-white/10">
-              <p>Välj ett spel ovan för att börja träna med dina tilldelade ordlistor.</p>
-              <Link href="/student/word-sets" className="text-violet-400 hover:text-violet-300 font-medium ml-1">
-                Visa ordlistor →
+              <p>Choose a game above to start practicing with your assigned word sets.</p>
+              <Link href="/student/word-sets" className="text-amber-400 hover:text-amber-300 font-medium ml-1">
+                View word sets →
               </Link>
             </div>
           </>
@@ -230,10 +230,10 @@ export default function GamesPage() {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
               >
-                <div className="absolute -inset-1 bg-gradient-to-br from-violet-500/30 to-fuchsia-500/30 rounded-3xl blur-xl" />
+                <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/30 to-orange-500/30 rounded-3xl blur-xl" />
                 <div className="relative bg-[#12122a] border border-white/10 rounded-2xl p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-bold text-white">Välj ordlista</h3>
+                    <h3 className="text-xl font-bold text-white">Select Word Set</h3>
                     <button
                       onClick={() => {
                         setShowHomeworkSelection(false)
@@ -253,17 +253,17 @@ export default function GamesPage() {
                           setShowHomeworkSelection(false)
                           window.location.href = `/student?game=${pendingGame}&homework=${hw.id}`
                         }}
-                        className="w-full text-left p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-violet-500/30 transition-all group"
+                        className="w-full text-left p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-amber-500/30 transition-all group"
                       >
                         <div className="flex items-center gap-3">
                           <span className="w-4 h-4 rounded-full shadow-lg" style={{ backgroundColor: hw.color || '#a855f7' }} />
-                          <span className="font-medium text-white group-hover:text-violet-400 transition-colors">{hw.title}</span>
+                          <span className="font-medium text-white group-hover:text-amber-400 transition-colors">{hw.title}</span>
                         </div>
                       </button>
                     ))}
                     {oldWordSets.length > 0 && (
                       <>
-                        <div className="text-xs text-gray-500 pt-4 pb-2 border-t border-white/5 mt-4">Äldre ordlistor</div>
+                        <div className="text-xs text-gray-500 pt-4 pb-2 border-t border-white/5 mt-4">Older Word Sets</div>
                         {oldWordSets.map((hw) => (
                           <button
                             key={hw.id}

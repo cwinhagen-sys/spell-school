@@ -48,7 +48,7 @@ export default function LevelsPage() {
           setPoints(total)
         }
       } catch (e: any) {
-        setMessage(`Kunde inte ladda XP${e?.message ? `: ${e.message}` : ''}`)
+        setMessage(`Could not load XP${e?.message ? `: ${e.message}` : ''}`)
       } finally {
         setLoading(false)
       }
@@ -74,14 +74,14 @@ export default function LevelsPage() {
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
               <div className="relative">
-                <div className="w-14 h-14 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/30">
-                  <TrendingUp className="w-7 h-7 text-white" />
-                </div>
-                <div className="absolute -inset-1 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl blur opacity-30" />
+              <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/30">
+                <TrendingUp className="w-7 h-7 text-white" />
+              </div>
+              <div className="absolute -inset-1 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl blur opacity-30" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-white">Level & XP</h1>
-                <p className="text-gray-400">Spåra dina framsteg</p>
+                <p className="text-gray-400">Track your progress</p>
               </div>
             </div>
             <Link 
@@ -89,7 +89,7 @@ export default function LevelsPage() {
               className="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/10 text-gray-300 rounded-xl hover:bg-white/10 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              Tillbaka
+              Back
             </Link>
           </div>
 
@@ -97,26 +97,26 @@ export default function LevelsPage() {
           <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-8 shadow-xl mb-8">
             {loading ? (
               <div className="text-center">
-                <div className="w-12 h-12 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-gray-400">Laddar...</p>
+                <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-gray-400">Loading...</p>
               </div>
             ) : (
               <div className="space-y-6">
                 <div className="text-center">
-                  <div className="text-sm text-gray-400 mb-2">Nuvarande Level</div>
+                  <div className="text-sm text-gray-400 mb-2">Current Level</div>
                   <div className="text-6xl font-bold text-white mb-2">{lev.level}</div>
-                  <div className="text-lg text-cyan-400">{points.toLocaleString()} Total XP</div>
+                  <div className="text-lg text-amber-400">{points.toLocaleString()} Total XP</div>
                 </div>
                 {lev.level < 100 && (
                   <>
                     <div className="w-full bg-white/10 rounded-full h-4 overflow-hidden">
                       <div 
-                        className="bg-gradient-to-r from-cyan-500 to-blue-500 h-4 transition-all duration-500 rounded-full" 
+                        className="bg-gradient-to-r from-amber-500 to-orange-500 h-4 transition-all duration-500 rounded-full" 
                         style={{ width: `${pct * 100}%` }} 
                       />
                     </div>
                     <div className="text-center text-gray-400">
-                      <span className="text-cyan-400 font-semibold">{Math.max(0, deltaXp(lev.level + 1) - xpIntoLevel)}</span> XP kvar till Level {lev.level + 1}
+                      <span className="text-amber-400 font-semibold">{Math.max(0, deltaXp(lev.level + 1) - xpIntoLevel)}</span> XP left to Level {lev.level + 1}
                     </div>
                   </>
                 )}
@@ -129,19 +129,19 @@ export default function LevelsPage() {
             <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-8 shadow-xl">
               <h2 className="text-xl font-semibold mb-6 text-white flex items-center gap-2">
                 <Crown className="w-5 h-5 text-amber-400" />
-                Nuvarande titel
+                Current Title
               </h2>
               <div className="flex items-center gap-6">
                 <div className="relative">
-                  <div className="w-32 h-32 rounded-2xl overflow-hidden border-2 border-violet-500/30 bg-violet-500/10 flex items-center justify-center">
+                  <div className="w-32 h-32 rounded-2xl overflow-hidden border-2 border-amber-500/30 bg-amber-500/10 flex items-center justify-center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={currentTitle.image || '/assets/wizard/wizard_novice.png'} alt={currentTitle.title || 'Current'} className="w-full h-full object-cover" />
                   </div>
-                  <div className="absolute -inset-1 bg-violet-500/20 rounded-2xl blur-xl -z-10" />
+                  <div className="absolute -inset-1 bg-amber-500/20 rounded-2xl blur-xl -z-10" />
                 </div>
                 <div>
                   <div className="text-sm text-gray-400 mb-1">Level {lev.level}</div>
-                  <div className="text-2xl font-bold text-white">{currentTitle.title || 'Lärling'}</div>
+                  <div className="text-2xl font-bold text-white">{currentTitle.title || 'Apprentice'}</div>
                   {currentTitle.description && <div className="text-sm text-gray-400 mt-2 max-w-sm">{currentTitle.description}</div>}
                 </div>
               </div>
@@ -149,12 +149,12 @@ export default function LevelsPage() {
 
             <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-8 shadow-xl">
               <h2 className="text-xl font-semibold mb-6 text-white flex items-center gap-2">
-                <Star className="w-5 h-5 text-cyan-400" />
-                Nästa titel
+                <Star className="w-5 h-5 text-amber-400" />
+                Next Title
               </h2>
               <div className="flex items-center gap-6">
                 <div className="relative">
-                  <div className="w-32 h-32 rounded-2xl overflow-hidden border-2 border-cyan-500/30 bg-cyan-500/10 flex items-center justify-center">
+                  <div className="w-32 h-32 rounded-2xl overflow-hidden border-2 border-amber-500/30 bg-amber-500/10 flex items-center justify-center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img 
                       src={(nextMilestone?.image) || '/assets/wizard/wizard_novice.png'} 
@@ -171,13 +171,13 @@ export default function LevelsPage() {
                 <div>
                   {nextMilestone ? (
                     <>
-                      <div className="text-sm text-gray-400 mb-1">Låses upp vid Level {nextMilestone.at}</div>
+                      <div className="text-sm text-gray-400 mb-1">Unlocks at Level {nextMilestone.at}</div>
                       <div className="text-2xl font-bold text-white">{nextMilestone.title}</div>
                       {nextMilestone.description && <div className="text-sm text-gray-400 mt-2 max-w-sm">{nextMilestone.description}</div>}
                     </>
                   ) : (
                     <>
-                      <div className="text-sm text-gray-400 mb-1">Alla titlar upplåsta</div>
+                      <div className="text-sm text-gray-400 mb-1">All titles unlocked</div>
                       <div className="text-2xl font-bold text-emerald-400">Max Level! 🎉</div>
                     </>
                   )}
@@ -188,7 +188,7 @@ export default function LevelsPage() {
 
           {/* All Titles */}
           <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-8 shadow-xl">
-            <h2 className="text-xl font-semibold mb-6 text-white">Alla trollkarlstitlar</h2>
+            <h2 className="text-xl font-semibold mb-6 text-white">All Wizard Titles</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {TITLE_STEPS.map((step) => {
                 const unlocked = lev.level >= step.at
@@ -197,7 +197,7 @@ export default function LevelsPage() {
                     key={step.at}
                     className={`p-4 rounded-xl border text-center transition-all ${
                       unlocked
-                        ? 'border-violet-500/30 bg-violet-500/10'
+                        ? 'border-amber-500/30 bg-amber-500/10'
                         : 'border-white/5 bg-white/5 opacity-40'
                     }`}
                   >
@@ -213,7 +213,7 @@ export default function LevelsPage() {
                     <div className="text-sm font-semibold text-white">{step.title}</div>
                     <div className="text-xs text-gray-500 mt-1">Level {step.at}</div>
                     {unlocked && (
-                      <div className="mt-2 text-xs text-emerald-400 font-medium">✓ Upplåst</div>
+                      <div className="mt-2 text-xs text-emerald-400 font-medium">✓ Unlocked</div>
                     )}
                   </div>
                 )

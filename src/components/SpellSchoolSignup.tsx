@@ -115,8 +115,9 @@ export default function SpellSchoolSignup({
       setSelectedTier(initialTier)
       setShowTierSelection(false)
     } else if (!isStudent) {
-      // Only show tier selection for teachers
-      setShowTierSelection(true)
+      // Automatically select free tier for new signups
+      setSelectedTier('free')
+      setShowTierSelection(false)
     } else {
       setShowTierSelection(false)
     }

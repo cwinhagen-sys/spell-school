@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { RotateCcw, ArrowLeft, Star, Trophy, Volume2, Mic, MicOff, Loader2, CheckCircle2, XCircle, AlertCircle, BookOpen, X } from 'lucide-react'
 import { startGameSession, endGameSession, logWordAttempt, type GameType, type TrackingContext } from '@/lib/tracking'
 import GameCompleteModal from '@/components/GameCompleteModal'
@@ -27,6 +28,109 @@ interface FlashcardGameProps {
   gameName?: string // Game name for saving progress
 }
 
+// Score Meter Component for Flashcards - Replaces the entire flashcard
+function ScoreMeter({ score, onClose }: { score: number; onClose: () => void }) {
+  const [showCelebration, setShowCelebration] = useState(false)
+  const [isVisible, setIsVisible] = useState(true)
+  
+  useEffect(() => {
+    // Show celebration after animation completes
+    const celebrationTimer = setTimeout(() => {
+      if (score >= 70) {
+        setShowCelebration(true)
+      }
+    }, 1500) // After circle animation completes
+    
+    // Auto-dismiss after 3 seconds
+    const dismissTimer = setTimeout(() => {
+      setIsVisible(false)
+      setTimeout(() => onClose(), 300) // Wait for fade out animation
+    }, 3000)
+    
+    return () => {
+      clearTimeout(celebrationTimer)
+      clearTimeout(dismissTimer)
+    }
+  }, [score, onClose])
+  
+  const getColor = () => {
+    // Match feedback color thresholds: >=85 green, >=70 yellow, <70 red
+    if (score >= 85) return { primary: '#22C55E', secondary: '#10B981', glow: 'rgba(34, 197, 94, 0.5)' }
+    if (score >= 70) return { primary: '#F59E0B', secondary: '#D97706', glow: 'rgba(245, 158, 11, 0.5)' }
+    return { primary: '#EF4444', secondary: '#DC2626', glow: 'rgba(239, 68, 68, 0.5)' }
+  }
+  
+  const colors = getColor()
+  // Larger radius to fill the card area (card is h-80 = 320px, so use ~120px radius)
+  const radius = 120
+  const circumference = 2 * Math.PI * radius
+  const targetDashoffset = circumference - (score / 100) * circumference
+  
+  if (!isVisible) return null
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      transition={{ duration: 0.3 }}
+      className="absolute inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-[#1a1a3a] to-[#12122a] rounded-2xl"
+      onClick={onClose}
+    >
+      <div className="relative w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+        <div className="absolute inset-0 rounded-full blur-3xl opacity-30" style={{ background: `radial-gradient(circle, ${colors.glow} 0%, transparent 70%)` }} />
+        <svg className="w-full h-full max-w-[320px] max-h-[320px] transform -rotate-90">
+          <circle cx="160" cy="160" r={radius} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="12" strokeLinecap="round" />
+          <defs>
+            <linearGradient id={`scoreGrad-${score}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor={colors.primary} />
+              <stop offset="100%" stopColor={colors.secondary} />
+            </linearGradient>
+          </defs>
+          <motion.circle
+            cx="160" cy="160" r={radius} fill="none" stroke={`url(#scoreGrad-${score})`} strokeWidth="12" strokeLinecap="round"
+            strokeDasharray={circumference}
+            initial={{ strokeDashoffset: circumference }}
+            animate={{ strokeDashoffset: targetDashoffset }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <motion.div 
+            className="text-7xl font-bold" 
+            style={{ color: colors.primary }}
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <motion.span
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              {score}
+            </motion.span>
+            <span className="text-5xl">%</span>
+          </motion.div>
+        </div>
+        <AnimatePresence>
+          {showCelebration && [...Array(12)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-2 h-2 rounded-full"
+              style={{ background: i % 2 === 0 ? colors.primary : colors.secondary, left: '50%', top: '50%' }}
+              initial={{ scale: 0, x: 0, y: 0 }}
+              animate={{ scale: [0, 1, 0], x: [0, Math.cos(i * 30 * Math.PI / 180) * 100], y: [0, Math.sin(i * 30 * Math.PI / 180) * 100] }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.8, delay: i * 0.05 }}
+            />
+          ))}
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  )
+}
+
 export default function FlashcardGame({ words, wordObjects, translations = {}, onClose, onScoreUpdate, trackingContext, themeColor, gridConfig, sessionMode = false, sessionFlashcardMode = 'training', sessionId, gameName }: FlashcardGameProps) {
   // In session mode, skip grid selector and use provided words directly
   const [showGridSelector, setShowGridSelector] = useState(!sessionMode) // Skip in session mode
@@ -38,7 +142,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
   const startedAtRef = useRef<number | null>(null)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const isPlayingElevenLabsRef = useRef(false)
+  const isPlayingGoogleTTSRef = useRef(false)
   
   // Pronunciation functionality - use session mode setting if provided, otherwise default to training
   const [pronunciationMode, setPronunciationMode] = useState<'training' | 'test'>(sessionMode ? sessionFlashcardMode : 'training')
@@ -102,39 +206,33 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
     }
   }, [allTranslations])
 
-  // Stop text-to-speech (both ElevenLabs and browser TTS)
+  // Stop text-to-speech (both Google TTS and browser TTS)
   const stopSpeech = () => {
     // Stop browser TTS
     if ('speechSynthesis' in window) {
       speechSynthesis.cancel()
     }
     
-    // Stop HTML5 audio (ElevenLabs)
-    const audio = document.querySelector('audio[data-elevenlabs]') as HTMLAudioElement
+    // Stop HTML5 audio (Google TTS)
+    const audio = document.querySelector('audio[data-google-tts]') as HTMLAudioElement
     if (audio) {
       audio.pause()
       audio.remove()
-      if (audio.src.startsWith('blob:')) {
-        URL.revokeObjectURL(audio.src)
-      }
     }
     
     // Also stop audioRef if it exists
     if (audioRef.current) {
       audioRef.current.pause()
       audioRef.current.remove()
-      if (audioRef.current.src.startsWith('blob:')) {
-        URL.revokeObjectURL(audioRef.current.src)
-      }
       audioRef.current = null
     }
     
     setIsSpeaking(false)
-    isPlayingElevenLabsRef.current = false
+    isPlayingGoogleTTSRef.current = false
   }
 
-  // Play text-to-speech using ElevenLabs
-  const speakTextWithElevenLabs = async (text: string, language: 'en-US' | 'sv-SE') => {
+  // Play text-to-speech using Google TTS (Vertex AI)
+  const speakTextWithGoogleTTS = async (text: string, language: 'en-US' | 'sv-SE') => {
     // Stop any ongoing speech first
     stopSpeech()
     
@@ -142,44 +240,44 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
     await new Promise(resolve => setTimeout(resolve, 50))
     
     // Check if we're already playing (prevent double calls)
-    if (isSpeaking || isPlayingElevenLabsRef.current) {
+    if (isSpeaking || isPlayingGoogleTTSRef.current) {
       return
     }
     
     setIsSpeaking(true)
     
     try {
-      // Mark that we're using ElevenLabs
-      isPlayingElevenLabsRef.current = true
+      // Mark that we're using Google TTS
+      isPlayingGoogleTTSRef.current = true
       
       // Select voice based on language
-      // English voices (American)
+      // English voices (American) - using Neural2 for better quality
+      // C and E are typically female voices in Google TTS
       const englishVoices = {
-        female: '21m00Tcm4TlvDq8ikWAM', // Rachel - American female
-        male: 'pNInz6obpgDQGcFmaJgB' // Adam - American male
+        female: 'en-US-Neural2-C', // Female American voice
+        male: 'en-US-Neural2-D' // Male American voice
       }
       
-      // Swedish voices (using multilingual model)
-      // Note: ElevenLabs multilingual model can handle Swedish
+      // Swedish voices - using Neural2 for better quality
+      // C and E are typically female voices in Google TTS
       const swedishVoices = {
-        female: 'EXAVITQu4vr4xnSDxMaL', // Bella - multilingual
-        male: 'ThT5KcBeYPX3keUQqHPh' // Multilingual male
+        female: 'sv-SE-Neural2-C', // Female Swedish voice
+        male: 'sv-SE-Neural2-D' // Male Swedish voice
       }
       
       const voiceId = language === 'en-US' 
         ? englishVoices.female // Default to female for English
         : swedishVoices.female // Default to female for Swedish
       
-      // Call ElevenLabs API
-      const response = await fetch('/api/tts/elevenlabs', {
+      // Call Google TTS API (Vertex AI)
+      const response = await fetch('/api/tts/vertex', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text,
-          voice_id: voiceId,
-          stability: 0.5,
-          similarity_boost: 0.75,
-          speed: 1.0 // Normal speed for flashcards
+          voiceId,
+          speakingRate: 1.0, // Normal speed for flashcards
+          pitch: 0 // Default pitch
         })
       })
       
@@ -202,40 +300,42 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
           errorMessage = response.statusText || `HTTP ${response.status}`
         }
         
-        console.error('❌ ElevenLabs TTS failed:', {
+        console.error('❌ Google TTS failed:', {
           status: response.status,
           statusText: response.statusText,
           error: errorMessage
         })
         
         // Check if it's an environment variable issue
-        if (errorMessage.includes('configuration missing') || errorMessage.includes('env var')) {
-          console.error('⚠️ ElevenLabs API configuration missing in production. Check Vercel environment variables.')
+        if (errorMessage.includes('configuration missing') || errorMessage.includes('env var') || errorMessage.includes('credentials')) {
+          console.error('⚠️ Google TTS API configuration missing. Check Vercel environment variables.')
           // Fall through to browser TTS fallback
         }
         
         throw new Error(errorMessage)
       }
       
-      // Create audio from blob
-      const audioBlob = await response.blob()
-      const audioUrl = URL.createObjectURL(audioBlob)
-      const audio = new Audio(audioUrl)
-      audio.setAttribute('data-elevenlabs', 'true')
+      const data = await response.json()
+      
+      if (!data.audioContent) {
+        throw new Error('No audio content returned from API')
+      }
+      
+      // Create audio from base64 content
+      const audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`)
+      audio.setAttribute('data-google-tts', 'true')
       
       audio.onended = () => {
         setIsSpeaking(false)
-        URL.revokeObjectURL(audioUrl)
         audio.remove()
-        isPlayingElevenLabsRef.current = false
+        isPlayingGoogleTTSRef.current = false
         audioRef.current = null
       }
       
       audio.onerror = () => {
         setIsSpeaking(false)
-        URL.revokeObjectURL(audioUrl)
         audio.remove()
-        isPlayingElevenLabsRef.current = false
+        isPlayingGoogleTTSRef.current = false
         audioRef.current = null
       }
       
@@ -246,8 +346,8 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
       
       return
     } catch (error) {
-      console.warn('ElevenLabs TTS error, falling back to browser TTS:', error)
-      isPlayingElevenLabsRef.current = false
+      console.warn('Google TTS error, falling back to browser TTS:', error)
+      isPlayingGoogleTTSRef.current = false
       
       // Fallback to browser TTS
       if ('speechSynthesis' in window) {
@@ -257,24 +357,24 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
         utterance.pitch = 1.0
         
         utterance.onend = () => {
-        setIsSpeaking(false)
-      }
-      
-      utterance.onerror = () => {
-        setIsSpeaking(false)
-      }
-      
-      speechSynthesis.speak(utterance)
+          setIsSpeaking(false)
+        }
+        
+        utterance.onerror = () => {
+          setIsSpeaking(false)
+        }
+        
+        speechSynthesis.speak(utterance)
       }
     }
   }
 
   const handleSpeakEnglish = () => {
-    speakTextWithElevenLabs(currentEnglish, 'en-US')
+    speakTextWithGoogleTTS(currentEnglish, 'en-US')
   }
 
   const handleSpeakSwedish = () => {
-    speakTextWithElevenLabs(currentSwedish, 'sv-SE')
+    speakTextWithGoogleTTS(currentSwedish, 'sv-SE')
   }
 
   // Helper function to fetch with timeout
@@ -1725,13 +1825,13 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
     <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-2 z-50 overflow-y-auto">
       {/* Aurora background effects */}
       <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-emerald-600/20 rounded-full blur-[100px] animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-cyan-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-amber-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
       
       <div className="relative bg-[#12122a] rounded-2xl p-6 w-full max-w-3xl shadow-2xl border border-white/10 my-2">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
+            <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
               <BookOpen className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -1754,7 +1854,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                   }}
                   className={`px-4 py-2 rounded-lg font-medium transition-all ${
                     pronunciationMode === 'training'
-                      ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-lg shadow-emerald-500/30'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30'
                       : 'text-gray-400 hover:text-white'
                   }`}
                 >
@@ -1772,7 +1872,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                   }}
                   className={`px-4 py-2 rounded-lg font-medium transition-all ${
                     pronunciationMode === 'test'
-                      ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-lg shadow-emerald-500/30'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30'
                       : 'text-gray-400 hover:text-white'
                   }`}
                 >
@@ -1802,7 +1902,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
           </div>
           <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
             <div 
-              className="h-2 rounded-full transition-all duration-500 bg-gradient-to-r from-emerald-500 to-cyan-500"
+              className="h-2 rounded-full transition-all duration-500 bg-gradient-to-r from-amber-500 to-orange-500"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
@@ -1836,7 +1936,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                     className={`
                       w-2.5 h-2.5 rounded-full
                       transition-all duration-150 hover:scale-150 hover:z-10 relative
-                      ${isCurrent ? 'ring-2 ring-cyan-400 ring-offset-1 ring-offset-[#12122a] scale-150' : ''}
+                      ${isCurrent ? 'ring-2 ring-amber-400 ring-offset-1 ring-offset-[#12122a] scale-150' : ''}
                       ${pronunciationMode === 'test' ? 'cursor-not-allowed opacity-50' : ''}
                       ${
                         status === 'green' 
@@ -1906,6 +2006,25 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                 isFlipped ? 'opacity-0' : 'opacity-100'
               } ${pronunciationMode === 'training' ? getCardColorClass() : ''}`}
             >
+              {/* Score Meter - replaces card when pronunciation result is available */}
+              <AnimatePresence>
+                {(() => {
+                  const status = getPronunciationStatus()
+                  // Show meter in training mode when English side is visible, or in test mode when English side is visible after result
+                  const showMeter = !isFlipped && status && !isRecording && !isProcessing && status.accuracyScore > 0
+                  if (showMeter) {
+                    return (
+                      <ScoreMeter 
+                        score={status.accuracyScore} 
+                        onClose={() => {
+                          // Auto-close handled by AnimatePresence after timeout
+                        }}
+                      />
+                    )
+                  }
+                  return null
+                })()}
+              </AnimatePresence>
               {/* Speaker button in top-left corner */}
               <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
               <button
@@ -1916,8 +2035,8 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                 disabled={isSpeaking}
                   className={`p-3 rounded-xl transition-all shadow-lg ${
                   isSpeaking 
-                    ? 'bg-cyan-500 text-white cursor-not-allowed' 
-                    : 'bg-white/10 hover:bg-white/20 text-cyan-400 hover:shadow-xl border border-white/10'
+                    ? 'bg-amber-500 text-white cursor-not-allowed' 
+                    : 'bg-white/10 hover:bg-white/20 text-amber-400 hover:shadow-xl border border-white/10'
                 }`}
               >
                 <Volume2 className={`w-5 h-5 ${isSpeaking ? 'animate-pulse' : ''}`} />
@@ -1956,7 +2075,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                     
                     {/* Processing indicator */}
                     {isProcessing && (
-                      <div className="mt-4 flex items-center justify-center gap-3 text-cyan-400">
+                      <div className="mt-4 flex items-center justify-center gap-3 text-amber-400">
                         <Loader2 className="w-5 h-5 animate-spin" />
                         <span>Analyserar uttal...</span>
                       </div>
@@ -2007,8 +2126,8 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                 disabled={isSpeaking}
                   className={`p-3 rounded-xl transition-all shadow-lg ${
                   isSpeaking 
-                    ? 'bg-cyan-500 text-white cursor-not-allowed' 
-                    : 'bg-white/10 hover:bg-white/20 text-cyan-400 hover:shadow-xl border border-white/10'
+                    ? 'bg-amber-500 text-white cursor-not-allowed' 
+                    : 'bg-white/10 hover:bg-white/20 text-amber-400 hover:shadow-xl border border-white/10'
                 }`}
               >
                 <Volume2 className={`w-5 h-5 ${isSpeaking ? 'animate-pulse' : ''}`} />
@@ -2066,7 +2185,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                     
                     {/* Processing indicator for test mode */}
                     {pronunciationMode === 'test' && isProcessing && (
-                      <div className="mt-4 flex items-center justify-center gap-3 text-cyan-400">
+                      <div className="mt-4 flex items-center justify-center gap-3 text-amber-400">
                         <Loader2 className="w-5 h-5 animate-spin" />
                         <span>Analyserar uttal...</span>
                       </div>
@@ -2128,7 +2247,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                   e.stopPropagation()
                   startRecording()
                 }}
-                className="p-3 rounded-xl transition-all shadow-lg bg-white/10 border border-cyan-500/30 hover:bg-cyan-500/10 text-cyan-400 hover:shadow-xl"
+                className="p-3 rounded-xl transition-all shadow-lg bg-white/10 border border-amber-500/30 hover:bg-amber-500/10 text-amber-400 hover:shadow-xl"
               >
                 <Mic className="w-5 h-5" />
               </button>
@@ -2140,7 +2259,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                 (pronunciationMode === 'test' && !getPronunciationStatus()) ||
                 (pronunciationMode !== 'test' && currentWordIndex === wordList.length - 1)
               }
-              className="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-white py-3 px-5 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/30"
+              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white py-3 px-5 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-lg shadow-amber-500/30"
             >
               <span>{currentWordIndex === wordList.length - 1 ? 'Klar' : 'Nästa'}</span>
               <ArrowLeft className="w-4 h-4 rotate-180" />
@@ -2160,7 +2279,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
               animation: 'xpFloat 2s ease-out forwards'
             }}
           >
-            <div className="text-2xl font-bold text-cyan-400 drop-shadow-lg">
+            <div className="text-2xl font-bold text-amber-400 drop-shadow-lg">
               +2 XP
             </div>
           </div>

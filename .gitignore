@@ -29,6 +29,12 @@ yarn-error.log*
 .env*.local
 .env
 
+# Google Cloud credentials (VIKTIGT: Lägg aldrig upp credentials i git!)
+credentials.json
+*-credentials.json
+*service-account*.json
+google-credentials*.json
+
 # vercel
 .vercel
 

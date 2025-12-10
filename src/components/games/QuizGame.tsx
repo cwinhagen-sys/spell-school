@@ -571,12 +571,12 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div className="relative w-full max-w-4xl">
           {/* Glow effect */}
-          <div className="absolute -inset-1 bg-gradient-to-br from-violet-500/30 via-cyan-500/20 to-fuchsia-500/30 rounded-3xl blur-xl" />
+          <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/30 via-orange-500/20 to-rose-500/30 rounded-3xl blur-xl" />
           
           <div className="relative rounded-2xl p-8 shadow-2xl bg-[#12122a] border border-white/10">
             {/* Header */}
             <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/30">
+              <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/30">
                 <span className="text-3xl">🌍</span>
               </div>
               <h2 className="text-2xl font-bold text-white mb-2">Välj översättningsriktning</h2>
@@ -593,12 +593,12 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
                   setSelectedDirection('sv-to-en')
                   setShowLanguageSelection(false)
                 }}
-                className="group p-6 rounded-xl border border-white/10 bg-white/5 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all duration-300"
+                className="group p-6 rounded-xl border border-white/10 bg-white/5 hover:bg-amber-500/10 hover:border-amber-500/30 transition-all duration-300"
               >
                 <div className="text-5xl mb-3">🇸🇪</div>
-                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-violet-400 transition-colors">Svenska → Engelska</h3>
+                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-amber-400 transition-colors">Swedish → English</h3>
                 <p className="text-gray-400 text-sm mb-3">Översätt svenska ord till engelska</p>
-                <div className="text-2xl text-violet-400 group-hover:translate-x-1 transition-transform duration-300">→</div>
+                <div className="text-2xl text-amber-400 group-hover:translate-x-1 transition-transform duration-300">→</div>
               </button>
               
               {/* English to Swedish */}
@@ -608,12 +608,12 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
                   setSelectedDirection('en-to-sv')
                   setShowLanguageSelection(false)
                 }}
-                className="group p-6 rounded-xl border border-white/10 bg-white/5 hover:bg-cyan-500/10 hover:border-cyan-500/30 transition-all duration-300"
+                className="group p-6 rounded-xl border border-white/10 bg-white/5 hover:bg-orange-500/10 hover:border-orange-500/30 transition-all duration-300"
               >
                 <div className="text-5xl mb-3">🇬🇧</div>
-                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors">Engelska → Svenska</h3>
+                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-orange-400 transition-colors">English → Swedish</h3>
                 <p className="text-gray-400 text-sm mb-3">Översätt engelska ord till svenska</p>
-                <div className="text-2xl text-cyan-400 group-hover:translate-x-1 transition-transform duration-300">→</div>
+                <div className="text-2xl text-orange-400 group-hover:translate-x-1 transition-transform duration-300">→</div>
               </button>
             </div>
             
@@ -645,7 +645,7 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
               onClick={() => setSelectedDirection('both')}
               className={`w-full p-4 rounded-xl border transition-all ${
                 selectedDirection === 'both' 
-                  ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400' 
+                  ? 'border-amber-500/50 bg-amber-500/10 text-amber-400' 
                   : 'border-white/10 bg-white/5 text-gray-300 hover:border-white/20'
               }`}
             >
@@ -657,7 +657,7 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
               onClick={() => setSelectedDirection('en-to-sv')}
               className={`w-full p-4 rounded-xl border transition-all ${
                 selectedDirection === 'en-to-sv' 
-                  ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400' 
+                  ? 'border-amber-500/50 bg-amber-500/10 text-amber-400' 
                   : 'border-white/10 bg-white/5 text-gray-300 hover:border-white/20'
               }`}
             >
@@ -669,7 +669,7 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
               onClick={() => setSelectedDirection('sv-to-en')}
               className={`w-full p-4 rounded-xl border transition-all ${
                 selectedDirection === 'sv-to-en' 
-                  ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400' 
+                  ? 'border-amber-500/50 bg-amber-500/10 text-amber-400' 
                   : 'border-white/10 bg-white/5 text-gray-300 hover:border-white/20'
               }`}
             >
@@ -687,7 +687,7 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
             </button>
             <button
               onClick={() => {/* Items will be generated automatically */}}
-              className="flex-1 px-4 py-2 bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-xl hover:from-violet-400 hover:to-cyan-400 shadow-lg shadow-violet-500/30"
+              className="flex-1 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:from-amber-400 hover:to-orange-400 shadow-lg shadow-amber-500/30"
             >
               Starta Quiz
             </button>
@@ -700,8 +700,8 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
   return (
     <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50">
       {/* Aurora background effects */}
-      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-violet-600/20 rounded-full blur-[100px] animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-cyan-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
       
       <div className="relative bg-[#12122a] rounded-2xl p-6 max-w-7xl w-full max-h-[95vh] overflow-hidden flex flex-col border border-white/10 shadow-2xl">
         {/* Header */}
@@ -803,7 +803,7 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
                               type="text"
                               value={answers[globalIdx] || ''}
                               onChange={(e) => handleChange(globalIdx, e.target.value)}
-                              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 focus:outline-none"
+                              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
                               placeholder={
                                 item.direction === 'sv-to-en'
                                   ? 'Write in English...'
@@ -830,7 +830,7 @@ export default function QuizGame({ words, translations = {}, onClose, trackingCo
                   <h3 className="text-xl font-bold text-white">Analyzing quiz...</h3>
                   <div className="w-full max-w-md bg-white/10 rounded-full h-3 overflow-hidden">
                     <div 
-                      className="bg-gradient-to-r from-violet-500 via-cyan-500 to-violet-500 rounded-full h-3 transition-all duration-300 shadow-lg shadow-violet-500/50"
+                      className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 rounded-full h-3 transition-all duration-300 shadow-lg shadow-amber-500/50"
                       style={{ width: `${loadingProgress}%` }}
                     />
                   </div>

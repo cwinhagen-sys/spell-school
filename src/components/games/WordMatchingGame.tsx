@@ -459,12 +459,12 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
     return (
       <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50">
         {/* Aurora background effects */}
-        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-violet-600/20 rounded-full blur-[100px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-cyan-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
         
         <div className="relative bg-[#12122a] rounded-2xl p-8 w-full max-w-md shadow-2xl border border-white/10">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/30">
+            <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/30">
               <Brain className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">Memory Game</h2>
@@ -478,11 +478,11 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
               }}
               className={`p-6 rounded-xl border transition-all shadow-lg ${
                 numPlayers === 1
-                  ? 'bg-violet-500/20 border-violet-500/50'
-                  : 'bg-white/5 border-white/10 hover:border-violet-500/30 hover:bg-violet-500/10'
+                  ? 'bg-amber-500/20 border-amber-500/50'
+                  : 'bg-white/5 border-white/10 hover:border-amber-500/30 hover:bg-amber-500/10'
               }`}
             >
-              <User className={`w-8 h-8 mx-auto mb-2 ${numPlayers === 1 ? 'text-violet-400' : 'text-gray-400'}`} />
+              <User className={`w-8 h-8 mx-auto mb-2 ${numPlayers === 1 ? 'text-amber-400' : 'text-gray-400'}`} />
               <div className={`font-semibold ${numPlayers === 1 ? 'text-white' : 'text-gray-300'}`}>1 Spelare</div>
               <div className={`text-sm mt-1 ${numPlayers === 1 ? 'text-gray-300' : 'text-gray-500'}`}>Solo träning</div>
             </button>
@@ -493,11 +493,11 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
               }}
               className={`p-6 rounded-xl border transition-all shadow-lg ${
                 numPlayers === 2
-                  ? 'bg-cyan-500/20 border-cyan-500/50'
-                  : 'bg-white/5 border-white/10 hover:border-cyan-500/30 hover:bg-cyan-500/10'
+                  ? 'bg-orange-500/20 border-orange-500/50'
+                  : 'bg-white/5 border-white/10 hover:border-orange-500/30 hover:bg-orange-500/10'
               }`}
             >
-              <Users className={`w-8 h-8 mx-auto mb-2 ${numPlayers === 2 ? 'text-cyan-400' : 'text-gray-400'}`} />
+              <Users className={`w-8 h-8 mx-auto mb-2 ${numPlayers === 2 ? 'text-orange-400' : 'text-gray-400'}`} />
               <div className={`font-semibold ${numPlayers === 2 ? 'text-white' : 'text-gray-300'}`}>2 Spelare</div>
               <div className={`text-sm mt-1 ${numPlayers === 2 ? 'text-gray-300' : 'text-gray-500'}`}>Turordning</div>
             </button>
@@ -513,7 +513,7 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
                   value={player1Name}
                   onChange={(e) => setPlayer1Name(e.target.value || 'Player 1')}
                   placeholder="Ange namn"
-                  className="w-full px-4 py-2 rounded-xl border border-white/10 bg-white/5 focus:border-cyan-500/50 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 text-white placeholder:text-gray-500"
+                  className="w-full px-4 py-2 rounded-xl border border-white/10 bg-white/5 focus:border-amber-500/50 focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-white placeholder:text-gray-500"
                 />
               </div>
               <div>
@@ -523,7 +523,7 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
                   value={player2Name}
                   onChange={(e) => setPlayer2Name(e.target.value || 'Player 2')}
                   placeholder="Ange namn"
-                  className="w-full px-4 py-2 rounded-xl border border-white/10 bg-white/5 focus:border-cyan-500/50 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 text-white placeholder:text-gray-500"
+                  className="w-full px-4 py-2 rounded-xl border border-white/10 bg-white/5 focus:border-amber-500/50 focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-white placeholder:text-gray-500"
                 />
               </div>
             </div>
@@ -541,7 +541,7 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
                 setShowPlayerSelection(false)
                 setShowGridSelector(true)
               }}
-              className="flex-1 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 hover:from-violet-400 hover:to-cyan-400 text-white font-medium transition-all shadow-lg shadow-violet-500/30"
+              className="flex-1 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-medium transition-all shadow-lg shadow-amber-500/30"
             >
               Fortsätt
             </button>

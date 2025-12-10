@@ -269,3 +269,34 @@ export function calculateTranslateScore(
     }
   }
 }
+
+/**
+ * Calculate points for Distorted Tale: Based on AI feedback percentage
+ * 1 point per 10% score (1-10 points), bonus for using all words
+ */
+export function calculateDistortedTaleScore(
+  scorePercentage: number,
+  wordsUsed: number,
+  totalWords: number
+): GameScoreResult {
+  // Base points: 1 point per 10% (minimum 1, maximum 10)
+  let basePoints = Math.max(1, Math.floor(scorePercentage / 10))
+  
+  // Bonus for using all words: +2 points
+  if (wordsUsed === totalWords && totalWords > 0) {
+    basePoints += 2
+  }
+  
+  const pointsAwarded = Math.min(12, basePoints) // Cap at 12 points
+  
+  return {
+    pointsAwarded,
+    accuracy: scorePercentage,
+    details: {
+      correctAnswers: wordsUsed,
+      totalQuestions: totalWords,
+      scorePercentage,
+      wordCount: totalWords
+    }
+  }
+}

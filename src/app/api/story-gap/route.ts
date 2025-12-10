@@ -90,11 +90,17 @@ function buildPrompt(opts: {
   difficulty: 'green' | 'yellow' | 'red'
   signature: string
   includeAnimalGuidance: boolean
+  scenario?: string
 }) {
-  const { wordSet, difficulty, signature, includeAnimalGuidance } = opts
+  const { wordSet, difficulty, signature, includeAnimalGuidance, scenario } = opts
 
   // Animal guidance only if animals detected
   const animalGuidance = includeAnimalGuidance ? `\n- If animals appear, include distinctive, unambiguous cues (habitat/behavior/features).` : ''
+
+  // Scenario guidance
+  const scenarioGuidance = scenario 
+    ? `\n- SETTING: The story takes place at/in "${scenario}". All sentences should relate to this setting and create a coherent narrative in this location.`
+    : ''
 
   // Difficulty-specific guidance
   const difficultyGuidance = {
@@ -117,11 +123,12 @@ function buildPrompt(opts: {
   }[difficulty]
 
   // Single prompt - minimize reasoning, output JSON directly
-  const system = `Generate sentence-gap exercise. Output JSON directly. Be concise.
+  const system = `Generate a story-gap exercise as a COHESIVE NARRATIVE. Output JSON directly. Be concise.
 
-${difficultyGuidance}
+${difficultyGuidance}${scenarioGuidance}
 
 Rules:
+- CREATE A COHERENT STORY: The sentences should form a complete mini-story with a beginning, middle, and satisfying ending.
 - CRITICAL ORDER REQUIREMENT: The order MUST match wordSet exactly.
   * solution_text[0] must contain wordSet[0]
   * solution_text[1] must contain wordSet[1]
@@ -137,7 +144,7 @@ Rules:
 - Use the EXACT surface form wordSet[i] in solution_text[i] (case-insensitive ok).
 - No placeholders ("The word is...", "This is a...").
 - No component overlap between multi-word targets across different lines.
-- Vary structure, tense, perspective, and context across lines.${animalGuidance}
+- The story should flow naturally from sentence to sentence.${animalGuidance}
 - Duplicate words in wordSet are allowed - use them in different contexts.
 - CRITICAL UNIQUENESS REQUIREMENT: Each gap word/phrase must be UNIQUE to its sentence.
   * wordSet[i] should ONLY fit grammatically and semantically in sentence[i]
@@ -146,6 +153,7 @@ Rules:
   * For example: if wordSet contains "by day" and "by night", create sentences where "by day" only fits one context and "by night" only fits another
   * Avoid generic sentences where multiple words could fit - make each sentence specific to its target word
 - IMPORTANT: Generate UNIQUE sentences different from previous runs. Vary wording, context, and examples.
+- The last sentence should provide a satisfying conclusion to the story.
 
 Output JSON only (no explanations, no reasoning):
 {
@@ -156,7 +164,9 @@ Output JSON only (no explanations, no reasoning):
   "notes": []
 }`.trim()
 
-  const user = `Generate unique sentences for this run.
+  const scenarioText = scenario ? `\nSETTING: Create a cohesive story that takes place at/in "${scenario}".` : ''
+
+  const user = `Generate a unique story for this run.${scenarioText}
 
 CRITICAL: Maintain exact order:
 - wordSet[0]="${wordSet[0]}" → solution_text[0] must contain "${wordSet[0]}", gaps_meta[0].correct="${wordSet[0].toLowerCase()}"
@@ -178,7 +188,7 @@ ${wordSet.length > 5 ? `- "${wordSet[5]}" should ONLY fit in sentence 6, not in 
 ${wordSet.length > 6 ? `- "${wordSet[6]}" should ONLY fit in sentence 7, not in any other sentence` : ''}
 ${wordSet.length > 7 ? `- "${wordSet[7]}" should ONLY fit in sentence 8, not in any other sentence` : ''}
 - Create distinct contexts so each word is clearly tied to ONE specific sentence
-- Avoid generic sentences where multiple words could fit
+- The story should have a clear beginning, middle, and satisfying conclusion
 
 sig=${signature} difficulty=${difficulty}
 wordSet=${JSON.stringify(wordSet)}
@@ -225,6 +235,7 @@ async function callModelOnce(params: {
   wordSet: string[]
   difficulty: 'green' | 'yellow' | 'red'
   signature: string
+  scenario?: string
 }): Promise<RetryResult> {
   const startTime = Date.now()
   let promptBuildTime = 0
@@ -237,7 +248,8 @@ async function callModelOnce(params: {
     wordSet: params.wordSet,
     difficulty: params.difficulty,
     signature: params.signature,
-    includeAnimalGuidance
+    includeAnimalGuidance,
+    scenario: params.scenario
   })
   promptBuildTime = Date.now() - promptStart
   
@@ -644,6 +656,7 @@ async function callModelWithRetries(input: {
   wordSet: string[]
   difficulty: 'green' | 'yellow' | 'red'
   retryAttempt?: number
+  scenario?: string
 }) {
   const startTime = Date.now()
   
@@ -658,7 +671,8 @@ async function callModelWithRetries(input: {
     return callModelOnce({
       wordSet: input.wordSet,
       difficulty: input.difficulty,
-      signature: sig
+      signature: sig,
+      scenario: input.scenario
     })
   }
   
@@ -771,6 +785,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const wordSet: string[] = Array.isArray(body?.wordSet) ? body.wordSet : []
     const difficulty = (body?.difficulty ?? 'yellow') as 'green' | 'yellow' | 'red'
+    const scenario = body?.scenario as string | undefined
 
     // Preflight validation
     const { words, errors } = preflightWordSet(wordSet)
@@ -796,8 +811,8 @@ export async function POST(req: NextRequest) {
       // Don't return cached - continue to generate new sentences for variation
     }
 
-    // Generate new sentences
-    const res = await callModelWithRetries({ wordSet: words, difficulty })
+    // Generate new sentences with scenario
+    const res = await callModelWithRetries({ wordSet: words, difficulty, scenario })
     const totalLatency = Date.now() - requestStart
 
     if (!res.ok) {

@@ -20,3 +20,6 @@ COMMENT ON COLUMN profiles.stripe_subscription_id IS 'Stripe subscription ID for
 
 
 
+
+
+

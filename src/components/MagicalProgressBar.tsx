@@ -45,12 +45,12 @@ export default function MagicalProgressBar({ progress, statusText = 'Charging sp
         <div 
           className="absolute inset-0 rounded-2xl"
           style={{
-            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(168, 85, 247, 0.3) 50%, rgba(192, 132, 252, 0.2) 100%)',
-            border: '3px solid rgba(139, 92, 246, 0.4)',
+            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(249, 115, 22, 0.3) 50%, rgba(251, 146, 60, 0.2) 100%)',
+            border: '3px solid rgba(245, 158, 11, 0.4)',
             boxShadow: `
               inset 0 2px 4px rgba(0, 0, 0, 0.1),
               inset 0 -2px 4px rgba(255, 255, 255, 0.3),
-              0 4px 8px rgba(139, 92, 246, 0.2)
+              0 4px 8px rgba(245, 158, 11, 0.2)
             `,
             transform: 'perspective(500px) rotateX(5deg)',
             transformStyle: 'preserve-3d'
@@ -67,27 +67,28 @@ export default function MagicalProgressBar({ progress, statusText = 'Charging sp
 
           {/* Liquid/Energy Fill */}
           <div
-            className="absolute bottom-0 left-0 rounded-2xl transition-all duration-300 ease-out"
+            className="absolute bottom-0 left-0 rounded-2xl transition-all duration-300 ease-out overflow-hidden"
             style={{
               width: `${progress}%`,
               height: '100%',
               background: progress < 50
-                ? 'linear-gradient(to top, rgba(59, 130, 246, 0.9) 0%, rgba(99, 102, 241, 0.8) 50%, rgba(139, 92, 246, 0.7) 100%)'
+                ? 'linear-gradient(to top, rgba(245, 158, 11, 0.9) 0%, rgba(249, 115, 22, 0.8) 50%, rgba(251, 146, 60, 0.7) 100%)'
                 : progress < 80
-                ? 'linear-gradient(to top, rgba(99, 102, 241, 0.9) 0%, rgba(139, 92, 246, 0.8) 50%, rgba(168, 85, 247, 0.7) 100%)'
-                : 'linear-gradient(to top, rgba(139, 92, 246, 0.9) 0%, rgba(168, 85, 247, 0.8) 50%, rgba(192, 132, 252, 0.7) 100%)',
+                ? 'linear-gradient(to top, rgba(249, 115, 22, 0.9) 0%, rgba(245, 158, 11, 0.8) 50%, rgba(251, 146, 60, 0.7) 100%)'
+                : 'linear-gradient(to top, rgba(245, 158, 11, 0.9) 0%, rgba(249, 115, 22, 0.8) 50%, rgba(251, 146, 60, 0.7) 100%)',
               boxShadow: `
-                inset 0 -2px 8px rgba(139, 92, 246, 0.4),
-                0 0 20px rgba(139, 92, 246, 0.3)
+                inset 0 -2px 8px rgba(245, 158, 11, 0.4),
+                0 0 20px rgba(245, 158, 11, 0.3)
               `,
               borderRadius: '1rem',
               transition: 'width 0.3s ease-out, background 0.3s ease-out'
             }}
           >
-            {/* Liquid surface shimmer */}
+            {/* Liquid surface shimmer - only show on filled portion */}
             <div
-              className="absolute top-0 left-0 w-full h-2 rounded-t-2xl magical-shimmer"
+              className="absolute top-0 left-0 h-2 rounded-t-2xl"
               style={{
+                width: '100%',
                 background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%)'
               }}
             />

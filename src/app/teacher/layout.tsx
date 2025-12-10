@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import React, { useState, useEffect } from 'react'
-import { BookOpen, Users, FileText, Calendar, UserPlus, LogOut, Gamepad2, Lock, Sparkles, Menu, X, ChevronRight, TrendingUp } from 'lucide-react'
+import { BookOpen, Users, FileText, Calendar, UserPlus, LogOut, Gamepad2, Lock, Sparkles, Menu, X, ChevronRight, TrendingUp, PenTool } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { markUserAsLoggedOut } from '@/lib/activity'
 import { syncManager } from '@/lib/syncManager'
@@ -120,6 +120,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
       locked: !hasSessionAccess,
       lockMessage: 'Kräver Premium eller Pro'
     },
+    { id: 'story-reviews', href: '/teacher/story-reviews', label: 'Texter', icon: PenTool },
   ]
 
   return (

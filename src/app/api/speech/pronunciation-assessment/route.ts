@@ -290,10 +290,33 @@ export async function POST(request: NextRequest) {
     if (accuracyScoreFromAzure !== null && accuracyScoreFromAzure !== undefined) {
       // Azure's pronunciation assessment score (0-100)
       // This score is based on phoneme-level analysis, so it catches phonetic errors
-      accuracyScore = Math.round(accuracyScoreFromAzure)
+      let baseAccuracyScore = Math.round(accuracyScoreFromAzure)
       confidence = pronunciationResult?.pronunciationScore || 0.5
       
-      // Use Azure's accuracy score with more lenient thresholds
+      // Apply completeness penalty for incomplete pronunciations
+      // If completeness is low (e.g., saying "Chris" instead of "Christmas"), 
+      // significantly reduce the accuracy score
+      const completenessScore = pronunciationResult?.completenessScore
+      if (completenessScore !== null && completenessScore !== undefined) {
+        // If completeness is below 85%, apply a penalty
+        // This catches cases where only part of the word is pronounced
+        if (completenessScore < 85) {
+          // Apply penalty: reduce accuracy by the completeness gap
+          // Example: 80% accuracy with 60% completeness = 80 * 0.6 = 48% final score
+          const completenessFactor = completenessScore / 100
+          baseAccuracyScore = Math.round(baseAccuracyScore * completenessFactor)
+          
+          console.log('⚠️ Completeness penalty applied:', {
+            originalAccuracy: accuracyScoreFromAzure,
+            completenessScore,
+            adjustedAccuracy: baseAccuracyScore
+          })
+        }
+      }
+      
+      accuracyScore = baseAccuracyScore
+      
+      // Use Azure's accuracy score with thresholds
       // Azure's pronunciation assessment analyzes phonemes, so it catches phonetic errors like "lux" vs "luxury"
       // But we want to be encouraging, so we accept 85%+ as correct
       if (accuracyScore >= 85) {
@@ -302,7 +325,11 @@ export async function POST(request: NextRequest) {
         isCorrect = false
       }
       
-      console.log('🎯 Using Azure Pronunciation Assessment score:', accuracyScore)
+      console.log('🎯 Using Azure Pronunciation Assessment score:', {
+        original: accuracyScoreFromAzure,
+        completeness: completenessScore,
+        final: accuracyScore
+      })
     } else {
       // Fallback to text-based comparison if pronunciation assessment not available
       if (expectedWords.length > 1) {

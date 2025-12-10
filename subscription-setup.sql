@@ -27,3 +27,6 @@ CREATE INDEX IF NOT EXISTS idx_profiles_subscription_tier ON profiles(subscripti
 
 
 
+
+
+

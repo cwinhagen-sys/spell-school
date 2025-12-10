@@ -646,9 +646,9 @@ export default function TypingChallenge({ words, onClose, onScoreUpdate, trackin
               <Target className="w-5 h-5 text-emerald-400" />
               <span className="text-emerald-300 font-bold text-lg">Streak: {streak}</span>
             </div>
-            <div className="flex items-center space-x-2 bg-violet-500/10 px-4 py-3 rounded-xl border border-violet-500/30">
-              <Star className="w-5 h-5 text-violet-400" />
-              <span className="text-violet-300 font-bold text-lg">Poäng: {correctAnswersRef.current}</span>
+            <div className="flex items-center space-x-2 bg-amber-500/10 px-4 py-3 rounded-xl border border-amber-500/30">
+              <Star className="w-5 h-5 text-amber-400" />
+              <span className="text-amber-300 font-bold text-lg">Score: {correctAnswersRef.current}</span>
             </div>
           </div>
         </div>

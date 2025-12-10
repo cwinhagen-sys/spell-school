@@ -260,14 +260,14 @@ export default function ColorGridSelector({
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Glow effect */}
-        <div className="absolute -inset-1 bg-gradient-to-br from-violet-500/30 via-cyan-500/20 to-fuchsia-500/30 rounded-3xl blur-xl" />
+        <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/30 via-orange-500/20 to-rose-500/30 rounded-3xl blur-xl" />
         
         <div className="relative rounded-2xl p-6 shadow-2xl bg-[#12122a] border border-white/10 flex flex-col overflow-hidden">
           {/* Header */}
           <div className="flex-shrink-0 mb-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/30">
+                <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
                   <Sparkles className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -344,7 +344,7 @@ export default function ColorGridSelector({
           {/* Footer */}
           <div className="flex items-center justify-between flex-shrink-0 pt-4 mt-4 border-t border-white/10">
             <div className="text-sm text-gray-400">
-              <span className="text-white font-semibold">{selectedCount}</span> block{selectedCount !== 1 ? '' : ''} vald{selectedCount !== 1 ? 'a' : ''}{maxGrids && <span className="text-gray-500"> / max {maxGrids}</span>}
+              <span className="text-white font-semibold">{selectedCount}</span> block{selectedCount !== 1 ? 's' : ''} selected{maxGrids && <span className="text-gray-500"> / max {maxGrids}</span>}
             </div>
             <div className="flex gap-3">
               {onClose && (
@@ -352,7 +352,7 @@ export default function ColorGridSelector({
                   onClick={onClose}
                   className="px-5 py-3 bg-white/5 border border-white/10 text-gray-400 rounded-xl font-medium hover:bg-white/10 transition-colors"
                 >
-                  Avbryt
+                  Cancel
                 </button>
               )}
               <button
@@ -361,13 +361,13 @@ export default function ColorGridSelector({
                 className={`
                   px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2
                   ${canStart 
-                    ? 'bg-gradient-to-r from-violet-500 to-cyan-500 text-white hover:from-violet-400 hover:to-cyan-400 shadow-lg shadow-violet-500/30 hover:shadow-xl hover:shadow-violet-500/40' 
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-400 hover:to-orange-400 shadow-lg shadow-amber-500/30 hover:shadow-xl hover:shadow-amber-500/40' 
                     : 'bg-white/5 text-gray-500 cursor-not-allowed'
                   }
                 `}
               >
                 <Play className="w-5 h-5" />
-                <span>Starta spel</span>
+                <span>Start game</span>
               </button>
             </div>
           </div>

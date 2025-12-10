@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Gamepad2, Plus, Users, Calendar, Trash2, X, Lock, ArrowRight, Sparkles, Clock } from 'lucide-react'
 import Link from 'next/link'
-import { hasSessionModeAccess } from '@/lib/subscription'
+import { hasSessionModeAccess, getUserSubscriptionTier } from '@/lib/subscription'
+import PaymentWallModal from '@/components/PaymentWallModal'
 
 interface Session {
   id: string
@@ -29,6 +30,7 @@ export default function TeacherSessionsPage() {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [hasAccess, setHasAccess] = useState(false)
   const [checkingAccess, setCheckingAccess] = useState(true)
+  const [showPaymentWall, setShowPaymentWall] = useState(false)
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -37,6 +39,12 @@ export default function TeacherSessionsPage() {
         if (user) {
           const access = await hasSessionModeAccess(user.id)
           setHasAccess(access)
+          if (!access) {
+            const tier = await getUserSubscriptionTier(user.id)
+            if (tier === 'free') {
+              setShowPaymentWall(true)
+            }
+          }
         }
       } catch (error) {
         console.error('Error checking session mode access:', error)
@@ -194,37 +202,47 @@ export default function TeacherSessionsPage() {
 
   if (!hasAccess) {
     return (
-      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-2">
-            <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20">
-              <Gamepad2 className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white">Session Mode</h1>
-              <p className="text-gray-400">Skapa sessioner som elever kan gå med i med en kod</p>
+      <>
+        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-8">
+            <div className="flex items-center gap-4 mb-2">
+              <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20">
+                <Gamepad2 className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">Session Mode</h1>
+                <p className="text-gray-400">Create sessions that students can join with a code</p>
+              </div>
             </div>
           </div>
-        </div>
-        
-        <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-amber-500/30 p-8 text-center shadow-xl">
-          <div className="w-20 h-20 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-amber-500/20">
-            <Lock className="w-10 h-10 text-amber-400" />
+          
+          <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-amber-500/30 p-8 text-center shadow-xl">
+            <div className="w-20 h-20 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-amber-500/20">
+              <Lock className="w-10 h-10 text-amber-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-3">Session Mode requires Premium or Pro</h2>
+            <p className="text-gray-400 mb-8 max-w-md mx-auto">
+              Session Mode is only available for Premium and Pro plans. Upgrade your plan to create sessions.
+            </p>
+            <Link
+              href="/teacher/account"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20"
+            >
+              <Sparkles className="w-5 h-5" />
+              View subscription plans
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-3">Session Mode kräver Premium eller Pro</h2>
-          <p className="text-gray-400 mb-8 max-w-md mx-auto">
-            Session Mode är endast tillgängligt för Premium och Pro-planer. Uppgradera din plan för att skapa sessioner.
-          </p>
-          <Link
-            href="/pricing"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20"
-          >
-            <Sparkles className="w-5 h-5" />
-            Visa prenumerationsplaner
-            <ArrowRight className="w-4 h-4" />
-          </Link>
         </div>
-      </div>
+        <PaymentWallModal
+          isOpen={showPaymentWall}
+          onClose={() => setShowPaymentWall(false)}
+          feature="Session Mode"
+          currentLimit={null}
+          upgradeTier="premium"
+          upgradeMessage="Session Mode is only available for Premium and Pro plans. Upgrade to create structured homework chains that students must complete in sequence."
+        />
+      </>
     )
   }
 

@@ -87,7 +87,7 @@ export default function BadgesPage() {
       <div className="container mx-auto px-6 py-12 min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Laddar trofeer...</p>
+          <p className="text-gray-400">Loading badges...</p>
         </div>
       </div>
     )
@@ -108,8 +108,8 @@ export default function BadgesPage() {
                 <div className="absolute -inset-1 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl blur opacity-30" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-white">Trofésamling</h1>
-                <p className="text-gray-400">Samla trofeer genom att klara dagliga uppdrag</p>
+                <h1 className="text-3xl font-bold text-white">Badge Collection</h1>
+                <p className="text-gray-400">Collect badges by completing daily quests</p>
               </div>
             </div>
             <Link 
@@ -117,7 +117,7 @@ export default function BadgesPage() {
               className="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/10 text-gray-300 rounded-xl hover:bg-white/10 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              Tillbaka
+              Back
             </Link>
           </div>
 
@@ -126,19 +126,19 @@ export default function BadgesPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div className="text-center">
                 <div className="text-4xl font-bold text-emerald-400">{stats.earned}</div>
-                <div className="text-sm text-gray-400">Intjänade</div>
+                <div className="text-sm text-gray-400">Earned</div>
               </div>
               <div className="text-center">
                 <div className="text-4xl font-bold text-gray-400">{stats.total - stats.earned}</div>
-                <div className="text-sm text-gray-400">Kvarvarande</div>
+                <div className="text-sm text-gray-400">Remaining</div>
               </div>
               <div className="text-center">
-                <div className="text-4xl font-bold text-cyan-400">{stats.percentage}%</div>
-                <div className="text-sm text-gray-400">Klart</div>
+                <div className="text-4xl font-bold text-amber-400">{stats.percentage}%</div>
+                <div className="text-sm text-gray-400">Complete</div>
               </div>
               <div className="text-center">
                 <div className="text-4xl font-bold text-white">{stats.total}</div>
-                <div className="text-sm text-gray-400">Totalt</div>
+                <div className="text-sm text-gray-400">Total</div>
               </div>
             </div>
             <div className="mt-6 w-full bg-white/10 rounded-full h-3 overflow-hidden">
@@ -157,11 +157,11 @@ export default function BadgesPage() {
               <select 
                 value={filter} 
                 onChange={(e) => setFilter(e.target.value as any)}
-                className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50 transition-colors"
+                className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-500/50 transition-colors"
               >
-                <option value="all" className="bg-[#1a1a2e]">Alla</option>
-                <option value="earned" className="bg-[#1a1a2e]">Intjänade</option>
-                <option value="unearned" className="bg-[#1a1a2e]">Ej intjänade</option>
+                <option value="all" className="bg-[#1a1a2e]">All</option>
+                <option value="earned" className="bg-[#1a1a2e]">Earned</option>
+                <option value="unearned" className="bg-[#1a1a2e]">Unearned</option>
               </select>
             </div>
             <div className="flex items-center gap-2">
@@ -169,14 +169,14 @@ export default function BadgesPage() {
               <select 
                 value={rarityFilter} 
                 onChange={(e) => setRarityFilter(e.target.value as any)}
-                className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50 transition-colors"
+                className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-500/50 transition-colors"
               >
-                <option value="all" className="bg-[#1a1a2e]">Alla</option>
-                <option value="legendary" className="bg-[#1a1a2e]">Legendarisk</option>
-                <option value="epic" className="bg-[#1a1a2e]">Episk</option>
-                <option value="rare" className="bg-[#1a1a2e]">Sällsynt</option>
-                <option value="uncommon" className="bg-[#1a1a2e]">Ovanlig</option>
-                <option value="common" className="bg-[#1a1a2e]">Vanlig</option>
+                <option value="all" className="bg-[#1a1a2e]">All</option>
+                <option value="legendary" className="bg-[#1a1a2e]">Legendary</option>
+                <option value="epic" className="bg-[#1a1a2e]">Epic</option>
+                <option value="rare" className="bg-[#1a1a2e]">Rare</option>
+                <option value="uncommon" className="bg-[#1a1a2e]">Uncommon</option>
+                <option value="common" className="bg-[#1a1a2e]">Common</option>
               </select>
             </div>
           </div>
@@ -215,16 +215,16 @@ export default function BadgesPage() {
                 
                 {/* Rarity label */}
                 <div className={`text-xs font-semibold px-3 py-1 rounded-full bg-black/30 capitalize ${getRarityTextColor(badge.rarity)}`}>
-                  {badge.rarity === 'legendary' ? 'Legendarisk' : 
-                   badge.rarity === 'epic' ? 'Episk' :
-                   badge.rarity === 'rare' ? 'Sällsynt' :
-                   badge.rarity === 'uncommon' ? 'Ovanlig' : 'Vanlig'}
+                  {badge.rarity === 'legendary' ? 'Legendary' : 
+                   badge.rarity === 'epic' ? 'Epic' :
+                   badge.rarity === 'rare' ? 'Rare' :
+                   badge.rarity === 'uncommon' ? 'Uncommon' : 'Common'}
                 </div>
                 
                 {/* Earned date */}
                 {badge.unlocked_at && (
                   <div className="text-xs mt-2 text-emerald-400 bg-emerald-500/20 px-2 py-1 rounded-full">
-                    {new Date(badge.unlocked_at).toLocaleDateString('sv-SE')}
+                    {new Date(badge.unlocked_at).toLocaleDateString('en-US')}
                   </div>
                 )}
                 
@@ -241,15 +241,15 @@ export default function BadgesPage() {
           {filteredBadges.length === 0 && (
             <div className="text-center py-16 bg-white/5 rounded-2xl backdrop-blur-sm border border-white/10">
               <div className="text-8xl mb-4">🔍</div>
-              <p className="text-gray-400 text-xl">Inga trofeer hittades med dessa filter</p>
+              <p className="text-gray-400 text-xl">No badges found with these filters</p>
               <button 
                 onClick={() => {
                   setFilter('all')
                   setRarityFilter('all')
                 }}
-                className="mt-6 px-6 py-3 bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-xl hover:from-violet-400 hover:to-cyan-400 transition-all font-medium shadow-lg"
+                className="mt-6 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:from-amber-400 hover:to-orange-400 transition-all font-medium shadow-lg"
               >
-                Rensa filter
+                Clear filters
               </button>
             </div>
           )}

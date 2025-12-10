@@ -44,7 +44,8 @@ function TeacherSignupContent() {
     setLoading(true)
     setMessage('')
 
-    const selectedTier = tier || 'free'
+    // Always use free tier for new signups - payment wall will appear when limits are reached
+    const selectedTier = 'free'
 
     try {
       // Sign up with Supabase

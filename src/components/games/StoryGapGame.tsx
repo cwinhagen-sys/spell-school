@@ -1,13 +1,80 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { FileText } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { FileText, BookOpen, MapPin, Gauge, Volume2, Play, Pause, ChevronRight, Sparkles } from 'lucide-react'
 import { startGameSession, endGameSession, type TrackingContext, updateStudentProgress } from '@/lib/tracking'
 import WordSelector from './WordSelector'
 import UniversalGameCompleteModal from '@/components/UniversalGameCompleteModal'
 import { calculateStoryGapScore } from '@/lib/gameScoring'
 import ColorGridSelector, { COLOR_GRIDS, GridConfig } from '@/components/ColorGridSelector'
 import MagicalProgressBar from '@/components/MagicalProgressBar'
+
+// 50 scenario options for story settings
+const STORY_SCENARIOS = [
+  { id: 'school', name: 'School', emoji: '🏫', category: 'Education' },
+  { id: 'park', name: 'The Park', emoji: '🌳', category: 'Outdoors' },
+  { id: 'football', name: 'Football Practice', emoji: '⚽', category: 'Sports' },
+  { id: 'beach', name: 'The Beach', emoji: '🏖️', category: 'Outdoors' },
+  { id: 'library', name: 'The Library', emoji: '📚', category: 'Education' },
+  { id: 'zoo', name: 'The Zoo', emoji: '🦁', category: 'Adventure' },
+  { id: 'hospital', name: 'The Hospital', emoji: '🏥', category: 'Community' },
+  { id: 'restaurant', name: 'A Restaurant', emoji: '🍽️', category: 'Social' },
+  { id: 'supermarket', name: 'The Supermarket', emoji: '🛒', category: 'Daily Life' },
+  { id: 'museum', name: 'The Museum', emoji: '🏛️', category: 'Education' },
+  { id: 'cinema', name: 'The Cinema', emoji: '🎬', category: 'Entertainment' },
+  { id: 'airport', name: 'The Airport', emoji: '✈️', category: 'Travel' },
+  { id: 'train_station', name: 'Train Station', emoji: '🚂', category: 'Travel' },
+  { id: 'birthday_party', name: 'Birthday Party', emoji: '🎂', category: 'Social' },
+  { id: 'camping', name: 'Camping Trip', emoji: '🏕️', category: 'Adventure' },
+  { id: 'swimming_pool', name: 'Swimming Pool', emoji: '🏊', category: 'Sports' },
+  { id: 'playground', name: 'The Playground', emoji: '🎢', category: 'Outdoors' },
+  { id: 'farm', name: 'The Farm', emoji: '🚜', category: 'Nature' },
+  { id: 'forest', name: 'The Forest', emoji: '🌲', category: 'Nature' },
+  { id: 'mountain', name: 'The Mountain', emoji: '🏔️', category: 'Adventure' },
+  { id: 'castle', name: 'A Castle', emoji: '🏰', category: 'Fantasy' },
+  { id: 'spaceship', name: 'A Spaceship', emoji: '🚀', category: 'Fantasy' },
+  { id: 'underwater', name: 'Underwater World', emoji: '🐠', category: 'Fantasy' },
+  { id: 'bakery', name: 'The Bakery', emoji: '🥐', category: 'Daily Life' },
+  { id: 'pet_shop', name: 'Pet Shop', emoji: '🐕', category: 'Daily Life' },
+  { id: 'circus', name: 'The Circus', emoji: '🎪', category: 'Entertainment' },
+  { id: 'amusement_park', name: 'Amusement Park', emoji: '🎡', category: 'Entertainment' },
+  { id: 'dentist', name: 'The Dentist', emoji: '🦷', category: 'Community' },
+  { id: 'fire_station', name: 'Fire Station', emoji: '🚒', category: 'Community' },
+  { id: 'police_station', name: 'Police Station', emoji: '🚔', category: 'Community' },
+  { id: 'art_class', name: 'Art Class', emoji: '🎨', category: 'Education' },
+  { id: 'music_room', name: 'Music Room', emoji: '🎵', category: 'Education' },
+  { id: 'basketball', name: 'Basketball Game', emoji: '🏀', category: 'Sports' },
+  { id: 'hockey', name: 'Ice Hockey', emoji: '🏒', category: 'Sports' },
+  { id: 'tennis', name: 'Tennis Match', emoji: '🎾', category: 'Sports' },
+  { id: 'ski_resort', name: 'Ski Resort', emoji: '⛷️', category: 'Sports' },
+  { id: 'treehouse', name: 'The Treehouse', emoji: '🌴', category: 'Adventure' },
+  { id: 'pirate_ship', name: 'Pirate Ship', emoji: '🏴‍☠️', category: 'Fantasy' },
+  { id: 'haunted_house', name: 'Haunted House', emoji: '👻', category: 'Fantasy' },
+  { id: 'candy_store', name: 'Candy Store', emoji: '🍬', category: 'Daily Life' },
+  { id: 'toy_store', name: 'Toy Store', emoji: '🧸', category: 'Daily Life' },
+  { id: 'garden', name: 'The Garden', emoji: '🌻', category: 'Nature' },
+  { id: 'kitchen', name: 'The Kitchen', emoji: '👨‍🍳', category: 'Daily Life' },
+  { id: 'bedroom', name: 'The Bedroom', emoji: '🛏️', category: 'Daily Life' },
+  { id: 'bus_ride', name: 'Bus Ride', emoji: '🚌', category: 'Travel' },
+  { id: 'boat_trip', name: 'Boat Trip', emoji: '⛵', category: 'Travel' },
+  { id: 'magic_school', name: 'Magic School', emoji: '🧙', category: 'Fantasy' },
+  { id: 'dinosaur_land', name: 'Dinosaur Land', emoji: '🦕', category: 'Fantasy' },
+  { id: 'winter_wonderland', name: 'Winter Wonderland', emoji: '❄️', category: 'Seasons' },
+  { id: 'summer_camp', name: 'Summer Camp', emoji: '☀️', category: 'Seasons' },
+]
+
+// Voice options for text-to-speech
+const VOICE_OPTIONS = [
+  { id: 'en-US-Journey-D', name: 'David', gender: 'Male', accent: 'American', emoji: '👨' },
+  { id: 'en-US-Journey-F', name: 'Sarah', gender: 'Female', accent: 'American', emoji: '👩' },
+  { id: 'en-GB-Journey-D', name: 'James', gender: 'Male', accent: 'British', emoji: '🧔' },
+  { id: 'en-GB-Journey-F', name: 'Emma', gender: 'Female', accent: 'British', emoji: '👩‍🦰' },
+  { id: 'en-AU-Journey-D', name: 'Oliver', gender: 'Male', accent: 'Australian', emoji: '👨‍🦱' },
+  { id: 'en-AU-Journey-F', name: 'Olivia', gender: 'Female', accent: 'Australian', emoji: '👱‍♀️' },
+]
+
+// Game flow steps
+type GameStep = 'rules' | 'scenario' | 'difficulty' | 'voice' | 'playing'
 
 interface StoryGapGameProps {
   words: string[]
@@ -23,6 +90,31 @@ interface StoryGapGameProps {
 type GapMeta = { index: number; correct: string; why_unique: string; rejects: Array<{ word: string; reason: string }> }
 
 export default function StoryGapGame({ words, translations = {}, onClose, trackingContext, themeColor, onScoreUpdate, gridConfig, sessionMode = false }: StoryGapGameProps) {
+  // New game flow states - Skip the new flow and go directly to the old game
+  const [gameStep, setGameStep] = useState<GameStep>('playing')
+  // Auto-select default values to skip the new flow screens
+  const [selectedScenario, setSelectedScenario] = useState<string | null>('school') // Default scenario
+  const [selectedVoice, setSelectedVoice] = useState<string>('en-US-Journey-F') // Default voice
+  const [scenarioFilter, setScenarioFilter] = useState<string>('All')
+  
+  // Text-to-speech states
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [currentWordIndex, setCurrentWordIndex] = useState(-1)
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null)
+  const [wordTimings, setWordTimings] = useState<Array<{ word: string; start: number; end: number }>>([])
+  
+  // AI Evaluation states
+  const [evaluationResult, setEvaluationResult] = useState<{
+    coherence: number
+    wordChoice: number
+    ending: number
+    total: number
+    feedback: string
+    wordEvaluations: Array<{ word: string; correct: string; points: number; comment: string }>
+  } | null>(null)
+  const [isEvaluating, setIsEvaluating] = useState(false)
+  
+  // Original states
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [gapText, setGapText] = useState('')
@@ -34,6 +126,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
   const [score, setScore] = useState(0)
   const [checked, setChecked] = useState(false)
   const [correctMap, setCorrectMap] = useState<Record<number, boolean>>({})
+  const [invalidMap, setInvalidMap] = useState<Record<number, string>>({}) // Track invalid words with reason
   const [sessionId, setSessionId] = useState<string | null>(null)
   const startedAtRef = useRef<number | null>(null)
   const [activeIndex, setActiveIndex] = useState<number | null>(1)
@@ -55,6 +148,50 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
   const [isRetrying, setIsRetrying] = useState(false)
   const [loadingProgress, setLoadingProgress] = useState(0)
   const [loadingStatusText, setLoadingStatusText] = useState('Charging spell...')
+
+  // Validate if a word looks like valid English (basic heuristics)
+  const looksLikeValidWord = (word: string): boolean => {
+    const w = word.trim().toLowerCase()
+    if (w.length === 0) return true // Empty is OK (not filled yet)
+    if (w.length < 2) return true // Single letters are OK
+    
+    // Must contain at least one vowel (a, e, i, o, u, y)
+    if (!/[aeiouy]/i.test(w)) return false
+    
+    // No more than 4 consonants in a row (most English words don't have this)
+    if (/[bcdfghjklmnpqrstvwxz]{5,}/i.test(w)) return false
+    
+    // No more than 3 of the same letter in a row
+    if (/(.)\1{2,}/i.test(w)) return false
+    
+    // Check for obviously random patterns (many uncommon letter combos)
+    const uncommonPatterns = /[qx]{2}|[jkqvxz]{3}|^[bcdfghjklmnpqrstvwxz]{4,}|[bcdfghjklmnpqrstvwxz]{4,}$/i
+    if (uncommonPatterns.test(w)) return false
+    
+    return true
+  }
+
+  // Check if word is from the word bank
+  const isFromWordBank = (word: string): boolean => {
+    const normalized = word.trim().toLowerCase()
+    return usedWords.some(w => w.trim().toLowerCase() === normalized)
+  }
+
+  // Validate answer - must be from word bank or look like valid English
+  const validateAnswer = (word: string): { valid: boolean; reason?: string } => {
+    const w = word.trim()
+    if (!w) return { valid: true } // Empty is OK
+    
+    // If it's from the word bank, it's valid
+    if (isFromWordBank(w)) return { valid: true }
+    
+    // Otherwise, check if it looks like valid English
+    if (!looksLikeValidWord(w)) {
+      return { valid: false, reason: 'This does not look like a valid English word' }
+    }
+    
+    return { valid: true }
+  }
 
   const shuffle = (arr: string[]) => {
     const a = [...arr]
@@ -93,6 +230,83 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
     }
     return out
   }
+
+  // Text-to-speech with word highlighting
+  const synthesizeSpeech = useCallback(async (text: string) => {
+    try {
+      const response = await fetch('/api/tts/vertex', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          voiceId: selectedVoice,
+          speakingRate: 0.9
+        })
+      })
+      
+      if (!response.ok) {
+        console.error('TTS failed:', await response.text())
+        return null
+      }
+      
+      const data = await response.json()
+      return {
+        audioContent: data.audioContent,
+        wordTimings: data.wordTimings as Array<{ word: string; start: number; end: number }>
+      }
+    } catch (error) {
+      console.error('TTS error:', error)
+      return null
+    }
+  }, [selectedVoice])
+
+  const playStoryWithHighlighting = useCallback(async () => {
+    if (!solutionText || isPlaying) return
+    
+    // Get the full story text (with user's answers filled in)
+    const fullText = solutionText
+    
+    const result = await synthesizeSpeech(fullText)
+    if (!result) return
+    
+    // Create audio element from base64
+    const audio = new Audio(`data:audio/mpeg;base64,${result.audioContent}`)
+    setAudioElement(audio)
+    setWordTimings(result.wordTimings)
+    setIsPlaying(true)
+    setCurrentWordIndex(0)
+    
+    // Set up word timing tracking
+    const startTime = Date.now()
+    const checkInterval = setInterval(() => {
+      const elapsed = (Date.now() - startTime) / 1000
+      const currentIdx = result.wordTimings.findIndex(
+        (t, i) => elapsed >= t.start && elapsed < t.end
+      )
+      if (currentIdx !== -1) {
+        setCurrentWordIndex(currentIdx)
+      }
+    }, 50)
+    
+    audio.onended = () => {
+      clearInterval(checkInterval)
+      setIsPlaying(false)
+      setCurrentWordIndex(-1)
+      setAudioElement(null)
+    }
+    
+    audio.play()
+  }, [solutionText, isPlaying, synthesizeSpeech])
+
+  const stopPlayback = useCallback(() => {
+    if (audioElement) {
+      audioElement.pause()
+      audioElement.currentTime = 0
+      setAudioElement(null)
+    }
+    setIsPlaying(false)
+    setCurrentWordIndex(-1)
+  }, [audioElement])
 
   const retryGeneration = async () => {
     if (isRetrying) return
@@ -319,13 +533,17 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
               setIsRetrying(true)
             }
             
+            // Get scenario name from selected scenario ID
+            const scenarioName = STORY_SCENARIOS.find(s => s.id === selectedScenario)?.name
+
             const res = await fetch('/api/story-gap', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ 
                 wordSet: shuffledEnglishWords, 
                 difficulty,
-                retryAttempt: attempt 
+                retryAttempt: attempt,
+                scenario: scenarioName
               }),
             })
             
@@ -532,7 +750,34 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
     return true
   }, [checked, correctMap, blanks])
 
+  // Check if any answers are invalid (nonsense words)
+  const hasInvalidAnswers = useMemo(() => {
+    return Object.keys(invalidMap).length > 0
+  }, [invalidMap])
+
+  // Validate all answers before checking
+  const validateAllAnswers = (): boolean => {
+    const newInvalidMap: Record<number, string> = {}
+    for (let i = 1; i <= blanks; i++) {
+      const answer = answers[i] || ''
+      if (answer.trim()) {
+        const validation = validateAnswer(answer)
+        if (!validation.valid) {
+          newInvalidMap[i] = validation.reason || 'Invalid word'
+        }
+      }
+    }
+    setInvalidMap(newInvalidMap)
+    return Object.keys(newInvalidMap).length === 0
+  }
+
   const checkAnswersVisual = () => {
+    // First validate all answers
+    if (!validateAllAnswers()) {
+      // Don't proceed with checking if there are invalid words
+      return
+    }
+    
     const map: Record<number, boolean> = {}
     
     // Normalize function for consistent matching
@@ -633,29 +878,73 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
       await new Promise(resolve => setTimeout(resolve, 100))
     }
     
-    // Use the new universal scoring system: +2 per correct, -1 per wrong click
+    // Calculate and set score IMMEDIATELY based on correct answers (before AI evaluation)
     const totalGaps = gapsMeta.length
     const correctAnswers = Object.values(correctMap).filter(Boolean).length
-    const wrongAttempts = 0 // Story gap doesn't track wrong attempts separately
-    const scoreResult = calculateStoryGapScore(correctAnswers, totalGaps, wrongAttempts)
-    
+    const scoreResult = calculateStoryGapScore(correctAnswers, totalGaps, 0)
     setScore(scoreResult.pointsAwarded)
-    setSubmitted(true)
     
-    // INSTANT UI UPDATE: Send points to parent for immediate UI update
+    // Send score update immediately for instant XP
     if (onScoreUpdate) {
       if (sessionMode) {
-        // In session mode, pass correctAnswers and totalGaps for percentage calculation
         onScoreUpdate(correctAnswers, totalGaps, 'story_gap')
-        // Automatically close after a brief delay in session mode if 100% correct
         if (correctAnswers === totalGaps) {
           setTimeout(() => {
             onClose()
-          }, 500) // Small delay to show completion
+          }, 500)
         }
       } else {
-        onScoreUpdate(scoreResult.accuracy, scoreResult.pointsAwarded, 'story_gap')
+        onScoreUpdate(scoreResult.pointsAwarded, totalGaps, 'story_gap')
       }
+    }
+    
+    setSubmitted(true)
+    setIsEvaluating(true)
+    
+    // Collect user's answers and correct answers
+    const userWords: string[] = []
+    const correctWords: string[] = []
+    for (const meta of gapsMeta) {
+      userWords.push(String(answers[meta.index] || '').trim())
+      correctWords.push(meta.correct)
+    }
+    
+    // Build completed story by replacing gaps with user's words
+    const gapLines = String(gapText || '').split(/\r?\n/).filter(Boolean)
+    const completedLines = gapLines.map((line, idx) => {
+      return line.replace(/______+/, userWords[idx] || '______')
+    })
+    const completedStory = completedLines.join(' ')
+    
+    // Get scenario name
+    const scenarioName = STORY_SCENARIOS.find(s => s.id === selectedScenario)?.name
+    
+    // AI evaluation runs in background (doesn't affect score)
+    try {
+      // Call AI evaluation endpoint
+      const evalResponse = await fetch('/api/story-gap/evaluate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          originalStory: gapText,
+          completedStory,
+          correctWords,
+          userWords,
+          scenario: scenarioName
+        })
+      })
+      
+      if (evalResponse.ok) {
+        const evalData = await evalResponse.json()
+        setEvaluationResult(evalData)
+        // Don't use evalData.total for score - it's AI evaluation score (0-100), not points
+        // Score is already set above based on correct answers
+      }
+    } catch (error) {
+      console.error('Evaluation error:', error)
+      // Score is already set above, so we can ignore evaluation errors
+    } finally {
+      setIsEvaluating(false)
     }
     
     // BACKGROUND SYNC: Update database in background (non-blocking) - only if not in session mode
@@ -711,6 +1000,48 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
     })
   }
 
+  // Render completed story with word highlighting during audio playback
+  const renderCompletedStoryWithHighlighting = () => {
+    if (!solutionText) return null
+    
+    // Split solution text into words while preserving punctuation
+    const words = solutionText.split(/(\s+)/).filter(Boolean)
+    let wordCount = 0
+    
+    return (
+      <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-2xl p-6 border border-amber-500/30 mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Volume2 className="w-5 h-5 text-amber-400" />
+          <span className="text-amber-400 font-medium">Now Playing</span>
+        </div>
+        <p className="text-white text-lg leading-relaxed">
+          {words.map((word, idx) => {
+            // Skip whitespace for word counting
+            const isWord = /\S/.test(word)
+            if (isWord) {
+              const thisWordIdx = wordCount
+              wordCount++
+              const isHighlighted = thisWordIdx === currentWordIndex
+              return (
+                <span
+                  key={idx}
+                  className={`transition-all duration-150 ${
+                    isHighlighted 
+                      ? 'bg-amber-400 text-black px-1 rounded font-semibold scale-105 inline-block' 
+                      : ''
+                  }`}
+                >
+                  {word}
+                </span>
+              )
+            }
+            return <span key={idx}>{word}</span>
+          })}
+        </p>
+      </div>
+    )
+  }
+
   const renderGapSentences = () => {
     // Split by lines (not punctuation) as per new spec
     const gapLines = String(gapText || '').split(/\r?\n/).filter(Boolean)
@@ -726,18 +1057,64 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
             const part = parts[i]
             if (/^_{6,}$/.test(part)) {
               // Exactly one blank per line
+              const currentValue = answers[gapIndex] || ''
+              const isInvalid = !!invalidMap[gapIndex]
+              const invalidReason = invalidMap[gapIndex]
+              
+              // Determine input border color based on validation state
+              let inputBorderClass = 'border-white/10 focus:border-amber-500/50'
+              if (isInvalid && !checked) {
+                inputBorderClass = 'border-amber-500/70 focus:border-amber-400'
+              }
+              
               rendered.push(
-                <input
-                  key={`gap-${lineIdx}-${i}`}
-                  type="text"
-                  autoComplete="off"
-                  value={answers[gapIndex] || ''}
-                  onChange={(e) => setAnswers(prev => ({ ...prev, [gapIndex]: e.target.value }))}
-                  onFocus={() => setActiveIndex(gapIndex)}
-                  placeholder={`#${gapIndex}`}
-                  className="inline-block align-baseline mx-1 px-2 py-1 rounded-lg bg-white/5 border border-white/10 focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 text-white placeholder:text-gray-500"
-                  style={{ minWidth: '7ch', maxWidth: '22ch' }}
-                />
+                <span key={`gap-${lineIdx}-${i}`} className="relative inline-block">
+                  <input
+                    type="text"
+                    autoComplete="off"
+                    value={currentValue}
+                    onChange={(e) => {
+                      const newValue = e.target.value
+                      setAnswers(prev => ({ ...prev, [gapIndex]: newValue }))
+                      // Clear invalid state when typing
+                      if (invalidMap[gapIndex]) {
+                        setInvalidMap(prev => {
+                          const next = { ...prev }
+                          delete next[gapIndex]
+                          return next
+                        })
+                      }
+                    }}
+                    onBlur={() => {
+                      // Validate on blur
+                      const value = answers[gapIndex] || ''
+                      if (value.trim()) {
+                        const validation = validateAnswer(value)
+                        if (!validation.valid) {
+                          setInvalidMap(prev => ({ ...prev, [gapIndex]: validation.reason || 'Invalid word' }))
+                        } else {
+                          setInvalidMap(prev => {
+                            const next = { ...prev }
+                            delete next[gapIndex]
+                            return next
+                          })
+                        }
+                      }
+                    }}
+                    onFocus={() => setActiveIndex(gapIndex)}
+                    placeholder={`#${gapIndex}`}
+                    className={`inline-block align-baseline mx-1 px-2 py-1 rounded-lg bg-white/5 border ${inputBorderClass} focus:ring-2 focus:ring-amber-500/20 text-white placeholder:text-gray-500`}
+                    style={{ minWidth: '7ch', maxWidth: '22ch' }}
+                  />
+                  {isInvalid && !checked && (
+                    <span 
+                      className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center text-xs text-black font-bold cursor-help" 
+                      title={invalidReason}
+                    >
+                      !
+                    </span>
+                  )}
+                </span>
               )
             } else {
               rendered.push(<span key={`t-${lineIdx}-${i}`}>{part}</span>)
@@ -771,16 +1148,16 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
     return (
       <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50">
         {/* Aurora background effects */}
-        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-violet-600/20 rounded-full blur-[100px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-fuchsia-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
         
         <div className="relative rounded-2xl p-8 max-w-lg w-full shadow-2xl bg-[#12122a] border border-white/10 text-center">
           <div className="mb-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/30">
+            <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/30">
               <FileText className="w-8 h-8 text-white" />
             </div>
             <div className="text-2xl text-white font-bold mb-2">Spell School</div>
-            <div className="text-sm text-gray-400">Förbereder ditt ordset...</div>
+            <div className="text-sm text-gray-400">Preparing your word set...</div>
           </div>
           <MagicalProgressBar progress={loadingProgress} statusText={loadingStatusText} />
         </div>
@@ -803,7 +1180,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
                   setError(null)
                   setRetryCount(prev => prev + 1)
                 }} 
-                className="px-4 py-2 bg-violet-500 hover:bg-violet-600 text-white rounded-xl transition-all"
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl transition-all"
               >
                 Försök igen ({retryCount + 1}/{maxRetries})
               </button>
@@ -820,7 +1197,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
               Välj andra ord
             </button>
             <button onClick={onClose} className="px-4 py-2 bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 rounded-xl transition-all">
-              Stäng
+              Close
             </button>
           </div>
         </div>
@@ -833,8 +1210,8 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
     return (
       <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50 overflow-y-auto">
         {/* Aurora background effects */}
-        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-violet-600/20 rounded-full blur-[100px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-fuchsia-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
         
         <div className="relative bg-[#12122a] rounded-2xl p-6 w-full max-w-2xl shadow-2xl border border-white/10 my-4 text-center">
           {/* Header */}
@@ -843,20 +1220,20 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
               <FileText className="w-6 h-6 text-white" />
             </div>
             <div className="ml-3">
-              <h2 className="text-2xl font-bold text-white">Meningar med luckor</h2>
-              <p className="text-sm text-gray-400">Spelet klart!</p>
+              <h2 className="text-2xl font-bold text-white">Sentence Gap</h2>
+              <p className="text-sm text-gray-400">Game complete!</p>
             </div>
           </div>
 
           {/* Score Display */}
-          <div className="bg-violet-500/10 rounded-xl p-6 mb-6 border border-violet-500/30">
-            <div className="text-3xl font-bold text-violet-300 mb-2">Poäng: {score} / {blanks * 2}</div>
-            <div className="text-lg text-violet-400">Rätt: {Math.floor(score / 2)} / {blanks}</div>
+          <div className="bg-amber-500/10 rounded-xl p-6 mb-6 border border-amber-500/30">
+            <div className="text-3xl font-bold text-amber-300 mb-2">Score: {score} / {blanks * 2}</div>
+            <div className="text-lg text-amber-400">Correct: {Math.floor(score / 2)} / {blanks}</div>
           </div>
 
           <button 
             onClick={onClose} 
-            className="bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-400 hover:to-fuchsia-400 text-white py-3 px-8 rounded-xl font-semibold transition-all shadow-lg shadow-violet-500/30"
+            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white py-3 px-8 rounded-xl font-semibold transition-all shadow-lg shadow-amber-500/30"
           >
             Stäng
           </button>
@@ -876,6 +1253,347 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
 
   const sentences = solutionText.split(/(?<=[.!?])\s+/).filter(Boolean)
 
+  // Get unique categories for filtering
+  const scenarioCategories = ['All', ...new Set(STORY_SCENARIOS.map(s => s.category))]
+  const filteredScenarios = scenarioFilter === 'All' 
+    ? STORY_SCENARIOS 
+    : STORY_SCENARIOS.filter(s => s.category === scenarioFilter)
+
+  // ============ STEP 1: RULES SCREEN ============
+  if (gameStep === 'rules') {
+    return (
+      <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50 overflow-y-auto">
+        {/* Aurora background effects */}
+        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 right-1/3 w-[250px] h-[250px] bg-amber-500/15 rounded-full blur-[80px] animate-pulse" style={{ animationDelay: '2s' }} />
+        
+        <div className="relative bg-[#12122a] rounded-3xl p-8 w-full max-w-2xl shadow-2xl border border-white/10 my-4">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-amber-500/40 animate-pulse">
+              <BookOpen className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="text-3xl font-bold text-white mb-2">Story Gap Adventure</h1>
+            <p className="text-amber-300">Complete the story by finding the perfect words!</p>
+          </div>
+
+          {/* Rules Section */}
+          <div className="space-y-4 mb-8">
+            <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <span className="text-xl">🎯</span>
+                </div>
+                <div>
+                  <h3 className="text-white font-semibold mb-1">Your Goal</h3>
+                  <p className="text-gray-400 text-sm">Read the story and find the word that fits perfectly in each gap. The story should make sense and flow naturally when complete.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <span className="text-xl">📝</span>
+                </div>
+                <div>
+                  <h3 className="text-white font-semibold mb-1">How to Play</h3>
+                  <p className="text-gray-400 text-sm">Click on a gap and choose a word from the word bank, or type your own word. Each gap needs exactly one word to complete the sentence.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <span className="text-xl">⭐</span>
+                </div>
+                <div>
+                  <h3 className="text-white font-semibold mb-1">Scoring</h3>
+                  <p className="text-gray-400 text-sm">Your score is based on how well your words fit the story, how coherent the narrative is, and whether the story reaches a satisfying conclusion.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <span className="text-xl">🔊</span>
+                </div>
+                <div>
+                  <h3 className="text-white font-semibold mb-1">Listen & Learn</h3>
+                  <p className="text-gray-400 text-sm">The story will be read aloud to you! Follow along as each word is highlighted while being spoken.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-4">
+            <button
+              onClick={onClose}
+              className="flex-1 py-4 px-6 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl font-semibold transition-all"
+            >
+              Back
+            </button>
+            <button
+              onClick={() => setGameStep('scenario')}
+              className="flex-1 py-4 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white rounded-xl font-semibold transition-all shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2"
+            >
+              Choose Scenario
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ============ STEP 2: SCENARIO SELECTION ============
+  if (gameStep === 'scenario') {
+    return (
+      <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50 overflow-y-auto">
+        {/* Aurora background effects */}
+        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+        
+        <div className="relative bg-[#12122a] rounded-3xl p-6 w-full max-w-4xl shadow-2xl border border-white/10 my-4 max-h-[90vh] flex flex-col">
+          {/* Header */}
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-amber-500/30">
+              <MapPin className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-1">Choose Your Setting</h2>
+            <p className="text-gray-400">Where should your story take place?</p>
+          </div>
+
+          {/* Category Filter */}
+          <div className="flex flex-wrap gap-2 mb-4 justify-center">
+            {scenarioCategories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setScenarioFilter(cat)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  scenarioFilter === cat
+                    ? 'bg-amber-500 text-white'
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Scenario Grid */}
+          <div className="flex-1 overflow-y-auto mb-6 pr-2 -mr-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {filteredScenarios.map(scenario => (
+                <button
+                  key={scenario.id}
+                  onClick={() => setSelectedScenario(scenario.id)}
+                  className={`p-4 rounded-xl border transition-all text-center ${
+                    selectedScenario === scenario.id
+                      ? 'bg-amber-500/20 border-amber-500 ring-2 ring-amber-500/50'
+                      : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
+                  }`}
+                >
+                  <div className="text-3xl mb-2">{scenario.emoji}</div>
+                  <div className="text-white text-sm font-medium">{scenario.name}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-4">
+            <button
+              onClick={() => setGameStep('rules')}
+              className="flex-1 py-4 px-6 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl font-semibold transition-all"
+            >
+              Back
+            </button>
+            <button
+              onClick={() => setGameStep('difficulty')}
+              disabled={!selectedScenario}
+              className="flex-1 py-4 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white rounded-xl font-semibold transition-all shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Choose Difficulty
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ============ STEP 3: DIFFICULTY SELECTION ============
+  if (gameStep === 'difficulty') {
+    const difficultyOptions = [
+      {
+        id: 'green' as const,
+        name: 'Easy',
+        emoji: '🌱',
+        color: 'from-emerald-500 to-green-500',
+        bgColor: 'bg-emerald-500/10 border-emerald-500/30',
+        description: 'Short story, fewer gaps, simple vocabulary',
+        details: '3-4 sentences • 3-4 gaps • Basic words'
+      },
+      {
+        id: 'yellow' as const,
+        name: 'Medium',
+        emoji: '⚡',
+        color: 'from-amber-500 to-orange-500',
+        bgColor: 'bg-amber-500/10 border-amber-500/30',
+        description: 'Moderate length, more gaps, varied vocabulary',
+        details: '5-6 sentences • 5-6 gaps • Mixed words'
+      },
+      {
+        id: 'red' as const,
+        name: 'Hard',
+        emoji: '🔥',
+        color: 'from-red-500 to-pink-500',
+        bgColor: 'bg-red-500/10 border-red-500/30',
+        description: 'Long story, many gaps, challenging vocabulary',
+        details: '7-8 sentences • 7-8 gaps • Advanced words'
+      }
+    ]
+
+    return (
+      <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50 overflow-y-auto">
+        {/* Aurora background effects */}
+        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+        
+        <div className="relative bg-[#12122a] rounded-3xl p-8 w-full max-w-2xl shadow-2xl border border-white/10 my-4">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-amber-500/30">
+              <Gauge className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-1">Choose Difficulty</h2>
+            <p className="text-gray-400">How challenging do you want the story to be?</p>
+          </div>
+
+          {/* Difficulty Options */}
+          <div className="space-y-4 mb-8">
+            {difficultyOptions.map(opt => (
+              <button
+                key={opt.id}
+                onClick={() => setDifficulty(opt.id)}
+                className={`w-full p-5 rounded-2xl border transition-all text-left ${
+                  difficulty === opt.id
+                    ? `${opt.bgColor} ring-2 ring-offset-2 ring-offset-[#12122a]`
+                    : 'bg-white/5 border-white/10 hover:bg-white/10'
+                } ${difficulty === opt.id ? `ring-${opt.id === 'green' ? 'emerald' : opt.id === 'yellow' ? 'amber' : 'red'}-500/50` : ''}`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${opt.color} flex items-center justify-center shadow-lg`}>
+                    <span className="text-2xl">{opt.emoji}</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-white font-bold text-lg">{opt.name}</div>
+                    <div className="text-gray-400 text-sm">{opt.description}</div>
+                    <div className="text-gray-500 text-xs mt-1">{opt.details}</div>
+                  </div>
+                  {difficulty === opt.id && (
+                    <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center">
+                      <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                    </div>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-4">
+            <button
+              onClick={() => setGameStep('scenario')}
+              className="flex-1 py-4 px-6 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl font-semibold transition-all"
+            >
+              Back
+            </button>
+            <button
+              onClick={() => setGameStep('voice')}
+              disabled={!difficulty}
+              className="flex-1 py-4 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white rounded-xl font-semibold transition-all shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Choose Voice
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ============ STEP 4: VOICE SELECTION ============
+  if (gameStep === 'voice') {
+    return (
+      <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50 overflow-y-auto">
+        {/* Aurora background effects */}
+        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+        
+        <div className="relative bg-[#12122a] rounded-3xl p-8 w-full max-w-2xl shadow-2xl border border-white/10 my-4">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-amber-500/30">
+              <Volume2 className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-1">Choose Narrator</h2>
+            <p className="text-gray-400">Who should read your story aloud?</p>
+          </div>
+
+          {/* Voice Options */}
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            {VOICE_OPTIONS.map(voice => (
+              <button
+                key={voice.id}
+                onClick={() => setSelectedVoice(voice.id)}
+                className={`p-5 rounded-2xl border transition-all text-left ${
+                  selectedVoice === voice.id
+                    ? 'bg-amber-500/10 border-amber-500 ring-2 ring-amber-500/50'
+                    : 'bg-white/5 border-white/10 hover:bg-white/10'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="text-3xl">{voice.emoji}</div>
+                  <div>
+                    <div className="text-white font-semibold">{voice.name}</div>
+                    <div className="text-gray-400 text-sm">{voice.accent} • {voice.gender}</div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-4">
+            <button
+              onClick={() => setGameStep('difficulty')}
+              className="flex-1 py-4 px-6 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl font-semibold transition-all"
+            >
+              Back
+            </button>
+            <button
+              onClick={() => {
+                setGameStep('playing')
+                // Start generating the story with selected options
+              }}
+              className="flex-1 py-4 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white rounded-xl font-semibold transition-all shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2"
+            >
+              <Sparkles className="w-5 h-5" />
+              Generate Story
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ============ PLAYING STEP - Show existing game UI ============
   // Color grid selection screen
   if (showGridSelector) {
     // Convert gridConfig to the format ColorGridSelector expects
@@ -909,21 +1627,21 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div className="relative w-full max-w-2xl">
           {/* Glow effect */}
-          <div className="absolute -inset-1 bg-gradient-to-br from-violet-500/30 via-fuchsia-500/20 to-pink-500/30 rounded-3xl blur-xl" />
+          <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/30 via-orange-500/20 to-rose-500/30 rounded-3xl blur-xl" />
           
           <div className="relative rounded-2xl p-8 shadow-2xl bg-[#12122a] border border-white/10 text-center">
             {/* Header */}
             <div className="mb-8">
-              <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/30">
+              <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/30">
                 <FileText className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">Meningar med luckor</h2>
-              <p className="text-gray-400 text-sm">Välj svårighetsgrad</p>
+              <h2 className="text-2xl font-bold text-white mb-2">Sentence Gap</h2>
+              <p className="text-gray-400 text-sm">Choose difficulty level</p>
             </div>
 
             <div className="mb-8">
-              <h3 className="text-xl font-semibold mb-2 text-white">Välj svårighetsgrad</h3>
-              <p className="text-gray-400 text-sm mb-6">Texten genereras först efter att du valt nivå.</p>
+              <h3 className="text-xl font-semibold mb-2 text-white">Choose difficulty level</h3>
+              <p className="text-gray-400 text-sm mb-6">The text will be generated after you select a level.</p>
               
               <div className="flex items-center justify-center gap-4">
                 <button 
@@ -931,9 +1649,9 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
                   onClick={() => setDifficulty('green')}
                 >
                   <div className="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
-                    <span className="text-white text-xl font-bold">L</span>
+                    <span className="text-white text-xl font-bold">E</span>
                   </div>
-                  <span className="text-emerald-400 font-semibold">Lätt</span>
+                  <span className="text-emerald-400 font-semibold">Easy</span>
                 </button>
                 <button 
                   className="px-8 py-6 rounded-xl border transition-all shadow-lg hover:shadow-xl hover:scale-105 flex flex-col items-center gap-3 bg-amber-500/10 border-amber-500/30 hover:border-amber-500/50"
@@ -942,16 +1660,16 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
                   <div className="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center shadow-lg">
                     <span className="text-white text-xl font-bold">M</span>
                   </div>
-                  <span className="text-amber-400 font-semibold">Medel</span>
+                  <span className="text-amber-400 font-semibold">Medium</span>
                 </button>
                 <button 
                   className="px-8 py-6 rounded-xl border transition-all shadow-lg hover:shadow-xl hover:scale-105 flex flex-col items-center gap-3 bg-red-500/10 border-red-500/30 hover:border-red-500/50"
                   onClick={() => setDifficulty('red')}
                 >
                   <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center shadow-lg">
-                    <span className="text-white text-xl font-bold">S</span>
+                    <span className="text-white text-xl font-bold">H</span>
                   </div>
-                  <span className="text-red-400 font-semibold">Svår</span>
+                  <span className="text-red-400 font-semibold">Hard</span>
                 </button>
               </div>
             </div>
@@ -960,7 +1678,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
               onClick={onClose} 
               className="px-6 py-3 bg-white/5 border border-white/10 text-gray-400 rounded-xl font-medium hover:bg-white/10 transition-colors"
             >
-              Avbryt
+              Cancel
             </button>
           </div>
         </div>
@@ -971,19 +1689,19 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
   return (
     <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50 overflow-y-auto">
       {/* Aurora background effects */}
-      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-violet-600/20 rounded-full blur-[100px] animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-fuchsia-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
       
       <div className="relative bg-[#12122a] rounded-2xl p-6 w-full max-w-6xl shadow-2xl border border-white/10 my-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/30">
+            <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
               <FileText className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">Meningar med luckor</h2>
-              <p className="text-sm text-gray-400">Fyll i de saknade orden</p>
+              <h2 className="text-2xl font-bold text-white">Sentence Gap</h2>
+              <p className="text-sm text-gray-400">Fill in the missing words</p>
             </div>
           </div>
           <button 
@@ -1005,14 +1723,25 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
                 disabled={isRetrying}
                 className="px-6 py-3 bg-red-500 hover:bg-red-600 disabled:bg-red-500/50 text-white rounded-xl font-semibold transition-all shadow-lg shadow-red-500/30 hover:shadow-xl disabled:shadow-lg"
               >
-                {isRetrying ? 'Försöker igen...' : 'Försök igen'}
+                {isRetrying ? 'Retrying...' : 'Try again'}
               </button>
             </div>
           </div>
         )}
 
-        {/* Difficulty Indicator */}
-        <div className="mb-6">
+        {/* Story Info Bar */}
+        <div className="mb-6 flex flex-wrap items-center gap-3">
+          {/* Scenario Badge */}
+          {selectedScenario && (
+            <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl border bg-amber-500/10 border-amber-500/30">
+              <span className="text-lg">{STORY_SCENARIOS.find(s => s.id === selectedScenario)?.emoji}</span>
+              <span className="text-sm font-medium text-amber-400">
+                {STORY_SCENARIOS.find(s => s.id === selectedScenario)?.name}
+              </span>
+            </div>
+          )}
+          
+          {/* Difficulty Badge */}
           <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-xl border ${
             difficulty === 'green' ? 'bg-emerald-500/10 border-emerald-500/30' :
             difficulty === 'yellow' ? 'bg-amber-500/10 border-amber-500/30' :
@@ -1023,25 +1752,60 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
               difficulty === 'yellow' ? 'text-amber-400' :
               'text-red-400'
             }`}>
-              {difficulty ? `Nuvarande nivå: ${difficulty === 'green' ? 'Lätt' : difficulty === 'yellow' ? 'Medel' : 'Svår'}` : 'Välj svårighetsgrad för att generera meningarna.'}
+              {difficulty === 'green' ? '🌱 Easy' : difficulty === 'yellow' ? '⚡ Medium' : '🔥 Hard'}
             </span>
           </div>
+
+          {/* Voice Badge */}
+          <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl border bg-amber-500/10 border-amber-500/30">
+            <span className="text-lg">{VOICE_OPTIONS.find(v => v.id === selectedVoice)?.emoji}</span>
+            <span className="text-sm font-medium text-amber-400">
+              {VOICE_OPTIONS.find(v => v.id === selectedVoice)?.name}
+            </span>
+          </div>
+
+          {/* Play/Pause Button */}
+          {submitted && (
+            <button
+              onClick={isPlaying ? stopPlayback : playStoryWithHighlighting}
+              className={`inline-flex items-center space-x-2 px-4 py-2 rounded-xl border transition-all ${
+                isPlaying 
+                  ? 'bg-red-500/10 border-red-500/30 hover:bg-red-500/20' 
+                  : 'bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20'
+              }`}
+            >
+              {isPlaying ? (
+                <>
+                  <Pause className="w-4 h-4 text-red-400" />
+                  <span className="text-sm font-medium text-red-400">Stop</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4 text-emerald-400" />
+                  <span className="text-sm font-medium text-emerald-400">Listen</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
+
+        {/* Show highlighted story during audio playback */}
+        {isPlaying && renderCompletedStoryWithHighlighting()}
 
         <div className="grid lg:grid-cols-3 gap-6 mb-8">
           <div className="lg:col-span-2">
             <div className="bg-gradient-to-br from-white/5 to-white/10 rounded-2xl border border-white/10 p-6">
               {renderGapSentences()}
             </div>
-            <div className="mt-3 text-sm text-gray-400 font-medium">Aktiv lucka: {activeIndex ?? '—'}</div>
+            <div className="mt-3 text-sm text-gray-400 font-medium">Active gap: {activeIndex ?? '—'}</div>
             {/* Hints removed per requirements */}
           </div>
 
           <div>
-            <div className="bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 rounded-2xl border border-violet-500/20 p-6">
+            <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-2xl border border-amber-500/20 p-6">
               <div className="text-lg font-bold mb-4 text-white flex items-center">
-                <FileText className="w-5 h-5 mr-2 text-violet-400" />
-                Tillgängliga ord
+                <FileText className="w-5 h-5 mr-2 text-amber-400" />
+                Available words
               </div>
               <div className="flex flex-wrap gap-3">
                 {usedWords.map((w, i) => {
@@ -1052,26 +1816,26 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
                       key={`${w}-${i}`}
                       className={`select-none px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
                         isUsed 
-                          ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500 border-violet-400 text-white shadow-lg' 
+                          ? 'bg-gradient-to-r from-amber-500 to-orange-500 border-amber-400 text-white shadow-lg' 
                           : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/20'
                       }`}
-                      title={isUsed ? 'Används i en lucka' : 'Ej använt ännu'}
+                      title={isUsed ? 'Used in a gap' : 'Not used yet'}
                     >
                       {w}
                     </span>
                   )
                 })}
               </div>
-              <div className="mt-4 text-sm text-violet-400 font-medium">Skriv orden i luckorna. Använda ord blir violetta.</div>
+              <div className="mt-4 text-sm text-amber-400 font-medium">Write the words in the gaps. Used words will turn orange.</div>
             </div>
           </div>
         </div>
 
         {/* Progress and Actions */}
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-          <div className="bg-violet-500/10 px-4 py-2 rounded-xl border border-violet-500/30">
-            <span className="text-sm font-medium text-violet-300">
-              Luckor: {blanks} • Fyllda: {Object.values(answers).filter(v => String(v || '').trim()).length}
+          <div className="bg-amber-500/10 px-4 py-2 rounded-xl border border-amber-500/30">
+            <span className="text-sm font-medium text-amber-300">
+              Gaps: {blanks} • Filled: {Object.values(answers).filter(v => String(v || '').trim()).length}
             </span>
           </div>
           <div className="flex gap-3 flex-wrap">
@@ -1080,32 +1844,111 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
               disabled={!allAnswered || submitted} 
               className="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl font-semibold disabled:bg-white/5 disabled:text-gray-600 disabled:border-white/5 transition-all"
             >
-              Kontrollera
+              Check
             </button>
             <button 
               onClick={submit} 
               disabled={!allAnswered || submitted} 
-              className="px-6 py-3 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-400 hover:to-fuchsia-400 text-white rounded-xl font-semibold disabled:bg-white/5 disabled:text-gray-600 transition-all shadow-lg shadow-violet-500/30 hover:shadow-xl"
+              className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white rounded-xl font-semibold disabled:bg-white/5 disabled:text-gray-600 transition-all shadow-lg shadow-amber-500/30 hover:shadow-xl"
             >
-              Skicka in
+              Submit
             </button>
             <button 
               onClick={onClose} 
               className="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 rounded-xl font-semibold transition-all"
             >
-              Stäng
+              Close
             </button>
           </div>
         </div>
 
-        {submitted && (
-          <div className="text-center">
-            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-emerald-100 to-green-100 px-6 py-3 rounded-2xl border border-emerald-200">
-              <span className="text-emerald-600">🎯</span>
-              <span className="font-semibold text-emerald-800">
-                Rätt: {Math.floor(score / 2)} / {blanks} • Poäng: {score} / {blanks * 2}
-              </span>
+        {/* Warning for invalid words */}
+        {hasInvalidAnswers && !checked && (
+          <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-start gap-2">
+            <span className="text-amber-500 text-lg">⚠️</span>
+            <div>
+              <p className="text-amber-300 font-medium text-sm">Några ord ser inte ut som riktiga engelska ord</p>
+              <p className="text-amber-400/70 text-xs mt-1">Check the marked fields. Choose words from the word list below or write valid English words.</p>
             </div>
+          </div>
+        )}
+
+        {submitted && (
+          <div className="mt-6 space-y-4">
+            {isEvaluating ? (
+              <div className="text-center p-6 bg-white/5 rounded-2xl border border-white/10">
+                <div className="animate-spin w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full mx-auto mb-3" />
+                <p className="text-gray-400">Evaluating your story...</p>
+              </div>
+            ) : evaluationResult ? (
+              <div className="space-y-4">
+                {/* Main Score Display */}
+                <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-2xl p-6 border border-amber-500/30">
+                  <div className="text-center mb-4">
+                    <div className="text-5xl font-bold text-white mb-1">{evaluationResult.total}</div>
+                    <div className="text-amber-300">Total Score</div>
+                  </div>
+                  
+                  {/* Score Breakdown */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-white/5 rounded-xl p-3 text-center">
+                      <div className="text-2xl font-bold text-amber-400">{evaluationResult.coherence}</div>
+                      <div className="text-xs text-gray-400">Coherence</div>
+                    </div>
+                    <div className="bg-white/5 rounded-xl p-3 text-center">
+                      <div className="text-2xl font-bold text-emerald-400">{evaluationResult.wordChoice}</div>
+                      <div className="text-xs text-gray-400">Word Choice</div>
+                    </div>
+                    <div className="bg-white/5 rounded-xl p-3 text-center">
+                      <div className="text-2xl font-bold text-amber-400">{evaluationResult.ending}</div>
+                      <div className="text-xs text-gray-400">Ending</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* AI Feedback */}
+                <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">💬</span>
+                    <p className="text-gray-300">{evaluationResult.feedback}</p>
+                  </div>
+                </div>
+
+                {/* Word-by-word evaluation (collapsed by default) */}
+                {evaluationResult.wordEvaluations && evaluationResult.wordEvaluations.length > 0 && (
+                  <details className="bg-white/5 rounded-2xl border border-white/10">
+                    <summary className="p-4 cursor-pointer text-gray-300 hover:text-white">
+                      📝 View word-by-word feedback
+                    </summary>
+                    <div className="px-4 pb-4 space-y-2">
+                      {evaluationResult.wordEvaluations.map((we, idx) => (
+                        <div key={idx} className={`p-3 rounded-lg ${we.word.toLowerCase() === we.correct.toLowerCase() ? 'bg-emerald-500/10' : 'bg-amber-500/10'}`}>
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium text-white">{we.word}</span>
+                            <span className={`text-sm ${we.word.toLowerCase() === we.correct.toLowerCase() ? 'text-emerald-400' : 'text-amber-400'}`}>
+                              +{we.points}
+                            </span>
+                          </div>
+                          {we.word.toLowerCase() !== we.correct.toLowerCase() && (
+                            <div className="text-xs text-gray-400 mt-1">Expected: {we.correct}</div>
+                          )}
+                          {we.comment && <div className="text-xs text-gray-500 mt-1">{we.comment}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </div>
+            ) : (
+              <div className="text-center">
+                <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-emerald-500/10 to-green-500/10 px-6 py-3 rounded-2xl border border-emerald-500/30">
+                  <span className="text-emerald-400">🎯</span>
+                  <span className="font-semibold text-emerald-300">
+                    Correct: {Object.values(correctMap).filter(Boolean).length} / {blanks} • Score: {score}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

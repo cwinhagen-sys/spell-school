@@ -156,7 +156,7 @@ export default function ManageStudentsPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
-        setMessage({ type: 'error', text: 'Not authenticated' })
+        setMessage({ type: 'error', text: 'Ej autentiserad' })
         return
       }
 
@@ -183,7 +183,7 @@ export default function ManageStudentsPage() {
       }
     } catch (error) {
       console.error('Error loading classes:', error)
-      setMessage({ type: 'error', text: 'Failed to load classes' })
+      setMessage({ type: 'error', text: 'Kunde inte ladda klasser' })
     }
   }
 
@@ -194,7 +194,7 @@ export default function ManageStudentsPage() {
       // Get the current session token
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
-        setMessage({ type: 'error', text: 'Not authenticated' })
+        setMessage({ type: 'error', text: 'Ej autentiserad' })
         return
       }
 
@@ -255,11 +255,11 @@ export default function ManageStudentsPage() {
         
         setStudents(studentsWithStats)
       } else {
-        setMessage({ type: 'error', text: data.error || 'Failed to load students' })
+        setMessage({ type: 'error', text: data.error || 'Kunde inte ladda elever' })
       }
     } catch (error) {
       console.error('Error loading students:', error)
-      setMessage({ type: 'error', text: 'Failed to load students' })
+      setMessage({ type: 'error', text: 'Kunde inte ladda elever' })
     } finally {
       setLoading(false)
     }
@@ -271,7 +271,7 @@ export default function ManageStudentsPage() {
       
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
-        setMessage({ type: 'error', text: 'Not authenticated' })
+        setMessage({ type: 'error', text: 'Ej autentiserad' })
         return
       }
 
@@ -308,11 +308,11 @@ export default function ManageStudentsPage() {
         setStudentDetails(data)
       } else {
         console.error('📊 Student Details API Error:', data)
-        setMessage({ type: 'error', text: data.error || 'Failed to load student details' })
+        setMessage({ type: 'error', text: data.error || 'Kunde inte ladda elevdetaljer' })
       }
     } catch (error) {
       console.error('Error loading student details:', error)
-      setMessage({ type: 'error', text: 'Failed to load student details' })
+      setMessage({ type: 'error', text: 'Kunde inte ladda elevdetaljer' })
     } finally {
       setDetailsLoading(false)
     }
@@ -660,7 +660,7 @@ export default function ManageStudentsPage() {
                       onClick={() => handleSort('average_accuracy')}
                     >
                       <div className="flex items-center gap-2">
-                        <span>Accuracy</span>
+                        <span>Träffsäkerhet</span>
                         <ArrowUpDown className="w-3 h-3 text-gray-500" />
                         {sortBy === 'average_accuracy' && (
                           <span className="text-xs font-bold text-violet-400">{sortOrder === 'asc' ? '↑' : '↓'}</span>
@@ -679,7 +679,7 @@ export default function ManageStudentsPage() {
                       onClick={() => handleSort('games_played')}
                     >
                       <div className="flex items-center gap-2">
-                        <span>Games</span>
+                        <span>Spel</span>
                         <ArrowUpDown className="w-3 h-3 text-gray-500" />
                         {sortBy === 'games_played' && (
                           <span className="text-xs font-bold text-violet-400">{sortOrder === 'asc' ? '↑' : '↓'}</span>
@@ -696,7 +696,7 @@ export default function ManageStudentsPage() {
                       className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider relative select-none hover:bg-white/5 transition-colors"
                       style={{ width: columnWidths.latestGame, minWidth: 120 }}
                     >
-                      <span>Latest Games</span>
+                      <span>Senaste spel</span>
                       <div
                         className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors ${resizingColumn === 'latestGame' ? 'bg-violet-500' : 'hover:bg-violet-400'}`}
                         onMouseDown={(e) => handleResizeStart('latestGame', e)}
@@ -708,7 +708,7 @@ export default function ManageStudentsPage() {
                       className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider relative select-none hover:bg-white/5 transition-colors"
                       style={{ width: columnWidths.quizzes, minWidth: 200 }}
                     >
-                      <span>Recent Quizzes</span>
+                      <span>Senaste quiz</span>
                       <div
                         className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors ${resizingColumn === 'quizzes' ? 'bg-violet-500' : 'hover:bg-violet-400'}`}
                         onMouseDown={(e) => handleResizeStart('quizzes', e)}
@@ -717,7 +717,7 @@ export default function ManageStudentsPage() {
                     
                     {/* Actions Column */}
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-20">
-                      Actions
+                      Åtgärder
                     </th>
                   </tr>
                 </thead>
@@ -824,7 +824,7 @@ export default function ManageStudentsPage() {
                                 )
                               })
                             ) : (
-                              <span className="text-xs text-gray-400">No games</span>
+                              <span className="text-xs text-gray-400">Inga spel</span>
                             )}
                           </div>
                         </td>
@@ -850,7 +850,7 @@ export default function ManageStudentsPage() {
                                   </div>
                                 ))
                               ) : (
-                                <span className="text-xs text-gray-400">No quizzes</span>
+                              <span className="text-xs text-gray-400">Inga quiz</span>
                               )}
                             </div>
                             {student.recent_quiz_results && student.recent_quiz_results.length > 3 && (
@@ -867,8 +867,8 @@ export default function ManageStudentsPage() {
                                 className="text-xs text-violet-400 hover:text-violet-300 mt-1 self-start"
                               >
                                 {isQuizzesExpanded 
-                                  ? `Show less (${student.recent_quiz_results.length - 3} hidden)`
-                                  : `Show ${student.recent_quiz_results.length - 3} more`
+                                  ? `Visa mindre (${student.recent_quiz_results.length - 3} dolda)`
+                                  : `Visa ${student.recent_quiz_results.length - 3} till`
                                 }
                               </button>
                             )}
@@ -884,7 +884,7 @@ export default function ManageStudentsPage() {
                               loadStudentDetails(student.id)
                             }}
                             className="p-2 text-gray-400 hover:text-violet-400 hover:bg-violet-500/10 rounded-lg transition-colors"
-                            title="View details"
+                            title="Visa detaljer"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
@@ -954,7 +954,7 @@ export default function ManageStudentsPage() {
                     <div className="bg-white/5 rounded-lg p-3 border border-white/5">
                       <div className="flex items-center gap-2 mb-1">
                         <Target className="w-4 h-4 text-emerald-400" />
-                        <span className="text-xs text-gray-500">Accuracy</span>
+                        <span className="text-xs text-gray-500">Träffsäkerhet</span>
                       </div>
                       <div className="text-xl font-bold text-white">{student.average_accuracy || 0}%</div>
                     </div>
@@ -962,7 +962,7 @@ export default function ManageStudentsPage() {
                     <div className="bg-white/5 rounded-lg p-3 border border-white/5">
                       <div className="flex items-center gap-2 mb-1">
                         <Award className="w-4 h-4 text-amber-400" />
-                        <span className="text-xs text-gray-500">Games</span>
+                        <span className="text-xs text-gray-500">Spel</span>
                       </div>
                       <div className="text-xl font-bold text-white">{student.games_played || 0}</div>
                     </div>
@@ -970,7 +970,7 @@ export default function ManageStudentsPage() {
                     <div className="bg-white/5 rounded-lg p-3 border border-white/5">
                       <div className="flex items-center gap-2 mb-1">
                         <Clock className="w-4 h-4 text-violet-400" />
-                        <span className="text-xs text-gray-500">Last Active</span>
+                        <span className="text-xs text-gray-500">Senast aktiv</span>
                       </div>
                       <div className="text-xs font-semibold text-white">{formatDate(student.last_activity)}</div>
                     </div>
@@ -978,7 +978,7 @@ export default function ManageStudentsPage() {
                   
                   {student.recent_quiz_results && student.recent_quiz_results.length > 0 && (
                     <div className="mt-4 pt-4 border-t border-white/10">
-                      <div className="text-xs font-semibold text-gray-400 mb-2">Recent Quizzes</div>
+                      <div className="text-xs font-semibold text-gray-400 mb-2">Senaste quiz</div>
                       <div className="flex flex-wrap gap-2">
                         {student.recent_quiz_results.map((quiz, idx) => (
                           <div

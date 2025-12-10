@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { FileText, Users, BookOpen, Filter, Calendar, Star, Target, Clock, ChevronDown, ChevronUp, Eye } from 'lucide-react'
+import { FileText, Users, BookOpen, Filter, Calendar, Star, Target, Clock, ChevronDown, ChevronUp, Eye, Lock, Sparkles, ArrowRight } from 'lucide-react'
+import Link from 'next/link'
 
 type QuizResult = {
   id: string
@@ -48,15 +49,29 @@ export default function QuizResultsPage() {
   const [expandedQuiz, setExpandedQuiz] = useState<string | null>(null)
   const [quizDetails, setQuizDetails] = useState<Record<string, WordDetail[]>>({})
   const [loadingDetails, setLoadingDetails] = useState<Record<string, boolean>>({})
+  const [hasAccess, setHasAccess] = useState(false)
+  const [checkingAccess, setCheckingAccess] = useState(true)
+  const [showPaymentWall, setShowPaymentWall] = useState(false)
 
   useEffect(() => {
     ;(async () => {
       try {
         setLoading(true)
+        setCheckingAccess(true)
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { window.location.href = '/'; return }
         const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
         if (!profile || profile.role !== 'teacher') { window.location.href = '/student'; return }
+
+        // Check access to quiz stats
+        const access = await hasQuizStatsAccess(user.id)
+        setHasAccess(access)
+        if (!access) {
+          const tier = await getUserSubscriptionTier(user.id)
+          if (tier !== 'pro') {
+            setShowPaymentWall(true)
+          }
+        }
 
         // Load classes
         const { data: cls } = await supabase
@@ -78,6 +93,7 @@ export default function QuizResultsPage() {
         setError(e?.message || 'Failed to load data')
       } finally {
         setLoading(false)
+        setCheckingAccess(false)
       }
     })()
   }, [])
@@ -362,6 +378,63 @@ export default function QuizResultsPage() {
       wrong: wordDetails.filter(w => w.verdict === 'wrong').length,
       empty: wordDetails.filter(w => w.verdict === 'empty').length
     }
+  }
+
+  if (checkingAccess) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Checking access...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!hasAccess) {
+    return (
+      <>
+        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-8">
+            <div className="flex items-center gap-4 mb-2">
+              <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/20">
+                <FileText className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">Quiz Results</h1>
+                <p className="text-gray-400">View detailed quiz statistics and results</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-amber-500/30 p-8 text-center shadow-xl">
+            <div className="w-20 h-20 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-amber-500/20">
+              <Lock className="w-10 h-10 text-amber-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-3">Quiz Statistics requires Pro plan</h2>
+            <p className="text-gray-400 mb-8 max-w-md mx-auto">
+              Quiz statistics and detailed results are only available for Pro plans. Upgrade to view comprehensive quiz analytics.
+            </p>
+            <Link
+              href="/teacher/account"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20"
+            >
+              <Sparkles className="w-5 h-5" />
+              View subscription plans
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+        <PaymentWallModal
+          isOpen={showPaymentWall}
+          onClose={() => setShowPaymentWall(false)}
+          feature="Quiz Statistics"
+          currentLimit={null}
+          upgradeTier="pro"
+          upgradeMessage="Quiz statistics and detailed results are only available for Pro plans. Upgrade to view comprehensive quiz analytics and track student performance."
+        />
+      </>
+    )
   }
 
   return (
@@ -678,6 +751,14 @@ export default function QuizResultsPage() {
           </div>
         )}
       </div>
+      <PaymentWallModal
+        isOpen={showPaymentWall}
+        onClose={() => setShowPaymentWall(false)}
+        feature="Quiz Statistics"
+        currentLimit={null}
+        upgradeTier="pro"
+        upgradeMessage="Quiz statistics and detailed results are only available for Pro plans. Upgrade to view comprehensive quiz analytics and track student performance."
+      />
     </div>
   )
 }

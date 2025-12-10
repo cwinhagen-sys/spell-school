@@ -10,6 +10,7 @@
     "create-favicon": "node scripts/create-favicon.js"
   },
   "dependencies": {
+    "@google-cloud/text-to-speech": "^6.4.0",
     "@heroicons/react": "^2.0.0",
     "@stripe/stripe-js": "^2.4.0",
     "@supabase/supabase-js": "^2.39.0",

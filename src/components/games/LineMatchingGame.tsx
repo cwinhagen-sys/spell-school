@@ -497,14 +497,14 @@ export default function LineMatchingGame({ words, translations, onClose, onScore
   return (
     <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50">
       {/* Aurora background effects */}
-      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-fuchsia-600/20 rounded-full blur-[100px] animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-violet-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
       
       <div className="relative bg-[#12122a] rounded-2xl p-6 w-full max-w-7xl h-[90vh] shadow-2xl border border-white/10 flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between mb-4 flex-shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-fuchsia-500 via-violet-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-fuchsia-500/30">
+            <div className="w-12 h-12 bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/30">
               <Sparkles className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -514,9 +514,9 @@ export default function LineMatchingGame({ words, translations, onClose, onScore
           </div>
 
           <div className="flex items-center space-x-4">
-            <div className="bg-fuchsia-500/10 px-4 py-2 rounded-xl border border-fuchsia-500/30">
-              <div className="text-xs text-fuchsia-400 font-medium">Framsteg</div>
-              <div className="text-xl font-bold text-fuchsia-300">
+            <div className="bg-amber-500/10 px-4 py-2 rounded-xl border border-amber-500/30">
+              <div className="text-xs text-amber-400 font-medium">Progress</div>
+              <div className="text-xl font-bold text-amber-300">
                 {correctCount} / {pairs.length}
               </div>
             </div>
@@ -545,7 +545,7 @@ export default function LineMatchingGame({ words, translations, onClose, onScore
         </div>
 
         {/* Game Area - Two Sides Layout */}
-        <div className="flex-1 relative bg-gradient-to-br from-fuchsia-500/5 via-violet-500/5 to-cyan-500/5 rounded-2xl border border-white/10 overflow-hidden" style={{ minHeight: '600px', maxHeight: 'calc(90vh - 200px)' }}>
+        <div className="flex-1 relative bg-gradient-to-br from-amber-500/5 via-orange-500/5 to-rose-500/5 rounded-2xl border border-white/10 overflow-hidden" style={{ minHeight: '600px', maxHeight: 'calc(90vh - 200px)' }}>
           {/* Left Side Label - Swedish */}
           <div className="absolute left-4 top-4 bg-amber-500/20 px-4 py-2 rounded-lg border border-amber-500/30 z-30">
             <span className="font-bold text-amber-400 text-sm">🇸🇪 Svenska</span>
