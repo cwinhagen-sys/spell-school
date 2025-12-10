@@ -373,7 +373,7 @@ export async function POST(request: NextRequest) {
         // 2. Remove word if it appears within the first ~30 characters (early repetition)
         const words = text.split(/\s+/)
         const firstFewWords = words.slice(0, 6)
-        const wordIndex = firstFewWords.findIndex(w => 
+        const wordIndex = firstFewWords.findIndex((w: string) => 
           w.toLowerCase().replace(/[.,!?;:'"]/g, '') === lowerWord
         )
         
