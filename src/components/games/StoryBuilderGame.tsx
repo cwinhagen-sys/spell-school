@@ -18,6 +18,7 @@ interface StorySegment {
   text: string
   playerWord?: string
   gapType?: string
+  wasTargetWord?: boolean
 }
 
 // Game flow steps
