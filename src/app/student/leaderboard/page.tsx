@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { levelForXp } from '@/lib/leveling'
 import { titleForLevel } from '@/lib/wizardTitles'
-import { Trophy, Users, Crown, Zap, Target, Flame, Keyboard, TrendingUp } from 'lucide-react'
+import { Trophy, Users, Crown, Zap, Target, Flame, Keyboard } from 'lucide-react'
 
 interface LeaderboardPlayer {
   id: string
@@ -126,8 +126,6 @@ export default function LeaderboardPage() {
       description: 'Total XP levels',
       icon: <Crown className="w-5 h-5" />,
       iconColor: 'text-amber-400',
-      bgColor: 'from-amber-500/20 to-orange-500/20',
-      borderColor: 'border-amber-500/30',
       metric: (player: LeaderboardPlayer) => player.level,
       renderValue: (player: LeaderboardPlayer) => `Lv ${player.level}`
     },
@@ -137,8 +135,6 @@ export default function LeaderboardPage() {
       description: 'Collector\'s favorite',
       icon: <Trophy className="w-5 h-5" />,
       iconColor: 'text-amber-400',
-      bgColor: 'from-amber-500/20 to-orange-500/20',
-      borderColor: 'border-amber-500/30',
       metric: (player: LeaderboardPlayer) => player.badgeCount,
       renderValue: (player: LeaderboardPlayer) => `${player.badgeCount} badges`
     },
@@ -147,9 +143,7 @@ export default function LeaderboardPage() {
       title: 'Longest Streak',
       description: 'Days in a row right now',
       icon: <Flame className="w-5 h-5" />,
-      iconColor: 'text-orange-400',
-      bgColor: 'from-orange-500/20 to-red-500/20',
-      borderColor: 'border-orange-500/30',
+      iconColor: 'text-amber-400',
       metric: (player: LeaderboardPlayer) => player.longestStreak,
       renderValue: (player: LeaderboardPlayer) => `${player.longestStreak} days`
     },
@@ -158,9 +152,7 @@ export default function LeaderboardPage() {
       title: 'Most Games',
       description: 'Total number of games',
       icon: <Zap className="w-5 h-5" />,
-      iconColor: 'text-cyan-400',
-      bgColor: 'from-cyan-500/20 to-blue-500/20',
-      borderColor: 'border-cyan-500/30',
+      iconColor: 'text-amber-400',
       metric: (player: LeaderboardPlayer) => player.sessionCount,
       renderValue: (player: LeaderboardPlayer) => `${player.sessionCount} games`
     },
@@ -169,9 +161,7 @@ export default function LeaderboardPage() {
       title: 'Fastest Typist',
       description: 'Best typing speed',
       icon: <Keyboard className="w-5 h-5" />,
-      iconColor: 'text-fuchsia-400',
-      bgColor: 'from-fuchsia-500/20 to-pink-500/20',
-      borderColor: 'border-fuchsia-500/30',
+      iconColor: 'text-amber-400',
       metric: (player: LeaderboardPlayer) => player.bestKpm,
       renderValue: (player: LeaderboardPlayer) => `${Math.round(player.bestKpm)} KPM`
     },
@@ -180,9 +170,7 @@ export default function LeaderboardPage() {
       title: 'Best Accuracy',
       description: 'Highest average',
       icon: <Target className="w-5 h-5" />,
-      iconColor: 'text-emerald-400',
-      bgColor: 'from-emerald-500/20 to-green-500/20',
-      borderColor: 'border-emerald-500/30',
+      iconColor: 'text-amber-400',
       metric: (player: LeaderboardPlayer) => player.averageAccuracy,
       renderValue: (player: LeaderboardPlayer) => `${Math.round(player.averageAccuracy)}%`
     }
@@ -193,32 +181,31 @@ export default function LeaderboardPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="relative">
-              <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/30">
-                <Users className="w-7 h-7 text-white" />
-              </div>
-              <div className="absolute -inset-1 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl blur opacity-30" />
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-[#161622] border border-white/[0.08] rounded-xl flex items-center justify-center">
+              <Users className="w-6 h-6 text-amber-400" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white">Leaderboard</h1>
-              <p className="text-gray-400">See which classmates lead in different categories</p>
+              <h1 className="text-2xl font-bold text-white">Leaderboard</h1>
+              <p className="text-sm text-gray-500">See which classmates lead in different categories</p>
             </div>
           </div>
         </div>
 
         {error ? (
-          <div className="bg-red-500/20 border border-red-500/30 rounded-2xl p-6 text-center text-red-400">
+          <div className="bg-[#161622] border border-red-500/20 rounded-xl p-6 text-center text-red-400">
             {error}
           </div>
         ) : leaderboardPlayers.length === 0 ? (
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 shadow-xl p-12 text-center">
-            <Trophy className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400 text-lg">No leaderboard available</p>
+          <div className="bg-[#161622] rounded-xl border border-white/[0.08] p-12 text-center">
+            <div className="w-14 h-14 bg-[#1a1a2e] rounded-xl flex items-center justify-center mx-auto mb-4 border border-white/[0.06]">
+              <Trophy className="w-7 h-7 text-gray-600" />
+            </div>
+            <p className="text-gray-400">No leaderboard available</p>
             <p className="text-gray-500 text-sm mt-2">Start playing games to get on the leaderboard!</p>
           </div>
         ) : (
-          <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
             {categories.map(category => {
               const sortedPlayers = leaderboardPlayers
                 .slice()
@@ -229,34 +216,29 @@ export default function LeaderboardPage() {
               return (
                 <div 
                   key={category.key} 
-                  className={`rounded-2xl border bg-gradient-to-br ${category.bgColor} ${category.borderColor} p-6 backdrop-blur-sm`}
+                  className="bg-[#161622] rounded-xl border border-white/[0.08] p-5"
                 >
-                  <div className="flex items-center gap-3 mb-5">
-                    <div className={category.iconColor}>{category.icon}</div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-9 h-9 bg-[#1a1a2e] rounded-lg flex items-center justify-center border border-white/[0.06]">
+                      <span className={category.iconColor}>{category.icon}</span>
+                    </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-white">{category.title}</h3>
-                      <p className="text-xs text-gray-400">{category.description}</p>
+                      <h3 className="text-sm font-semibold text-white">{category.title}</h3>
+                      <p className="text-xs text-gray-500">{category.description}</p>
                     </div>
                   </div>
                   <div className="space-y-2">
                     {topPlayers.map((player, index) => {
                       const rank = index + 1
-                      const isTopThree = rank <= 3
                       const isCurrentUser = player.id === leaderboardData?.currentUserId
-                      
-                      const medalColors = {
-                        1: 'from-amber-400 to-yellow-500 text-white shadow-amber-500/50',
-                        2: 'from-gray-300 to-gray-400 text-gray-800 shadow-gray-400/50',
-                        3: 'from-orange-400 to-amber-500 text-white shadow-orange-500/50'
-                      }
                       
                       return (
                         <div
                           key={`${category.key}-${player.id}`}
-                          className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-all ${
+                          className={`flex items-center justify-between rounded-lg px-3 py-2.5 transition-all ${
                             isCurrentUser
-                              ? 'border-amber-500/50 bg-amber-500/20'
-                              : 'border-white/10 bg-white/5 hover:bg-white/10'
+                              ? 'bg-amber-500/10 border border-amber-500/20'
+                              : 'bg-[#1a1a2e] border border-white/[0.04] hover:border-white/[0.08]'
                           }`}
                         >
                           <div className="flex items-center gap-3">
@@ -264,36 +246,34 @@ export default function LeaderboardPage() {
                               <img
                                 src={player.wizardImage}
                                 alt={player.displayName || 'Student'}
-                                className={`w-10 h-10 rounded-full object-cover border-2 ${
-                                  isTopThree ? 'border-white shadow-lg' : 'border-white/30'
-                                }`}
+                                className="w-8 h-8 rounded-full object-cover border border-white/20"
                               />
-                              <div className={`absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shadow-lg ${
-                                isTopThree 
-                                  ? `bg-gradient-to-br ${medalColors[rank as 1 | 2 | 3]}`
-                                  : 'bg-[#1a1a2e] border border-white/20 text-gray-400'
+                              <div className={`absolute -top-1 -left-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                                rank === 1 
+                                  ? 'bg-amber-500 text-white'
+                                  : rank === 2
+                                  ? 'bg-gray-400 text-gray-900'
+                                  : rank === 3
+                                  ? 'bg-orange-500 text-white'
+                                  : 'bg-[#252538] border border-white/10 text-gray-400'
                               }`}>
                                 {rank}
                               </div>
                             </div>
                             <div>
-                              <div className="text-sm font-semibold text-white flex items-center gap-2">
+                              <div className="text-sm font-medium text-white flex items-center gap-2">
                                 {player.displayName}
                                 {isCurrentUser && (
-                                  <span className="text-xs font-medium text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded-full">
-                                    You
-                                  </span>
+                                  <span className="text-[10px] font-medium text-amber-400">You</span>
                                 )}
                               </div>
-                              <div className="text-xs text-gray-500">
-                                Level {player.level} · {player.totalPoints.toLocaleString()} XP
+                              <div className="text-[11px] text-gray-500">
+                                Lv {player.level} · {player.totalPoints.toLocaleString()} XP
                               </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-base font-bold text-white">
-                              {category.renderValue(player)}
-                            </div>
+                          <div className="text-sm font-semibold text-gray-300">
+                            {category.renderValue(player)}
                           </div>
                         </div>
                       )
@@ -310,7 +290,7 @@ export default function LeaderboardPage() {
           </div>
         )}
 
-        <div className="mt-8 p-4 bg-white/5 backdrop-blur-sm rounded-xl text-center text-sm text-gray-500 border border-white/10">
+        <div className="mt-6 p-4 bg-[#161622] rounded-xl text-center text-xs text-gray-500 border border-white/[0.08]">
           <p>The leaderboard updates after each game played</p>
         </div>
       </div>

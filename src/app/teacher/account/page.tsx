@@ -931,9 +931,6 @@ function TeacherAccountPageContent() {
                   </button>
                 </div>
               </div>
-              <p className="text-xs text-gray-400 mt-4 text-center">
-                You can also <Link href="/pricing" className="text-violet-400 hover:text-violet-300 underline">compare all plans</Link>
-              </p>
             </div>
             
             {/* Testpilot Code Input */}
@@ -1256,17 +1253,6 @@ function TeacherAccountPageContent() {
           </div>
         </div>
 
-        {subscriptionTier === 'free' && (
-          <div className="mt-8 pt-6 border-t border-white/[0.12]">
-            <Link
-              href="/pricing"
-              className="inline-flex items-center gap-2 text-amber-400 hover:text-amber-300 font-semibold transition-colors"
-            >
-              View all plans and upgrade
-              <ExternalLink className="w-4 h-4" />
-            </Link>
-          </div>
-        )}
       </div>
     </div>
   )

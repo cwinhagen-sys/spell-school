@@ -15,7 +15,6 @@ import {
   ChevronDown,
   Menu,
   X,
-  Sparkles,
   Zap
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -283,14 +282,15 @@ export default function StudentHeader() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/student" className="flex items-center gap-3 group">
-            <div className="relative">
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 rounded-xl flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg shadow-amber-500/30">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
-              <div className="absolute -inset-1 bg-gradient-to-br from-amber-400 to-rose-500 rounded-xl blur opacity-30 group-hover:opacity-50 transition-opacity" />
+            <div className="w-10 h-10 bg-gradient-to-br from-amber-400 via-orange-500 to-orange-600 rounded-xl flex items-center justify-center transform group-hover:scale-105 transition-transform shadow-lg shadow-orange-500/20">
+              <span className="text-white font-bold text-lg">S</span>
             </div>
-            <span className="text-xl font-bold text-white hidden sm:block">
-              Spell<span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">School</span>
+            <span 
+              className="text-xl font-bold tracking-tight font-[family-name:var(--font-playfair)] hidden sm:block"
+              style={{ letterSpacing: '-0.02em' }}
+            >
+              <span className="text-white">Spell</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">School</span>
             </span>
           </Link>
 

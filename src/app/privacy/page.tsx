@@ -5,14 +5,12 @@ import { Shield, Lock, Eye, UserCheck, Mail, Calendar, ArrowLeft, Sparkles } fro
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-[#0a0a1a] text-white">
-      {/* Animated Background */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0f0f2a] via-[#0a0a1a] to-[#050510]" />
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-purple-600/30 rounded-full blur-[120px] animate-pulse" />
-          <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-cyan-500/20 rounded-full blur-[100px]" style={{ animationDelay: '1s' }} />
-        </div>
+    <div className="min-h-screen bg-[#08080f] text-white">
+      {/* Subtle Background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 bg-[#08080f]" />
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-amber-500/[0.03] rounded-full blur-[150px]" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-orange-500/[0.02] rounded-full blur-[120px]" />
       </div>
 
       {/* Header */}

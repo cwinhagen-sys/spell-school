@@ -229,22 +229,15 @@ function JoinSessionContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center py-12 px-4 relative overflow-hidden">
-      {/* Aurora background effects */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-amber-900/30 via-orange-900/20 to-yellow-900/30 blur-3xl animate-pulse" style={{ animationDuration: '8s' }} />
-        <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
+    <div className="min-h-screen bg-[#08080f] flex items-center justify-center py-12 px-4 relative overflow-hidden">
+      {/* Subtle Background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 bg-[#08080f]" />
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-amber-500/[0.03] rounded-full blur-[150px]" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-orange-500/[0.02] rounded-full blur-[120px]" />
       </div>
       
-      {/* Subtle grid pattern */}
-      <div className="absolute inset-0 z-0 opacity-10" style={{ 
-        backgroundImage: 'linear-gradient(to right, #ffffff1a 1px, transparent 1px), linear-gradient(to bottom, #ffffff1a 1px, transparent 1px)', 
-        backgroundSize: '40px 40px' 
-      }} />
-      
       <div className="max-w-md w-full relative z-10">
-        {/* Glow effect behind card */}
-        <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-yellow-500/20 rounded-3xl blur-xl" />
         
         <div className="relative bg-[#12122a]/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 p-8">
           {step === 'code' && (
@@ -414,17 +407,15 @@ function JoinSessionContent() {
 export default function JoinSessionPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center relative overflow-hidden">
-        {/* Aurora background effects */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-amber-900/30 via-orange-900/20 to-yellow-900/30 blur-3xl" />
-          <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl" />
+      <div className="min-h-screen bg-[#08080f] flex items-center justify-center relative overflow-hidden">
+        {/* Subtle Background */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute inset-0 bg-[#08080f]" />
+          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-amber-500/[0.03] rounded-full blur-[150px]" />
+          <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-orange-500/[0.02] rounded-full blur-[120px]" />
         </div>
         <div className="text-center relative z-10">
-          <div className="w-16 h-16 mx-auto mb-4 relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl blur-lg opacity-50 animate-pulse" />
-            <div className="relative w-16 h-16 border-2 border-amber-500/30 border-t-amber-500 rounded-xl animate-spin" />
-          </div>
+          <div className="w-10 h-10 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-400">Loading...</p>
         </div>
       </div>

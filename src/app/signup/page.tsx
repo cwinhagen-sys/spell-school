@@ -11,8 +11,8 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800 flex items-center justify-center px-6 py-12">
-      <div className="text-center text-gray-300">Redirecting…</div>
+    <div className="min-h-screen bg-[#08080f] flex items-center justify-center px-6 py-12">
+      <div className="text-center text-gray-400">Redirecting…</div>
     </div>
   )
 }

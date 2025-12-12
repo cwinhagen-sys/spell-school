@@ -10,8 +10,8 @@ export default function LoginPage() {
     window.location.replace('/')
   }
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center px-6">
-      <div className="text-center text-gray-300">Redirecting…</div>
+    <div className="min-h-screen bg-[#08080f] flex items-center justify-center px-6">
+      <div className="text-center text-gray-400">Redirecting…</div>
     </div>
   )
 }

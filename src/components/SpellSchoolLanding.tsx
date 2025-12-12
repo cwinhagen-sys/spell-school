@@ -213,39 +213,12 @@ export default function SpellSchoolLanding({
   ];
 
   return (
-    <div className="min-h-screen bg-[#0a0a1a] text-white overflow-x-hidden">
-      {/* Animated Background */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0f0f2a] via-[#0a0a1a] to-[#050510]" />
-        
-        {/* Subtle aurora effect */}
-        <div className="absolute inset-0 opacity-20">
-          <motion.div 
-            className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-purple-600/30 rounded-full blur-[120px]"
-            animate={{ x: [0, 50, 0], y: [0, 30, 0], scale: [1, 1.1, 1] }}
-            transition={{ duration: 20, repeat: Infinity, ease: "easeInOut", repeatType: "loop" as const }}
-          />
-          <motion.div 
-            className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-cyan-500/20 rounded-full blur-[100px]"
-            animate={{ x: [0, -40, 0], y: [0, 50, 0], scale: [1, 1.15, 1] }}
-            transition={{ duration: 25, repeat: Infinity, ease: "easeInOut", delay: 5, repeatType: "loop" as const }}
-          />
-          <motion.div 
-            className="absolute bottom-1/4 left-1/3 w-[400px] h-[400px] bg-amber-500/15 rounded-full blur-[80px]"
-            animate={{ x: [0, 60, 0], y: [0, -40, 0], scale: [1, 1.2, 1] }}
-            transition={{ duration: 30, repeat: Infinity, ease: "easeInOut", delay: 10, repeatType: "loop" as const }}
-          />
-        </div>
-        
-        {/* Subtle grid */}
-        <div 
-          className="absolute inset-0 opacity-[0.02]"
-          style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-                             linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-            backgroundSize: '60px 60px'
-          }}
-        />
+    <div className="min-h-screen bg-[#08080f] text-white overflow-x-hidden">
+      {/* Subtle Background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 bg-[#08080f]" />
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-amber-500/[0.03] rounded-full blur-[150px]" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-orange-500/[0.02] rounded-full blur-[120px]" />
       </div>
 
       {/* Header */}
@@ -253,29 +226,30 @@ export default function SpellSchoolLanding({
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          scrolled ? 'bg-[#0a0a1a]/95 backdrop-blur-xl border-b border-white/5 shadow-lg shadow-black/20' : 'bg-transparent'
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          scrolled 
+            ? 'bg-[#0a0a12]/95 backdrop-blur-xl border-b border-white/[0.06] shadow-lg shadow-black/20' 
+            : 'bg-[#08080f]/80 backdrop-blur-sm border-b border-transparent'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
-            {/* Logo with elegant font */}
+            {/* Logo */}
             <Link href="/" className="flex items-center gap-3 group">
               <div className="relative">
-                <div className="w-11 h-11 bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 rounded-xl flex items-center justify-center transform group-hover:scale-105 transition-transform shadow-lg shadow-orange-500/25">
-                  <Sparkles className="w-6 h-6 text-white" />
+                <div className="w-10 h-10 bg-gradient-to-br from-amber-400 via-orange-500 to-orange-600 rounded-xl flex items-center justify-center transform group-hover:scale-105 transition-transform shadow-lg shadow-orange-500/20">
+                  <span className="text-white font-bold text-lg">S</span>
                 </div>
-                <div className="absolute -inset-1 bg-gradient-to-br from-amber-400 to-rose-500 rounded-xl blur opacity-25 group-hover:opacity-40 transition-opacity" />
               </div>
-              <div className="flex flex-col">
+              <div className="hidden sm:flex flex-col">
                 <span 
-                  className="text-2xl font-bold tracking-tight font-[family-name:var(--font-playfair)]"
+                  className="text-xl font-bold tracking-tight font-[family-name:var(--font-playfair)]"
                   style={{ letterSpacing: '-0.02em' }}
                 >
                   <span className="text-white">Spell</span>
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">School</span>
                 </span>
-                <span className="text-[10px] text-gray-500 tracking-widest uppercase -mt-1">For Educators</span>
+                <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">For Educators</span>
               </div>
             </Link>
 
@@ -459,7 +433,7 @@ export default function SpellSchoolLanding({
                     </div>
                     <div className="flex-1 mx-4">
                       <div className="bg-white/5 rounded-lg px-4 py-1.5 text-xs text-gray-500">
-                        spellschool.com/teacher/dashboard
+                        spellschool.se/teacher/dashboard
                       </div>
                     </div>
                   </div>

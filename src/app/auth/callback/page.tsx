@@ -311,28 +311,25 @@ function AuthCallbackContent() {
   }, [router, searchParams])
 
   return (
-    <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center p-6">
-      {/* Animated Background */}
+    <div className="min-h-screen bg-[#08080f] flex items-center justify-center p-6">
+      {/* Subtle Background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0f0f2a] via-[#0a0a1a] to-[#050510]" />
-        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-purple-600/20 rounded-full blur-[100px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-amber-500/15 rounded-full blur-[80px]" style={{ animationDelay: '1s' }} />
+        <div className="absolute inset-0 bg-[#08080f]" />
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-amber-500/[0.03] rounded-full blur-[150px]" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-orange-500/[0.02] rounded-full blur-[120px]" />
       </div>
       
       <div className="relative text-center">
-        {/* Animated Logo */}
-        <div className="relative inline-block mb-8">
-          <div className="w-20 h-20 bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 rounded-3xl flex items-center justify-center mx-auto animate-pulse">
-            <Sparkles className="w-10 h-10 text-white" />
-          </div>
-          <div className="absolute -inset-2 bg-gradient-to-br from-amber-400 to-rose-500 rounded-3xl blur-xl opacity-40 animate-pulse" />
+        {/* Logo */}
+        <div className="w-16 h-16 bg-gradient-to-br from-amber-400 via-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-lg shadow-orange-500/20">
+          <span className="text-white font-bold text-2xl">S</span>
         </div>
         
         {/* Spinner */}
-        <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-6" />
+        <div className="w-10 h-10 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-6" />
         
         {/* Status text */}
-        <p className="text-gray-300 text-lg font-medium">{status}</p>
+        <p className="text-gray-400 text-base font-medium">{status}</p>
         
         {/* Brand name */}
         <p className="mt-6 text-gray-600 text-sm">
@@ -346,15 +343,16 @@ function AuthCallbackContent() {
 export default function AuthCallback() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center p-6">
-        {/* Animated Background */}
+      <div className="min-h-screen bg-[#08080f] flex items-center justify-center p-6">
+        {/* Subtle Background */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0f0f2a] via-[#0a0a1a] to-[#050510]" />
-          <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-purple-600/20 rounded-full blur-[100px]" />
+          <div className="absolute inset-0 bg-[#08080f]" />
+          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-amber-500/[0.03] rounded-full blur-[150px]" />
+          <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-orange-500/[0.02] rounded-full blur-[120px]" />
         </div>
         
         <div className="relative text-center">
-          <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-10 h-10 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-400">Loading...</p>
         </div>
       </div>

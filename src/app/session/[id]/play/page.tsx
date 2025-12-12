@@ -808,15 +808,16 @@ export default function SessionPlayPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center relative overflow-hidden">
-        {/* Aurora background effects */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-amber-900/30 via-orange-900/20 to-yellow-900/30 blur-3xl animate-pulse-slow" />
-          <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl animate-pulse-slow-reverse" />
+      <div className="min-h-screen bg-[#08080f] flex items-center justify-center relative overflow-hidden">
+        {/* Subtle Background */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute inset-0 bg-[#08080f]" />
+          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-amber-500/[0.03] rounded-full blur-[150px]" />
+          <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-orange-500/[0.02] rounded-full blur-[120px]" />
         </div>
         <div className="text-center relative z-10">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
-          <p className="text-gray-300">Loading session...</p>
+          <div className="w-10 h-10 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading session...</p>
         </div>
       </div>
     )
@@ -824,14 +825,15 @@ export default function SessionPlayPage() {
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center relative overflow-hidden">
-        {/* Aurora background effects */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-amber-900/30 via-orange-900/20 to-yellow-900/30 blur-3xl animate-pulse-slow" />
-          <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl animate-pulse-slow-reverse" />
+      <div className="min-h-screen bg-[#08080f] flex items-center justify-center relative overflow-hidden">
+        {/* Subtle Background */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute inset-0 bg-[#08080f]" />
+          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-amber-500/[0.03] rounded-full blur-[150px]" />
+          <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-orange-500/[0.02] rounded-full blur-[120px]" />
         </div>
         <div className="text-center text-red-400 relative z-10">
-          <p>Session hittades inte</p>
+          <p>Session not found</p>
           <button
             onClick={() => router.push('/session/join')}
             className="mt-4 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg hover:from-amber-400 hover:to-orange-400 shadow-lg shadow-amber-500/30"
@@ -928,16 +930,14 @@ export default function SessionPlayPage() {
     // Show loading state if session is still loading or colorBlocks haven't been created yet
     if (loading || !session) {
       return (
-        <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center relative overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-amber-900/30 via-orange-900/20 to-yellow-900/30 blur-3xl" />
-            <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl" />
+        <div className="min-h-screen bg-[#08080f] flex items-center justify-center relative overflow-hidden">
+          <div className="fixed inset-0 pointer-events-none overflow-hidden">
+            <div className="absolute inset-0 bg-[#08080f]" />
+            <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-amber-500/[0.03] rounded-full blur-[150px]" />
+            <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-orange-500/[0.02] rounded-full blur-[120px]" />
           </div>
           <div className="text-center relative z-10">
-            <div className="w-16 h-16 mx-auto mb-4 relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl blur-lg opacity-50 animate-pulse" />
-              <div className="relative w-16 h-16 border-2 border-amber-500/30 border-t-amber-500 rounded-xl animate-spin" />
-            </div>
+            <div className="w-10 h-10 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
             <p className="text-gray-400">Loading session...</p>
           </div>
         </div>
@@ -947,14 +947,15 @@ export default function SessionPlayPage() {
     // If session is loaded but no color blocks, show error
     if (colorBlocks.length === 0) {
       return (
-        <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center relative overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-amber-900/30 via-orange-900/20 to-yellow-900/30 blur-3xl" />
-            <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl" />
+        <div className="min-h-screen bg-[#08080f] flex items-center justify-center relative overflow-hidden">
+          <div className="fixed inset-0 pointer-events-none overflow-hidden">
+            <div className="absolute inset-0 bg-[#08080f]" />
+            <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-amber-500/[0.03] rounded-full blur-[150px]" />
+            <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-orange-500/[0.02] rounded-full blur-[120px]" />
           </div>
           <div className="text-center max-w-md mx-auto p-6 relative z-10">
-            <div className="w-20 h-20 bg-red-500/20 border border-red-500/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <span className="text-4xl">⚠️</span>
+            <div className="w-16 h-16 bg-[#161622] border border-white/[0.08] rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <span className="text-3xl">⚠️</span>
             </div>
             <h2 className="text-xl font-bold text-white mb-3">Inga ord hittades</h2>
             <p className="text-gray-400 mb-6">
@@ -986,11 +987,12 @@ export default function SessionPlayPage() {
     const { wordsArray, translations, wordObjects } = wordsAndTranslations
     
     return (
-      <div className="min-h-screen bg-[#0a0a1a] relative overflow-hidden">
-        {/* Aurora background effects */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-amber-900/30 via-orange-900/20 to-yellow-900/30 blur-3xl animate-pulse-slow" />
-          <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl animate-pulse-slow-reverse" />
+      <div className="min-h-screen bg-[#08080f] relative overflow-hidden">
+        {/* Subtle Background */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute inset-0 bg-[#08080f]" />
+          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-amber-500/[0.03] rounded-full blur-[150px]" />
+          <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-orange-500/[0.02] rounded-full blur-[120px]" />
         </div>
         <div className="relative z-10">
         <QuizGame
@@ -1291,11 +1293,12 @@ export default function SessionPlayPage() {
   // Playing view - just show the game directly
   if (step === 'playing') {
     return (
-      <div className="min-h-screen bg-[#0a0a1a] relative overflow-hidden">
-        {/* Aurora background effects */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-amber-900/30 via-orange-900/20 to-yellow-900/30 blur-3xl animate-pulse-slow" />
-          <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl animate-pulse-slow-reverse" />
+      <div className="min-h-screen bg-[#08080f] relative overflow-hidden">
+        {/* Subtle Background */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute inset-0 bg-[#08080f]" />
+          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-amber-500/[0.03] rounded-full blur-[150px]" />
+          <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-orange-500/[0.02] rounded-full blur-[120px]" />
         </div>
         <div className="relative z-10">
           {renderGameComponent()}
