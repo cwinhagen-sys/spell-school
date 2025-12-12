@@ -204,6 +204,12 @@ export default function GamesPage() {
                 icon={<span className="text-3xl">🎰</span>}
                 onClick={() => handleGameClick('roulette')}
               />
+              <GameCard
+                title="Word Scramble"
+                color="teal"
+                icon={<span className="text-3xl">🔀</span>}
+                onClick={() => handleGameClick('scramble')}
+              />
             </div>
 
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 text-center text-sm text-gray-400 border border-white/10">

@@ -98,7 +98,7 @@ export default function TeacherWordSetsPage() {
       if (error) throw error
       setWordSets((data as any[])?.map(ws => ({ id: ws.id, title: ws.title, words: ws.words, created_at: ws.created_at })) ?? [])
     } catch (e: any) {
-      setMessage({ type: 'error', text: `Kunde inte ladda ordlistor${e?.message ? `: ${e.message}` : ''}` })
+      setMessage({ type: 'error', text: `Could not load word lists${e?.message ? `: ${e.message}` : ''}` })
     }
   }
 
@@ -109,7 +109,7 @@ export default function TeacherWordSetsPage() {
     if (!title.trim() || rows.length === 0) return
     const clean = rows.filter(r => r.en.trim() && r.sv.trim())
     if (clean.length === 0) {
-      setMessage({ type: 'error', text: 'Lägg till minst ett ord med både engelska och svenska' })
+      setMessage({ type: 'error', text: 'Add at least one word with both English and translation' })
       return
     }
     
@@ -134,10 +134,10 @@ export default function TeacherWordSetsPage() {
       if (error) throw error
       setTitle('')
       setRows([{ en: '', sv: '' }])
-      setMessage({ type: 'success', text: 'Ordlista skapad!' })
+      setMessage({ type: 'success', text: 'Word list created!' })
       await load()
     } catch (e: any) {
-      setMessage({ type: 'error', text: `Kunde inte spara${e?.message ? `: ${e.message}` : ''}` })
+      setMessage({ type: 'error', text: `Could not save${e?.message ? `: ${e.message}` : ''}` })
     } finally {
       setSaving(false)
     }
@@ -154,11 +154,11 @@ export default function TeacherWordSetsPage() {
         .eq('id', id)
         .eq('teacher_id', user.id)
       if (error) throw error
-      setMessage({ type: 'success', text: 'Ordlista raderad' })
+      setMessage({ type: 'success', text: 'Word list deleted' })
       setDeleteConfirm(null)
       await load()
     } catch {
-      setMessage({ type: 'error', text: 'Kunde inte radera' })
+      setMessage({ type: 'error', text: 'Could not delete' })
     }
   }
 
@@ -184,7 +184,7 @@ export default function TeacherWordSetsPage() {
       
       const clean = editRows.filter(r => r.en.trim() && r.sv.trim())
       if (!editTitle.trim() || clean.length === 0) {
-        setMessage({ type: 'error', text: 'Ange titel och minst ett ord' })
+        setMessage({ type: 'error', text: 'Enter title and at least one word' })
         return
       }
       setSaving(true)
@@ -196,9 +196,9 @@ export default function TeacherWordSetsPage() {
       if (error) throw error
       cancelEdit()
       await load()
-      setMessage({ type: 'success', text: 'Ordlista uppdaterad!' })
+      setMessage({ type: 'success', text: 'Word list updated!' })
     } catch (e: any) {
-      setMessage({ type: 'error', text: `Kunde inte uppdatera${e?.message ? `: ${e.message}` : ''}` })
+      setMessage({ type: 'error', text: `Could not update${e?.message ? `: ${e.message}` : ''}` })
     } finally {
       setSaving(false)
     }
@@ -209,7 +209,7 @@ export default function TeacherWordSetsPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Laddar ordlistor...</p>
+          <p className="text-gray-400">Loading word lists...</p>
         </div>
       </div>
     )
@@ -231,18 +231,18 @@ export default function TeacherWordSetsPage() {
             className="flex items-center gap-2 text-gray-400 hover:text-white mb-4 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Tillbaka till ordlistor
+            Back to word lists
           </button>
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="w-14 h-14 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center">
+              <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center">
                 <Edit2 className="w-7 h-7 text-white" />
               </div>
-              <div className="absolute -inset-1 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl blur opacity-30" />
+              <div className="absolute -inset-1 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl blur opacity-30" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">Redigera ordlista</h1>
-              <p className="text-gray-400">Uppdatera "{editingWordSet?.title}"</p>
+              <h1 className="text-2xl font-bold text-white">Edit Word List</h1>
+              <p className="text-gray-400">Update "{editingWordSet?.title}"</p>
             </div>
           </div>
         </motion.div>
@@ -256,7 +256,7 @@ export default function TeacherWordSetsPage() {
               exit={{ opacity: 0, y: -10 }}
               className={`mb-6 p-4 rounded-xl border flex items-center gap-3 ${
                 message.type === 'success' 
-                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' 
                   : 'bg-red-500/10 border-red-500/20 text-red-400'
               }`}
             >
@@ -274,20 +274,20 @@ export default function TeacherWordSetsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-[#12122a] border border-white/5 rounded-2xl p-6"
+          className="bg-[#161622] border border-white/[0.12] rounded-2xl p-6"
         >
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-300 mb-2">Titel</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Title</label>
             <input 
               value={editTitle} 
               onChange={e => setEditTitle(e.target.value)} 
-              placeholder="T.ex. Djur, Färger, Mat..." 
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-none transition-all"
+              placeholder="e.g. Animals, Colors, Food..." 
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all"
             />
           </div>
           
           <div className="space-y-3 mb-6">
-            <label className="block text-sm font-medium text-gray-300 mb-2">Ord ({editRows.length})</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Words ({editRows.length})</label>
             {editRows.map((r, i) => (
               <motion.div 
                 key={i}
@@ -304,8 +304,8 @@ export default function TeacherWordSetsPage() {
                       copy[i] = { ...copy[i], en: e.target.value }
                       setEditRows(copy)
                     }} 
-                    placeholder="Engelska" 
-                    className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-none transition-all"
+                    placeholder="English" 
+                    className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all"
                   />
                   <div className="flex gap-2">
                     <input 
@@ -316,8 +316,8 @@ export default function TeacherWordSetsPage() {
                         copy[i] = { ...copy[i], sv: e.target.value }
                         setEditRows(copy)
                       }} 
-                      placeholder="Svenska" 
-                      className="flex-1 px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-none transition-all"
+                      placeholder="Translation" 
+                      className="flex-1 px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all"
                     />
                     {editRows.length > 1 && (
                       <button 
@@ -330,7 +330,7 @@ export default function TeacherWordSetsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 bg-white/5 p-3 rounded-lg">
-                  <span className="text-xs font-medium text-gray-500">Bild:</span>
+                  <span className="text-xs font-medium text-gray-500">Image:</span>
                   <ImageSelector
                     value={r.image_url}
                     onChange={(imageUrl) => {
@@ -343,7 +343,7 @@ export default function TeacherWordSetsPage() {
                       copy[i] = { ...copy[i], image_url: undefined }
                       setEditRows(copy)
                     }}
-                    word={r.en || 'ord'}
+                    word={r.en || 'word'}
                     wordIndex={i}
                   />
                 </div>
@@ -354,7 +354,7 @@ export default function TeacherWordSetsPage() {
               className="w-full px-4 py-3 rounded-xl bg-white/5 text-gray-400 hover:bg-white/10 border-2 border-dashed border-white/10 transition-colors flex items-center justify-center gap-2"
             >
               <Plus className="w-4 h-4" />
-              Lägg till ord
+              Add word
             </button>
           </div>
           
@@ -362,16 +362,16 @@ export default function TeacherWordSetsPage() {
             <button 
               onClick={() => saveEdit(editingId)}
               disabled={saving || !editTitle.trim()}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:from-cyan-400 hover:to-blue-400 transition-all font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-cyan-400 hover:to-blue-400 transition-all font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-5 h-5" />
-              {saving ? 'Sparar...' : 'Spara ändringar'}
+              {saving ? 'Saving...' : 'Save Changes'}
             </button>
             <button 
               onClick={cancelEdit}
               className="px-6 py-3 rounded-xl bg-white/5 text-gray-400 hover:bg-white/10 transition-colors font-medium"
             >
-              Avbryt
+              Cancel
             </button>
           </div>
         </motion.div>
@@ -403,13 +403,13 @@ export default function TeacherWordSetsPage() {
                   <AlertTriangle className="w-6 h-6 text-red-400" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">Radera ordlista?</h3>
-                  <p className="text-gray-400 text-sm">Denna åtgärd kan inte ångras</p>
+                  <h3 className="text-lg font-bold text-white">Delete Word List?</h3>
+                  <p className="text-gray-400 text-sm">This action cannot be undone</p>
                 </div>
               </div>
               <p className="text-gray-300 mb-6">
-                Är du säker på att du vill radera ordlistan "{wordSets.find(ws => ws.id === deleteConfirm)?.title}"? 
-                Alla ord och tilldelningar kopplade till denna lista kommer att tas bort.
+                Are you sure you want to delete the word list "{wordSets.find(ws => ws.id === deleteConfirm)?.title}"? 
+                All words and assignments linked to this list will be removed.
               </p>
               <div className="flex gap-3">
                 <button
@@ -417,13 +417,13 @@ export default function TeacherWordSetsPage() {
                   className="flex-1 px-4 py-3 rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors font-medium flex items-center justify-center gap-2"
                 >
                   <Trash2 className="w-4 h-4" />
-                  Ja, radera
+                  Yes, delete
                 </button>
                 <button
                   onClick={() => setDeleteConfirm(null)}
                   className="flex-1 px-4 py-3 rounded-xl bg-white/5 text-gray-400 hover:bg-white/10 transition-colors font-medium"
                 >
-                  Avbryt
+                  Cancel
                 </button>
               </div>
             </motion.div>
@@ -439,14 +439,14 @@ export default function TeacherWordSetsPage() {
       >
         <div className="flex items-center gap-4">
           <div className="relative">
-            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center">
+            <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center">
               <FileText className="w-7 h-7 text-white" />
             </div>
-            <div className="absolute -inset-1 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl blur opacity-30" />
+            <div className="absolute -inset-1 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl blur opacity-30" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Gloslistor</h1>
-            <p className="text-gray-400">Skapa och hantera dina ordlistor</p>
+            <h1 className="text-2xl font-bold text-white">Word Lists</h1>
+            <p className="text-gray-400">Create and manage your word lists</p>
           </div>
         </div>
       </motion.div>
@@ -460,7 +460,7 @@ export default function TeacherWordSetsPage() {
             exit={{ opacity: 0, y: -10 }}
             className={`mb-6 p-4 rounded-xl border flex items-center gap-3 ${
               message.type === 'success' 
-                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' 
                 : 'bg-red-500/10 border-red-500/20 text-red-400'
             }`}
           >
@@ -478,25 +478,25 @@ export default function TeacherWordSetsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-[#12122a] border border-white/5 rounded-2xl p-6 mb-8"
+        className="bg-[#161622] border border-white/[0.12] rounded-2xl p-6 mb-8"
       >
         <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
           <Plus className="w-5 h-5 text-amber-500" />
-          Skapa ny ordlista
+          Create New Word List
         </h2>
         
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-300 mb-2">Titel</label>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Title</label>
           <input 
             value={title} 
             onChange={e => setTitle(e.target.value)} 
-            placeholder="T.ex. Djur, Färger, Mat..." 
+            placeholder="e.g. Animals, Colors, Food..." 
             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all"
           />
         </div>
         
         <div className="space-y-3 mb-6">
-          <label className="block text-sm font-medium text-gray-300 mb-2">Ord ({rows.length})</label>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Words ({rows.length})</label>
           {rows.map((r, i) => (
             <motion.div 
               key={i}
@@ -513,8 +513,8 @@ export default function TeacherWordSetsPage() {
                     copy[i] = { ...copy[i], en: e.target.value }
                     setRows(copy)
                   }} 
-                  placeholder="Engelska" 
-                  className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-none transition-all"
+                  placeholder="English" 
+                  className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all"
                 />
                 <div className="flex gap-2">
                   <input 
@@ -525,8 +525,8 @@ export default function TeacherWordSetsPage() {
                       copy[i] = { ...copy[i], sv: e.target.value }
                       setRows(copy)
                     }} 
-                    placeholder="Svenska" 
-                    className="flex-1 px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-none transition-all"
+                    placeholder="Translation" 
+                    className="flex-1 px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all"
                   />
                   {rows.length > 1 && (
                     <button 
@@ -539,7 +539,7 @@ export default function TeacherWordSetsPage() {
                 </div>
               </div>
               <div className="flex items-center gap-3 bg-white/5 p-3 rounded-lg">
-                <span className="text-xs font-medium text-gray-500">Bild:</span>
+                <span className="text-xs font-medium text-gray-500">Image:</span>
                 <ImageSelector
                   value={r.image_url}
                   onChange={(imageUrl) => {
@@ -552,7 +552,7 @@ export default function TeacherWordSetsPage() {
                     copy[i] = { ...copy[i], image_url: undefined }
                     setRows(copy)
                   }}
-                  word={r.en || 'ord'}
+                  word={r.en || 'word'}
                   wordIndex={i}
                 />
               </div>
@@ -563,7 +563,7 @@ export default function TeacherWordSetsPage() {
             className="w-full px-4 py-3 rounded-xl bg-white/5 text-gray-400 hover:bg-white/10 border-2 border-dashed border-white/10 transition-colors flex items-center justify-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            Lägg till ord
+            Add word
           </button>
         </div>
         
@@ -573,7 +573,7 @@ export default function TeacherWordSetsPage() {
           className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-400 hover:to-orange-400 transition-all font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Save className="w-5 h-5" />
-          {saving ? 'Sparar...' : 'Skapa ordlista'}
+          {saving ? 'Saving...' : 'Create Word List'}
         </button>
       </motion.div>
 
@@ -582,11 +582,11 @@ export default function TeacherWordSetsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="bg-[#12122a] border border-white/5 rounded-2xl p-6"
+        className="bg-[#161622] border border-white/[0.12] rounded-2xl p-6"
       >
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white">Dina ordlistor</h2>
-          <span className="text-sm text-gray-500">{wordSets.length} {wordSets.length === 1 ? 'lista' : 'listor'}</span>
+          <h2 className="text-xl font-bold text-white">Your word lists</h2>
+          <span className="text-sm text-gray-500">{wordSets.length} {wordSets.length === 1 ? 'list' : 'lists'}</span>
         </div>
         
         {wordSets.length === 0 ? (
@@ -594,8 +594,8 @@ export default function TeacherWordSetsPage() {
             <div className="w-20 h-20 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <FileText className="w-10 h-10 text-gray-500" />
             </div>
-            <p className="text-gray-400 text-lg">Inga ordlistor ännu</p>
-            <p className="text-gray-500 text-sm mt-1">Skapa din första ordlista ovan</p>
+            <p className="text-gray-400 text-lg">No word lists yet</p>
+            <p className="text-gray-500 text-sm mt-1">Create your first word list above</p>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -605,7 +605,7 @@ export default function TeacherWordSetsPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="group relative bg-white/5 border border-white/5 rounded-xl overflow-hidden hover:border-white/10 transition-all p-5"
+                className="group relative bg-[#161622] border border-white/[0.12] rounded-xl overflow-hidden hover:border-amber-500/30 transition-all p-5"
               >
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex-1 min-w-0">
@@ -613,7 +613,7 @@ export default function TeacherWordSetsPage() {
                     <div className="flex items-center gap-3 text-sm text-gray-400">
                       <span className="flex items-center gap-1.5">
                         <FileText className="w-4 h-4" />
-                        {ws.words.length} ord
+                        {ws.words.length} words
                       </span>
                     </div>
                   </div>
@@ -621,15 +621,15 @@ export default function TeacherWordSetsPage() {
                 <div className="flex items-center gap-2 pt-3 border-t border-white/5">
                   <button 
                     onClick={() => beginEdit(ws)} 
-                    className="flex-1 px-4 py-2 rounded-xl bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 transition-all flex items-center justify-center gap-2 font-medium text-sm"
+                    className="flex-1 px-4 py-2 rounded-xl bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-all flex items-center justify-center gap-2 font-medium text-sm"
                   >
                     <Edit2 className="w-4 h-4" />
-                    Redigera
+                    Edit
                   </button>
                   <button 
                     onClick={() => setDeleteConfirm(ws.id)} 
                     className="px-4 py-2 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all"
-                    title="Radera ordlista"
+                    title="Delete word list"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

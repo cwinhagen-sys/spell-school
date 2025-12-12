@@ -2,35 +2,60 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { BookOpen, Calendar, FileText, Users, Clock, ArrowRight, Plus, TrendingUp, Activity, Gamepad2, Sparkles, Zap } from 'lucide-react'
+import { BookOpen, Calendar, FileText, Users, Clock, ArrowRight, TrendingUp, AlertCircle, CheckCircle, Gamepad2, BarChart3, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import SaveStatusIndicator from '@/components/SaveStatusIndicator'
 
-interface Assignment {
+interface SessionWithProgress {
   id: string
-  student_id: string | null
-  class_id: string | null
-  word_set_id: string
-  created_at: string
-  due_date: string | null
-  quiz_unlocked: boolean
-  word_sets: {
+  session_code: string
+  session_name: string | null
+  due_date: string
+  is_active: boolean
+  enabled_games: string[]
+  game_rounds?: { [key: string]: number }
+  word_sets: { id: string; title: string }[]
+  participants: {
     id: string
-    title: string
-    teacher_id: string
+    student_name: string
+    joined_at: string
+    progress: number // 0-100
+    needsAttention: boolean
   }[]
+  totalParticipants: number
+  completedCount: number
+  averageProgress: number
+}
+
+interface WeeklyActivity {
+  day: string
+  sessions: number
+  games: number
 }
 
 export default function TeacherDashboard() {
   const [user, setUser] = useState<any>(null)
-  const [classes, setClasses] = useState<any[]>([])
-  const [wordSets, setWordSets] = useState<any[]>([])
-  const [homeworks, setHomeworks] = useState<Assignment[]>([])
-  const [activeStudents, setActiveStudents] = useState<any[]>([])
-  const [studentActivity, setStudentActivity] = useState<any[]>([])
-  const [sessionsCount, setSessionsCount] = useState<number>(0)
+  const [teacherName, setTeacherName] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  
+  // Core stats
+  const [totalStudents, setTotalStudents] = useState<number>(0)
+  const [totalClasses, setTotalClasses] = useState<number>(0)
+  const [totalWordSets, setTotalWordSets] = useState<number>(0)
+  const [activeSessions, setActiveSessions] = useState<number>(0)
+  
+  // Sessions with students needing attention
+  const [sessionsWithProgress, setSessionsWithProgress] = useState<SessionWithProgress[]>([])
+  
+  // Activity data
+  const [weeklyActivity, setWeeklyActivity] = useState<WeeklyActivity[]>([])
+  const [recentGames, setRecentGames] = useState<number>(0)
+  const [activityFilter, setActivityFilter] = useState<'today' | '7days' | '30days' | 'all'>('7days')
+  const [showActivityDropdown, setShowActivityDropdown] = useState(false)
+  
+  // Students currently online
+  const [onlineStudents, setOnlineStudents] = useState<number>(0)
 
   useEffect(() => {
     const init = async () => {
@@ -44,7 +69,7 @@ export default function TeacherDashboard() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, name')
         .eq('id', user.id)
         .single()
 
@@ -53,482 +78,726 @@ export default function TeacherDashboard() {
         return
       }
       
+      setTeacherName(profile.name || user.email?.split('@')[0] || 'Teacher')
+      
       await Promise.all([
-        loadClasses(),
-        loadWordSets(),
-        loadActiveStudents(),
-        loadStudentActivity(),
-        fetchHomeworks(),
-        loadSessionsCount()
+        loadCoreStats(),
+        loadSessionsWithProgress(),
+        loadActivity(),
+        loadOnlineStudents()
       ])
       setLoading(false)
     }
     init()
     
+    // Refresh online students every 30 seconds
     const interval = setInterval(() => {
-      loadActiveStudents()
-      loadStudentActivity()
+      loadOnlineStudents()
     }, 30000)
     
     return () => clearInterval(interval)
   }, [])
 
-  const loadClasses = async () => {
+  const loadCoreStats = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-      
-      const { data, error } = await supabase
+
+      // Load classes count
+      const { data: classes } = await supabase
         .from('classes')
-        .select('id, name, created_at')
+        .select('id')
         .eq('teacher_id', user.id)
         .is('deleted_at', null)
-        .order('created_at', { ascending: false })
-      
-      if (error) throw error
-      setClasses(data || [])
-    } catch (error) {
-      console.error('Error loading classes:', error)
-    }
-  }
+      setTotalClasses(classes?.length || 0)
 
-  const loadWordSets = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      
-      const { data, error } = await supabase
+      // Load word sets count
+      const { data: wordSets } = await supabase
         .from('word_sets')
-        .select('id, title, created_at')
+        .select('id')
         .eq('teacher_id', user.id)
-        .order('created_at', { ascending: false })
-      
-      if (error) throw error
-      setWordSets(data || [])
-    } catch (error) {
-      console.error('Error loading word sets:', error)
-    }
-  }
+      setTotalWordSets(wordSets?.length || 0)
 
-  const loadActiveStudents = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      
-      const { data: classStudents, error: classError } = await supabase
-        .from('class_students')
-        .select(`
-          student_id,
-          class_id,
-          classes!class_students_class_id_fkey(
-            id,
-            teacher_id
-          )
-        `)
-        .eq('classes.teacher_id', user.id)
-      
-      if (classError) throw classError
-      
-      if (!classStudents || classStudents.length === 0) {
-        setActiveStudents([])
-        return
-      }
-      
-      const studentIds = classStudents.map(cs => cs.student_id)
-      
-      const { data: students, error: studentsError } = await supabase
-        .from('profiles')
-        .select('id, email, last_active, role, username')
-        .in('id', studentIds)
-        .eq('role', 'student')
-        .order('last_active', { ascending: false })
-      
-      if (studentsError) {
-        console.error('Error loading students:', studentsError)
-        setActiveStudents([])
-        return
-      }
-      
-      const now = new Date()
-      const activeStudents = (students || []).filter(student => {
-        if (!student.last_active) return false
-        const lastActive = new Date(student.last_active)
-        const diffMinutes = (now.getTime() - lastActive.getTime()) / (1000 * 60)
-        return diffMinutes <= 2
-      })
-      
-      setActiveStudents(activeStudents)
-    } catch (error) {
-      console.error('Error loading active students:', error)
-      setActiveStudents([])
-    }
-  }
+      // Load active sessions count
+      const { data: sessions } = await supabase
+        .from('sessions')
+        .select('id')
+        .eq('teacher_id', user.id)
+        .eq('is_active', true)
+      setActiveSessions(sessions?.length || 0)
 
-  const loadStudentActivity = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      
+      // Load total students
       const { data: classStudents } = await supabase
         .from('class_students')
-        .select('student_id, class_id, classes!inner(teacher_id, name)')
+        .select(`student_id, classes!class_students_class_id_fkey(teacher_id)`)
         .eq('classes.teacher_id', user.id)
       
-      if (!classStudents || classStudents.length === 0) {
-        setStudentActivity([])
-        return
-      }
-      
-      const studentIds = classStudents.map(cs => cs.student_id)
-      const classMap = new Map(classStudents.map(cs => {
-        const classes = (cs as any).classes
-        return [cs.student_id, classes?.name]
-      }))
-      
-      const { data: sessions, error } = await supabase
-        .from('game_sessions')
-        .select('student_id, game_type, created_at')
-        .in('student_id', studentIds)
-        .order('created_at', { ascending: false })
-        .limit(20)
-      
-      if (error) throw error
-      
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, email, username')
-        .in('id', studentIds)
-      
-      const profileMap = new Map(profiles?.map(p => [p.id, p]) || [])
-      
-      const activity = (sessions || []).map(session => {
-        const profile = profileMap.get(session.student_id)
-        return {
-          student_id: session.student_id,
-          student_name: profile?.username || profile?.email?.split('.')[0] || 'Student',
-          student_class: classMap.get(session.student_id),
-          game_type: session.game_type,
-          timestamp: session.created_at,
-          type: 'game'
-        }
-      })
-      
-      setStudentActivity(activity)
+      const uniqueStudents = new Set(classStudents?.map(cs => cs.student_id) || [])
+      setTotalStudents(uniqueStudents.size)
     } catch (error) {
-      console.error('Error loading student activity:', error)
-      setStudentActivity([])
+      console.error('Error loading core stats:', error)
     }
   }
 
-  const fetchHomeworks = async () => {
+  const loadSessionsWithProgress = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-      
-      const { data, error } = await supabase
-        .from('assigned_word_sets')
+
+      // Get active sessions
+      const { data: sessions, error } = await supabase
+        .from('sessions')
         .select(`
           id,
-          student_id,
-          class_id,
-          word_set_id,
-          created_at,
+          session_code,
+          session_name,
           due_date,
-          quiz_unlocked,
-          word_sets!inner(id, title, teacher_id)
+          is_active,
+          enabled_games,
+          game_rounds,
+          word_sets(id, title)
         `)
-        .eq('word_sets.teacher_id', user.id)
+        .eq('teacher_id', user.id)
+        .eq('is_active', true)
         .order('created_at', { ascending: false })
-      
+        .limit(5)
+
       if (error) throw error
-      setHomeworks(data || [])
+      if (!sessions || sessions.length === 0) {
+        setSessionsWithProgress([])
+        return
+      }
+
+      // For each session, load participants and their progress
+      const sessionsWithData = await Promise.all(
+        sessions.map(async (session) => {
+          // Get participants
+          const { data: participants } = await supabase
+            .from('session_participants')
+            .select('id, student_name, joined_at')
+            .eq('session_id', session.id)
+
+          if (!participants || participants.length === 0) {
+            return {
+              ...session,
+              word_sets: Array.isArray(session.word_sets) ? session.word_sets : [],
+              participants: [],
+              totalParticipants: 0,
+              completedCount: 0,
+              averageProgress: 0
+            }
+          }
+
+          // Get progress for all participants
+          const { data: progressData } = await supabase
+            .from('session_progress')
+            .select('participant_id, game_name, completed, rounds_completed')
+            .eq('session_id', session.id)
+
+          const totalGames = session.enabled_games?.length || 1
+          const gameRounds = session.game_rounds || {}
+
+          // Calculate progress for each participant
+          const participantsWithProgress = participants.map(p => {
+            const pProgress = progressData?.filter(pr => pr.participant_id === p.id) || []
+            
+            // Calculate completed games based on rounds
+            const completedGames = session.enabled_games?.filter((gameName: string) => {
+              const gameProgress = pProgress.find(pr => pr.game_name === gameName)
+              if (!gameProgress) return false
+              const requiredRounds = gameRounds[gameName] || 1
+              const roundsCompleted = gameProgress.rounds_completed || 0
+              return roundsCompleted >= requiredRounds
+            }).length || 0
+
+            const progressPct = Math.round((completedGames / totalGames) * 100)
+            
+            return {
+              id: p.id,
+              student_name: p.student_name,
+              joined_at: p.joined_at,
+              progress: progressPct,
+              needsAttention: progressPct < 50 // Less than 50% complete
+            }
+          })
+
+          const completedCount = participantsWithProgress.filter(p => p.progress === 100).length
+          const avgProgress = participantsWithProgress.length > 0
+            ? Math.round(participantsWithProgress.reduce((sum, p) => sum + p.progress, 0) / participantsWithProgress.length)
+            : 0
+
+          return {
+            ...session,
+            word_sets: Array.isArray(session.word_sets) ? session.word_sets : [],
+            participants: participantsWithProgress.filter(p => p.needsAttention).slice(0, 3),
+            totalParticipants: participants.length,
+            completedCount,
+            averageProgress: avgProgress
+          }
+        })
+      )
+
+      setSessionsWithProgress(sessionsWithData)
     } catch (error) {
-      console.error('Error fetching homeworks:', error)
+      console.error('Error loading sessions with progress:', error)
     }
   }
 
-  const loadSessionsCount = async () => {
+  const loadActivity = async (filter: 'today' | '7days' | '30days' | 'all' = activityFilter) => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
+
+      // Get student IDs for this teacher's classes
+      const { data: classStudents } = await supabase
+        .from('class_students')
+        .select('student_id, classes!inner(teacher_id)')
+        .eq('classes.teacher_id', user.id)
+
+      if (!classStudents || classStudents.length === 0) {
+        setWeeklyActivity([])
+        setRecentGames(0)
+        return
+      }
+
+      const studentIds = classStudents.map(cs => cs.student_id)
       
-      const { count, error } = await supabase
-        .from('sessions')
-        .select('*', { count: 'exact', head: true })
-        .eq('teacher_id', user.id)
+      // Calculate date range based on filter
+      let daysToShow = 7
+      let startDate: Date | null = new Date()
       
-      if (error) throw error
-      setSessionsCount(count || 0)
+      switch (filter) {
+        case 'today':
+          daysToShow = 1
+          startDate.setHours(0, 0, 0, 0)
+          break
+        case '7days':
+          daysToShow = 7
+          startDate.setDate(startDate.getDate() - 7)
+          break
+        case '30days':
+          daysToShow = 30
+          startDate.setDate(startDate.getDate() - 30)
+          break
+        case 'all':
+          daysToShow = 0
+          startDate = null
+          break
+      }
+
+      // Build query
+      let query = supabase
+        .from('game_sessions')
+        .select('created_at')
+        .in('student_id', studentIds)
+        .order('created_at', { ascending: false })
+      
+      if (startDate) {
+        query = query.gte('created_at', startDate.toISOString())
+      }
+
+      const { data: games } = await query
+
+      setRecentGames(games?.length || 0)
+
+      // Group by day for chart
+      if (filter === 'today') {
+        // For today, group by hour
+        const hourlyActivity: { [key: string]: number } = {}
+        for (let i = 0; i < 24; i += 4) {
+          hourlyActivity[`${i.toString().padStart(2, '0')}:00`] = 0
+        }
+        
+        games?.forEach(game => {
+          const date = new Date(game.created_at)
+          const hour = Math.floor(date.getHours() / 4) * 4
+          const key = `${hour.toString().padStart(2, '0')}:00`
+          if (key in hourlyActivity) {
+            hourlyActivity[key]++
+          }
+        })
+
+        const activity = Object.entries(hourlyActivity).map(([day, games]) => ({
+          day,
+          sessions: 0,
+          games
+        }))
+        setWeeklyActivity(activity)
+      } else if (filter === '7days') {
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+      const activityByDay: { [key: string]: number } = {}
+      
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date()
+        date.setDate(date.getDate() - i)
+        const dayKey = dayNames[date.getDay()]
+        activityByDay[dayKey] = 0
+      }
+
+      games?.forEach(game => {
+        const date = new Date(game.created_at)
+        const dayKey = dayNames[date.getDay()]
+        if (dayKey in activityByDay) {
+          activityByDay[dayKey]++
+        }
+      })
+
+      const activity = Object.entries(activityByDay).map(([day, games]) => ({
+        day,
+        sessions: 0,
+        games
+      }))
+        setWeeklyActivity(activity)
+      } else if (filter === '30days') {
+        // Group by week for 30 days
+        const weeklyData: { [key: string]: number } = {
+          'Week 1': 0,
+          'Week 2': 0,
+          'Week 3': 0,
+          'Week 4': 0
+        }
+        
+        const now = new Date()
+        games?.forEach(game => {
+          const date = new Date(game.created_at)
+          const daysAgo = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+          if (daysAgo < 7) weeklyData['Week 1']++
+          else if (daysAgo < 14) weeklyData['Week 2']++
+          else if (daysAgo < 21) weeklyData['Week 3']++
+          else weeklyData['Week 4']++
+        })
+
+        const activity = Object.entries(weeklyData).map(([day, games]) => ({
+          day,
+          sessions: 0,
+          games
+        }))
+        setWeeklyActivity(activity)
+      } else {
+        // All time - group by month (last 6 months)
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        const monthlyData: { [key: string]: number } = {}
+        
+        const now = new Date()
+        for (let i = 5; i >= 0; i--) {
+          const date = new Date(now)
+          date.setMonth(date.getMonth() - i)
+          const key = monthNames[date.getMonth()]
+          monthlyData[key] = 0
+        }
+
+        games?.forEach(game => {
+          const date = new Date(game.created_at)
+          const key = monthNames[date.getMonth()]
+          if (key in monthlyData) {
+            monthlyData[key]++
+          }
+        })
+
+        const activity = Object.entries(monthlyData).map(([day, games]) => ({
+          day,
+          sessions: 0,
+          games
+        }))
+      setWeeklyActivity(activity)
+      }
     } catch (error) {
-      console.error('Error loading sessions count:', error)
-      setSessionsCount(0)
+      console.error('Error loading activity:', error)
     }
   }
 
-  const formatGameType = (type: string) => {
-    const gameNames: Record<string, string> = {
-      flashcards: 'Flashcards',
-      memory: 'Memory',
-      typing: 'Typing',
-      translate: 'Translate',
-      pronunciation: 'Uttal',
-      sentence_gap: 'Luckor',
-      word_roulette: 'Roulette',
-      match: 'Memory',
-      connect: 'Connect',
-      choice: 'Flerval',
-      quiz: 'Quiz'
+  const handleActivityFilterChange = (filter: 'today' | '7days' | '30days' | 'all') => {
+    setActivityFilter(filter)
+    setShowActivityDropdown(false)
+    loadActivity(filter)
+  }
+
+  const getActivityFilterLabel = () => {
+    switch (activityFilter) {
+      case 'today': return 'Today'
+      case '7days': return 'Last 7 days'
+      case '30days': return 'Last 30 days'
+      case 'all': return 'All time'
     }
-    return gameNames[type] || type
+  }
+
+  const loadOnlineStudents = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: classStudents } = await supabase
+        .from('class_students')
+        .select(`student_id, classes!class_students_class_id_fkey(teacher_id)`)
+        .eq('classes.teacher_id', user.id)
+
+      if (!classStudents || classStudents.length === 0) {
+        setOnlineStudents(0)
+        return
+      }
+
+      const studentIds = classStudents.map(cs => cs.student_id)
+
+      const { data: students } = await supabase
+        .from('profiles')
+        .select('id, last_active')
+        .in('id', studentIds)
+        .eq('role', 'student')
+
+      const now = new Date()
+      const onlineCount = (students || []).filter(s => {
+        if (!s.last_active) return false
+        const lastActive = new Date(s.last_active)
+        const diffMinutes = (now.getTime() - lastActive.getTime()) / (1000 * 60)
+        return diffMinutes <= 2
+      }).length
+
+      setOnlineStudents(onlineCount)
+    } catch (error) {
+      console.error('Error loading online students:', error)
+    }
+  }
+
+  const formatDueDate = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    
+    if (diffDays < 0) return 'Overdue'
+    if (diffDays === 0) return 'Today'
+    if (diffDays === 1) return 'Tomorrow'
+    return `${diffDays} days left`
+  }
+
+  const getMaxGames = () => {
+    if (weeklyActivity.length === 0) return 1
+    return Math.max(...weeklyActivity.map(a => a.games), 1)
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Laddar dashboard...</p>
+          <div className="w-10 h-10 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-500 text-sm">Loading dashboard...</p>
         </div>
       </div>
     )
   }
 
-  return (
-    <>
-      {/* Welcome section for new teachers */}
-      {classes.length === 0 && wordSets.length === 0 && (
+  // New teacher onboarding
+  if (totalClasses === 0 && totalWordSets === 0) {
+    return (
+      <div className="max-w-2xl mx-auto py-16 px-4">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center py-16"
+          className="text-center"
         >
-          <div className="max-w-2xl mx-auto">
-            <div className="relative inline-block mb-8">
-              <div className="w-24 h-24 bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 rounded-3xl flex items-center justify-center mx-auto">
-                <Sparkles className="w-12 h-12 text-white" />
-              </div>
-              <div className="absolute -inset-2 bg-gradient-to-br from-amber-500 to-rose-500 rounded-3xl blur-xl opacity-40" />
-            </div>
+          <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <BookOpen className="w-8 h-8 text-white" />
+          </div>
+          
+          <h1 className="text-3xl font-bold text-white mb-3">
+            Welcome, {teacherName}
+          </h1>
+          <p className="text-gray-400 mb-10 max-w-md mx-auto">
+            Get started by creating your first class or word list.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/teacher/classes"
+              className="bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 py-3 rounded-xl font-medium hover:from-amber-400 hover:to-orange-500 transition-all inline-flex items-center justify-center gap-2"
+            >
+              <Users className="w-5 h-5" />
+              Create Class
+            </Link>
             
-            <h2 className="text-4xl font-bold text-white mb-4">
-              Välkommen, {user?.email?.split('@')[0] || 'Lärare'}!
-            </h2>
-            <p className="text-xl text-gray-400 mb-10 max-w-lg mx-auto">
-              Kom igång genom att skapa din första klass och gloslista för att börja undervisa.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/teacher/classes"
-                className="group relative inline-flex items-center justify-center gap-2"
-              >
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl blur opacity-60 group-hover:opacity-100 transition-opacity" />
-                <span className="relative bg-gradient-to-r from-amber-500 to-orange-600 text-white px-8 py-4 rounded-2xl font-semibold text-lg inline-flex items-center gap-2 hover:from-amber-400 hover:to-orange-500 transition-all">
-                  <Plus className="w-5 h-5" />
-                  Skapa din första klass
-                </span>
-              </Link>
-              
-              <Link
-                href="/teacher/word-sets"
-                className="inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white px-8 py-4 rounded-2xl font-semibold text-lg transition-all"
-              >
-                <FileText className="w-5 h-5" />
-                Skapa gloslista
-              </Link>
-            </div>
+            <Link
+              href="/teacher/word-sets"
+              className="bg-[#161622] hover:bg-white/[0.06] border border-white/[0.12] text-white px-6 py-3 rounded-xl font-medium transition-all inline-flex items-center justify-center gap-2"
+            >
+              <FileText className="w-5 h-5" />
+              Create Word List
+            </Link>
           </div>
         </motion.div>
-      )}
+      </div>
+    )
+  }
 
-      {/* Dashboard overview for existing teachers */}
-      {(classes.length > 0 || wordSets.length > 0) && (
-        <>
-          {/* Header */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
-            <h2 className="text-3xl font-bold text-white mb-2">
-              Välkommen tillbaka, {user?.email?.split('@')[0] || 'Lärare'}!
-            </h2>
-            <p className="text-gray-400">Här är en översikt av din verksamhet</p>
-          </motion.div>
-          
-          {/* Main Stats Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-            {[
-              { href: '/teacher/classes', icon: Users, label: 'Klasser', value: classes.length, gradient: 'from-teal-500 to-emerald-500', action: 'Hantera klasser' },
-              { href: '/teacher/word-sets', icon: FileText, label: 'Gloslistor', value: wordSets.length, gradient: 'from-blue-500 to-cyan-500', action: 'Skapa glosor' },
-              { href: '/teacher/assign', icon: Calendar, label: 'Tilldelningar', value: homeworks.length, gradient: 'from-green-500 to-emerald-500', action: 'Tilldela glosor' },
-              { href: null, icon: Activity, label: 'Aktiva nu', value: activeStudents.length, gradient: 'from-orange-500 to-amber-500', action: null, pulse: true },
-              { href: '/teacher/sessions', icon: Gamepad2, label: 'Sessions', value: sessionsCount, gradient: 'from-purple-500 to-indigo-500', action: 'Hantera sessions' },
-              { href: '/teacher/students', icon: TrendingUp, label: 'Progress', value: '—', gradient: 'from-rose-500 to-pink-500', action: 'Se statistik' },
-            ].map((item, index) => (
-              <motion.div
-                key={item.label}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                {item.href ? (
-                  <Link
-                    href={item.href}
-                    className="group block h-full"
-                  >
-                    <div className="relative h-full bg-[#12122a] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-all overflow-hidden">
-                      <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${item.gradient} opacity-10 blur-2xl group-hover:opacity-20 transition-opacity`} />
-                      
-                      <div className="relative">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className={`w-12 h-12 bg-gradient-to-br ${item.gradient} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                            <item.icon className="w-6 h-6 text-white" />
-                          </div>
-                          {item.pulse && (
-                            <span className="flex h-3 w-3">
-                              <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-green-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                            </span>
-                          )}
-                        </div>
-                        
-                        <p className="text-sm text-gray-400 mb-1">{item.label}</p>
-                        <p className="text-3xl font-bold text-white mb-3">{item.value}</p>
-                        
-                        {item.action && (
-                          <div className="flex items-center text-sm font-medium text-gray-400 group-hover:text-white transition-colors">
-                            {item.action}
-                            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </Link>
-                ) : (
-                  <div className="relative h-full bg-[#12122a] border border-white/5 rounded-2xl p-6 overflow-hidden">
-                    <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${item.gradient} opacity-10 blur-2xl`} />
-                    
-                    <div className="relative">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className={`w-12 h-12 bg-gradient-to-br ${item.gradient} rounded-xl flex items-center justify-center`}>
-                          <item.icon className="w-6 h-6 text-white" />
-                        </div>
-                        {item.pulse && (
-                          <span className="flex h-3 w-3">
-                            <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-green-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                          </span>
-                        )}
-                      </div>
-                      
-                      <p className="text-sm text-gray-400 mb-1">{item.label}</p>
-                      <p className="text-3xl font-bold text-white mb-3">{item.value}</p>
-                      <p className="text-xs text-gray-500">Elever som spelar just nu</p>
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            ))}
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <p className="text-sm text-gray-500 mb-1">Dashboard</p>
+          <h1 className="text-2xl font-semibold text-white">{teacherName}</h1>
+        </div>
+        {onlineStudents > 0 && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+            </span>
+            <span className="text-sm text-amber-400">{onlineStudents} student{onlineStudents !== 1 ? 's' : ''} online</span>
           </div>
+        )}
+      </div>
 
-          {/* Activity Feed */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Students', value: totalStudents, icon: Users, href: '/teacher/students' },
+          { label: 'Classes', value: totalClasses, icon: BookOpen, href: '/teacher/classes' },
+          { label: 'Word Lists', value: totalWordSets, icon: FileText, href: '/teacher/word-sets' },
+          { label: 'Active Sessions', value: activeSessions, icon: Gamepad2, href: '/teacher/sessions' },
+        ].map((stat, index) => (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-[#12122a] border border-white/5 rounded-2xl p-6"
+            transition={{ delay: index * 0.05 }}
           >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                <Activity className="w-5 h-5 text-amber-500" />
-                Senaste aktivitet
-              </h3>
-              <div className="flex items-center gap-2 text-xs text-gray-400">
-                <span className="flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                </span>
-                <span>{activeStudents.length} aktiva</span>
+            <Link
+              href={stat.href}
+              className="block bg-[#161622] border border-white/[0.12] rounded-xl p-5 hover:border-amber-500/30 transition-colors group"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="w-10 h-10 bg-white/[0.04] border border-white/[0.10] rounded-lg flex items-center justify-center">
+                  <stat.icon className="w-5 h-5 text-gray-400 group-hover:text-amber-400 transition-colors" />
+                </div>
+                <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-amber-400 transition-colors" />
               </div>
+              <p className="text-2xl font-semibold text-white mb-1">{stat.value}</p>
+              <p className="text-sm text-gray-300">{stat.label}</p>
+            </Link>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Sessions Needing Attention */}
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="lg:col-span-2 bg-[#161622] border border-white/[0.12] rounded-xl"
+        >
+          <div className="px-5 py-4 border-b border-white/[0.12] flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-4 h-4 text-amber-500" />
+              <h2 className="font-medium text-white">Sessions to Follow Up</h2>
+            </div>
+            <Link 
+              href="/teacher/sessions" 
+              className="text-sm text-gray-500 hover:text-amber-400 transition-colors flex items-center gap-1"
+            >
+              View all
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+          
+          <div className="p-5">
+            {sessionsWithProgress.length > 0 ? (
+              <div className="space-y-4">
+                {sessionsWithProgress.map((session) => (
+                  <Link
+                    key={session.id}
+                    href={`/teacher/sessions/${session.id}`}
+                    className="block p-4 bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.10] hover:border-amber-500/30 rounded-lg transition-all"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="font-medium text-white mb-1">
+                          {session.session_name || session.word_sets[0]?.title || 'Session'}
+                        </h3>
+                        <div className="flex items-center gap-3 text-xs text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {formatDueDate(session.due_date)}
+                          </span>
+                          <span className="font-mono text-amber-400/70">{session.session_code}</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-medium text-white">{session.averageProgress}%</p>
+                        <p className="text-xs text-gray-400">average</p>
+                      </div>
+                    </div>
+                    
+                    {/* Progress bar */}
+                    <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden mb-3">
+                      <div 
+                        className={`h-full rounded-full transition-all ${
+                          session.averageProgress === 100 
+                            ? 'bg-amber-500' 
+                            : session.averageProgress >= 50 
+                            ? 'bg-orange-500' 
+                            : 'bg-rose-500'
+                        }`}
+                        style={{ width: `${session.averageProgress}%` }}
+                      />
+                    </div>
+                    
+                    {/* Stats row */}
+                    <div className="flex items-center gap-4 text-xs">
+                      <span className="text-gray-400">
+                        <span className="text-amber-400 font-medium">{session.completedCount}</span>
+                        /{session.totalParticipants} completed
+                      </span>
+                      {session.participants.length > 0 && (
+                        <span className="text-gray-400">
+                          <span className="text-orange-400 font-medium">{session.participants.length}</span> need support
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Students needing attention */}
+                    {session.participants.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-white/[0.10]">
+                        <p className="text-xs text-gray-500 mb-2">Students below 50%:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {session.participants.map((p) => (
+                            <span 
+                              key={p.id}
+                              className="px-2 py-1 bg-orange-500/10 border border-orange-500/20 rounded text-xs text-orange-400"
+                            >
+                              {p.student_name} ({p.progress}%)
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-10">
+                <div className="w-12 h-12 bg-white/[0.04] border border-white/[0.10] rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <CheckCircle className="w-6 h-6 text-gray-600" />
+                </div>
+                <p className="text-gray-400 text-sm mb-4">No active sessions right now</p>
+                <Link 
+                  href="/teacher/sessions"
+                  className="text-sm text-amber-500 hover:text-amber-400 transition-colors"
+                >
+                  Create a session
+                </Link>
+              </div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Activity Chart */}
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-[#161622] border border-white/[0.12] rounded-xl"
+        >
+          <div className="px-5 py-4 border-b border-white/[0.12] flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <BarChart3 className="w-4 h-4 text-amber-500" />
+              <h2 className="font-medium text-white">Activity</h2>
+            </div>
+            {/* Time filter dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowActivityDropdown(!showActivityDropdown)}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-300 bg-white/[0.04] border border-white/[0.08] rounded-lg hover:bg-white/[0.08] hover:border-white/[0.12] transition-all"
+              >
+                {getActivityFilterLabel()}
+                <ChevronDown className={`w-3 h-3 text-gray-500 transition-transform ${showActivityDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              {showActivityDropdown && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-10" 
+                    onClick={() => setShowActivityDropdown(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-1 z-20 bg-[#1a1a2e] border border-white/[0.12] rounded-lg shadow-xl overflow-hidden min-w-[140px]">
+                    {[
+                      { value: 'today', label: 'Today' },
+                      { value: '7days', label: 'Last 7 days' },
+                      { value: '30days', label: 'Last 30 days' },
+                      { value: 'all', label: 'All time' }
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => handleActivityFilterChange(option.value as 'today' | '7days' | '30days' | 'all')}
+                        className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                          activityFilter === option.value
+                            ? 'bg-amber-500/20 text-amber-400'
+                            : 'text-gray-300 hover:bg-white/[0.06] hover:text-white'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+          
+          <div className="p-5">
+            <div className="mb-4">
+              <p className="text-3xl font-semibold text-white">{recentGames}</p>
+              <p className="text-sm text-gray-300">games played</p>
             </div>
             
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Active Students */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-amber-500" />
-                  Spelar just nu
-                </h4>
-                {activeStudents.length > 0 ? (
-                  <div className="space-y-2">
-                    {activeStudents.slice(0, 5).map((student) => (
-                      <div key={student.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white text-sm font-bold">
-                            {(student.username || student.email)?.[0]?.toUpperCase()}
-                          </div>
-                          <span className="text-sm text-white">
-                            {student.username || student.email?.split('.')[0] || 'Elev'}
-                          </span>
-                        </div>
-                        <span className="text-xs text-emerald-400 flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                          Nu
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mx-auto mb-3">
-                      <Users className="w-6 h-6 text-gray-500" />
+            {weeklyActivity.length > 0 ? (
+              <div className="flex items-end gap-1 h-24">
+                {weeklyActivity.map((day, index) => (
+                  <div key={index} className="flex-1 flex flex-col items-center gap-2">
+                    <div className="w-full bg-white/[0.04] border border-white/[0.04] rounded-sm overflow-hidden h-16 flex items-end">
+                      <div 
+                        className="w-full bg-gradient-to-t from-amber-600 to-orange-400 rounded-sm transition-all"
+                        style={{ height: `${(day.games / getMaxGames()) * 100}%`, minHeight: day.games > 0 ? '4px' : '0' }}
+                      />
                     </div>
-                    <p className="text-sm text-gray-500">Inga elever spelar just nu</p>
+                    <span className="text-[10px] text-gray-400">{day.day}</span>
                   </div>
-                )}
+                ))}
               </div>
-
-              {/* Latest Activity */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-cyan-500" />
-                  Senaste spel
-                </h4>
-                {studentActivity.length > 0 ? (
-                  <div className="space-y-2">
-                    {studentActivity.slice(0, 5).map((activity, index) => (
-                      <div key={`${activity.student_id}-${activity.timestamp}-${index}`} className="p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm text-white truncate">
-                            {activity.student_name}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {new Date(activity.timestamp).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-400">
-                          {formatGameType(activity.game_type)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mx-auto mb-3">
-                      <Activity className="w-6 h-6 text-gray-500" />
-                    </div>
-                    <p className="text-sm text-gray-500">Ingen aktivitet ännu</p>
-                  </div>
-                )}
+            ) : (
+              <div className="h-24 flex items-center justify-center">
+                <p className="text-sm text-gray-400">No data yet</p>
               </div>
-            </div>
-          </motion.div>
-        </>
-      )}
+            )}
+          </div>
+        </motion.div>
+      </div>
 
-      {/* Save Status Indicator */}
+      {/* Quick Actions */}
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3"
+      >
+        {[
+          { href: '/teacher/classes', icon: Users, label: 'Manage Classes' },
+          { href: '/teacher/word-sets', icon: FileText, label: 'Word Lists' },
+          { href: '/teacher/assign', icon: Calendar, label: 'Assign Work' },
+          { href: '/teacher/sessions', icon: Gamepad2, label: 'Sessions' },
+        ].map((action) => (
+          <Link
+            key={action.href}
+            href={action.href}
+            className="flex items-center gap-3 px-4 py-3 bg-[#161622] border border-white/[0.12] rounded-lg hover:border-amber-500/30 transition-all group"
+          >
+            <action.icon className="w-5 h-5 text-gray-500 group-hover:text-amber-400 transition-colors" />
+            <span className="text-sm text-gray-200 group-hover:text-white transition-colors">{action.label}</span>
+            <ArrowRight className="w-4 h-4 text-gray-600 ml-auto group-hover:text-amber-400 group-hover:translate-x-1 transition-all" />
+          </Link>
+        ))}
+      </motion.div>
+
       <SaveStatusIndicator />
-    </>
+    </div>
   )
 }

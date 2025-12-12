@@ -711,8 +711,8 @@ export default function SessionPlayPage() {
     if (!session) {
       return (
         <div className="text-center p-8">
-          <div className="w-12 h-12 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Laddar session...</p>
+          <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Loading session...</p>
         </div>
       )
     }
@@ -811,12 +811,12 @@ export default function SessionPlayPage() {
       <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center relative overflow-hidden">
         {/* Aurora background effects */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-violet-900/30 via-cyan-900/20 to-fuchsia-900/30 blur-3xl animate-pulse-slow" />
+          <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-amber-900/30 via-orange-900/20 to-yellow-900/30 blur-3xl animate-pulse-slow" />
           <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl animate-pulse-slow-reverse" />
         </div>
         <div className="text-center relative z-10">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
-          <p className="text-gray-300">Laddar session...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading session...</p>
         </div>
       </div>
     )
@@ -827,14 +827,14 @@ export default function SessionPlayPage() {
       <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center relative overflow-hidden">
         {/* Aurora background effects */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-violet-900/30 via-cyan-900/20 to-fuchsia-900/30 blur-3xl animate-pulse-slow" />
+          <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-amber-900/30 via-orange-900/20 to-yellow-900/30 blur-3xl animate-pulse-slow" />
           <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl animate-pulse-slow-reverse" />
         </div>
         <div className="text-center text-red-400 relative z-10">
           <p>Session hittades inte</p>
           <button
             onClick={() => router.push('/session/join')}
-            className="mt-4 px-4 py-2 bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-lg hover:from-violet-400 hover:to-cyan-400 shadow-lg shadow-violet-500/30"
+            className="mt-4 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg hover:from-amber-400 hover:to-orange-400 shadow-lg shadow-amber-500/30"
           >
             Gå tillbaka
           </button>
@@ -930,15 +930,15 @@ export default function SessionPlayPage() {
       return (
         <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-violet-900/30 via-cyan-900/20 to-fuchsia-900/30 blur-3xl" />
+            <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-amber-900/30 via-orange-900/20 to-yellow-900/30 blur-3xl" />
             <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl" />
           </div>
           <div className="text-center relative z-10">
             <div className="w-16 h-16 mx-auto mb-4 relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-xl blur-lg opacity-50 animate-pulse" />
-              <div className="relative w-16 h-16 border-2 border-violet-500/30 border-t-violet-500 rounded-xl animate-spin" />
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl blur-lg opacity-50 animate-pulse" />
+              <div className="relative w-16 h-16 border-2 border-amber-500/30 border-t-amber-500 rounded-xl animate-spin" />
             </div>
-            <p className="text-gray-400">Laddar session...</p>
+            <p className="text-gray-400">Loading session...</p>
           </div>
         </div>
       )
@@ -949,7 +949,7 @@ export default function SessionPlayPage() {
       return (
         <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-violet-900/30 via-cyan-900/20 to-fuchsia-900/30 blur-3xl" />
+            <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-amber-900/30 via-orange-900/20 to-yellow-900/30 blur-3xl" />
             <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl" />
           </div>
           <div className="text-center max-w-md mx-auto p-6 relative z-10">
@@ -962,7 +962,7 @@ export default function SessionPlayPage() {
             </p>
             <button
               onClick={() => router.push('/session/join')}
-              className="px-6 py-3 bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-xl font-semibold hover:from-violet-400 hover:to-cyan-400 shadow-lg shadow-violet-500/30 transition-all"
+              className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:from-amber-400 hover:to-orange-400 shadow-lg shadow-amber-500/30 transition-all"
             >
               Gå tillbaka
             </button>
@@ -989,7 +989,7 @@ export default function SessionPlayPage() {
       <div className="min-h-screen bg-[#0a0a1a] relative overflow-hidden">
         {/* Aurora background effects */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-violet-900/30 via-cyan-900/20 to-fuchsia-900/30 blur-3xl animate-pulse-slow" />
+          <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-amber-900/30 via-orange-900/20 to-yellow-900/30 blur-3xl animate-pulse-slow" />
           <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl animate-pulse-slow-reverse" />
         </div>
         <div className="relative z-10">
@@ -1294,7 +1294,7 @@ export default function SessionPlayPage() {
       <div className="min-h-screen bg-[#0a0a1a] relative overflow-hidden">
         {/* Aurora background effects */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-violet-900/30 via-cyan-900/20 to-fuchsia-900/30 blur-3xl animate-pulse-slow" />
+          <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-amber-900/30 via-orange-900/20 to-yellow-900/30 blur-3xl animate-pulse-slow" />
           <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl animate-pulse-slow-reverse" />
         </div>
         <div className="relative z-10">

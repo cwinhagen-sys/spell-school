@@ -1,8 +1,12 @@
 'use client'
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, Lock, ArrowRight, Sparkles, CheckCircle2, Trophy, Mic, X, Play, Star, Zap, Target, BookOpen, Users, ChevronDown, Menu } from "lucide-react";
+import { 
+  Mail, Lock, ArrowRight, Sparkles, CheckCircle2, Trophy, Mic, X, Play, 
+  Zap, Target, ChevronDown, Menu, GraduationCap, BarChart3, Users, 
+  BookOpen, Clock, Shield, Star
+} from "lucide-react";
 import Link from "next/link";
 
 interface SpellSchoolLandingProps {
@@ -18,27 +22,35 @@ interface SpellSchoolLandingProps {
   setPassword?: (value: string) => void;
 }
 
-// Floating magical particles
-function MagicParticles() {
+// Subtle floating particles for premium feel
+function SubtleParticles() {
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {[...Array(20)].map((_, i) => (
+      {[...Array(12)].map((_, i) => (
         <motion.div
           key={i}
-          className="absolute w-1 h-1 bg-amber-400 rounded-full"
+          className="absolute w-1 h-1 bg-amber-400/40 rounded-full"
           style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
+            left: `${10 + (i * 7) % 80}%`,
+            top: `${15 + (i * 11) % 70}%`,
           }}
           animate={{
-            y: [0, -30, 0],
-            opacity: [0.2, 1, 0.2],
-            scale: [1, 1.5, 1],
+            y: [0, -20, 0],
+            opacity: [0.2, 0.5, 0.2],
           }}
           transition={{
-            duration: 3 + Math.random() * 2,
+            duration: 4 + (i % 3),
             repeat: Infinity,
-            delay: Math.random() * 2,
+            delay: i * 0.3,
+            ease: "easeInOut",
           }}
         />
       ))}
@@ -46,21 +58,111 @@ function MagicParticles() {
   );
 }
 
-// List of engaging adjectives that rotate daily
-const DAILY_ADJECTIVES = [
-  'exciting', 'magical', 'engaging', 'interactive', 'fun', 'powerful',
-  'innovative', 'creative', 'dynamic', 'inspiring', 'captivating', 'thrilling',
-  'amazing', 'brilliant', 'fantastic', 'wonderful', 'extraordinary', 'remarkable',
-  'adventurous', 'playful', 'energetic', 'vibrant', 'colorful', 'stimulating',
-  'rewarding', 'fulfilling', 'empowering', 'transformative', 'revolutionary', 'cutting-edge'
-];
+// Dropdown menu component
+interface DropdownProps {
+  label: string;
+  items: { label: string; description?: string; icon?: React.ElementType; href?: string; onClick?: () => void }[];
+  isOpen: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+}
 
-// Get daily adjective based on date (same adjective for the same day)
-function getDailyAdjective(): string {
-  const today = new Date();
-  const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000);
-  const index = dayOfYear % DAILY_ADJECTIVES.length;
-  return DAILY_ADJECTIVES[index];
+function Dropdown({ label, items, isOpen, onToggle, onClose }: DropdownProps) {
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [onClose]);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={onToggle}
+        className="flex items-center gap-1.5 text-gray-400 hover:text-white transition-colors text-sm font-medium py-2"
+      >
+        {label}
+        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.96 }}
+            transition={{ duration: 0.15 }}
+            className="absolute top-full left-0 mt-2 w-72 bg-[#12122a]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden z-50"
+          >
+            <div className="p-2">
+              {items.map((item, index) => {
+                const Icon = item.icon;
+                const content = (
+                  <div className="flex items-start gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
+                    {Icon && (
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center flex-shrink-0 group-hover:from-amber-500/30 group-hover:to-orange-500/30 transition-colors">
+                        <Icon className="w-5 h-5 text-amber-400" />
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-white font-medium block">{item.label}</span>
+                      {item.description && (
+                        <span className="text-gray-500 text-sm">{item.description}</span>
+                      )}
+                    </div>
+                  </div>
+                );
+                
+                if (item.href) {
+                  return (
+                    <Link key={index} href={item.href} onClick={onClose}>
+                      {content}
+                    </Link>
+                  );
+                }
+                return (
+                  <div key={index} onClick={() => { item.onClick?.(); onClose(); }}>
+                    {content}
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// Stats counter animation
+function AnimatedCounter({ value, suffix = "" }: { value: number; suffix?: string }) {
+  const [count, setCount] = useState(0);
+  
+  useEffect(() => {
+    const duration = 2000;
+    const steps = 60;
+    const increment = value / steps;
+    let current = 0;
+    
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= value) {
+        setCount(value);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(current));
+      }
+    }, duration / steps);
+    
+    return () => clearInterval(timer);
+  }, [value]);
+  
+  return <span>{count.toLocaleString()}{suffix}</span>;
 }
 
 export default function SpellSchoolLanding({
@@ -78,12 +180,8 @@ export default function SpellSchoolLanding({
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [dailyAdjective, setDailyAdjective] = useState<string>('exciting');
-
-  useEffect(() => {
-    // Set daily adjective on mount
-    setDailyAdjective(getDailyAdjective());
-  }, []);
+  const [featuresOpen, setFeaturesOpen] = useState(false);
+  const [pricingOpen, setPricingOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -97,143 +195,135 @@ export default function SpellSchoolLanding({
     document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const scrollToPricing = () => {
+    document.getElementById('pricing-section')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const featuresItems = [
+    { label: "Interactive Games", description: "10+ engaging vocabulary games", icon: Sparkles, onClick: scrollToFeatures },
+    { label: "Pronunciation Training", description: "AI-powered feedback", icon: Mic, onClick: scrollToFeatures },
+    { label: "Progress Tracking", description: "Real-time analytics", icon: BarChart3, onClick: scrollToFeatures },
+    { label: "Session Mode", description: "Structured homework chains", icon: Clock, onClick: scrollToFeatures },
+  ];
+
+  const pricingItems = [
+    { label: "Free Plan", description: "Get started at no cost", icon: Star, onClick: scrollToPricing },
+    { label: "Premium Plan", description: "More classes and features", icon: Zap, onClick: scrollToPricing },
+    { label: "Pro Plan", description: "Full control and insights", icon: GraduationCap, onClick: scrollToPricing },
+  ];
+
   return (
     <div className="min-h-screen bg-[#0a0a1a] text-white overflow-x-hidden">
       {/* Animated Background */}
       <div className="fixed inset-0 pointer-events-none">
-        {/* Deep gradient base */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#0f0f2a] via-[#0a0a1a] to-[#050510]" />
         
-        {/* Magical aurora effect - animated blobs */}
-        <div className="absolute inset-0 opacity-25">
+        {/* Subtle aurora effect */}
+        <div className="absolute inset-0 opacity-20">
           <motion.div 
             className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-purple-600/30 rounded-full blur-[120px]"
-            animate={{
-              x: [0, 50, 0],
-              y: [0, 30, 0],
-              scale: [1, 1.1, 1],
-            }}
-            transition={{ 
-              duration: 20, 
-              repeat: Infinity, 
-              ease: "easeInOut",
-              repeatType: "loop" as const
-            }}
+            animate={{ x: [0, 50, 0], y: [0, 30, 0], scale: [1, 1.1, 1] }}
+            transition={{ duration: 20, repeat: Infinity, ease: "easeInOut", repeatType: "loop" as const }}
           />
           <motion.div 
             className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-cyan-500/20 rounded-full blur-[100px]"
-            animate={{
-              x: [0, -40, 0],
-              y: [0, 50, 0],
-              scale: [1, 1.15, 1],
-            }}
-            transition={{ 
-              duration: 25, 
-              repeat: Infinity, 
-              ease: "easeInOut", 
-              delay: 5,
-              repeatType: "loop" as const
-            }}
+            animate={{ x: [0, -40, 0], y: [0, 50, 0], scale: [1, 1.15, 1] }}
+            transition={{ duration: 25, repeat: Infinity, ease: "easeInOut", delay: 5, repeatType: "loop" as const }}
           />
           <motion.div 
             className="absolute bottom-1/4 left-1/3 w-[400px] h-[400px] bg-amber-500/15 rounded-full blur-[80px]"
-            animate={{
-              x: [0, 60, 0],
-              y: [0, -40, 0],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{ 
-              duration: 30, 
-              repeat: Infinity, 
-              ease: "easeInOut", 
-              delay: 10,
-              repeatType: "loop" as const
-            }}
+            animate={{ x: [0, 60, 0], y: [0, -40, 0], scale: [1, 1.2, 1] }}
+            transition={{ duration: 30, repeat: Infinity, ease: "easeInOut", delay: 10, repeatType: "loop" as const }}
           />
         </div>
         
-        {/* Subtle grid pattern */}
+        {/* Subtle grid */}
         <div 
-          className="absolute inset-0 opacity-[0.015]"
+          className="absolute inset-0 opacity-[0.02]"
           style={{
             backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
                              linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-            backgroundSize: '80px 80px'
-          }}
-        />
-        
-        {/* Subtle noise texture for premium feel */}
-        <div 
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+            backgroundSize: '60px 60px'
           }}
         />
       </div>
 
       {/* Header */}
       <motion.header 
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5 }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          scrolled ? 'bg-[#0a0a1a]/90 backdrop-blur-xl border-b border-white/5' : ''
+          scrolled ? 'bg-[#0a0a1a]/95 backdrop-blur-xl border-b border-white/5 shadow-lg shadow-black/20' : 'bg-transparent'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
-            {/* Logo */}
+            {/* Logo with elegant font */}
             <Link href="/" className="flex items-center gap-3 group">
               <div className="relative">
-                <div className="w-10 h-10 bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 rounded-xl flex items-center justify-center transform group-hover:scale-110 transition-transform">
-                  <span className="text-white font-bold text-lg">S</span>
+                <div className="w-11 h-11 bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 rounded-xl flex items-center justify-center transform group-hover:scale-105 transition-transform shadow-lg shadow-orange-500/25">
+                  <Sparkles className="w-6 h-6 text-white" />
                 </div>
-                <div className="absolute -inset-1 bg-gradient-to-br from-amber-400 to-rose-500 rounded-xl blur opacity-30 group-hover:opacity-50 transition-opacity" />
+                <div className="absolute -inset-1 bg-gradient-to-br from-amber-400 to-rose-500 rounded-xl blur opacity-25 group-hover:opacity-40 transition-opacity" />
               </div>
-              <span className="text-2xl font-bold tracking-tight">
-                Spell<span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">School</span>
-              </span>
+              <div className="flex flex-col">
+                <span 
+                  className="text-2xl font-bold tracking-tight font-[family-name:var(--font-playfair)]"
+                  style={{ letterSpacing: '-0.02em' }}
+                >
+                  <span className="text-white">Spell</span>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">School</span>
+                </span>
+                <span className="text-[10px] text-gray-500 tracking-widest uppercase -mt-1">For Educators</span>
+              </div>
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-4">
-              <Link
-                href="/about"
-                className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
-              >
+            <nav className="hidden lg:flex items-center gap-6">
+              <Dropdown 
+                label="Features" 
+                items={featuresItems} 
+                isOpen={featuresOpen} 
+                onToggle={() => { setFeaturesOpen(!featuresOpen); setPricingOpen(false); }}
+                onClose={() => setFeaturesOpen(false)}
+              />
+              <Dropdown 
+                label="Pricing" 
+                items={pricingItems} 
+                isOpen={pricingOpen} 
+                onToggle={() => { setPricingOpen(!pricingOpen); setFeaturesOpen(false); }}
+                onClose={() => setPricingOpen(false)}
+              />
+              <Link href="/about" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">
                 About
               </Link>
-              <Link
-                href="/faq"
-                className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
-              >
+              <Link href="/faq" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">
                 FAQ
               </Link>
-              <button 
-                onClick={scrollToFeatures}
-                className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
-              >
-                Features
-              </button>
+              
+              <div className="w-px h-6 bg-white/10 mx-2" />
+              
               <button
                 onClick={() => setShowLoginModal(true)}
-                className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
+                className="text-gray-300 hover:text-white transition-colors text-sm font-medium"
               >
-                Login
+                Sign in
               </button>
               <Link
                 href="/signup/teacher"
                 className="relative group"
               >
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl blur opacity-60 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl blur opacity-50 group-hover:opacity-80 transition-opacity" />
                 <span className="relative bg-gradient-to-r from-amber-500 to-orange-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm inline-block hover:from-amber-400 hover:to-orange-500 transition-all">
-                  Create teacher account
+                  Sign up
                 </span>
               </Link>
             </nav>
 
             {/* Mobile menu button */}
             <button 
-              className="md:hidden p-2 text-gray-400 hover:text-white"
+              className="lg:hidden p-2 text-gray-400 hover:text-white"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               <Menu className="w-6 h-6" />
@@ -248,84 +338,44 @@ export default function SpellSchoolLanding({
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="md:hidden bg-[#0a0a1a]/95 backdrop-blur-xl border-t border-white/5"
+              className="lg:hidden bg-[#0a0a1a]/98 backdrop-blur-xl border-t border-white/5"
             >
-              <div className="px-4 py-4 space-y-3">
-                <Link href="/about" className="block w-full text-left text-gray-400 hover:text-white py-2">About</Link>
-                <Link href="/faq" className="block w-full text-left text-gray-400 hover:text-white py-2">FAQ</Link>
-                <button onClick={scrollToFeatures} className="block w-full text-left text-gray-400 hover:text-white py-2">Features</button>
-                <button onClick={() => { setShowLoginModal(true); setMobileMenuOpen(false); }} className="block w-full text-left text-gray-400 hover:text-white py-2">Login</button>
-                <Link href="/signup/teacher" className="block bg-gradient-to-r from-amber-500 to-orange-600 text-white px-5 py-3 rounded-xl font-semibold text-center">
-                  Create teacher account
-                </Link>
+              <div className="px-4 py-6 space-y-4">
+                <button onClick={() => { scrollToFeatures(); setMobileMenuOpen(false); }} className="block w-full text-left text-gray-300 hover:text-white py-2 font-medium">Features</button>
+                <button onClick={() => { scrollToPricing(); setMobileMenuOpen(false); }} className="block w-full text-left text-gray-300 hover:text-white py-2 font-medium">Pricing</button>
+                <Link href="/about" className="block text-gray-300 hover:text-white py-2 font-medium">About</Link>
+                <Link href="/faq" className="block text-gray-300 hover:text-white py-2 font-medium">FAQ</Link>
+                <div className="border-t border-white/10 pt-4 space-y-3">
+                  <button onClick={() => { setShowLoginModal(true); setMobileMenuOpen(false); }} className="block w-full text-left text-gray-300 hover:text-white py-2 font-medium">Sign in</button>
+                  <Link href="/signup/teacher" className="block bg-gradient-to-r from-amber-500 to-orange-600 text-white px-5 py-3 rounded-xl font-semibold text-center">
+                    Sign up
+                  </Link>
+                </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </motion.header>
 
-      {/* Hero Section */}
+      {/* Hero Section - Teacher focused */}
       <section className="relative min-h-screen flex items-center pt-20">
-        <MagicParticles />
+        <SubtleParticles />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            {/* Left Column - Text */}
-            <div className="text-center lg:text-left relative z-10">
-              {/* Badge */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-4 py-2 mb-8"
-              >
-                <span className="flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span className="text-sm text-gray-300">New: Automatic pronunciation feedback</span>
-              </motion.div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            {/* Left Column - Main content */}
+            <div className="lg:col-span-7 text-center lg:text-left relative z-10">
 
               <motion.h1
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2, duration: 0.6 }}
-                className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-8"
+                className="text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] mb-6"
               >
-                Practice your vocabulary in
+                Empower your students to
                 <br />
-                <span className="relative">
-                  <motion.span 
-                    key={dailyAdjective}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500"
-                  >
-                    {dailyAdjective}
-                  </motion.span>
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500"> new ways!</span>
-                  <motion.svg
-                    className="absolute -bottom-2 left-0 w-full"
-                    viewBox="0 0 200 12"
-                    initial={{ pathLength: 0 }}
-                    animate={{ pathLength: 1 }}
-                    transition={{ delay: 0.8, duration: 0.8 }}
-                  >
-                    <motion.path
-                      d="M2 8 Q50 2, 100 8 T 198 6"
-                      fill="none"
-                      stroke="url(#gradient)"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                    />
-                    <defs>
-                      <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#fbbf24" />
-                        <stop offset="100%" stopColor="#f43f5e" />
-                      </linearGradient>
-                    </defs>
-                  </motion.svg>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500">
+                  master vocabulary
                 </span>
               </motion.h1>
 
@@ -333,141 +383,140 @@ export default function SpellSchoolLanding({
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.6 }}
-                className="text-xl text-gray-400 mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed"
+                className="text-xl text-gray-400 mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed"
               >
-                Track progress in real-time as students collect XP and climb the leaderboard.
+                The complete vocabulary platform for teachers. Create engaging exercises, 
+                track real-time progress, and watch your students thrive.
               </motion.p>
 
+              {/* CTA Buttons */}
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4, duration: 0.6 }}
-                className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
+                className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12"
               >
                 <Link
                   href="/signup/teacher"
-                  className="group relative inline-flex items-center justify-center gap-2 max-w-full"
+                  className="group relative inline-flex items-center justify-center"
                 >
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl blur opacity-60 group-hover:opacity-100 transition-opacity" />
-                  <span className="relative bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 py-3 sm:px-8 sm:py-4 rounded-2xl font-semibold text-base sm:text-lg inline-flex items-center gap-2 hover:from-amber-400 hover:to-orange-500 transition-all w-full sm:w-auto justify-center">
-                    Create teacher account
-                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform flex-shrink-0" />
+                  <span className="relative bg-gradient-to-r from-amber-500 to-orange-600 text-white px-8 py-4 rounded-2xl font-semibold text-lg inline-flex items-center gap-2 hover:from-amber-400 hover:to-orange-500 transition-all">
+                    Sign up
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </span>
                 </Link>
                 
-                <Link
-                  href="/session/join"
+                <button
+                  onClick={scrollToFeatures}
                   className="inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white px-8 py-4 rounded-2xl font-semibold text-lg transition-all"
                 >
-                  <Play className="w-5 h-5" />
-                  Join session
-                </Link>
+                  See Features
+                </button>
               </motion.div>
 
+              {/* Stats */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5, duration: 0.6 }}
+                className="grid grid-cols-3 gap-8 max-w-md mx-auto lg:mx-0"
+              >
+                {[
+                  { value: 10, suffix: "+", label: "Game Types" },
+                  { value: 50000, suffix: "+", label: "Words Practiced" },
+                  { value: 98, suffix: "%", label: "Satisfaction" },
+                ].map((stat, i) => (
+                  <div key={i} className="text-center lg:text-left">
+                    <div className="text-2xl md:text-3xl font-bold text-white">
+                      <AnimatedCounter value={stat.value} suffix={stat.suffix} />
+                    </div>
+                    <div className="text-sm text-gray-500">{stat.label}</div>
+                  </div>
+                ))}
+              </motion.div>
             </div>
 
-            {/* Right Column - Wizard Stack */}
+            {/* Right Column - Single wizard with platform preview */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3, duration: 0.8 }}
-              className="relative"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4, duration: 0.8 }}
+              className="lg:col-span-5 relative hidden lg:block"
             >
-              <div className="relative w-full aspect-square max-w-lg mx-auto">
-                {/* Glow effect behind wizards */}
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 via-purple-500/10 to-cyan-500/20 rounded-full blur-3xl" />
+              {/* Platform preview mockup */}
+              <div className="relative">
+                <div className="absolute -inset-4 bg-gradient-to-br from-amber-500/20 via-purple-500/10 to-cyan-500/20 rounded-3xl blur-2xl" />
                 
-                {/* Wizard cards in a floating stack */}
-                <motion.div
-                  className="absolute left-[5%] top-[5%] w-[45%]"
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{ 
-                    duration: 4, 
-                    repeat: Infinity, 
-                    ease: "easeInOut",
-                    repeatType: "loop" as const
-                  }}
-                >
-                  <div className="relative group">
-                    <div className="absolute -inset-2 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-3xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity" />
-                    <div className="relative bg-gradient-to-br from-[#1a1a2e] to-[#16162a] rounded-3xl p-3 border border-white/10 transform hover:scale-105 transition-transform">
-                      <img
-                        src="/assets/wizard/wizard_novice.png"
-                        alt="Wizard Novice"
-                        className="w-full h-auto object-contain"
-                      />
+                {/* Browser mockup */}
+                <div className="relative bg-[#12122a] border border-white/10 rounded-2xl overflow-hidden shadow-2xl shadow-black/50">
+                  {/* Browser header */}
+                  <div className="flex items-center gap-2 px-4 py-3 bg-[#0a0a1a] border-b border-white/5">
+                    <div className="flex gap-1.5">
+                      <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                      <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                      <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                    </div>
+                    <div className="flex-1 mx-4">
+                      <div className="bg-white/5 rounded-lg px-4 py-1.5 text-xs text-gray-500">
+                        spellschool.com/teacher/dashboard
+                      </div>
                     </div>
                   </div>
-                </motion.div>
+                  
+                  {/* Dashboard preview */}
+                  <div className="p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm text-gray-400">Welcome back</div>
+                        <div className="text-xl font-bold">Teacher Dashboard</div>
+                      </div>
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                        <GraduationCap className="w-5 h-5 text-white" />
+                      </div>
+                    </div>
+                    
+                    {/* Stats cards */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { label: "Active Students", value: "24", icon: Users, color: "from-blue-500 to-cyan-500" },
+                        { label: "Words This Week", value: "1,240", icon: BookOpen, color: "from-emerald-500 to-teal-500" },
+                      ].map((card, i) => (
+                        <div key={i} className="bg-white/5 border border-white/5 rounded-xl p-4">
+                          <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${card.color} flex items-center justify-center mb-2`}>
+                            <card.icon className="w-4 h-4 text-white" />
+                          </div>
+                          <div className="text-lg font-bold">{card.value}</div>
+                          <div className="text-xs text-gray-500">{card.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Progress bars */}
+                    <div className="space-y-2">
+                      {[
+                        { name: "Class 7A", progress: 85, color: "from-amber-500 to-orange-500" },
+                        { name: "Class 8B", progress: 62, color: "from-purple-500 to-pink-500" },
+                      ].map((cls, i) => (
+                        <div key={i} className="bg-white/5 rounded-lg p-3">
+                          <div className="flex items-center justify-between text-sm mb-2">
+                            <span className="text-gray-300">{cls.name}</span>
+                            <span className="text-gray-500">{cls.progress}%</span>
+                          </div>
+                          <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <motion.div 
+                              className={`h-full bg-gradient-to-r ${cls.color} rounded-full`}
+                              initial={{ width: 0 }}
+                              animate={{ width: `${cls.progress}%` }}
+                              transition={{ duration: 1, delay: 0.8 + i * 0.2 }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
 
-                <motion.div
-                  className="absolute right-[5%] top-[0%] w-[50%]"
-                  animate={{ y: [0, -15, 0] }}
-                  transition={{ 
-                    duration: 5, 
-                    repeat: Infinity, 
-                    ease: "easeInOut", 
-                    delay: 0.5,
-                    repeatType: "loop" as const
-                  }}
-                >
-                  <div className="relative group">
-                    <div className="absolute -inset-2 bg-gradient-to-br from-orange-500 to-rose-500 rounded-3xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity" />
-                    <div className="relative bg-gradient-to-br from-[#1a1a2e] to-[#16162a] rounded-3xl p-3 border border-white/10 transform hover:scale-105 transition-transform">
-                      <img
-                        src="/assets/wizard/wizard_torch.png"
-                        alt="Wizard Torch"
-                        className="w-full h-auto object-contain"
-                      />
-                    </div>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  className="absolute left-[0%] bottom-[5%] w-[50%]"
-                  animate={{ y: [0, -12, 0] }}
-                  transition={{ 
-                    duration: 4.5, 
-                    repeat: Infinity, 
-                    ease: "easeInOut", 
-                    delay: 1,
-                    repeatType: "loop" as const
-                  }}
-                >
-                  <div className="relative group">
-                    <div className="absolute -inset-2 bg-gradient-to-br from-yellow-500 to-amber-500 rounded-3xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity" />
-                    <div className="relative bg-gradient-to-br from-[#1a1a2e] to-[#16162a] rounded-3xl p-3 border border-white/10 transform hover:scale-105 transition-transform">
-                      <img
-                        src="/assets/wizard/wizard_energy.png"
-                        alt="Wizard Energy"
-                        className="w-full h-auto object-contain"
-                      />
-                    </div>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  className="absolute right-[0%] bottom-[10%] w-[52%]"
-                  animate={{ y: [0, -8, 0] }}
-                  transition={{ 
-                    duration: 5.5, 
-                    repeat: Infinity, 
-                    ease: "easeInOut", 
-                    delay: 1.5,
-                    repeatType: "loop" as const
-                  }}
-                >
-                  <div className="relative group">
-                    <div className="absolute -inset-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-3xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity" />
-                    <div className="relative bg-gradient-to-br from-[#1a1a2e] to-[#16162a] rounded-3xl p-3 border border-white/10 transform hover:scale-105 transition-transform">
-                      <img
-                        src="/assets/wizard/wizard_staff.png"
-                        alt="Wizard Staff"
-                        className="w-full h-auto object-contain"
-                      />
-                    </div>
-                  </div>
-                </motion.div>
               </div>
             </motion.div>
           </div>
@@ -479,20 +528,17 @@ export default function SpellSchoolLanding({
             transition={{ delay: 1 }}
             className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
           >
-            <span className="text-xs text-gray-500 uppercase tracking-widest">Scroll</span>
+            <span className="text-xs text-gray-500 uppercase tracking-widest">Explore</span>
             <motion.div
               animate={{ y: [0, 8, 0] }}
-              transition={{ 
-                duration: 1.5, 
-                repeat: Infinity,
-                repeatType: "loop" as const
-              }}
+              transition={{ duration: 1.5, repeat: Infinity, repeatType: "loop" as const }}
             >
               <ChevronDown className="w-5 h-5 text-gray-500" />
             </motion.div>
           </motion.div>
         </div>
       </section>
+
 
       {/* Features Section */}
       <section id="features-section" className="relative py-32">
@@ -506,14 +552,14 @@ export default function SpellSchoolLanding({
           >
             <span className="text-amber-500 font-semibold text-sm uppercase tracking-wider mb-4 block">Features</span>
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Everything you need to make
+              Everything you need for
               <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">
-                vocabulary learning effective
+                effective vocabulary teaching
               </span>
             </h2>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              A complete tool designed for teachers who want to engage their students
+              A complete platform designed for teachers who want to engage and track student progress
             </p>
           </motion.div>
 
@@ -522,29 +568,29 @@ export default function SpellSchoolLanding({
             {[
               {
                 icon: Trophy,
-                title: "Points & Ranking",
-                description: "Students collect XP, earn trophies and climb the leaderboard. Gamification that motivates!",
+                title: "Gamified Learning",
+                description: "Students earn XP, unlock achievements, and compete on leaderboards. Motivation built in.",
                 gradient: "from-amber-500 to-orange-500",
                 delay: 0
               },
               {
-                icon: Sparkles,
-                title: "Interactive Exercises",
-                description: "Practice pronunciation with AI feedback and create context around words with smart exercises.",
+                icon: Mic,
+                title: "AI Pronunciation",
+                description: "Instant AI feedback on pronunciation helps students perfect their speaking skills.",
                 gradient: "from-purple-500 to-pink-500",
                 delay: 0.1
               },
               {
-                icon: Target,
-                title: "Color Block Organization",
-                description: "Divide word lists into color-coded blocks. Students choose what they want to practice.",
+                icon: BarChart3,
+                title: "Real-time Analytics",
+                description: "Track individual and class progress with detailed insights and reports.",
                 gradient: "from-cyan-500 to-blue-500",
                 delay: 0.2
               },
               {
                 icon: Zap,
-                title: "Session Mode",
-                description: "Build chains of exercises as homework. Follow progression throughout the week.",
+                title: "Session Chains",
+                description: "Create structured homework sequences. Students unlock exercises step by step.",
                 gradient: "from-rose-500 to-red-500",
                 delay: 0.3
               }
@@ -586,18 +632,18 @@ export default function SpellSchoolLanding({
             <div>
               <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 rounded-full px-4 py-2 mb-6">
                 <Mic className="w-4 h-4 text-purple-400" />
-                <span className="text-sm text-purple-300">AI-driven pronunciation feedback</span>
+                <span className="text-sm text-purple-300">AI-Powered Feedback</span>
               </div>
               <h3 className="text-3xl md:text-4xl font-bold mb-6">
                 Instant feedback on
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500"> pronunciation</span>
               </h3>
               <p className="text-gray-400 text-lg leading-relaxed mb-8">
-                Students get immediate feedback on their pronunciation with automatic AI assessment. 
-                The system analyzes pronunciation and provides constructive feedback to improve.
+                Students receive immediate, constructive feedback on their pronunciation through 
+                advanced AI analysis. No more waiting for teacher corrections.
               </p>
               <ul className="space-y-4">
-                {["Real-time pronunciation analysis", "Constructive feedback on errors", "Practice until it's perfect"].map((item, i) => (
+                {["Real-time pronunciation analysis", "Detailed accuracy scores", "Practice until perfect"].map((item, i) => (
                   <li key={i} className="flex items-center gap-3">
                     <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center">
                       <CheckCircle2 className="w-4 h-4 text-purple-400" />
@@ -632,9 +678,8 @@ export default function SpellSchoolLanding({
             <div className="order-2 lg:order-1 relative">
               <div className="absolute -inset-4 bg-gradient-to-br from-orange-500/20 to-rose-500/20 rounded-3xl blur-2xl" />
               <div className="relative bg-[#12122a] border border-white/10 rounded-3xl p-8">
-                {/* Session chain visualization */}
                 <div className="space-y-4">
-                  {["Flashcards", "Memory", "Typing", "Quiz"].map((step, i) => (
+                  {["Flashcards", "Memory Game", "Typing Practice", "Final Quiz"].map((step, i) => (
                     <div key={i} className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                         i < 2 ? 'bg-emerald-500' : i === 2 ? 'bg-amber-500' : 'bg-gray-700'
@@ -647,7 +692,7 @@ export default function SpellSchoolLanding({
                         <span className={i < 3 ? 'text-white' : 'text-gray-500'}>{step}</span>
                       </div>
                       {i < 2 && <span className="text-emerald-400 text-sm">100%</span>}
-                      {i === 2 && <span className="text-amber-400 text-sm animate-pulse">Active</span>}
+                      {i === 2 && <span className="text-amber-400 text-sm animate-pulse">In Progress</span>}
                     </div>
                   ))}
                 </div>
@@ -663,11 +708,11 @@ export default function SpellSchoolLanding({
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-rose-500"> homework chains</span>
               </h3>
               <p className="text-gray-400 text-lg leading-relaxed mb-8">
-                Build sequences of exercises that students must complete in order. 
-                Perfect for homework where you want to ensure all steps are completed.
+                Design exercise sequences that students complete in order. Perfect for 
+                homework assignments where you want to ensure comprehensive practice.
               </p>
               <ul className="space-y-4">
-                {["Exercises unlock in sequence", "Follow progression in real-time", "End with quiz for assessment"].map((item, i) => (
+                {["Progressive exercise unlocking", "Real-time progress monitoring", "Automatic grading"].map((item, i) => (
                   <li key={i} className="flex items-center gap-3">
                     <div className="w-6 h-6 rounded-full bg-orange-500/20 flex items-center justify-center">
                       <CheckCircle2 className="w-4 h-4 text-orange-400" />
@@ -681,9 +726,8 @@ export default function SpellSchoolLanding({
         </div>
       </section>
 
-
-      {/* Benefits Section */}
-      <section className="relative py-32">
+      {/* Pricing Section */}
+      <section id="pricing-section" className="relative py-32">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-amber-500/5 to-transparent" />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
@@ -693,126 +737,189 @@ export default function SpellSchoolLanding({
             viewport={{ once: true }}
             className="text-center mb-16"
           >
+            <span className="text-amber-500 font-semibold text-sm uppercase tracking-wider mb-4 block">Pricing</span>
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Why choose
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500"> Spell School?</span>
+              Simple, transparent
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500"> pricing</span>
             </h2>
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+              Start free and upgrade as your needs grow
+            </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {[
-              "Easy to create and assign vocabulary",
-              "Multiple game types for varied practice",
-              "Automatic progress tracking and statistics",
-              "Motivating XP system and levels",
-              "Secure and GDPR compliant",
-              "Quick setup - get started in 5 minutes"
-            ].map((benefit, i) => (
+              {
+                name: "Free",
+                price: "0",
+                description: "Perfect for getting started",
+                features: ["1 class", "Up to 30 students", "5 word lists", "All game types"],
+                cta: "Get Started",
+                popular: false
+              },
+              {
+                name: "Premium",
+                price: "79",
+                period: " SEK/month",
+                yearlyPrice: "758 SEK/year",
+                description: "For teachers who want more",
+                features: ["3 classes", "30 students per class", "20 word lists", "All game types", "Session Mode"],
+                cta: "Sign up",
+                popular: true
+              },
+              {
+                name: "Pro",
+                price: "129",
+                period: " SEK/month",
+                yearlyPrice: "1238 SEK/year",
+                description: "Full control and insights",
+                features: ["Unlimited classes", "Unlimited students", "Unlimited word lists", "All game types", "Session Mode", "Progress & Quiz statistics"],
+                cta: "Sign up",
+                popular: false
+              }
+            ].map((plan, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="flex items-center gap-4 bg-white/5 border border-white/5 rounded-2xl p-5 hover:bg-white/10 hover:border-white/10 transition-all"
+                className={`relative ${plan.popular ? 'lg:-mt-4 lg:mb-4' : ''}`}
               >
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center flex-shrink-0">
-                  <CheckCircle2 className="w-5 h-5 text-white" />
+                {plan.popular && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold px-4 py-1 rounded-full">
+                    Most Popular
+                  </div>
+                )}
+                <div className={`h-full bg-[#12122a] border rounded-3xl p-8 ${
+                  plan.popular ? 'border-amber-500/50' : 'border-white/5'
+                }`}>
+                  <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
+                  <div className="mb-4">
+                    <span className="text-4xl font-bold">
+                      {plan.price}
+                    </span>
+                    {plan.period && <span className="text-gray-500">{plan.period}</span>}
+                    {plan.price === "0" && <span className="text-gray-500 ml-2">Free</span>}
+                  </div>
+                  <p className="text-gray-500 mb-6">{plan.description}</p>
+                  <ul className="space-y-3 mb-8">
+                    {plan.features.map((feature, j) => (
+                      <li key={j} className="flex items-center gap-3 text-sm">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                        <span className="text-gray-300">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    href={plan.name === "School" ? "/contact" : "/signup/teacher"}
+                    className={`block w-full text-center py-3 rounded-xl font-semibold transition-all ${
+                      plan.popular 
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-400 hover:to-orange-500' 
+                        : 'bg-white/5 text-white hover:bg-white/10 border border-white/10'
+                    }`}
+                  >
+                    {plan.cta}
+                  </Link>
                 </div>
-                <span className="text-gray-200 font-medium">{benefit}</span>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="relative py-32 overflow-hidden">
-        {/* Background effects */}
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-amber-500/5 to-transparent" />
-          <motion.div 
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-rose-500/15 rounded-full blur-3xl"
-            animate={{
-              scale: [1, 1.1, 1],
-              opacity: [0.5, 0.7, 0.5],
-            }}
-            transition={{ 
-              duration: 8, 
-              repeat: Infinity, 
-              ease: "easeInOut",
-              repeatType: "loop" as const
-            }}
-          />
-        </div>
-        
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="flex flex-col lg:flex-row items-center gap-12">
-            {/* Text content */}
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="flex-1 text-center lg:text-left"
-            >
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-                Ready to make
-                <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500">
-                  magic in the classroom?
-                </span>
-              </h2>
-              <p className="text-xl text-gray-400 mb-8 max-w-xl">
-                Create your free teacher account today and give your students an engaging experience.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Link
-                  href="/signup/teacher"
-                  className="group relative inline-flex items-center justify-center"
-                >
-                  <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl blur-lg opacity-70 group-hover:opacity-100 transition-opacity" />
-                  <span className="relative bg-gradient-to-r from-amber-500 to-orange-600 text-white px-8 py-4 rounded-2xl font-bold text-lg inline-flex items-center gap-3 hover:from-amber-400 hover:to-orange-500 transition-all">
-                    Get started free
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </span>
-                </Link>
-                <Link
-                  href="/faq"
-                  className="inline-flex items-center justify-center gap-2 text-gray-400 hover:text-white px-6 py-4 rounded-2xl font-medium transition-colors"
-                >
-                  Read FAQ
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-            </motion.div>
-            
-            {/* Wizard image */}
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="relative w-64 h-64 lg:w-80 lg:h-80 flex-shrink-0"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-rose-500/20 rounded-full blur-3xl" />
-              <motion.img
-                src="/assets/wizard/wizard_staff.png"
-                alt="Wizard"
-                className="w-full h-full object-contain relative z-10"
-                animate={{ y: [0, -10, 0] }}
-                transition={{ 
-                  duration: 4, 
-                  repeat: Infinity, 
-                  ease: "easeInOut",
-                  repeatType: "loop" as const
-                }}
-                style={{ filter: 'drop-shadow(0 0 40px rgba(249, 115, 22, 0.3))' }}
-              />
-            </motion.div>
+      {/* Benefits Section */}
+      <section className="relative py-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              Why teachers choose
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500"> Spell School</span>
+            </h2>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {[
+              { icon: Clock, text: "Quick setup - ready in 5 minutes" },
+              { icon: Target, text: "10+ interactive game types" },
+              { icon: BarChart3, text: "Automatic progress tracking" },
+              { icon: Trophy, text: "Motivating gamification" },
+              { icon: Shield, text: "GDPR compliant & secure" },
+              { icon: Sparkles, text: "Works on all devices" }
+            ].map((benefit, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+                className="flex items-center gap-4 bg-white/5 border border-white/5 rounded-2xl p-5 hover:bg-white/10 hover:border-white/10 transition-all"
+              >
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center flex-shrink-0">
+                  <benefit.icon className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-gray-200 font-medium">{benefit.text}</span>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Footer */}
+      {/* CTA Section - No wizard image */}
+      <section className="relative py-32 overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-amber-500/5 to-transparent" />
+          <motion.div 
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-rose-500/15 rounded-full blur-3xl"
+            animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.7, 0.5] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", repeatType: "loop" as const }}
+          />
+        </div>
+        
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+              Ready to transform your
+              <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500">
+                vocabulary teaching?
+              </span>
+            </h2>
+            <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
+              Join hundreds of teachers who are already making vocabulary learning engaging and effective.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/signup/teacher"
+                className="group relative inline-flex items-center justify-center"
+              >
+                <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl blur-lg opacity-70 group-hover:opacity-100 transition-opacity" />
+                <span className="relative bg-gradient-to-r from-amber-500 to-orange-600 text-white px-10 py-4 rounded-2xl font-bold text-lg inline-flex items-center gap-3 hover:from-amber-400 hover:to-orange-500 transition-all">
+                  Sign up now
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </span>
+              </Link>
+              <Link
+                href="/faq"
+                className="inline-flex items-center justify-center gap-2 text-gray-400 hover:text-white px-6 py-4 rounded-2xl font-medium transition-colors"
+              >
+                Have questions? Read FAQ
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Footer - Clean without image */}
       <footer className="relative border-t border-white/5 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
@@ -821,34 +928,47 @@ export default function SpellSchoolLanding({
                 <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center">
                   <Sparkles className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-2xl font-bold">SpellSchool</span>
+                <span className="text-2xl font-bold font-[family-name:var(--font-playfair)]">
+                  <span className="text-white">Spell</span>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">School</span>
+                </span>
               </Link>
-              <p className="text-gray-500 max-w-sm">
-                An educational tool for vocabulary learning that makes language learning fun and engaging.
+              <p className="text-gray-500 max-w-sm mb-6">
+                The complete vocabulary platform designed for teachers who want to engage and inspire their students.
               </p>
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Shield className="w-4 h-4" />
+                <span>GDPR Compliant</span>
+              </div>
             </div>
             
             <div>
-              <h3 className="text-white font-semibold mb-4">Information</h3>
+              <h3 className="text-white font-semibold mb-4">Product</h3>
               <ul className="space-y-3">
-                <li><Link href="/about" className="text-gray-400 hover:text-white transition-colors">About</Link></li>
+                <li><button onClick={scrollToFeatures} className="text-gray-400 hover:text-white transition-colors">Features</button></li>
+                <li><button onClick={scrollToPricing} className="text-gray-400 hover:text-white transition-colors">Pricing</button></li>
                 <li><Link href="/faq" className="text-gray-400 hover:text-white transition-colors">FAQ</Link></li>
+                <li><Link href="/about" className="text-gray-400 hover:text-white transition-colors">About</Link></li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="text-white font-semibold mb-4">Legal</h3>
+              <ul className="space-y-3">
                 <li><Link href="/privacy" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</Link></li>
                 <li><Link href="/terms" className="text-gray-400 hover:text-white transition-colors">Terms of Service</Link></li>
               </ul>
             </div>
-            
-            <div>
-              <h3 className="text-white font-semibold mb-4">For Teachers</h3>
-              <ul className="space-y-3">
-                <li><Link href="/signup/teacher" className="text-gray-400 hover:text-white transition-colors">Create account</Link></li>
-                <li><button onClick={() => setShowLoginModal(true)} className="text-gray-400 hover:text-white transition-colors">Login</button></li>
-              </ul>
-            </div>
           </div>
           
-          <div className="border-t border-white/5 mt-12 pt-8 text-center text-gray-500 text-sm">
-            <p>&copy; {new Date().getFullYear()} Spell School. All rights reserved.</p>
+          <div className="border-t border-white/5 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-gray-500 text-sm">&copy; {new Date().getFullYear()} Spell School. All rights reserved.</p>
+            <Link 
+              href="/session/join" 
+              className="text-amber-500 hover:text-amber-400 text-sm font-medium transition-colors"
+            >
+              Student? Join a session →
+            </Link>
           </div>
         </div>
       </footer>
@@ -873,7 +993,7 @@ export default function SpellSchoolLanding({
               <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-3xl blur-xl" />
               <div className="relative bg-[#12122a] border border-white/10 rounded-3xl p-8">
                 <div className="flex justify-between items-center mb-8">
-                  <h2 className="text-2xl font-bold">Login</h2>
+                  <h2 className="text-2xl font-bold">Sign in</h2>
                   <button
                     onClick={() => setShowLoginModal(false)}
                     className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
@@ -930,7 +1050,6 @@ function FormContents({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {/* Google CTA */}
       <button
         type="button"
         onClick={onGoogleLogin}
@@ -941,7 +1060,6 @@ function FormContents({
         Continue with Google
       </button>
 
-      {/* Divider */}
       <div className="relative my-8">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-white/10"></div>
@@ -951,9 +1069,8 @@ function FormContents({
         </div>
       </div>
 
-      {/* Email/Username */}
       <label className="block">
-        <span className="text-sm font-medium text-gray-300 mb-2 block">Username or email</span>
+        <span className="text-sm font-medium text-gray-300 mb-2 block">Email or username</span>
         <div className="relative">
           <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none"/>
           <input
@@ -961,13 +1078,12 @@ function FormContents({
             type="text"
             value={identifier}
             onChange={(e) => setIdentifier?.(e.target.value)}
-            placeholder="username or email"
+            placeholder="you@school.com"
             className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all"
           />
         </div>
       </label>
 
-      {/* Password */}
       <label className="block">
         <span className="text-sm font-medium text-gray-300 mb-2 block">Password</span>
         <div className="relative">
@@ -983,28 +1099,25 @@ function FormContents({
         </div>
       </label>
 
-      {/* Error message */}
       {message && (
         <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
           {message}
         </div>
       )}
 
-      {/* Submit */}
       <button
         type="submit"
         disabled={loading}
         className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-3.5 rounded-xl font-semibold hover:from-amber-400 hover:to-orange-500 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
       >
-        {loading ? 'Logging in...' : 'Login'}
+        {loading ? 'Signing in...' : 'Sign in'}
         {!loading && <ArrowRight className="h-5 w-5"/>}
       </button>
 
-      {/* Sign up link */}
       <p className="text-center text-sm text-gray-400 pt-2">
         Don't have an account?{' '}
         <Link className="font-medium text-amber-500 hover:text-amber-400" href="/signup/teacher">
-          Create teacher account
+          Start free trial
         </Link>
       </p>
     </form>

@@ -75,7 +75,7 @@ export default function DebugAssignmentsStudentPage() {
   }
 
   if (loading) {
-    return <div className="p-4">Laddar debug-information...</div>
+    return <div className="p-4">Loading debug information...</div>
   }
 
   return (

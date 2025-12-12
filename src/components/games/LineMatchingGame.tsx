@@ -486,7 +486,7 @@ export default function LineMatchingGame({ words, translations, onClose, onScore
         <div className="bg-[#12122a] rounded-2xl p-8 max-w-md w-full text-center shadow-2xl border border-white/10">
           <div className="text-6xl mb-4">⏳</div>
           <h2 className="text-2xl font-bold text-white mb-2">Förbereder ord...</h2>
-          <p className="text-gray-400">Laddar ditt ordspel</p>
+          <p className="text-gray-400">Loading your word game</p>
         </div>
       </div>
     )

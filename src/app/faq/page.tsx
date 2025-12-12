@@ -12,44 +12,44 @@ interface FAQItem {
 
 const faqs: FAQItem[] = [
   {
-    question: "Hur skapar jag ett konto?",
-    answer: "Klicka på 'Skapa lärarkonto' på startsidan och följ instruktionerna. Du kan använda Google-inloggning eller skapa ett konto med e-post och lösenord."
+    question: "How do I create an account?",
+    answer: "Click 'Create teacher account' on the homepage and follow the instructions. You can use Google login or create an account with email and password."
   },
   {
-    question: "Är Spell School gratis?",
-    answer: "Spell School erbjuder en gratis plan med grundläggande funktioner. För fler ordlistor och avancerade funktioner finns Premium- och Pro-planer tillgängliga."
+    question: "Is Spell School free?",
+    answer: "Spell School offers a free plan with basic features. For more word lists and advanced features, Premium and Pro plans are available."
   },
   {
-    question: "Hur lägger jag till elever?",
-    answer: "Efter att du har skapat ett konto kan du gå till 'Lägg till elever' i menyn. Där kan du skapa elevkonton och tilldela dem till klasser."
+    question: "How do I add students?",
+    answer: "After creating an account, go to 'Add Students' in the menu. There you can create student accounts and assign them to classes."
   },
   {
-    question: "Hur skapar jag gloslistor?",
-    answer: "Gå till 'Ordlistor' i menyn och klicka på 'Skapa ny ordlista'. Lägg till ord med svenska och engelska översättningar, och välj eventuellt bilder för varje ord."
+    question: "How do I create word lists?",
+    answer: "Go to 'Word Lists' in the menu and click 'Create new word list'. Add words with Swedish and English translations, and optionally choose images for each word."
   },
   {
-    question: "Vad är färgblocksindelning?",
-    answer: "Färgblocksindelning låter dig dela upp en gloslista i olika färgkodade block. Elever kan välja vilket block de vill öva på, vilket ger dem mer kontroll över sin inlärning."
+    question: "What is color block organization?",
+    answer: "Color block organization lets you divide a word list into different color-coded blocks. Students can choose which block they want to practice, giving them more control over their learning."
   },
   {
-    question: "Hur fungerar Session Mode?",
-    answer: "Session Mode låter dig skapa kedjor av övningar som läxor. Elever måste slutföra övningarna i ordning, vilket säkerställer strukturerad progression."
+    question: "How does Session Mode work?",
+    answer: "Session Mode lets you create chains of exercises as homework. Students must complete the exercises in order, ensuring structured progression."
   },
   {
-    question: "Hur fungerar AI-uttalsrättning?",
-    answer: "Elever kan spela in sitt uttal av ord, och vårt AI-system analyserar uttalet och ger omedelbar feedback. Detta hjälper elever att förbättra sin pronunciation."
+    question: "How does AI pronunciation feedback work?",
+    answer: "Students can record their pronunciation of words, and our AI system analyzes the pronunciation and provides immediate feedback. This helps students improve their speaking skills."
   },
   {
-    question: "Kan elever se varandras resultat?",
-    answer: "Nej, elever kan endast se sina egna resultat och framsteg. Lärare kan se alla elevers resultat för att följa upp och ge stöd."
+    question: "Can students see each other's results?",
+    answer: "No, students can only see their own results and progress. Teachers can see all students' results to follow up and provide support."
   },
   {
-    question: "Är Spell School GDPR-kompatibel?",
-    answer: "Ja, Spell School följer GDPR-regler och tar dataskydd på allvar. All elevdata hanteras säkert och endast lärare har tillgång till sina elevers information."
+    question: "Is Spell School GDPR compliant?",
+    answer: "Yes, Spell School follows GDPR regulations and takes data protection seriously. All student data is handled securely and only teachers have access to their students' information."
   },
   {
-    question: "Hur uppgraderar jag min plan?",
-    answer: "Gå till 'Konto' i menyn och välj den plan som passar dig. Du kan uppgradera när som helst för att få tillgång till fler funktioner."
+    question: "How do I upgrade my plan?",
+    answer: "Go to 'Account' in the menu and select the plan that suits you. You can upgrade at any time to get access to more features."
   }
 ]
 
@@ -76,7 +76,7 @@ export default function FAQPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link href="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
             <ArrowLeft className="w-4 h-4" />
-            <span>Tillbaka till startsidan</span>
+            <span>Back to home</span>
           </Link>
         </div>
       </header>
@@ -98,7 +98,7 @@ export default function FAQPage() {
                 Spell<span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">School</span>
               </h1>
             </div>
-            <p className="text-xl text-gray-400">Vanliga frågor</p>
+            <p className="text-xl text-gray-400">Frequently Asked Questions</p>
           </div>
 
           {/* FAQ Items */}
@@ -140,15 +140,15 @@ export default function FAQPage() {
 
           {/* Contact CTA */}
           <section className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 md:p-12 text-center">
-            <h2 className="text-2xl font-bold mb-4">Har du fler frågor?</h2>
+            <h2 className="text-2xl font-bold mb-4">Have more questions?</h2>
             <p className="text-gray-400 mb-6">
-              Kontakta oss om du behöver mer hjälp eller har feedback.
+              Contact us if you need more help or have feedback.
             </p>
             <Link
               href="/about"
               className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-amber-400 hover:to-orange-500 transition-all"
             >
-              Läs mer om oss
+              Learn more about us
             </Link>
           </section>
         </motion.div>
@@ -156,7 +156,3 @@ export default function FAQPage() {
     </div>
   )
 }
-
-
-
-

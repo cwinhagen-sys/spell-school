@@ -20,6 +20,7 @@ import QuizGame from '@/components/games/QuizGame'
 import MultipleChoiceGame from '@/components/games/MultipleChoiceGame'
 import RouletteGame from '@/components/games/RouletteGame'
 import StoryBuilderGame from '@/components/games/StoryBuilderGame'
+import ScrambleGame from '@/components/games/ScrambleGame'
 import { type TrackingContext, updateStudentProgress as addProgress } from '@/lib/tracking'
 import { enqueueQuestProgress, enqueueQuestComplete } from '@/lib/questOutbox'
 import { useDailyQuestBadges } from '@/hooks/useDailyQuestBadges'
@@ -178,7 +179,8 @@ export default function StudentDashboard() {
   const [showChoice, setShowChoice] = useState(false)
   const [showRoulette, setShowRoulette] = useState(false)
   const [showDistortedTale, setShowDistortedTale] = useState(false)
-  const [pendingGame, setPendingGame] = useState<'flashcards' | 'match' | 'typing' | 'translate' | 'connect' | 'quiz' | 'choice' | 'storygap' | 'roulette' | 'distorted_tale' | null>(null)
+  const [showScramble, setShowScramble] = useState(false)
+  const [pendingGame, setPendingGame] = useState<'flashcards' | 'match' | 'typing' | 'translate' | 'connect' | 'quiz' | 'choice' | 'storygap' | 'roulette' | 'distorted_tale' | 'scramble' | null>(null)
   const [selectedHomework, setSelectedHomework] = useState<Homework | null>(null)
   const [showHomeworkSelection, setShowHomeworkSelection] = useState(false)
   const [activeTab, setActiveTab] = useState<'active' | 'old'>('active')
@@ -1979,7 +1981,7 @@ export default function StudentDashboard() {
     
     // OPTIMISTIC UI UPDATE: Handle points based on game type
     if (typeof newTotal === 'number' && Number.isFinite(newTotal)) {
-      if (gameType === 'choice' || gameType === 'match' || gameType === 'translate' || gameType === 'connect' || gameType === 'story_gap' || gameType === 'roulette' || gameType === 'typing' || gameType === 'flashcards') {
+      if (gameType === 'choice' || gameType === 'match' || gameType === 'translate' || gameType === 'connect' || gameType === 'story_gap' || gameType === 'roulette' || gameType === 'typing' || gameType === 'flashcards' || gameType === 'scramble') {
         // For games using new scoring system, newTotal represents points to ADD, not total points
         const currentPoints = points
         const totalAfterGame = currentPoints + newTotal
@@ -2097,6 +2099,8 @@ export default function StudentDashboard() {
       setShowRoulette(true)
     } else if (pendingGame === 'distorted_tale') {
       setShowDistortedTale(true)
+    } else if (pendingGame === 'scramble') {
+      setShowScramble(true)
     }
   }
 
@@ -2824,6 +2828,15 @@ export default function StudentDashboard() {
             trackingContext={getTrackingContext()}
             themeColor={getCurrentGameData()!.color}
             gridConfig={getCurrentGameData()!.grid_config}
+          />
+        )}
+
+        {showScramble && getCurrentGameData() && (
+          <ScrambleGame
+            words={getCurrentGameData()!.words}
+            translations={getCurrentGameData()!.translations}
+            onClose={() => setShowScramble(false)}
+            onScoreUpdate={(score: number, total?: number) => handleScoreUpdate(score, total, 'scramble')}
           />
         )}
 

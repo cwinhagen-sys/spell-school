@@ -106,8 +106,8 @@ export default function TypingChallengeLeaderboard({
           {loading ? (
             <div className="text-center py-8">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500 border-t-transparent mb-4"></div>
-              <p className="text-gray-400">Laddar leaderboard...</p>
-              <p className="text-xs text-gray-500 mt-2">Väntar på att resultat registreras...</p>
+              <p className="text-gray-400">Loading leaderboard...</p>
+              <p className="text-xs text-gray-500 mt-2">Waiting for results to register...</p>
             </div>
           ) : leaderboard.length === 0 ? (
             <div className="text-center py-8">

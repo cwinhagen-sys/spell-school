@@ -167,18 +167,18 @@ export default function ScrambleGame({
 
   if (wordPairs.length === 0) {
     return (
-      <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50">
+      <div className="fixed inset-0 bg-[#08080f] flex items-center justify-center p-4 z-50">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-violet-900/30 via-cyan-900/20 to-fuchsia-900/30 blur-3xl" />
+          <div className="absolute top-0 left-1/4 w-[400px] h-[400px] bg-amber-500/[0.03] rounded-full blur-[100px]" />
         </div>
-        <div className="relative bg-[#12122a]/90 backdrop-blur-xl rounded-2xl p-8 shadow-2xl text-center border border-white/10">
-          <div className="w-16 h-16 bg-amber-500/20 border border-amber-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <div className="relative bg-[#161622] rounded-2xl p-8 text-center border border-white/[0.08]">
+          <div className="w-16 h-16 bg-[#1a1a2e] border border-white/[0.08] rounded-2xl flex items-center justify-center mx-auto mb-4">
             <span className="text-3xl">📝</span>
           </div>
           <p className="text-gray-400 mb-6">Inga ord tillgängliga</p>
           <button
             onClick={onClose}
-            className="px-6 py-3 bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-xl font-semibold hover:from-violet-400 hover:to-cyan-400 shadow-lg shadow-violet-500/30 transition-all"
+            className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:from-amber-400 hover:to-orange-400 transition-all"
           >
             Stäng
           </button>
@@ -195,34 +195,33 @@ export default function ScrambleGame({
     const percentage = Math.round((score / wordPairs.length) * 100)
     
     return (
-      <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50">
+      <div className="fixed inset-0 bg-[#08080f] flex items-center justify-center p-4 z-50">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-violet-900/30 via-cyan-900/20 to-fuchsia-900/30 blur-3xl" />
-          <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl" />
+          <div className="absolute top-0 left-1/4 w-[400px] h-[400px] bg-amber-500/[0.03] rounded-full blur-[100px]" />
+          <div className="absolute bottom-0 right-1/4 w-[300px] h-[300px] bg-emerald-500/[0.02] rounded-full blur-[80px]" />
         </div>
         
-        <div className="relative">
-          <div className="absolute -inset-1 bg-gradient-to-r from-violet-500/30 via-cyan-500/20 to-fuchsia-500/30 rounded-3xl blur-xl" />
-          <div className="relative bg-[#12122a]/90 backdrop-blur-xl rounded-2xl p-10 shadow-2xl text-center max-w-md w-full border border-white/10">
-            <div className="text-7xl mb-6">🎉</div>
-            <h2 className="text-3xl font-bold text-white mb-3">Spel Klart!</h2>
-            <p className="text-gray-400 mb-8">
-              Du fick <span className="text-white font-bold">{score}</span> av <span className="text-white font-bold">{wordPairs.length}</span> ord rätt!
-            </p>
-            
-            <div className={`text-5xl font-bold mb-8 ${
-              percentage >= 80 ? 'text-green-400' : percentage >= 60 ? 'text-amber-400' : 'text-red-400'
-            }`}>
-              {percentage}%
-            </div>
-            
-            <button
-              onClick={onClose}
-              className="w-full px-6 py-4 bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-xl font-bold hover:from-violet-400 hover:to-cyan-400 shadow-lg shadow-violet-500/30 transition-all transform hover:scale-[1.02]"
-            >
-              Stäng
-            </button>
+        <div className="relative bg-[#161622] rounded-2xl p-10 text-center max-w-md w-full border border-white/[0.08]">
+          <div className="w-20 h-20 bg-[#1a1a2e] border border-white/[0.08] rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <span className="text-4xl">🎉</span>
           </div>
+          <h2 className="text-3xl font-bold text-white mb-3">Spel Klart!</h2>
+          <p className="text-gray-400 mb-8">
+            Du fick <span className="text-white font-bold">{score}</span> av <span className="text-white font-bold">{wordPairs.length}</span> ord rätt!
+          </p>
+          
+          <div className={`text-5xl font-bold mb-8 ${
+            percentage >= 80 ? 'text-emerald-400' : percentage >= 60 ? 'text-amber-400' : 'text-red-400'
+          }`}>
+            {percentage}%
+          </div>
+          
+          <button
+            onClick={onClose}
+            className="w-full px-6 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold hover:from-amber-400 hover:to-orange-400 transition-all"
+          >
+            Stäng
+          </button>
         </div>
       </div>
     )
@@ -234,40 +233,29 @@ export default function ScrambleGame({
   const isComplete = userInput.length === currentWord.length && userInput === currentWord
 
   return (
-    <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50 overflow-y-auto">
-      {/* Aurora background */}
+    <div className="fixed inset-0 bg-[#08080f] flex items-center justify-center p-4 z-50 overflow-y-auto">
+      {/* Subtle background */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-violet-900/30 via-cyan-900/20 to-fuchsia-900/30 blur-3xl animate-pulse" style={{ animationDuration: '8s' }} />
-        <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
+        <div className="absolute top-0 left-1/4 w-[400px] h-[400px] bg-teal-500/[0.03] rounded-full blur-[100px]" />
+        <div className="absolute bottom-0 right-1/4 w-[300px] h-[300px] bg-emerald-500/[0.02] rounded-full blur-[80px]" />
       </div>
       
-      {/* Grid pattern */}
-      <div className="absolute inset-0 z-0 opacity-10" style={{ 
-        backgroundImage: 'linear-gradient(to right, #ffffff1a 1px, transparent 1px), linear-gradient(to bottom, #ffffff1a 1px, transparent 1px)', 
-        backgroundSize: '40px 40px' 
-      }} />
-      
       <div className="relative w-full max-w-3xl my-4">
-        <div className="absolute -inset-1 bg-gradient-to-r from-teal-500/20 via-emerald-500/10 to-teal-500/20 rounded-3xl blur-xl" />
-        
-        <div className="relative bg-[#12122a]/90 backdrop-blur-xl rounded-2xl p-6 md:p-8 shadow-2xl border border-white/10">
+        <div className="relative bg-[#161622] rounded-2xl p-6 md:p-8 border border-white/[0.08]">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-xl blur-lg opacity-50" />
-                <div className="relative w-12 h-12 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/30">
-                  <Scissors className="w-6 h-6 text-white" />
-                </div>
+              <div className="w-12 h-12 bg-[#1a1a2e] border border-white/[0.08] rounded-xl flex items-center justify-center">
+                <Scissors className="w-6 h-6 text-teal-400" />
               </div>
               <div>
                 <h2 className="text-xl md:text-2xl font-bold text-white">Word Scramble</h2>
-                <p className="text-sm text-gray-400">Ord {currentWordIndex + 1} av {wordPairs.length}</p>
+                <p className="text-sm text-gray-500">Ord {currentWordIndex + 1} av {wordPairs.length}</p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center transition-colors border border-white/10"
+              className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center transition-colors border border-white/[0.08]"
               title="Tillbaka till spelval"
             >
               <X className="w-5 h-5 text-gray-400" />
@@ -277,10 +265,10 @@ export default function ScrambleGame({
           {/* Progress Bar */}
           <div className="mb-8">
             <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-gray-400 font-medium">{Math.round(progress)}%</span>
+              <span className="text-gray-500 font-medium">{Math.round(progress)}%</span>
               <span className="text-teal-400 font-semibold">{score} rätt</span>
             </div>
-            <div className="w-full bg-white/10 rounded-full h-2.5 overflow-hidden">
+            <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
               <div 
                 className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-teal-500 to-emerald-500"
                 style={{ width: `${progress}%` }}
@@ -291,17 +279,14 @@ export default function ScrambleGame({
           {/* Swedish Word Display */}
           <div className="mb-8 text-center">
             <p className="text-sm text-gray-500 uppercase tracking-wide mb-3">Vad heter detta på engelska?</p>
-            <div className="relative inline-block">
-              <div className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-cyan-500/20 rounded-2xl blur-lg" />
-              <h3 className="relative text-4xl md:text-5xl font-bold text-white px-8 py-4 bg-white/5 rounded-2xl border border-white/10">
-                {currentPair.swedish}
-              </h3>
-            </div>
+            <h3 className="text-4xl md:text-5xl font-bold text-white px-8 py-4 bg-white/5 rounded-2xl border border-white/[0.08]">
+              {currentPair.swedish}
+            </h3>
           </div>
 
           {/* Input Field */}
           <div className="mb-8">
-            <p className="text-sm text-gray-400 mb-3 text-center">Skriv ordet:</p>
+            <p className="text-sm text-gray-500 mb-3 text-center">Skriv ordet:</p>
             <div className="relative">
               <input
                 ref={inputRef}
@@ -312,8 +297,8 @@ export default function ScrambleGame({
                 className={`
                   w-full px-6 py-5 text-2xl md:text-3xl font-bold text-center rounded-2xl border-2 transition-all tracking-wider
                   ${isComplete
-                    ? 'bg-green-500/20 border-green-500/50 text-green-400'
-                    : 'bg-white/5 border-white/10 text-white focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20'
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                    : 'bg-white/5 border-white/[0.08] text-white focus:border-teal-500/30 focus:ring-2 focus:ring-teal-500/10'
                   }
                 `}
                 placeholder="..."
@@ -324,7 +309,7 @@ export default function ScrambleGame({
               />
               {isComplete && (
                 <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                  <CheckCircle2 className="w-8 h-8 text-green-400" />
+                  <CheckCircle2 className="w-8 h-8 text-emerald-400" />
                 </div>
               )}
             </div>
@@ -332,7 +317,7 @@ export default function ScrambleGame({
 
           {/* Shuffled Letters */}
           <div className="mb-8">
-            <p className="text-sm text-gray-400 mb-4 text-center">Blandade bokstäver:</p>
+            <p className="text-sm text-gray-500 mb-4 text-center">Blandade bokstäver:</p>
             <div className="flex flex-wrap items-center justify-center gap-3">
               {shuffledLetters.map((letter, index) => {
                 const status = letterStatuses.get(index) || 'neutral'
@@ -340,12 +325,12 @@ export default function ScrambleGame({
                   <div
                     key={index}
                     className={`
-                      w-12 h-12 md:w-14 md:h-14 rounded-xl font-bold text-xl md:text-2xl flex items-center justify-center transition-all duration-300 transform
+                      w-12 h-12 md:w-14 md:h-14 rounded-xl font-bold text-xl md:text-2xl flex items-center justify-center transition-all duration-300
                       ${status === 'correct'
-                        ? 'bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/30 scale-95'
+                        ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400'
                         : status === 'incorrect'
-                        ? 'bg-gradient-to-br from-red-500 to-rose-500 text-white shadow-lg shadow-red-500/30 scale-95'
-                        : 'bg-white/10 border border-white/20 text-white hover:bg-white/15'
+                        ? 'bg-red-500/20 border border-red-500/30 text-red-400'
+                        : 'bg-white/5 border border-white/[0.08] text-white'
                       }
                     `}
                   >
@@ -358,12 +343,12 @@ export default function ScrambleGame({
 
           {/* Success Feedback */}
           {isComplete && (
-            <div className="mb-8 text-center p-4 rounded-2xl bg-green-500/10 border border-green-500/30">
+            <div className="mb-8 text-center p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
               <div className="flex items-center justify-center gap-2">
-                <CheckCircle2 className="w-6 h-6 text-green-400" />
-                <span className="text-green-400 font-semibold text-lg">Rätt! 🎉</span>
+                <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                <span className="text-emerald-400 font-semibold text-lg">Rätt! 🎉</span>
               </div>
-              <p className="text-sm text-gray-400 mt-2">Laddar nästa ord...</p>
+              <p className="text-sm text-gray-500 mt-2">Loading next word...</p>
             </div>
           )}
 
@@ -372,7 +357,7 @@ export default function ScrambleGame({
             <button
               onClick={resetWord}
               disabled={isComplete}
-              className="flex items-center gap-2 px-5 py-3 bg-white/5 border border-white/10 text-gray-300 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/10 transition-all"
+              className="flex items-center gap-2 px-5 py-3 bg-white/5 border border-white/[0.08] text-gray-400 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/10 hover:text-white transition-all"
             >
               <RotateCcw className="w-4 h-4" />
               Börja om

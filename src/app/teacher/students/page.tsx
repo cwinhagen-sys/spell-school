@@ -183,7 +183,7 @@ export default function ManageStudentsPage() {
       }
     } catch (error) {
       console.error('Error loading classes:', error)
-      setMessage({ type: 'error', text: 'Kunde inte ladda klasser' })
+      setMessage({ type: 'error', text: 'Could not load classes' })
     }
   }
 
@@ -255,11 +255,11 @@ export default function ManageStudentsPage() {
         
         setStudents(studentsWithStats)
       } else {
-        setMessage({ type: 'error', text: data.error || 'Kunde inte ladda elever' })
+        setMessage({ type: 'error', text: data.error || 'Could not load students' })
       }
     } catch (error) {
       console.error('Error loading students:', error)
-      setMessage({ type: 'error', text: 'Kunde inte ladda elever' })
+      setMessage({ type: 'error', text: 'Could not load students' })
     } finally {
       setLoading(false)
     }
@@ -308,11 +308,11 @@ export default function ManageStudentsPage() {
         setStudentDetails(data)
       } else {
         console.error('📊 Student Details API Error:', data)
-        setMessage({ type: 'error', text: data.error || 'Kunde inte ladda elevdetaljer' })
+        setMessage({ type: 'error', text: data.error || 'Could not load student details' })
       }
     } catch (error) {
       console.error('Error loading student details:', error)
-      setMessage({ type: 'error', text: 'Kunde inte ladda elevdetaljer' })
+      setMessage({ type: 'error', text: 'Could not load student details' })
     } finally {
       setDetailsLoading(false)
     }
@@ -479,7 +479,7 @@ export default function ManageStudentsPage() {
     })
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('sv-SE', {
+    return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -493,7 +493,7 @@ export default function ManageStudentsPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="w-12 h-12 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Laddar elever...</p>
+          <p className="text-gray-400">Loading students...</p>
         </div>
       </div>
     )
@@ -505,16 +505,16 @@ export default function ManageStudentsPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/20">
+            <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20">
               <TrendingUp className="w-6 h-6 text-white" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white">Progress</h1>
-              <p className="text-gray-400">Följ elevernas framsteg och prestationer</p>
+              <p className="text-gray-400">Track student progress and performance</p>
             </div>
           </div>
           <div className="px-3 py-1.5 bg-white/5 rounded-lg text-sm text-gray-400">
-            {students.length} {students.length !== 1 ? 'elever' : 'elev'}
+            {students.length} {students.length !== 1 ? 'students' : 'student'}
           </div>
         </div>
         
@@ -524,13 +524,13 @@ export default function ManageStudentsPage() {
               <Lock className="w-4 h-4" />
               <span>
                 {!hasProgressAccess && !hasQuizAccess 
-                  ? 'Progress och Quiz-statistik kräver Pro-plan.'
+                  ? 'Progress and Quiz statistics require Pro plan.'
                   : !hasProgressAccess 
-                  ? 'Progress-statistik kräver Pro-plan.'
-                  : 'Quiz-statistik kräver Pro-plan.'}
+                  ? 'Progress statistics require Pro plan.'
+                  : 'Quiz statistics require Pro plan.'}
               </span>
               <Link href="/pricing" className="font-semibold text-amber-300 hover:text-amber-200 ml-1">
-                Uppgradera →
+                Upgrade →
               </Link>
             </div>
           </div>
@@ -545,10 +545,10 @@ export default function ManageStudentsPage() {
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Sök elever efter namn..."
+                placeholder="Search students by name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:outline-none transition-all"
+                className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:border-amber-500/50 focus:outline-none transition-all"
               />
             </div>
           </div>
@@ -556,9 +556,9 @@ export default function ManageStudentsPage() {
             <select
               value={selectedClass}
               onChange={(e) => handleClassChange(e.target.value)}
-              className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-violet-500/50 focus:outline-none transition-all appearance-none cursor-pointer min-w-[200px]"
+              className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-amber-500/50 focus:outline-none transition-all appearance-none cursor-pointer min-w-[200px]"
             >
-              <option value="" className="bg-[#1a1a2e]">Alla aktiva klasser</option>
+              <option value="" className="bg-[#1a1a2e]">All active classes</option>
               {classes.map(c => (
                 <option key={c.id} value={c.id} className="bg-[#1a1a2e]">{c.name}</option>
               ))}
@@ -566,7 +566,7 @@ export default function ManageStudentsPage() {
             <button
               onClick={() => setViewMode(viewMode === 'compact' ? 'expanded' : 'compact')}
               className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center gap-2"
-              title={`Byt till ${viewMode === 'compact' ? 'utökad' : 'kompakt'} vy`}
+              title={`Switch to ${viewMode === 'compact' ? 'expanded' : 'compact'} view`}
             >
               {viewMode === 'compact' ? <LayoutGrid className="w-4 h-4" /> : <List className="w-4 h-4" />}
             </button>
@@ -578,7 +578,7 @@ export default function ManageStudentsPage() {
       {message && (
         <div className={`mb-6 p-4 rounded-xl border backdrop-blur-sm ${
           message.type === 'success' 
-            ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' 
+            ? 'bg-amber-500/20 border-amber-500/30 text-amber-300' 
             : 'bg-red-500/20 border-red-500/30 text-red-300'
         }`}>
           <div className="flex items-center justify-between">
@@ -599,14 +599,14 @@ export default function ManageStudentsPage() {
           <div className="text-center py-12">
             <Users className="w-16 h-16 text-gray-600 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-400 mb-2">
-              {searchTerm ? 'Inga elever hittades' : selectedClass ? 'Inga elever i denna klass' : 'Välj en klass för att se elever'}
+              {searchTerm ? 'No students found' : selectedClass ? 'No students in this class' : 'Select a class to see students'}
             </h3>
             <p className="text-gray-500">
               {searchTerm 
-                ? 'Försök att justera din sökning' 
+                ? 'Try adjusting your search' 
                 : selectedClass
-                ? 'Inga elever har gått med i denna klass ännu'
-                : 'Välj en klass från listan ovan för att se dess elever'
+                ? 'No students have joined this class yet'
+                : 'Select a class from the list above to see its students'
               }
             </p>
           </div>
@@ -622,14 +622,14 @@ export default function ManageStudentsPage() {
                       onClick={() => handleSort('name')}
                     >
                       <div className="flex items-center gap-2">
-                        <span>Elev</span>
+                        <span>Student</span>
                         <ArrowUpDown className="w-3 h-3 text-gray-500" />
                         {sortBy === 'name' && (
-                          <span className="text-xs font-bold text-violet-400">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                          <span className="text-xs font-bold text-amber-400">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                         )}
                       </div>
                       <div
-                        className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors ${resizingColumn === 'student' ? 'bg-violet-500' : 'hover:bg-violet-400'}`}
+                        className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors ${resizingColumn === 'student' ? 'bg-amber-500' : 'hover:bg-amber-400'}`}
                         onMouseDown={(e) => handleResizeStart('student', e)}
                       />
                     </th>
@@ -644,11 +644,11 @@ export default function ManageStudentsPage() {
                         <span>XP / Level</span>
                         <ArrowUpDown className="w-3 h-3 text-gray-500" />
                         {sortBy === 'total_points' && (
-                          <span className="text-xs font-bold text-violet-400">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                          <span className="text-xs font-bold text-amber-400">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                         )}
                       </div>
                       <div
-                        className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors ${resizingColumn === 'xp' ? 'bg-violet-500' : 'hover:bg-violet-400'}`}
+                        className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors ${resizingColumn === 'xp' ? 'bg-amber-500' : 'hover:bg-amber-400'}`}
                         onMouseDown={(e) => handleResizeStart('xp', e)}
                       />
                     </th>
@@ -660,14 +660,14 @@ export default function ManageStudentsPage() {
                       onClick={() => handleSort('average_accuracy')}
                     >
                       <div className="flex items-center gap-2">
-                        <span>Träffsäkerhet</span>
+                        <span>Accuracy</span>
                         <ArrowUpDown className="w-3 h-3 text-gray-500" />
                         {sortBy === 'average_accuracy' && (
-                          <span className="text-xs font-bold text-violet-400">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                          <span className="text-xs font-bold text-amber-400">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                         )}
                       </div>
                       <div
-                        className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors ${resizingColumn === 'accuracy' ? 'bg-violet-500' : 'hover:bg-violet-400'}`}
+                        className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors ${resizingColumn === 'accuracy' ? 'bg-amber-500' : 'hover:bg-amber-400'}`}
                         onMouseDown={(e) => handleResizeStart('accuracy', e)}
                       />
                     </th>
@@ -682,11 +682,11 @@ export default function ManageStudentsPage() {
                         <span>Spel</span>
                         <ArrowUpDown className="w-3 h-3 text-gray-500" />
                         {sortBy === 'games_played' && (
-                          <span className="text-xs font-bold text-violet-400">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                          <span className="text-xs font-bold text-amber-400">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                         )}
                       </div>
                       <div
-                        className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors ${resizingColumn === 'games' ? 'bg-violet-500' : 'hover:bg-violet-400'}`}
+                        className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors ${resizingColumn === 'games' ? 'bg-amber-500' : 'hover:bg-amber-400'}`}
                         onMouseDown={(e) => handleResizeStart('games', e)}
                       />
                     </th>
@@ -698,7 +698,7 @@ export default function ManageStudentsPage() {
                     >
                       <span>Senaste spel</span>
                       <div
-                        className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors ${resizingColumn === 'latestGame' ? 'bg-violet-500' : 'hover:bg-violet-400'}`}
+                        className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors ${resizingColumn === 'latestGame' ? 'bg-amber-500' : 'hover:bg-amber-400'}`}
                         onMouseDown={(e) => handleResizeStart('latestGame', e)}
                       />
                     </th>
@@ -710,14 +710,14 @@ export default function ManageStudentsPage() {
                     >
                       <span>Senaste quiz</span>
                       <div
-                        className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors ${resizingColumn === 'quizzes' ? 'bg-violet-500' : 'hover:bg-violet-400'}`}
+                        className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors ${resizingColumn === 'quizzes' ? 'bg-amber-500' : 'hover:bg-amber-400'}`}
                         onMouseDown={(e) => handleResizeStart('quizzes', e)}
                       />
                     </th>
                     
                     {/* Actions Column */}
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-20">
-                      Åtgärder
+                      Actions
                     </th>
                   </tr>
                 </thead>
@@ -733,7 +733,7 @@ export default function ManageStudentsPage() {
                         {/* Student */}
                         <td className="px-4 py-4" style={{ width: columnWidths.student }}>
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-500">
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gradient-to-br from-amber-500 to-orange-500">
                               {(() => {
                                 const wizard = titleForLevel(student.level)
                                 return wizard.image ? (
@@ -766,7 +766,7 @@ export default function ManageStudentsPage() {
                         {/* XP / Level */}
                         <td className="px-4 py-4" style={{ width: columnWidths.xp }}>
                           <div className="flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                            <TrendingUp className="w-4 h-4 text-amber-400 flex-shrink-0" />
                             <div className="min-w-0">
                               <div className="text-sm font-semibold text-white">{student.total_points.toLocaleString()} XP</div>
                               <div className="text-xs text-gray-500">Level {student.level}</div>
@@ -777,7 +777,7 @@ export default function ManageStudentsPage() {
                         {/* Accuracy */}
                         <td className="px-4 py-4" style={{ width: columnWidths.accuracy }}>
                           <div className="flex items-center gap-2">
-                            <Target className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                            <Target className="w-4 h-4 text-orange-400 flex-shrink-0" />
                             <div className="text-sm font-semibold text-white">
                               {student.average_accuracy || 0}%
                             </div>
@@ -839,7 +839,7 @@ export default function ManageStudentsPage() {
                                     key={idx}
                                     className={`px-2 py-1 rounded text-xs font-medium ${
                                       quiz.accuracy >= 80
-                                        ? 'bg-emerald-500/20 text-emerald-400'
+                                        ? 'bg-emerald-500/20 text-orange-400'
                                         : quiz.accuracy >= 60
                                         ? 'bg-amber-500/20 text-amber-400'
                                         : 'bg-red-500/20 text-red-400'
@@ -864,7 +864,7 @@ export default function ManageStudentsPage() {
                                   }
                                   setExpandedQuizzes(newExpanded)
                                 }}
-                                className="text-xs text-violet-400 hover:text-violet-300 mt-1 self-start"
+                                className="text-xs text-amber-400 hover:text-amber-300 mt-1 self-start"
                               >
                                 {isQuizzesExpanded 
                                   ? `Visa mindre (${student.recent_quiz_results.length - 3} dolda)`
@@ -883,7 +883,7 @@ export default function ManageStudentsPage() {
                               setShowStudentDetails(true)
                               loadStudentDetails(student.id)
                             }}
-                            className="p-2 text-gray-400 hover:text-violet-400 hover:bg-violet-500/10 rounded-lg transition-colors"
+                            className="p-2 text-gray-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors"
                             title="Visa detaljer"
                           >
                             <Eye className="w-4 h-4" />
@@ -909,7 +909,7 @@ export default function ManageStudentsPage() {
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-500">
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden bg-gradient-to-br from-amber-500 to-orange-500">
                         {(() => {
                           const wizard = titleForLevel(student.level)
                           return wizard.image ? (
@@ -934,7 +934,7 @@ export default function ManageStudentsPage() {
                       </div>
                       <div>
                         <h3 className="text-lg font-bold text-white">{student.name}</h3>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-violet-500/20 text-violet-400 mt-1">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/20 text-amber-400 mt-1">
                           {student.class_name}
                         </span>
                       </div>
@@ -944,7 +944,7 @@ export default function ManageStudentsPage() {
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     <div className="bg-white/5 rounded-lg p-3 border border-white/5">
                       <div className="flex items-center gap-2 mb-1">
-                        <TrendingUp className="w-4 h-4 text-cyan-400" />
+                        <TrendingUp className="w-4 h-4 text-amber-400" />
                         <span className="text-xs text-gray-500">XP</span>
                       </div>
                       <div className="text-xl font-bold text-white">{student.total_points}</div>
@@ -953,8 +953,8 @@ export default function ManageStudentsPage() {
                     
                     <div className="bg-white/5 rounded-lg p-3 border border-white/5">
                       <div className="flex items-center gap-2 mb-1">
-                        <Target className="w-4 h-4 text-emerald-400" />
-                        <span className="text-xs text-gray-500">Träffsäkerhet</span>
+                        <Target className="w-4 h-4 text-orange-400" />
+                        <span className="text-xs text-gray-500">Accuracy</span>
                       </div>
                       <div className="text-xl font-bold text-white">{student.average_accuracy || 0}%</div>
                     </div>
@@ -969,7 +969,7 @@ export default function ManageStudentsPage() {
                     
                     <div className="bg-white/5 rounded-lg p-3 border border-white/5">
                       <div className="flex items-center gap-2 mb-1">
-                        <Clock className="w-4 h-4 text-violet-400" />
+                        <Clock className="w-4 h-4 text-amber-400" />
                         <span className="text-xs text-gray-500">Senast aktiv</span>
                       </div>
                       <div className="text-xs font-semibold text-white">{formatDate(student.last_activity)}</div>
@@ -985,7 +985,7 @@ export default function ManageStudentsPage() {
                             key={idx}
                             className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
                               quiz.accuracy >= 80
-                                ? 'bg-emerald-500/20 text-emerald-400'
+                                ? 'bg-emerald-500/20 text-orange-400'
                                 : quiz.accuracy >= 60
                                 ? 'bg-amber-500/20 text-amber-400'
                                 : 'bg-red-500/20 text-red-400'

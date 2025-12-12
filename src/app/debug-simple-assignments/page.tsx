@@ -100,7 +100,7 @@ export default function DebugSimpleAssignmentsPage() {
   }
 
   if (loading) {
-    return <div className="p-4">Laddar...</div>
+    return <div className="p-4">Loading...</div>
   }
 
   return (

@@ -9,7 +9,7 @@ import { Sparkles } from 'lucide-react'
 function AuthCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [status, setStatus] = useState('Loggar in…')
+  const [status, setStatus] = useState('Signing in…')
 
   useEffect(() => {
     // Set up auth state change listener
@@ -21,7 +21,7 @@ function AuthCallbackContent() {
 
     const run = async () => {
       try {
-        setStatus('Kontrollerar session…')
+        setStatus('Checking session…')
         
         // Check for OAuth errors in URL
         const hashParams = new URLSearchParams(window.location.hash.substring(1))
@@ -30,7 +30,7 @@ function AuthCallbackContent() {
         const errorDescription = hashParams.get('error_description') || queryParams.get('error_description')
         
         if (errorParam) {
-          setStatus(`OAuth-fel: ${errorDescription || errorParam}`)
+          setStatus(`OAuth error: ${errorDescription || errorParam}`)
           setTimeout(() => router.replace('/'), 5000)
           return
         }
@@ -61,13 +61,13 @@ function AuthCallbackContent() {
         // If we have a code parameter, Supabase needs to exchange it
         // This happens automatically when we call getSession(), but we should wait a bit
         if (code) {
-          setStatus('Bearbetar OAuth-kod…')
+          setStatus('Processing OAuth code…')
           // Give Supabase a moment to process the code
           await new Promise(resolve => setTimeout(resolve, 1000))
         }
         
         // Wait for Supabase to process the OAuth callback
-        setStatus('Väntar på att sessionen skapas…')
+        setStatus('Waiting for session to be created…')
         let session = null
         let sessionError = null
         
@@ -83,24 +83,24 @@ function AuthCallbackContent() {
         }
         
         if (sessionError) {
-          setStatus(`Fel: ${sessionError.message}`)
+          setStatus(`Error: ${sessionError.message}`)
           setTimeout(() => router.replace('/'), 5000)
           return
         }
         
         if (!session?.user) {
-          setStatus('Ingen aktiv session hittades. Omdirigerar till startsidan...')
+          setStatus('No active session found. Redirecting to home page...')
           setTimeout(() => router.replace('/'), 3000)
           return
         }
 
-        setStatus('Skapar din profil…')
+        setStatus('Creating your profile…')
         const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost'
         const isGoogleOAuth = session.user.app_metadata?.provider === 'google'
         
         // Google OAuth emails are auto-verified
         if (!session.user.email_confirmed_at && !isDevelopment && !isGoogleOAuth) {
-          setStatus('Vänligen verifiera din e-postadress först. Kontrollera din inkorg.')
+          setStatus('Please verify your email address first. Check your inbox.')
           await supabase.auth.signOut()
           router.replace('/?message=Vänligen verifiera din e-postadress innan du loggar in.')
           return
@@ -156,7 +156,7 @@ function AuthCallbackContent() {
             if (profileByEmail) {
               // If email matches but ID is different, user has existing account with email/password
               if (profileByEmail.id !== session.user.id) {
-                setStatus('Det finns redan ett konto med denna e-postadress. Använd e-post och lösenord för att logga in.')
+                setStatus('An account with this email already exists. Use email and password to sign in.')
                 await supabase.auth.signOut()
                 setTimeout(() => {
                   router.replace('/?message=Det finns redan ett konto med denna e-postadress. Använd e-post och lösenord för att logga in.')
@@ -181,7 +181,7 @@ function AuthCallbackContent() {
           if (isGoogleOAuth) {
             userRole = 'teacher'
           } else {
-            setStatus('Vänligen välj din roll…')
+            setStatus('Please select your role…')
             router.replace('/select-role')
             return
           }
@@ -276,7 +276,7 @@ function AuthCallbackContent() {
           }
         }
 
-        setStatus('Omdirigerar…')
+        setStatus('Redirecting…')
         
         // Wait a moment to ensure profile is saved
         await new Promise(resolve => setTimeout(resolve, 500))
@@ -295,7 +295,7 @@ function AuthCallbackContent() {
           router.replace('/select-role')
         }
       } catch (e: any) {
-        setStatus(`Fel: ${e?.message || 'Okänt fel'}. Omdirigerar...`)
+        setStatus(`Error: ${e?.message || 'Unknown error'}. Redirecting...`)
         setTimeout(() => {
           router.replace('/')
         }, 3000)
@@ -355,7 +355,7 @@ export default function AuthCallback() {
         
         <div className="relative text-center">
           <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Laddar...</p>
+          <p className="text-gray-400">Loading...</p>
         </div>
       </div>
     }>

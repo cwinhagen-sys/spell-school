@@ -232,7 +232,7 @@ function JoinSessionContent() {
     <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center py-12 px-4 relative overflow-hidden">
       {/* Aurora background effects */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-violet-900/30 via-cyan-900/20 to-fuchsia-900/30 blur-3xl animate-pulse" style={{ animationDuration: '8s' }} />
+        <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-amber-900/30 via-orange-900/20 to-yellow-900/30 blur-3xl animate-pulse" style={{ animationDuration: '8s' }} />
         <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
       </div>
       
@@ -244,7 +244,7 @@ function JoinSessionContent() {
       
       <div className="max-w-md w-full relative z-10">
         {/* Glow effect behind card */}
-        <div className="absolute -inset-1 bg-gradient-to-br from-violet-500/20 via-cyan-500/10 to-fuchsia-500/20 rounded-3xl blur-xl" />
+        <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-yellow-500/20 rounded-3xl blur-xl" />
         
         <div className="relative bg-[#12122a]/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 p-8">
           {step === 'code' && (
@@ -252,8 +252,8 @@ function JoinSessionContent() {
               <div className="text-center mb-6">
                 {/* Animated icon container */}
                 <div className="relative w-20 h-20 mx-auto mb-6">
-                  <div className="absolute inset-0 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-2xl blur-lg opacity-50 animate-pulse" />
-                  <div className="relative w-20 h-20 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-500/30">
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl blur-lg opacity-50 animate-pulse" />
+                  <div className="relative w-20 h-20 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/30">
                     <Gamepad2 className="w-10 h-10 text-white" />
                   </div>
                   {/* Sparkle decorations */}
@@ -277,12 +277,12 @@ function JoinSessionContent() {
                       setError('')
                     }}
                     placeholder="ABC123"
-                    className="w-full px-4 py-4 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-center text-3xl font-mono tracking-[0.3em] text-white placeholder:text-gray-600 transition-all"
+                    className="w-full px-4 py-4 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 text-center text-3xl font-mono tracking-[0.3em] text-white placeholder:text-gray-600 transition-all"
                     maxLength={6}
                     required
                   />
                   {/* Animated border glow when focused */}
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-violet-500/0 via-cyan-500/0 to-violet-500/0 pointer-events-none transition-all peer-focus:from-violet-500/20 peer-focus:via-cyan-500/20 peer-focus:to-violet-500/20" />
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-amber-500/0 via-orange-500/0 to-amber-500/0 pointer-events-none transition-all peer-focus:from-amber-500/20 peer-focus:via-orange-500/20 peer-focus:to-amber-500/20" />
                 </div>
                 {error && (
                   <div className="mt-3 flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
@@ -295,12 +295,12 @@ function JoinSessionContent() {
               <button
                 type="submit"
                 disabled={loading || sessionCode.length !== 6}
-                className="w-full px-6 py-4 bg-gradient-to-r from-violet-500 to-cyan-500 hover:from-violet-400 hover:to-cyan-400 text-white rounded-xl font-semibold disabled:from-gray-600 disabled:to-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed transition-all shadow-lg shadow-violet-500/30 disabled:shadow-none transform hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full px-6 py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white rounded-xl font-semibold disabled:from-gray-600 disabled:to-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed transition-all shadow-lg shadow-amber-500/30 disabled:shadow-none transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Kontrollerar...
+                    Checking...
                   </span>
                 ) : (
                   'Fortsätt'
@@ -326,8 +326,8 @@ function JoinSessionContent() {
               {/* Session info card */}
               <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-violet-500/20 to-cyan-500/20 rounded-lg flex items-center justify-center border border-white/10">
-                    <BookOpen className="w-5 h-5 text-violet-400" />
+                  <div className="w-10 h-10 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-lg flex items-center justify-center border border-white/10">
+                    <BookOpen className="w-5 h-5 text-amber-400" />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 uppercase tracking-wide">Ordlista</p>
@@ -393,7 +393,7 @@ function JoinSessionContent() {
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Ansluter...
+                      Connecting...
                     </span>
                   ) : (
                     'Börja spela'
@@ -405,7 +405,7 @@ function JoinSessionContent() {
         </div>
         
         {/* Decorative elements */}
-        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-gradient-to-r from-violet-500/20 via-cyan-500/20 to-violet-500/20 blur-xl rounded-full" />
+        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 blur-xl rounded-full" />
       </div>
     </div>
   )
@@ -417,15 +417,15 @@ export default function JoinSessionPage() {
       <div className="min-h-screen bg-[#0a0a1a] flex items-center justify-center relative overflow-hidden">
         {/* Aurora background effects */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-violet-900/30 via-cyan-900/20 to-fuchsia-900/30 blur-3xl" />
+          <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-amber-900/30 via-orange-900/20 to-yellow-900/30 blur-3xl" />
           <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl" />
         </div>
         <div className="text-center relative z-10">
           <div className="w-16 h-16 mx-auto mb-4 relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-xl blur-lg opacity-50 animate-pulse" />
-            <div className="relative w-16 h-16 border-2 border-violet-500/30 border-t-violet-500 rounded-xl animate-spin" />
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl blur-lg opacity-50 animate-pulse" />
+            <div className="relative w-16 h-16 border-2 border-amber-500/30 border-t-amber-500 rounded-xl animate-spin" />
           </div>
-          <p className="text-gray-400">Laddar...</p>
+          <p className="text-gray-400">Loading...</p>
         </div>
       </div>
     }>

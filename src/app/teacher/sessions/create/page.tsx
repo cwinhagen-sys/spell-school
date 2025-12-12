@@ -21,11 +21,11 @@ interface Game extends GameMetadata {
 const generateGames = (): Game[] => {
   const gameColors = [
     'from-pink-500 to-rose-500',
-    'from-violet-500 to-purple-500',
-    'from-teal-500 to-cyan-500',
+    'from-amber-500 to-orange-500',
+    'from-orange-500 to-rose-500',
     'from-blue-500 to-indigo-500',
-    'from-emerald-500 to-green-500',
-    'from-indigo-500 to-violet-500',
+    'from-amber-400 to-yellow-500',
+    'from-rose-500 to-pink-500',
     'from-orange-500 to-amber-500',
     'from-rose-500 to-pink-500'
   ]
@@ -64,7 +64,7 @@ function TagPill({
 function SearchInput({ 
   value, 
   onChange, 
-  placeholder = 'Sök...' 
+  placeholder = 'Search...' 
 }: { 
   value: string
   onChange: (value: string) => void
@@ -116,7 +116,7 @@ function SessionTimeline({
 
   return (
     <div className="relative">
-      <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+      <div className="relative bg-[#161622] rounded-2xl p-6 border border-white/[0.12]">
         <div className="flex items-center gap-3">
           {Array.from({ length: maxSlots }).map((_, index) => {
             const gameId = sortedGames[index]
@@ -172,7 +172,7 @@ function SessionTimeline({
                         damping: 15,
                         delay: index * 0.1 + 0.2 
                       }}
-                      className="absolute -top-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg"
+                      className="absolute -top-1 -right-1 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center shadow-lg"
                     >
                       <CheckCircle2 className="w-4 h-4 text-white" />
                     </motion.div>
@@ -229,10 +229,10 @@ function GameCard({
       animate={{ opacity: 1, scale: 1 }}
       whileHover={{ y: -4, scale: 1.02 }}
       transition={{ duration: 0.2 }}
-      className={`relative bg-white/5 backdrop-blur-sm rounded-2xl p-6 border cursor-pointer transition-all duration-300 ${
+      className={`relative bg-[#161622] rounded-2xl p-6 border cursor-pointer transition-all duration-300 ${
         isSelected
           ? 'border-amber-500/50 shadow-lg shadow-amber-500/10 bg-amber-500/10'
-          : 'border-white/10 hover:border-white/20 hover:bg-white/10'
+          : 'border-white/[0.12] hover:border-amber-500/30'
       }`}
       onClick={onSelect}
     >
@@ -314,12 +314,12 @@ function DetailsDrawer({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 h-full w-full md:w-[420px] bg-[#12122a] border-l border-white/10 shadow-2xl z-50 overflow-y-auto"
+            className="fixed top-0 right-0 h-full w-full md:w-[420px] bg-[#161622] border-l border-white/[0.12] shadow-2xl z-50 overflow-y-auto"
           >
             <div className="p-6">
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold text-white">Speldetaljer</h2>
+                <h2 className="text-2xl font-semibold text-white">Game details</h2>
                 <button
                   onClick={onClose}
                   className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
@@ -355,7 +355,7 @@ function DetailsDrawer({
               {/* Rounds selector */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Antal rundor (1-10)
+                  Number of rounds (1-10)
                 </label>
                 <div className="flex items-center gap-3">
                   <input
@@ -367,7 +367,7 @@ function DetailsDrawer({
                     className="w-24 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none"
                   />
                   <span className="text-sm text-gray-400">
-                    {selectedRounds === 1 ? 'runda' : 'rundor'}
+                    {selectedRounds === 1 ? 'round' : 'rounds'}
                   </span>
                 </div>
               </div>
@@ -378,7 +378,7 @@ function DetailsDrawer({
                 className="w-full px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl font-semibold hover:from-amber-400 hover:to-orange-500 transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2"
               >
                 <Plus className="w-5 h-5" />
-                Lägg till i session
+                Add to session
               </button>
             </div>
           </motion.div>
@@ -429,7 +429,7 @@ export default function SessionGameSelection() {
       setWordSets(data || [])
     } catch (error) {
       console.error('Error loading word sets:', error)
-      setError('Kunde inte ladda ordlistor')
+      setError('Could not load word lists')
     }
   }
 
@@ -492,25 +492,25 @@ export default function SessionGameSelection() {
     setLoading(true)
 
     if (!selectedWordSet) {
-      setError('Välj en ordlista')
+      setError('Select a word list')
       setLoading(false)
       return
     }
 
     if (!sessionName.trim()) {
-      setError('Ange ett namn för sessionen')
+      setError('Enter a name for the session')
       setLoading(false)
       return
     }
 
     if (!dueDate) {
-      setError('Välj ett slutdatum')
+      setError('Select an end date')
       setLoading(false)
       return
     }
 
     if (selectedGames.length === 0) {
-      setError('Välj minst ett spel')
+      setError('Select at least one game')
       setLoading(false)
       return
     }
@@ -526,13 +526,13 @@ export default function SessionGameSelection() {
 
     // Don't allow today or past dates - must be at least tomorrow
     if (due <= now) {
-      setError('Slutdatum måste vara minst imorgon. Du kan inte välja idag eller ett datum i det förflutna.')
+      setError('End date must be at least tomorrow. You cannot select today or a date in the past.')
       setLoading(false)
       return
     }
 
     if (due > maxDate) {
-      setError('Slutdatum måste vara inom 2 veckor')
+      setError('End date must be within 2 weeks')
       setLoading(false)
       return
     }
@@ -540,7 +540,7 @@ export default function SessionGameSelection() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        setError('Du är inte inloggad')
+        setError('You are not logged in')
         setLoading(false)
         return
       }
@@ -579,7 +579,7 @@ export default function SessionGameSelection() {
       router.push(`/teacher/sessions/${data.id}`)
     } catch (error: any) {
       console.error('Error creating session:', error)
-      setError(error.message || 'Kunde inte skapa session')
+      setError(error.message || 'Could not create session')
     } finally {
       setLoading(false)
     }
@@ -606,7 +606,7 @@ export default function SessionGameSelection() {
         className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        Tillbaka till sessioner
+        Back to sessions
       </Link>
 
       {/* Header */}
@@ -619,8 +619,8 @@ export default function SessionGameSelection() {
             <div className="absolute -inset-1 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl blur opacity-30" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Skapa session</h1>
-            <p className="text-gray-400">Välj spel och konfigurera din session</p>
+            <h1 className="text-2xl font-bold text-white">Create session</h1>
+            <p className="text-gray-400">Select games and configure your session</p>
           </div>
         </div>
         
@@ -630,51 +630,51 @@ export default function SessionGameSelection() {
             <SearchInput
               value={searchQuery}
               onChange={setSearchQuery}
-              placeholder="Sök spel..."
+              placeholder="Search games..."
             />
           </div>
           <div className="flex gap-2 flex-wrap">
             <TagPill active={filter === 'all'} onClick={() => setFilter('all')}>
-              Alla
+              All
             </TagPill>
             <TagPill active={filter === 'popular'} onClick={() => setFilter('popular')}>
-              Populära
+              Popular
             </TagPill>
             <TagPill active={filter === 'new'} onClick={() => setFilter('new')}>
-              Nya
+              New
             </TagPill>
             <TagPill active={filter === 'owned'} onClick={() => setFilter('owned')}>
-              Valda
+              Selected
             </TagPill>
           </div>
         </div>
       </div>
 
       {/* Session Form */}
-      <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-white/10 p-6 mb-8 shadow-xl">
-        <h2 className="text-xl font-semibold text-white mb-6">Sessionsdetaljer</h2>
+      <div className="bg-[#161622] rounded-2xl border border-white/[0.12] p-6 mb-8">
+        <h2 className="text-xl font-semibold text-white mb-6">Session details</h2>
         <form onSubmit={(e) => { e.preventDefault(); handleSubmit(e); }} className="space-y-6">
           <div className="grid md:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Sessionsnamn *
+                Session name *
               </label>
               <input
                 type="text"
                 value={sessionName}
                 onChange={(e) => setSessionName(e.target.value)}
-                placeholder="T.ex. 'Engelska glosor vecka 42'"
+                placeholder="e.g. 'Vocabulary week 42'"
                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all"
                 required
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Ordlista *
+                Word list *
               </label>
               {wordSets.length === 0 ? (
                 <div className="text-sm text-amber-400">
-                  <Link href="/teacher/word-sets" className="underline hover:text-amber-300">Skapa en ordlista först</Link>
+                  <Link href="/teacher/word-sets" className="underline hover:text-amber-300">Create a word list first</Link>
                 </div>
               ) : (
                 <select
@@ -683,7 +683,7 @@ export default function SessionGameSelection() {
                   className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all appearance-none cursor-pointer"
                   required
                 >
-                  <option value="" className="bg-[#1a1a2e]">Välj ordlista...</option>
+                  <option value="" className="bg-[#1a1a2e]">Select word list...</option>
                   {wordSets.map((ws) => (
                     <option key={ws.id} value={ws.id} className="bg-[#1a1a2e]">
                       {ws.title}
@@ -694,7 +694,7 @@ export default function SessionGameSelection() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Slutdatum * (max 2 veckor)
+                End date * (max 2 weeks)
               </label>
               <input
                 type="date"
@@ -722,7 +722,7 @@ export default function SessionGameSelection() {
                 }}
                 className="w-5 h-5 text-amber-500 bg-white/5 border-white/20 rounded focus:ring-amber-500/50"
               />
-              <span className="text-gray-300">Aktivera quiz på slutdatum</span>
+              <span className="text-gray-300">Enable quiz on end date</span>
             </label>
             {quizEnabled && (
               <div className="mt-4 ml-8 space-y-3">
@@ -735,7 +735,7 @@ export default function SessionGameSelection() {
                     onChange={(e) => setQuizGradingType(e.target.value as 'ai' | 'manual')}
                     className="w-4 h-4 text-amber-500"
                   />
-                  <span className="text-gray-300">AI-rättning</span>
+                  <span className="text-gray-300">AI grading</span>
                 </label>
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
@@ -746,7 +746,7 @@ export default function SessionGameSelection() {
                     onChange={(e) => setQuizGradingType(e.target.value as 'ai' | 'manual')}
                     className="w-4 h-4 text-amber-500"
                   />
-                  <span className="text-gray-300">Manuell rättning</span>
+                  <span className="text-gray-300">Manual grading</span>
                 </label>
               </div>
             )}
@@ -763,14 +763,14 @@ export default function SessionGameSelection() {
               href="/teacher/sessions"
               className="px-6 py-3 bg-white/5 text-gray-400 rounded-xl font-medium hover:bg-white/10 transition-colors"
             >
-              Avbryt
+              Cancel
             </Link>
             <button
               type="submit"
               disabled={loading || wordSets.length === 0 || selectedGames.length === 0}
               className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl font-semibold hover:from-amber-400 hover:to-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-amber-500/20"
             >
-              {loading ? 'Skapar...' : `Skapa session (${selectedGames.length} spel)`}
+              {loading ? 'Creating...' : `Create session (${selectedGames.length} games)`}
             </button>
           </div>
         </form>
@@ -778,7 +778,7 @@ export default function SessionGameSelection() {
 
       {/* Session Timeline */}
       <div className="mb-8">
-        <h2 className="text-xl font-semibold text-white mb-4">Session-tidslinje</h2>
+        <h2 className="text-xl font-semibold text-white mb-4">Session timeline</h2>
         <SessionTimeline 
           selectedGames={selectedGames}
           gameRounds={gameRounds}
@@ -787,7 +787,7 @@ export default function SessionGameSelection() {
         />
         {selectedGames.length === 0 && (
           <p className="text-sm text-gray-500 mt-4 text-center">
-            Välj spel nedan för att bygga din session-tidslinje
+            Select games below to build your session timeline
           </p>
         )}
       </div>
@@ -807,7 +807,7 @@ export default function SessionGameSelection() {
       {filteredGames.length === 0 && (
         <div className="text-center py-12">
           <Gamepad2 className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">Inga spel hittades med din sökning.</p>
+          <p className="text-gray-400">No games found with your search.</p>
         </div>
       )}
 

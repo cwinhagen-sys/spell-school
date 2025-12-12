@@ -194,7 +194,7 @@ export default function StudentDetailsModal({
           {loading ? (
             <div className="text-center py-16">
               <div className="animate-spin rounded-full h-12 w-12 border-2 border-amber-500/30 border-t-amber-500 mx-auto mb-4"></div>
-              <p className="text-gray-400 font-medium">Laddar elevdetaljer...</p>
+              <p className="text-gray-400 font-medium">Loading student details...</p>
             </div>
           ) : !details ? (
             <div className="text-center py-16">

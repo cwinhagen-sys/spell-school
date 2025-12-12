@@ -237,7 +237,7 @@ export default function AssignWordSetsPage() {
       setGridConfigs(configs)
     } catch (error) {
       console.error('Error loading word sets:', error)
-      showMessage('Kunde inte ladda ordlistor', 'error')
+      showMessage('Could not load word lists', 'error')
     }
   }
 
@@ -255,7 +255,7 @@ export default function AssignWordSetsPage() {
       setClasses(data || [])
     } catch (error) {
       console.error('Error loading classes:', error)
-      showMessage('Kunde inte ladda klasser', 'error')
+      showMessage('Could not load classes', 'error')
     }
   }
 
@@ -277,16 +277,16 @@ export default function AssignWordSetsPage() {
       
       const formattedAssignments: Assignment[] = (data || []).map((item: any) => ({
         id: item.id,
-        word_set_title: item.word_sets?.title || 'Okänd',
+        word_set_title: item.word_sets?.title || 'Unknown',
         word_set_color: item.word_sets?.color,
-        class_name: item.class_id ? item.classes?.name : 'Individuell tilldelning',
+        class_name: item.class_id ? item.classes?.name : 'Individual assignment',
         student_name: item.student_id ? item.profiles?.username : undefined
       }))
       
       setAssignments(formattedAssignments)
     } catch (error) {
       console.error('Error loading assignments:', error)
-      showMessage('Kunde inte ladda tilldelningar', 'error')
+      showMessage('Could not load assignments', 'error')
     }
   }
 
@@ -302,16 +302,16 @@ export default function AssignWordSetsPage() {
       setGridConfigs(prev => ({ ...prev, [wordSetId]: grids }))
       setShowGridConfig(false)
       setWordSetForConfig(null)
-      showMessage('Rutnätskonfiguration sparad!', 'success')
+      showMessage('Grid configuration saved!', 'success')
     } catch (error) {
       console.error('Error saving grid config:', error)
-      showMessage('Kunde inte spara rutnätskonfiguration', 'error')
+      showMessage('Could not save grid configuration', 'error')
     }
   }
 
   const assignToSelectedClasses = async () => {
     if (!selectedWordSet || selectedClasses.length === 0) {
-      showMessage('Välj ordlista och minst en klass', 'error')
+      showMessage('Select word list and at least one class', 'error')
       return
     }
 
@@ -360,13 +360,13 @@ export default function AssignWordSetsPage() {
       }
 
       if (successCount > 0) {
-        let msg = `Tilldelad till ${successCount} klass${successCount !== 1 ? 'er' : ''}!`
+        let msg = `Assigned to ${successCount} class${successCount !== 1 ? 'es' : ''}!`
         if (skippedCount > 0) {
-          msg += ` (${skippedCount} redan tilldelade)`
+          msg += ` (${skippedCount} already assigned)`
         }
         showMessage(msg, 'success')
       } else {
-        showMessage('Inga tilldelningar skapade. Alla valda klasser har redan denna ordlista.', 'info')
+        showMessage('No assignments created. All selected classes already have this word list.', 'info')
       }
 
       setSelectedClasses([])
@@ -375,7 +375,7 @@ export default function AssignWordSetsPage() {
       await loadAssignments()
     } catch (error) {
       console.error('Error in batch assignment:', error)
-      showMessage('Kunde inte tilldela till klasser', 'error')
+      showMessage('Could not assign to classes', 'error')
     } finally {
       setLoading(false)
     }
@@ -383,7 +383,7 @@ export default function AssignWordSetsPage() {
 
   const assignToStudent = async () => {
     if (!selectedWordSet || !targetStudent) {
-      showMessage('Välj ordlista och elev', 'error')
+      showMessage('Select word list and student', 'error')
       return
     }
 
@@ -403,7 +403,7 @@ export default function AssignWordSetsPage() {
       }
 
       if (existing) {
-        showMessage('Denna ordlista är redan tilldelad till eleven!', 'info')
+        showMessage('This word list is already assigned to the student!', 'info')
         setLoading(false)
         return
       }
@@ -419,14 +419,14 @@ export default function AssignWordSetsPage() {
         })
 
       if (error) throw error
-      showMessage('Tilldelad till elev!', 'success')
+      showMessage('Assigned to student!', 'success')
       setTargetStudent('')
       setTargetClass('')
       setDueDate('')
       await loadAssignments()
     } catch (error) {
       console.error('Error assigning to student:', error)
-      showMessage('Kunde inte tilldela till elev', 'error')
+      showMessage('Could not assign to student', 'error')
     } finally {
       setLoading(false)
     }
@@ -440,11 +440,11 @@ export default function AssignWordSetsPage() {
         .eq('id', id)
 
       if (error) throw error
-      showMessage('Tilldelning borttagen', 'success')
+      showMessage('Assignment removed', 'success')
       await loadAssignments()
     } catch (error) {
       console.error('Error removing assignment:', error)
-      showMessage('Kunde inte ta bort tilldelning', 'error')
+      showMessage('Could not remove assignment', 'error')
     }
   }
 
@@ -453,7 +453,7 @@ export default function AssignWordSetsPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="w-12 h-12 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Laddar tilldelningar...</p>
+          <p className="text-gray-400">Loading assignments...</p>
         </div>
       </div>
     )
@@ -464,12 +464,12 @@ export default function AssignWordSetsPage() {
       {/* Page Header */}
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-2">
-          <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20">
+          <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20">
             <Send className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Tilldela ordlistor</h1>
-            <p className="text-gray-400">Tilldela ordlistor till klasser eller enskilda elever</p>
+            <h1 className="text-2xl font-bold text-white">Assign word lists</h1>
+            <p className="text-gray-400">Assign word lists to classes or individual students</p>
           </div>
         </div>
       </div>
@@ -478,7 +478,7 @@ export default function AssignWordSetsPage() {
       {message && (
         <div className={`fixed top-24 right-6 z-50 px-6 py-3 rounded-xl shadow-2xl border backdrop-blur-sm animate-in slide-in-from-right duration-300 ${
           messageType === 'success' 
-            ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' 
+            ? 'bg-amber-500/20 border-amber-500/30 text-amber-300' 
             : messageType === 'error'
             ? 'bg-red-500/20 border-red-500/30 text-red-300'
             : 'bg-amber-500/20 border-amber-500/30 text-amber-300'
@@ -488,18 +488,18 @@ export default function AssignWordSetsPage() {
       )}
 
       {/* Assignment Form */}
-      <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-white/10 p-6 mb-8 shadow-xl">
+      <div className="bg-[#161622] rounded-2xl border border-white/[0.12] p-6 mb-8">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
-          <h2 className="text-xl font-bold text-white">Ny tilldelning</h2>
+          <h2 className="text-xl font-bold text-white">New assignment</h2>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
           {/* Word Set Selection */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-400">Välj ordlista</label>
+            <label className="block text-sm font-medium text-gray-400">Select word list</label>
             <div className="flex items-center gap-3">
               <span 
                 className="w-8 h-8 rounded-lg border-2 border-white/10 flex-shrink-0" 
@@ -510,7 +510,7 @@ export default function AssignWordSetsPage() {
                 onChange={e => setSelectedWordSet(e.target.value)}
                 className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:border-amber-500/50 focus:outline-none transition-all appearance-none cursor-pointer"
               >
-                <option value="" className="bg-[#1a1a2e]">Välj ordlista...</option>
+                <option value="" className="bg-[#1a1a2e]">Select word list...</option>
                 {wordSets.map(ws => (
                   <option key={ws.id} value={ws.id} className="bg-[#1a1a2e]">{ws.title}</option>
                 ))}
@@ -520,7 +520,7 @@ export default function AssignWordSetsPage() {
 
           {/* Due Date */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-400">Förfallodatum (valfritt)</label>
+            <label className="block text-sm font-medium text-gray-400">Due date (optional)</label>
             <div className="relative">
               <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
               <input
@@ -538,8 +538,8 @@ export default function AssignWordSetsPage() {
           {/* Class Assignment */}
           <div className="bg-white/5 rounded-xl p-5 border border-white/10">
             <div className="flex items-center gap-2 mb-4">
-              <Users className="w-5 h-5 text-cyan-400" />
-              <h3 className="font-semibold text-white">Tilldela till klasser</h3>
+              <Users className="w-5 h-5 text-amber-400" />
+              <h3 className="font-semibold text-white">Assign to classes</h3>
             </div>
             
             {classes.length > 0 ? (
@@ -552,8 +552,8 @@ export default function AssignWordSetsPage() {
                   >
                     <span className={selectedClasses.length === 0 ? 'text-gray-500' : ''}>
                       {selectedClasses.length === 0 
-                        ? "Välj klasser..." 
-                        : `${selectedClasses.length} klass${selectedClasses.length !== 1 ? 'er' : ''} vald${selectedClasses.length !== 1 ? 'a' : ''}`
+                        ? "Select classes..." 
+                        : `${selectedClasses.length} class${selectedClasses.length !== 1 ? 'es' : ''} selected`
                       }
                     </span>
                     <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showClassDropdown ? 'rotate-180' : ''}`} />
@@ -569,9 +569,9 @@ export default function AssignWordSetsPage() {
                               e.stopPropagation()
                               setSelectedClasses(classes.map(c => c.id))
                             }}
-                            className="text-xs px-3 py-1.5 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 rounded-lg transition-colors"
+                            className="text-xs px-3 py-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 rounded-lg transition-colors"
                           >
-                            Välj alla
+                            Select all
                           </button>
                           <button
                             type="button"
@@ -592,7 +592,7 @@ export default function AssignWordSetsPage() {
                         >
                           <div className="relative">
                             {selectedClasses.includes(c.id) ? (
-                              <CheckSquare className="w-5 h-5 text-cyan-400" />
+                              <CheckSquare className="w-5 h-5 text-amber-400" />
                             ) : (
                               <Square className="w-5 h-5 text-gray-500" />
                             )}
@@ -630,31 +630,31 @@ export default function AssignWordSetsPage() {
                     await assignToSelectedClasses()
                   }}
                   disabled={loading || !selectedWordSet || selectedClasses.length === 0}
-                  className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium hover:from-cyan-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-cyan-500/20 flex items-center justify-center gap-2"
+                  className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-medium hover:from-cyan-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2"
                 >
                   <Send className="w-4 h-4" />
-                  Tilldela till klasser
+                  Assign to classes
                 </button>
               </div>
             ) : (
-              <p className="text-gray-500 text-sm italic">Inga klasser tillgängliga</p>
+              <p className="text-gray-500 text-sm italic">No classes available</p>
             )}
           </div>
 
           {/* Individual Student Assignment */}
           <div className="bg-white/5 rounded-xl p-5 border border-white/10">
             <div className="flex items-center gap-2 mb-4">
-              <User className="w-5 h-5 text-emerald-400" />
-              <h3 className="font-semibold text-white">Tilldela till enskild elev</h3>
+              <User className="w-5 h-5 text-amber-400" />
+              <h3 className="font-semibold text-white">Assign to individual student</h3>
             </div>
             
             <div className="space-y-3">
               <select 
                 value={targetClass} 
                 onChange={e => setTargetClass(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:border-emerald-500/50 focus:outline-none transition-all appearance-none cursor-pointer"
+                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:border-amber-500/50 focus:outline-none transition-all appearance-none cursor-pointer"
               >
-                <option value="" className="bg-[#1a1a2e]">Välj klass först...</option>
+                <option value="" className="bg-[#1a1a2e]">Select class first...</option>
                 {classes.map(c => (
                   <option key={c.id} value={c.id} className="bg-[#1a1a2e]">{c.name}</option>
                 ))}
@@ -664,18 +664,18 @@ export default function AssignWordSetsPage() {
                 value={targetStudent} 
                 onChange={e => setTargetStudent(e.target.value)}
                 disabled={!targetClass}
-                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white disabled:opacity-50 disabled:cursor-not-allowed focus:border-emerald-500/50 focus:outline-none transition-all appearance-none cursor-pointer"
+                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white disabled:opacity-50 disabled:cursor-not-allowed focus:border-amber-500/50 focus:outline-none transition-all appearance-none cursor-pointer"
               >
                 {!targetClass ? (
-                  <option value="" className="bg-[#1a1a2e]">Välj klass först</option>
+                  <option value="" className="bg-[#1a1a2e]">Select class first</option>
                 ) : (
                   <>
-                    <option value="" className="bg-[#1a1a2e]">Välj elev...</option>
+                    <option value="" className="bg-[#1a1a2e]">Select student...</option>
                     {classStudentsForSelected.length === 0 ? (
-                      <option value="" disabled className="bg-[#1a1a2e]">Inga elever</option>
+                      <option value="" disabled className="bg-[#1a1a2e]">No students</option>
                     ) : (
                       classStudentsForSelected.map(s => (
-                        <option key={s.id} value={s.id} className="bg-[#1a1a2e]">{s.display || (s as any).username || 'Elev'}</option>
+                        <option key={s.id} value={s.id} className="bg-[#1a1a2e]">{s.display || (s as any).username || 'Student'}</option>
                       ))
                     )}
                   </>
@@ -695,10 +695,10 @@ export default function AssignWordSetsPage() {
                   await assignToStudent()
                 }}
                 disabled={loading || !selectedWordSet || !targetClass || !targetStudent}
-                className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-medium hover:from-emerald-600 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+                className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-medium hover:from-emerald-600 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2"
               >
                 <Send className="w-4 h-4" />
-                Tilldela till elev
+                Assign to student
               </button>
             </div>
           </div>
@@ -706,16 +706,16 @@ export default function AssignWordSetsPage() {
       </div>
 
       {/* Existing Assignments */}
-      <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-white/10 p-6 shadow-xl">
+      <div className="bg-[#161622] rounded-2xl border border-white/[0.12] p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center">
               <BookOpen className="w-5 h-5 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-white">Befintliga tilldelningar</h2>
+            <h2 className="text-xl font-bold text-white">Existing assignments</h2>
           </div>
           <div className="px-3 py-1.5 bg-white/5 rounded-lg text-sm text-gray-400">
-            {assignments.length} {assignments.length === 1 ? 'tilldelning' : 'tilldelningar'}
+            {assignments.length} {assignments.length === 1 ? 'assignment' : 'assignments'}
           </div>
         </div>
         
@@ -724,8 +724,8 @@ export default function AssignWordSetsPage() {
             <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
               <Calendar className="w-8 h-8 text-gray-500" />
             </div>
-            <p className="text-gray-400 text-lg font-medium">Inga tilldelningar ännu</p>
-            <p className="text-gray-500 text-sm mt-1">Tilldela en ordlista ovan för att komma igång</p>
+            <p className="text-gray-400 text-lg font-medium">No assignments yet</p>
+            <p className="text-gray-500 text-sm mt-1">Assign a word list above to get started</p>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 gap-4">
@@ -750,20 +750,20 @@ export default function AssignWordSetsPage() {
                     <div className="flex items-center gap-2 text-sm">
                       {assignment.student_name ? (
                         <>
-                          <User className="w-4 h-4 text-emerald-400" />
-                          <span className="text-emerald-400 font-medium">Individuell:</span>
+                          <User className="w-4 h-4 text-amber-400" />
+                          <span className="text-amber-400 font-medium">Individual:</span>
                           <span className="text-gray-300">{assignment.student_name}</span>
                         </>
-                      ) : assignment.class_name && assignment.class_name !== 'Individuell tilldelning' ? (
+                      ) : assignment.class_name && assignment.class_name !== 'Individual assignment' ? (
                         <>
-                          <Users className="w-4 h-4 text-cyan-400" />
-                          <span className="text-cyan-400 font-medium">Klass:</span>
+                          <Users className="w-4 h-4 text-amber-400" />
+                          <span className="text-amber-400 font-medium">Class:</span>
                           <span className="text-gray-300">{assignment.class_name}</span>
                         </>
                       ) : (
                         <>
                           <BookOpen className="w-4 h-4 text-gray-500" />
-                          <span className="text-gray-500">Okänd mottagare</span>
+                          <span className="text-gray-500">Unknown recipient</span>
                         </>
                       )}
                     </div>
@@ -771,7 +771,7 @@ export default function AssignWordSetsPage() {
                   <button 
                     onClick={() => removeAssignment(assignment.id)}
                     className="p-2.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-all flex-shrink-0"
-                    title="Ta bort tilldelning"
+                    title="Remove assignment"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

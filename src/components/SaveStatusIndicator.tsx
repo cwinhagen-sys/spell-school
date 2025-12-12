@@ -275,7 +275,7 @@ Check browser console for database errors!
       case 'saving':
         return {
           icon: <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />,
-          text: 'Sparar...',
+          text: 'Saving...',
           textColor: 'text-blue-700',
           bgColor: 'bg-blue-50',
           borderColor: 'border-blue-200'
@@ -292,8 +292,8 @@ Check browser console for database errors!
         return {
           icon: <AlertCircle className="w-4 h-4 text-orange-500" />,
           text: pendingCount > 0 
-            ? `Sparar data (${pendingCount} kvar)... Vänta!`
-            : 'Data sparas...',
+            ? `Saving data (${pendingCount} left)... Wait!`
+            : 'Saving data...',
           textColor: 'text-orange-700',
           bgColor: 'bg-orange-50',
           borderColor: 'border-orange-200'
@@ -301,7 +301,7 @@ Check browser console for database errors!
       case 'error':
         return {
           icon: <AlertCircle className="w-4 h-4 text-red-500" />,
-          text: 'FEL vid sparning! Data kan ha gått förlorad.',
+          text: 'ERROR saving! Data may have been lost.',
           textColor: 'text-red-700',
           bgColor: 'bg-red-50',
           borderColor: 'border-red-300'
@@ -309,7 +309,7 @@ Check browser console for database errors!
       case 'checking':
         return {
           icon: <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />,
-          text: 'Kontrollerar...',
+          text: 'Checking...',
           textColor: 'text-gray-600',
           bgColor: 'bg-gray-50',
           borderColor: 'border-gray-200'

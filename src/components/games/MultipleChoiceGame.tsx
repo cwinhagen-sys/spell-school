@@ -273,7 +273,7 @@ export default function MultipleChoiceGame({ words, translations = {}, onClose, 
         {questions.length === 0 ? (
           <div className="text-center py-12">
             <Loader2 className="w-12 h-12 text-amber-400 animate-spin mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-white mb-2">Laddar frågor...</h3>
+            <h3 className="text-xl font-bold text-white mb-2">Loading questions...</h3>
             <p className="text-gray-400">Förbereder ditt quiz</p>
           </div>
         ) : index < questions.length && !gameFinished ? (

@@ -664,7 +664,7 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
       <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50">
         <div className="bg-[#12122a] rounded-2xl p-8 max-w-md w-full text-center shadow-2xl border border-white/10">
           <Loader2 className="w-12 h-12 text-amber-400 animate-spin mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">Laddar...</h2>
+          <h2 className="text-2xl font-bold text-white mb-2">Loading...</h2>
           <p className="text-gray-400">Förbereder din översättningsutmaning</p>
         </div>
       </div>

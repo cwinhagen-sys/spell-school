@@ -349,7 +349,7 @@ export default function AddStudentsPage() {
           disabled={loading || students.length === 0 || !selectedClass}
           className="flex-1 px-6 py-3.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl font-semibold hover:from-amber-400 hover:to-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-amber-500/20"
         >
-          {loading ? 'Skapar elever...' : `Skapa ${students.length} ${students.length === 1 ? 'elev' : 'elever'}`}
+          {loading ? 'Creating students...' : `Create ${students.length} ${students.length === 1 ? 'student' : 'students'}`}
         </button>
       </div>
     </div>

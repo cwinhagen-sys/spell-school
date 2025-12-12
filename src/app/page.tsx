@@ -223,7 +223,7 @@ export default function Home() {
         
         <div className="relative text-center">
           <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Laddar...</p>
+          <p className="text-gray-400">Loading...</p>
         </div>
       </div>
     )

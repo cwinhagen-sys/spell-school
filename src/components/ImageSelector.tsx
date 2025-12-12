@@ -163,7 +163,7 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
           onClick={() => setShowModal(true)}
           className="text-sm font-medium text-cyan-400 hover:text-cyan-300 px-3 py-1.5 rounded-lg transition-colors hover:bg-white/5"
         >
-          {value ? 'Byt bild' : 'Lägg till bild'}
+          {value ? 'Change image' : 'Add image'}
         </button>
       </div>
 
@@ -171,7 +171,7 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
       {showModal && (
         <div className="mt-4 p-4 bg-[#1a1a2e] rounded-xl border border-white/10">
           <div className="flex items-center justify-between mb-4">
-            <h4 className="font-medium text-white">Välj bild för "{word}"</h4>
+            <h4 className="font-medium text-white">Select image for "{word}"</h4>
             <button
               onClick={() => setShowModal(false)}
               className="text-gray-500 hover:text-white p-1 hover:bg-white/10 rounded-lg transition-colors"
@@ -189,7 +189,7 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && searchImages(searchQuery)}
-                placeholder="Sök efter bilder..."
+                placeholder="Search for images..."
                 className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-none transition-all"
               />
             </div>
@@ -198,13 +198,13 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
               disabled={loading}
               className="px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 font-medium transition-all"
             >
-              {loading ? 'Söker...' : 'Sök'}
+              {loading ? 'Searching...' : 'Search'}
             </button>
           </div>
 
           {/* Upload section */}
           <div className="mb-4 p-4 bg-white/5 rounded-xl border border-white/10">
-            <h5 className="font-medium mb-3 text-gray-300 text-sm">Eller ladda upp egen bild:</h5>
+            <h5 className="font-medium mb-3 text-gray-300 text-sm">Or upload your own image:</h5>
             <div className="flex items-center gap-4">
               <input
                 type="file"
@@ -218,7 +218,7 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
                 className="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 cursor-pointer transition-colors"
               >
                 <Upload className="w-4 h-4 text-gray-400" />
-                <span className="text-gray-300 text-sm">Välj fil</span>
+                <span className="text-gray-300 text-sm">Choose file</span>
               </label>
               {uploadPreview && (
                 <div className="flex items-center gap-3">
@@ -228,7 +228,7 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
                     disabled={loading}
                     className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-lg hover:from-emerald-400 hover:to-green-500 disabled:opacity-50 text-sm font-medium transition-all"
                   >
-                    Ladda upp
+                    Upload
                   </button>
                 </div>
               )}
@@ -240,16 +240,16 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
             {loading ? (
               <div className="text-center py-8">
                 <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-gray-400">Söker efter bilder...</p>
+                <p className="text-gray-400">Searching for images...</p>
               </div>
             ) : !process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY || process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY === 'YOUR_UNSPLASH_ACCESS_KEY' ? (
               <div className="text-center py-6">
                 <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4 mb-3">
-                  <h5 className="font-semibold text-cyan-400 mb-2 text-sm">🔍 Automatiska bildförslag</h5>
-                  <p className="text-xs mb-2 text-gray-400">För att få automatiska bildförslag när du skriver ord behöver du en Unsplash API-nyckel.</p>
-                  <p className="text-xs text-cyan-500">Se UNSPLASH_SETUP.md för instruktioner</p>
+                  <h5 className="font-semibold text-cyan-400 mb-2 text-sm">🔍 Automatic image suggestions</h5>
+                  <p className="text-xs mb-2 text-gray-400">To get automatic image suggestions when you type words, you need an Unsplash API key.</p>
+                  <p className="text-xs text-cyan-500">See UNSPLASH_SETUP.md for instructions</p>
                 </div>
-                <p className="text-xs text-gray-500">Du kan fortfarande ladda upp egna bilder ovan ↑</p>
+                <p className="text-xs text-gray-500">You can still upload your own images above ↑</p>
               </div>
             ) : unsplashImages.length > 0 ? (
               <div className="grid grid-cols-4 gap-3">
@@ -265,7 +265,7 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                      <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">Välj</span>
+                      <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">Select</span>
                     </div>
                   </button>
                 ))}
@@ -273,7 +273,7 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
             ) : (
               <div className="text-center py-8 text-gray-400">
                 <ImageIcon className="w-10 h-10 mx-auto mb-3 opacity-50" />
-                <p>Inga bilder hittades. Prova ett annat sökord.</p>
+                <p>No images found. Try a different search term.</p>
               </div>
             )}
           </div>

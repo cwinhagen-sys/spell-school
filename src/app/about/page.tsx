@@ -21,7 +21,7 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link href="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
             <ArrowLeft className="w-4 h-4" />
-            <span>Tillbaka till startsidan</span>
+            <span>Back to home</span>
           </Link>
         </div>
       </header>
@@ -43,44 +43,44 @@ export default function AboutPage() {
                 Spell<span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">School</span>
               </h1>
             </div>
-            <p className="text-xl text-gray-400">Om oss</p>
+            <p className="text-xl text-gray-400">About Us</p>
           </div>
 
           {/* Mission */}
           <section className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 md:p-12">
             <h2 className="text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">
-              Vår vision
+              Our Vision
             </h2>
             <p className="text-lg text-gray-300 leading-relaxed mb-4">
-              Spell School är ett pedagogiskt verktyg designat för att göra glosinlärning engagerande och effektiv. 
-              Vi tror på att lärande ska vara roligt, interaktivt och anpassat efter varje elevs behov.
+              Spell School is an educational tool designed to make vocabulary learning engaging and effective. 
+              We believe that learning should be fun, interactive, and adapted to each student's needs.
             </p>
             <p className="text-lg text-gray-300 leading-relaxed">
-              Genom att kombinera gamification, AI-teknik och pedagogisk forskning skapar vi en plattform där 
-              elever vill lära sig och lärare enkelt kan följa framsteg.
+              By combining gamification, AI technology, and educational research, we create a platform where 
+              students want to learn and teachers can easily track progress.
             </p>
           </section>
 
           {/* What we offer */}
           <section>
-            <h2 className="text-3xl font-bold mb-8">Vad vi erbjuder</h2>
+            <h2 className="text-3xl font-bold mb-8">What We Offer</h2>
             <div className="grid md:grid-cols-2 gap-6">
               {[
                 {
-                  title: "Interaktiva spel",
-                  description: "Flera olika speltyper som gör glosinlärning roligt och varierat."
+                  title: "Interactive Games",
+                  description: "Multiple game types that make vocabulary learning fun and varied."
                 },
                 {
-                  title: "AI-driven feedback",
-                  description: "Automatisk uttalsrättning och konstruktiv feedback för varje elev."
+                  title: "AI-Powered Feedback",
+                  description: "Automatic pronunciation correction and constructive feedback for every student."
                 },
                 {
-                  title: "Framstegsspårning",
-                  description: "Detaljerad statistik och insikter om varje elevs utveckling."
+                  title: "Progress Tracking",
+                  description: "Detailed statistics and insights into each student's development."
                 },
                 {
-                  title: "Flexibel struktur",
-                  description: "Färgblocksindelning och session mode för anpassad inlärning."
+                  title: "Flexible Structure",
+                  description: "Color block organization and session mode for customized learning."
                 }
               ].map((item, i) => (
                 <motion.div
@@ -99,15 +99,15 @@ export default function AboutPage() {
 
           {/* Contact */}
           <section className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 md:p-12 text-center">
-            <h2 className="text-3xl font-bold mb-4">Kontakta oss</h2>
+            <h2 className="text-3xl font-bold mb-4">Contact Us</h2>
             <p className="text-gray-400 mb-6">
-              Har du frågor eller feedback? Vi vill gärna höra från dig!
+              Have questions or feedback? We'd love to hear from you!
             </p>
             <Link
               href="/faq"
               className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-amber-400 hover:to-orange-500 transition-all"
             >
-              Se vanliga frågor
+              View FAQ
             </Link>
           </section>
         </motion.div>
@@ -115,7 +115,3 @@ export default function AboutPage() {
     </div>
   )
 }
-
-
-
-

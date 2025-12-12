@@ -39,33 +39,24 @@ export default function BlockSelectionUI({
     .reduce((sum, b) => sum + b.words.length, 0)
 
   return (
-    <div className="min-h-screen bg-[#0a0a1a] py-8 px-4 relative overflow-hidden">
-      {/* Aurora background effects */}
+    <div className="min-h-screen bg-[#08080f] py-8 px-4 relative overflow-hidden">
+      {/* Subtle background */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -bottom-1/2 -left-1/2 w-[150%] h-[150%] bg-gradient-to-br from-violet-900/30 via-cyan-900/20 to-fuchsia-900/30 blur-3xl animate-pulse" style={{ animationDuration: '8s' }} />
-        <div className="absolute -top-1/2 -right-1/2 w-[150%] h-[150%] bg-gradient-to-tl from-emerald-900/30 via-teal-900/20 to-blue-900/30 blur-3xl animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-amber-500/[0.03] rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-orange-500/[0.02] rounded-full blur-[100px]" />
       </div>
-      
-      {/* Subtle grid pattern */}
-      <div className="absolute inset-0 z-0 opacity-10" style={{ 
-        backgroundImage: 'linear-gradient(to right, #ffffff1a 1px, transparent 1px), linear-gradient(to bottom, #ffffff1a 1px, transparent 1px)', 
-        backgroundSize: '40px 40px' 
-      }} />
       
       <div className="max-w-6xl mx-auto relative z-10">
         {/* Header Card */}
-        <div className="bg-[#12122a]/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 p-8 mb-8">
+        <div className="bg-[#161622] rounded-2xl border border-white/[0.08] p-8 mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-xl blur-lg opacity-50" />
-                <div className="relative w-14 h-14 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/30">
-                  <Layers className="w-7 h-7 text-white" />
-                </div>
+              <div className="w-14 h-14 bg-[#1a1a2e] border border-white/[0.08] rounded-xl flex items-center justify-center">
+                <Layers className="w-7 h-7 text-amber-400" />
               </div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-white">Välj färgblock</h1>
-                <p className="text-gray-400 text-sm md:text-base">
+                <p className="text-gray-500 text-sm md:text-base">
                   Välj vilka block du vill öva med i denna session
                 </p>
               </div>
@@ -73,11 +64,11 @@ export default function BlockSelectionUI({
             
             {/* Selection summary */}
             <div className="flex items-center gap-4">
-              <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+              <div className="bg-white/5 border border-white/[0.08] rounded-xl px-4 py-3">
                 <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Valda block</div>
                 <div className="text-xl font-bold text-white">{selectedBlocks.length} / {colorBlocks.length}</div>
               </div>
-              <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+              <div className="bg-white/5 border border-white/[0.08] rounded-xl px-4 py-3">
                 <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Totalt ord</div>
                 <div className="text-xl font-bold text-amber-400">{totalWords}</div>
               </div>
@@ -95,43 +86,35 @@ export default function BlockSelectionUI({
               <button
                 key={block.id}
                 onClick={() => onToggleBlock(block.id)}
-                className={`group relative p-6 rounded-2xl text-left transition-all duration-300 transform hover:scale-[1.02] ${
+                className={`group relative p-6 rounded-2xl text-left transition-all duration-300 ${
                   isSelected
-                    ? 'bg-gradient-to-br from-white/10 to-white/5 border-2 shadow-xl'
-                    : 'bg-[#12122a]/60 backdrop-blur-sm border-2 border-white/5 hover:border-white/20 hover:bg-[#12122a]/80'
+                    ? 'bg-[#161622] border-2'
+                    : 'bg-[#161622] border-2 border-white/[0.06] hover:border-white/[0.12]'
                 }`}
                 style={{
-                  borderColor: isSelected ? colorScheme.hex : undefined,
-                  boxShadow: isSelected ? `0 20px 40px -12px ${colorScheme.hex}40, 0 4px 12px ${colorScheme.hex}20` : undefined
+                  borderColor: isSelected ? colorScheme.hex : undefined
                 }}
               >
-                {/* Selection indicator glow */}
-                {isSelected && (
-                  <div 
-                    className="absolute inset-0 rounded-2xl opacity-20 pointer-events-none"
-                    style={{ background: `linear-gradient(135deg, ${colorScheme.hex}30, transparent)` }}
-                  />
-                )}
                 
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    {/* Color indicator */}
+                    {/* Color indicator - dark bg with colored number */}
                     <div 
-                      className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                        isSelected ? 'shadow-lg' : 'opacity-80 group-hover:opacity-100'
-                      }`}
-                      style={{ 
-                        backgroundColor: colorScheme.hex,
-                        boxShadow: isSelected ? `0 8px 20px ${colorScheme.hex}50` : undefined
-                      }}
+                      className="w-12 h-12 rounded-xl flex items-center justify-center border border-white/[0.08]"
+                      style={{ backgroundColor: '#1a1a2e' }}
                     >
-                      <span className="text-white font-bold text-lg">{index + 1}</span>
+                      <span 
+                        className="font-bold text-lg"
+                        style={{ color: colorScheme.hex }}
+                      >
+                        {index + 1}
+                      </span>
                     </div>
                     <div>
                       <h3 className={`font-bold text-lg transition-colors ${isSelected ? 'text-white' : 'text-gray-300 group-hover:text-white'}`}>
                         {block.color}
                       </h3>
-                      <p className={`text-sm font-medium transition-colors ${isSelected ? 'text-white/70' : 'text-gray-500'}`}>
+                      <p className="text-sm font-medium text-gray-500">
                         {block.words.length} ord
                       </p>
                     </div>
@@ -140,13 +123,13 @@ export default function BlockSelectionUI({
                   {/* Checkbox */}
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
                     isSelected 
-                      ? 'bg-white/20 shadow-inner' 
+                      ? 'bg-white/10' 
                       : 'bg-white/5 group-hover:bg-white/10'
                   }`}>
                     {isSelected ? (
-                      <CheckCircle2 className="w-5 h-5 text-white" />
+                      <CheckCircle2 className="w-5 h-5" style={{ color: colorScheme.hex }} />
                     ) : (
-                      <Circle className="w-5 h-5 text-gray-500 group-hover:text-gray-400" />
+                      <Circle className="w-5 h-5 text-gray-600 group-hover:text-gray-500" />
                     )}
                   </div>
                 </div>
@@ -181,23 +164,20 @@ export default function BlockSelectionUI({
         </div>
 
         {/* Submit Button */}
-        <div className="relative">
-          <div className="absolute -inset-1 bg-gradient-to-r from-violet-500 to-cyan-500 rounded-2xl blur opacity-30" />
-          <button
-            onClick={onSubmit}
-            disabled={selectedBlocks.length === 0}
-            className="relative w-full px-8 py-5 bg-gradient-to-r from-violet-500 to-cyan-500 hover:from-violet-400 hover:to-cyan-400 text-white rounded-xl font-bold text-lg disabled:from-gray-700 disabled:to-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed transition-all shadow-2xl shadow-violet-500/30 disabled:shadow-none transform hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-3"
-          >
-            {selectedBlocks.length > 0 ? (
-              <>
-                <Sparkles className="w-5 h-5" />
-                Starta Session med {totalWords} ord
-              </>
-            ) : (
-              'Välj minst ett block för att fortsätta'
-            )}
-          </button>
-        </div>
+        <button
+          onClick={onSubmit}
+          disabled={selectedBlocks.length === 0}
+          className="w-full px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white rounded-xl font-bold text-lg disabled:from-gray-700 disabled:to-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3"
+        >
+          {selectedBlocks.length > 0 ? (
+            <>
+              <Sparkles className="w-5 h-5" />
+              Starta Session med {totalWords} ord
+            </>
+          ) : (
+            'Välj minst ett block för att fortsätta'
+          )}
+        </button>
       </div>
     </div>
   )

@@ -371,7 +371,7 @@ export default function SessionDetailPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Laddar session...</p>
+          <p className="text-gray-400">Loading session...</p>
         </div>
       </div>
     )
@@ -414,13 +414,13 @@ export default function SessionDetailPage() {
                 )}
               </div>
               <div className="flex items-center gap-2 text-gray-400">
-                <Gamepad2 className="w-4 h-4 text-cyan-400" />
-                <span>{session.enabled_games.length} spel</span>
+                <Gamepad2 className="w-4 h-4 text-amber-400" />
+                <span>{session.enabled_games.length} games</span>
               </div>
               {session.quiz_enabled && (
                 <div className="flex items-center gap-2 text-gray-400">
-                  <FileText className="w-4 h-4 text-violet-400" />
-                  <span>Quiz: {session.quiz_grading_type === 'ai' ? 'AI-rättning' : 'Manuell'}</span>
+                  <FileText className="w-4 h-4 text-amber-400" />
+                  <span>Quiz: {session.quiz_grading_type === 'ai' ? 'AI grading' : 'Manual'}</span>
                 </div>
               )}
             </div>
@@ -438,22 +438,22 @@ export default function SessionDetailPage() {
               <button
                 onClick={copyJoinSessionLink}
                 className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl transition-colors border border-white/10"
-                title="Kopiera länk för Google Classroom"
+                title="Copy link for Google Classroom"
               >
                 <LinkIcon className="w-4 h-4" />
-                <span className="text-sm font-medium">Kopiera länk</span>
+                <span className="text-sm font-medium">Copy link</span>
               </button>
             </div>
             <div className="flex items-center gap-3 mt-2">
               {copied && (
-                <p className="text-xs text-emerald-400">Kopierat!</p>
+                <p className="text-xs text-amber-400">Copied!</p>
               )}
               {linkCopied && (
-                <p className="text-xs text-emerald-400">Länk kopierad!</p>
+                <p className="text-xs text-amber-400">Link copied!</p>
               )}
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Dela länken i Google Classroom
+              Share link in Google Classroom
             </p>
           </div>
         </div>
@@ -479,7 +479,7 @@ export default function SessionDetailPage() {
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
           <h2 className="text-xl font-bold text-white">
-            Deltagare ({participants.length})
+            Participants ({participants.length})
           </h2>
           {participants.length > 0 && (
             <div className="flex items-center gap-3">
@@ -505,7 +505,7 @@ export default function SessionDetailPage() {
                   }`}
                 >
                   <Grid3x3 className="w-4 h-4" />
-                  Rutnät
+                  Grid
                 </button>
               </div>
               {/* Sort Dropdown */}
@@ -516,10 +516,10 @@ export default function SessionDetailPage() {
                   onChange={(e) => setSortBy(e.target.value as 'progress' | 'blocks' | 'quiz' | 'name')}
                   className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500/50 appearance-none cursor-pointer"
                 >
-                  <option value="name" className="bg-[#1a1a2e]">Sortera på namn</option>
-                  <option value="progress" className="bg-[#1a1a2e]">Sortera på framsteg</option>
-                  <option value="blocks" className="bg-[#1a1a2e]">Sortera på färgblock</option>
-                  {session.quiz_enabled && <option value="quiz" className="bg-[#1a1a2e]">Sortera på quizresultat</option>}
+                  <option value="name" className="bg-[#1a1a2e]">Sort by name</option>
+                  <option value="progress" className="bg-[#1a1a2e]">Sort by progress</option>
+                  <option value="blocks" className="bg-[#1a1a2e]">Sort by blocks</option>
+                  {session.quiz_enabled && <option value="quiz" className="bg-[#1a1a2e]">Sort by quiz result</option>}
                 </select>
               </div>
             </div>
@@ -529,7 +529,7 @@ export default function SessionDetailPage() {
         {participants.length === 0 ? (
           <div className="bg-white/5 rounded-2xl border border-white/10 p-12 text-center">
             <Users className="w-12 h-12 mx-auto mb-4 text-gray-500" />
-            <p className="text-gray-400">Inga deltagare ännu. Dela sessionskoden med elever.</p>
+            <p className="text-gray-400">No participants yet. Share the session code with students.</p>
           </div>
         ) : viewMode === 'list' ? (
           /* List View */
@@ -553,7 +553,7 @@ export default function SessionDetailPage() {
                     onClick={() => handleSort('blocks')}
                     className="flex items-center gap-2 text-sm font-semibold text-gray-400 hover:text-white transition-colors"
                   >
-                    Färgblock
+                    Blocks
                     {sortBy === 'blocks' && (
                       sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
                     )}
@@ -565,7 +565,7 @@ export default function SessionDetailPage() {
                       onClick={() => handleSort('quiz')}
                       className="flex items-center gap-2 text-sm font-semibold text-gray-400 hover:text-white transition-colors"
                     >
-                      Quizpoäng
+                      Quiz Score
                       {sortBy === 'quiz' && (
                         sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
                       )}
@@ -611,7 +611,7 @@ export default function SessionDetailPage() {
                               {participant.student_name}
                             </div>
                             <div className="text-xs text-gray-500">
-                              Gick med {new Date(participant.joined_at).toLocaleDateString('sv-SE', { month: 'short', day: 'numeric' })}
+                              Joined {new Date(participant.joined_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                             </div>
                           </div>
                         </div>
@@ -621,7 +621,7 @@ export default function SessionDetailPage() {
                       <div className="col-span-3">
                         {participant.blocksCount !== undefined && participant.blocksCount > 0 ? (
                           <div className="flex items-center gap-2">
-                            <Palette className="w-4 h-4 text-violet-400" />
+                            <Palette className="w-4 h-4 text-amber-400" />
                             <span className="text-sm text-gray-300 font-medium">
                               {participant.blocksCount} {participant.blocksCount === 1 ? 'block' : 'block'}
                             </span>
@@ -644,7 +644,7 @@ export default function SessionDetailPage() {
                                   onClick={() => router.push(`/teacher/sessions/${sessionId}/quiz/${participant.id}`)}
                                   className="text-xs px-2 py-1 bg-amber-500/20 text-amber-400 rounded-lg hover:bg-amber-500/30 transition-colors"
                                 >
-                                  {participant.quizGraded ? 'Visa' : 'Rätta'}
+                                  {participant.quizGraded ? 'View' : 'Grade'}
                                 </button>
                               )}
                             </div>
@@ -665,7 +665,7 @@ export default function SessionDetailPage() {
                             <div
                               className={`h-2 rounded-full transition-all duration-500 ${
                                 progressPercentage === 100
-                                  ? 'bg-gradient-to-r from-emerald-500 to-green-500'
+                                  ? 'bg-gradient-to-r from-amber-500 to-orange-500'
                                   : progressPercentage >= 67
                                   ? 'bg-gradient-to-r from-amber-500 to-orange-500'
                                   : progressPercentage >= 34
@@ -702,7 +702,7 @@ export default function SessionDetailPage() {
                       </h3>
                       <div className="flex items-center gap-2 flex-wrap justify-end">
                         {participant.blocksCount !== undefined && participant.blocksCount > 0 && (
-                          <span className="text-xs px-2 py-0.5 bg-violet-500/20 text-violet-400 rounded-lg font-medium">
+                          <span className="text-xs px-2 py-0.5 bg-violet-500/20 text-amber-400 rounded-lg font-medium">
                             {participant.blocksCount} block
                           </span>
                         )}
@@ -714,7 +714,7 @@ export default function SessionDetailPage() {
                       </div>
                     </div>
                     <p className="text-xs text-gray-500">
-                      Gick med: {new Date(participant.joined_at).toLocaleDateString('sv-SE')}
+                      Joined: {new Date(participant.joined_at).toLocaleDateString('en-US')}
                     </p>
                   </div>
 
@@ -735,7 +735,7 @@ export default function SessionDetailPage() {
                         className="w-full px-4 py-2 bg-white/5 text-gray-500 rounded-xl cursor-default text-sm font-medium flex items-center justify-center gap-2 border border-white/10"
                       >
                         <FileText className="w-4 h-4" />
-                        Quiz rättat
+                        Quiz graded
                       </button>
                     ) : (
                       <button
@@ -746,7 +746,7 @@ export default function SessionDetailPage() {
                         className="w-full px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl transition-all text-sm font-medium flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
                       >
                         <FileText className="w-4 h-4" />
-                        Rätta quiz
+                        Grade quiz
                       </button>
                     )
                   )}

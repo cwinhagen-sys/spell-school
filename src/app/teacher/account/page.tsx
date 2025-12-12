@@ -44,8 +44,8 @@ function UpgradeButton({ currentTier, targetTier, onUpgrade, isDowngrade = false
     return (
       <div className="p-4 bg-amber-500/20 border border-amber-500/50 rounded-xl">
         <p className="text-sm text-amber-300">
-          <strong>Nedgradering inte tillåten:</strong> Du kan inte nedgradera till en lägre plan direkt. 
-          Kontakta support om du vill avsluta din prenumeration eller ändra din plan.
+          <strong>Downgrade not allowed:</strong> You cannot downgrade to a lower plan directly. 
+          Contact support if you want to cancel your subscription or change your plan.
         </p>
       </div>
     )
@@ -102,7 +102,7 @@ function UpgradeButton({ currentTier, targetTier, onUpgrade, isDowngrade = false
       } else {
         console.warn('⚠️ Response missing success flag:', data)
         const action = isDowngrade || isActuallyDowngrade ? 'nedgraderingen' : 'uppgraderingen'
-        setError(`${action.charAt(0).toUpperCase() + action.slice(1)} slutfördes men kunde inte bekräftas. Vänligen uppdatera sidan.`)
+        setError(`${action.charAt(0).toUpperCase() + action.slice(1)} completed but could not be confirmed. Please refresh the page.`)
         setLoading(false)
       }
     } catch (err: any) {
@@ -121,19 +121,19 @@ function UpgradeButton({ currentTier, targetTier, onUpgrade, isDowngrade = false
           disabled={loading}
           className={`w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl font-semibold transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base ${
             isActuallyDowngrade || isDowngrade
-              ? 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white hover:from-blue-600 hover:to-cyan-700 shadow-blue-500/20'
+              ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700 shadow-amber-500/20'
               : 'bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700 shadow-amber-500/20'
           }`}
         >
           {isActuallyDowngrade || isDowngrade ? (
             <>
               <ArrowRight className="w-5 h-5 rotate-180" />
-              Nedgradera till {getTierDisplayName(targetTier)}
+              Downgrade to {getTierDisplayName(targetTier)}
             </>
           ) : (
             <>
               <Crown className="w-5 h-5" />
-              Uppgradera till {getTierDisplayName(targetTier)}
+              Upgrade to {getTierDisplayName(targetTier)}
               <ArrowRight className="w-4 h-4" />
             </>
           )}
@@ -149,25 +149,25 @@ function UpgradeButton({ currentTier, targetTier, onUpgrade, isDowngrade = false
       {/* Confirmation Dialog */}
       {showConfirmDialog && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#12122a] rounded-2xl border border-white/10 p-6 max-w-md w-full shadow-2xl">
+          <div className="bg-[#161622] rounded-2xl border border-white/[0.12] p-6 max-w-md w-full">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center">
                 <AlertCircle className="w-6 h-6 text-amber-400" />
               </div>
               <h3 className="text-xl font-bold text-white">
-                {isActuallyDowngrade || isDowngrade ? 'Bekräfta nedgradering' : 'Bekräfta uppgradering'}
+                {isActuallyDowngrade || isDowngrade ? 'Confirm downgrade' : 'Confirm upgrade'}
               </h3>
             </div>
 
             <div className="space-y-4 mb-6">
-              <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+              <div className="p-4 bg-white/5 rounded-xl border border-white/[0.12]">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-gray-400">Nuvarande plan:</span>
                   <span className="text-white font-semibold">{getTierDisplayName(currentTier)}</span>
                 </div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-gray-400">Pris:</span>
-                  <span className="text-white">{currentPriceMonthly} SEK/månad</span>
+                  <span className="text-white">{currentPriceMonthly} SEK/month</span>
                 </div>
               </div>
 
@@ -182,7 +182,7 @@ function UpgradeButton({ currentTier, targetTier, onUpgrade, isDowngrade = false
                 </div>
                 
                 {/* Billing Period Toggle */}
-                <div className="mb-3 p-3 bg-white/5 rounded-lg border border-white/10">
+                <div className="mb-3 p-3 bg-white/5 rounded-lg border border-white/[0.12]">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-300">Faktureringsperiod:</span>
                   </div>
@@ -196,7 +196,7 @@ function UpgradeButton({ currentTier, targetTier, onUpgrade, isDowngrade = false
                           : 'bg-white/5 text-gray-400 hover:bg-white/10'
                       }`}
                     >
-                      Månadsvis
+                      Monthly
                     </button>
                     <button
                       type="button"
@@ -207,7 +207,7 @@ function UpgradeButton({ currentTier, targetTier, onUpgrade, isDowngrade = false
                           : 'bg-white/5 text-gray-400 hover:bg-white/10'
                       }`}
                     >
-                      Årsvis
+                      Yearly
                     </button>
                   </div>
                 </div>
@@ -216,11 +216,11 @@ function UpgradeButton({ currentTier, targetTier, onUpgrade, isDowngrade = false
                   <span className="text-gray-300">Pris:</span>
                   <div className="text-right">
                     <span className="text-amber-400 font-bold">
-                      {yearly ? `${targetPrice} SEK/år` : `${targetPrice} SEK/månad`}
+                      {yearly ? `${targetPrice} SEK/year` : `${targetPrice} SEK/month`}
                     </span>
                     {yearly && (
                       <div className="text-xs text-gray-400 mt-1">
-                        ({Math.round(targetPrice / 12)} SEK/månad)
+                        ({Math.round(targetPrice / 12)} SEK/month)
                       </div>
                     )}
                   </div>
@@ -229,22 +229,22 @@ function UpgradeButton({ currentTier, targetTier, onUpgrade, isDowngrade = false
                   <div className="pt-3 border-t border-amber-500/20">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-400">
-                        {priceDifference > 0 ? 'Extra kostnad:' : 'Kredit/återbetalning:'}
+                        {priceDifference > 0 ? 'Extra cost:' : 'Credit/refund:'}
                       </span>
-                      <span className={`text-sm font-semibold ${priceDifference > 0 ? 'text-amber-300' : 'text-emerald-300'}`}>
-                        {priceDifference > 0 ? '+' : ''}{priceDifference} SEK/{yearly ? 'år' : 'månad'}
+                      <span className={`text-sm font-semibold ${priceDifference > 0 ? 'text-amber-300' : 'text-gray-300'}`}>
+                        {priceDifference > 0 ? '+' : ''}{priceDifference} SEK/{yearly ? 'year' : 'month'}
                       </span>
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                <p className="text-sm text-blue-300">
-                  <strong>Prorata-betalning:</strong> Stripe beräknar automatiskt beloppet baserat på återstående tid i din faktureringsperiod. 
+              <div className="p-3 bg-white/5 rounded-lg border border-white/[0.12]">
+                <p className="text-sm text-gray-300">
+                  <strong>Pro-rata payment:</strong> Stripe automatically calculates the amount based on the remaining time in your billing period. 
                   {priceDifference > 0 
-                    ? ' Du debiteras omedelbart för skillnaden.'
-                    : ' Du får kredit för återstående tid som används mot nästa faktura.'
+                    ? ' You will be charged immediately for the difference.'
+                    : ' You will receive credit for remaining time applied to your next invoice.'
                   }
                 </p>
               </div>
@@ -256,7 +256,7 @@ function UpgradeButton({ currentTier, targetTier, onUpgrade, isDowngrade = false
                 disabled={loading}
                 className="flex-1 px-4 py-2.5 sm:px-6 sm:py-3 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl font-medium transition-colors disabled:opacity-50 text-sm sm:text-base"
               >
-                Avbryt
+                Cancel
               </button>
               <button
                 onClick={async () => {
@@ -269,11 +269,11 @@ function UpgradeButton({ currentTier, targetTier, onUpgrade, isDowngrade = false
                 {loading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Uppgraderar...
+                    Upgrading...
                   </>
                 ) : (
                   <>
-                    {isActuallyDowngrade || isDowngrade ? 'Bekräfta nedgradering' : 'Bekräfta uppgradering'}
+                    {isActuallyDowngrade || isDowngrade ? 'Confirm downgrade' : 'Confirm upgrade'}
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -494,7 +494,7 @@ function TeacherAccountPageContent() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="w-12 h-12 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Laddar kontoinformation...</p>
+          <p className="text-gray-400">Loading account information...</p>
         </div>
       </div>
     )
@@ -504,16 +504,16 @@ function TeacherAccountPageContent() {
     <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Success Message */}
       {showSuccessMessage && (
-        <div className="mb-6 p-4 bg-emerald-500/20 border border-emerald-500/50 rounded-xl flex items-center gap-3 animate-in slide-in-from-top">
-          <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
-            <Check className="w-6 h-6 text-white" />
+        <div className="mb-6 p-4 bg-white/5 border border-white/[0.12] rounded-xl flex items-center gap-3 animate-in slide-in-from-top">
+          <div className="w-10 h-10 bg-white/5 border border-white/[0.12] rounded-full flex items-center justify-center flex-shrink-0">
+            <Check className="w-6 h-6 text-gray-400" />
           </div>
           <div className="flex-1">
-            <p className="text-emerald-400 font-semibold">Betalning genomförd!</p>
-            <p className="text-emerald-300/80 text-sm">
+            <p className="text-white font-semibold">Payment completed!</p>
+            <p className="text-gray-300 text-sm">
               {subscriptionTier === 'free' 
-                ? 'Väntar på att systemet bearbetar betalningen... (detta kan ta några sekunder)'
-                : `Din prenumeration är nu aktiv! Du har ${getTierDisplayName(subscriptionTier)}-planen.`}
+                ? 'Waiting for the system to process payment... (this may take a few seconds)'
+                : `Your subscription is now active! You have the ${getTierDisplayName(subscriptionTier)} plan.`}
             </p>
             {subscriptionTier === 'free' && (
               <button
@@ -528,15 +528,15 @@ function TeacherAccountPageContent() {
                     }
                   }
                 }}
-                className="mt-2 text-sm text-emerald-300 hover:text-emerald-200 underline"
+                className="mt-2 text-sm text-amber-400 hover:text-amber-300 underline"
               >
-                Uppdatera nu
+                Update now
               </button>
             )}
           </div>
           <button
             onClick={() => setShowSuccessMessage(false)}
-            className="text-emerald-400 hover:text-emerald-300"
+            className="text-gray-400 hover:text-gray-300"
           >
             <X className="w-5 h-5" />
           </button>
@@ -546,63 +546,63 @@ function TeacherAccountPageContent() {
       {/* Page Header */}
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-2">
-          <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/20">
-            <User className="w-6 h-6 text-white" />
+          <div className="w-12 h-12 bg-[#161622] border border-white/[0.12] rounded-xl flex items-center justify-center">
+            <User className="w-6 h-6 text-amber-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Mitt konto</h1>
+            <h1 className="text-2xl font-bold text-white">My Account</h1>
             <p className="text-gray-400">{user?.email}</p>
           </div>
         </div>
       </div>
 
       {/* Current Plan Card */}
-      <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-white/10 p-8 mb-8 shadow-xl">
+      <div className="bg-[#161622] rounded-2xl border border-white/[0.12] p-8 mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-bold text-white mb-2">Aktuell plan</h2>
-            <p className="text-gray-400">Din nuvarande prenumerationsplan</p>
+            <h2 className="text-xl font-bold text-white mb-2">Current plan</h2>
+            <p className="text-gray-400">Your current subscription plan</p>
           </div>
-          <div className={`w-16 h-16 bg-gradient-to-br ${getTierColor(subscriptionTier)} rounded-2xl flex items-center justify-center shadow-lg ${getTierGlow(subscriptionTier)}`}>
-            <TierIcon className="w-8 h-8 text-white" />
+          <div className="w-16 h-16 bg-[#161622] border border-white/[0.12] rounded-2xl flex items-center justify-center">
+            <TierIcon className={`w-8 h-8 ${subscriptionTier === 'free' ? 'text-gray-400' : subscriptionTier === 'premium' ? 'text-cyan-400' : 'text-amber-400'}`} />
           </div>
         </div>
 
         <div className="flex items-center gap-4 mb-6">
-          <div className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r ${getTierColor(subscriptionTier)} text-white font-bold text-lg shadow-lg ${getTierGlow(subscriptionTier)}`}>
-            <TierIcon className="w-5 h-5" />
+          <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 border border-white/[0.12] text-white font-bold text-lg">
+            <TierIcon className={`w-5 h-5 ${subscriptionTier === 'free' ? 'text-gray-400' : subscriptionTier === 'premium' ? 'text-cyan-400' : 'text-amber-400'}`} />
             {getTierDisplayName(subscriptionTier)}
           </div>
           {subscriptionTier !== 'free' && (
             <div className="text-gray-400">
               {subscriptionInfo?.price?.amount 
-                ? `${subscriptionInfo.price.amount} SEK/${subscriptionInfo.billingPeriod === 'yearly' ? 'år' : 'månad'}`
-                : `${getTierPrice(subscriptionTier, false)} SEK/månad`}
+                ? `${subscriptionInfo.price.amount} SEK/${subscriptionInfo.billingPeriod === 'yearly' ? 'year' : 'month'}`
+                : `${getTierPrice(subscriptionTier, false)} SEK/month`}
             </div>
           )}
         </div>
 
         {/* Test Pilot Information */}
         {testPilotInfo?.isTestPilot && (
-          <div className="mb-6 p-4 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-xl border border-violet-500/30">
-            <h3 className="text-sm font-semibold text-violet-300 mb-3 flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
+          <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/[0.12]">
+            <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-400" />
               Testpilot-period
             </h3>
             <div className="space-y-3">
-              <p className="text-sm text-violet-200">
-                Du har Pro-planen som testpilot i 1 månad. Denna period går automatiskt över till Free-planen när den är slut.
+              <p className="text-sm text-gray-300">
+                You have the Pro plan as a test pilot for 1 month. This period will automatically convert to the Free plan when it ends.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {testPilotInfo.usedAt && (
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-violet-500/20 rounded-lg flex items-center justify-center">
-                      <Calendar className="w-4 h-4 text-violet-400" />
+                    <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center border border-white/[0.12]">
+                      <Calendar className="w-4 h-4 text-cyan-400" />
                     </div>
                     <div>
                       <p className="text-xs text-gray-400">Aktiverades</p>
                       <p className="text-sm font-medium text-white">
-                        {testPilotInfo.usedAt.toLocaleDateString('sv-SE', { 
+                        {testPilotInfo.usedAt.toLocaleDateString('en-US', { 
                           year: 'numeric', 
                           month: 'long', 
                           day: 'numeric' 
@@ -613,13 +613,13 @@ function TeacherAccountPageContent() {
                 )}
                 {testPilotInfo.expiresAt && (
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                    <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center border border-white/[0.12]">
                       <Clock className="w-4 h-4 text-amber-400" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400">Går ut</p>
+                      <p className="text-xs text-gray-400">Expires</p>
                       <p className="text-sm font-medium text-white">
-                        {testPilotInfo.expiresAt.toLocaleDateString('sv-SE', { 
+                        {testPilotInfo.expiresAt.toLocaleDateString('en-US', { 
                           year: 'numeric', 
                           month: 'long', 
                           day: 'numeric' 
@@ -635,21 +635,21 @@ function TeacherAccountPageContent() {
 
         {/* Subscription Status - only show for paid tiers (not test pilot) */}
         {subscriptionTier !== 'free' && subscriptionInfo && !testPilotInfo?.isTestPilot && (
-          <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/10">
+          <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/[0.12]">
             <h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
-              <CreditCard className="w-4 h-4" />
+              <CreditCard className="w-4 h-4 text-cyan-400" />
               Prenumerationsinformation
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-violet-500/20 rounded-lg flex items-center justify-center">
-                  <Calendar className="w-4 h-4 text-violet-400" />
+                <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center border border-white/[0.12]">
+                  <Calendar className="w-4 h-4 text-cyan-400" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">Nästa fakturering</p>
+                  <p className="text-xs text-gray-400">Next billing</p>
                   <p className="text-sm font-medium text-white">
                     {subscriptionInfo.currentPeriodEnd 
-                      ? new Date(subscriptionInfo.currentPeriodEnd).toLocaleDateString('sv-SE', { 
+                      ? new Date(subscriptionInfo.currentPeriodEnd).toLocaleDateString('en-US', { 
                           year: 'numeric', 
                           month: 'long', 
                           day: 'numeric' 
@@ -659,15 +659,15 @@ function TeacherAccountPageContent() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center">
-                  <Clock className="w-4 h-4 text-cyan-400" />
+                    <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center border border-white/[0.12]">
+                      <Clock className="w-4 h-4 text-emerald-400" />
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">Status</p>
                   <p className="text-sm font-medium text-white capitalize">
                     {subscriptionInfo.status === 'active' ? 'Aktiv' : 
                      subscriptionInfo.status === 'canceled' ? 'Avbruten' :
-                     subscriptionInfo.status === 'past_due' ? 'Förfallen' :
+                     subscriptionInfo.status === 'past_due' ? 'Past due' :
                      subscriptionInfo.status === 'trialing' ? 'Testperiod' :
                      subscriptionInfo.status}
                     {subscriptionInfo.cancelAtPeriodEnd && (
@@ -677,25 +677,25 @@ function TeacherAccountPageContent() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center">
-                  <Calendar className="w-4 h-4 text-emerald-400" />
+                    <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center border border-white/[0.12]">
+                      <Calendar className="w-4 h-4 text-purple-400" />
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">Faktureringsperiod</p>
                   <p className="text-sm font-medium text-white capitalize">
-                    {subscriptionInfo.billingPeriod === 'yearly' ? 'Årsvis' : 'Månadsvis'}
+                    {subscriptionInfo.billingPeriod === 'yearly' ? 'Yearly' : 'Monthly'}
                   </p>
                 </div>
               </div>
               {subscriptionInfo.currentPeriodStart && (
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                    <Calendar className="w-4 h-4 text-purple-400" />
+                  <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center border border-white/[0.12]">
+                    <Calendar className="w-4 h-4 text-amber-400" />
                   </div>
                   <div>
                     <p className="text-xs text-gray-400">Prenumeration startade</p>
                     <p className="text-sm font-medium text-white">
-                      {new Date(subscriptionInfo.currentPeriodStart).toLocaleDateString('sv-SE', { 
+                      {new Date(subscriptionInfo.currentPeriodStart).toLocaleDateString('en-US', { 
                         year: 'numeric', 
                         month: 'long', 
                         day: 'numeric' 
@@ -709,10 +709,10 @@ function TeacherAccountPageContent() {
         )}
 
         {subscriptionTier !== 'free' && subscriptionLoading && (
-          <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/10">
+          <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/[0.12]">
             <div className="flex items-center gap-3 text-gray-400">
               <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm">Laddar prenumerationsinformation...</span>
+              <span className="text-sm">Loading subscription information...</span>
             </div>
           </div>
         )}
@@ -721,10 +721,10 @@ function TeacherAccountPageContent() {
           <div className="space-y-4">
             {/* Tier Selection for logged-in users */}
             <div>
-              <h3 className="text-lg font-semibold text-white mb-4">Välj din plan</h3>
+              <h3 className="text-lg font-semibold text-white mb-4">Choose your plan</h3>
               
               {/* Billing Period Toggle */}
-              <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/10">
+              <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/[0.12]">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm font-medium text-gray-300">Faktureringsperiod:</span>
                 </div>
@@ -734,25 +734,25 @@ function TeacherAccountPageContent() {
                     onClick={() => setBillingPeriod('monthly')}
                     className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
                       billingPeriod === 'monthly'
-                        ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                        ? 'bg-white/5 text-white border border-white/[0.12]'
                         : 'bg-white/5 text-gray-400 hover:bg-white/10'
                     }`}
                   >
-                    Månadsvis
+                    Monthly
                   </button>
                   <button
                     type="button"
                     onClick={() => setBillingPeriod('yearly')}
                     className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
                       billingPeriod === 'yearly'
-                        ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                        ? 'bg-white/5 text-white border border-white/[0.12]'
                         : 'bg-white/5 text-gray-400 hover:bg-white/10'
                     }`}
                   >
-                    Årsvis
+                    Yearly
                     {billingPeriod === 'yearly' && (
                       <span className="ml-2 text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded">
-                        Spara 20%
+                        Save 20%
                       </span>
                     )}
                   </button>
@@ -761,42 +761,42 @@ function TeacherAccountPageContent() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
                 {/* Premium Tier */}
-                <div className="p-6 bg-white/5 rounded-xl border border-white/10 hover:border-cyan-500/50 transition-all flex flex-col">
+                <div className="p-6 bg-white/5 rounded-xl border border-white/[0.12] hover:border-cyan-500/50 transition-all flex flex-col">
                   <div className="flex items-center gap-3 mb-3">
-                    <Zap className="w-6 h-6 text-cyan-400" />
+                    <Zap className="w-6 h-6 text-gray-400" />
                     <h4 className="text-xl font-bold text-white">Premium</h4>
                   </div>
                   <div className="mb-4">
                     {billingPeriod === 'monthly' ? (
                       <>
                         <span className="text-3xl font-bold text-white">79</span>
-                        <span className="text-gray-400 ml-1">SEK/månad</span>
+                        <span className="text-gray-400 ml-1">SEK/month</span>
                       </>
                     ) : (
                       <>
                         <span className="text-3xl font-bold text-white">758</span>
-                        <span className="text-gray-400 ml-1">SEK/år</span>
+                        <span className="text-gray-400 ml-1">SEK/year</span>
                         <div className="text-xs text-gray-500 mt-1">
-                          (63 SEK/månad)
+                          (63 SEK/month)
                         </div>
                       </>
                     )}
                   </div>
                   <ul className="space-y-2 mb-4 text-sm text-gray-300 flex-grow">
                     <li className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-emerald-400" />
-                      3 klasser
+                      <Check className="w-4 h-4 text-gray-400" />
+                      3 classes
                     </li>
                     <li className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-emerald-400" />
-                      30 elever per klass
+                      <Check className="w-4 h-4 text-gray-400" />
+                      30 students per class
                     </li>
                     <li className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-emerald-400" />
-                      20 ordlistor
+                      <Check className="w-4 h-4 text-gray-400" />
+                      20 word lists
                     </li>
                     <li className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-emerald-400" />
+                      <Check className="w-4 h-4 text-gray-400" />
                       Session Mode
                     </li>
                   </ul>
@@ -805,7 +805,7 @@ function TeacherAccountPageContent() {
                       try {
                         const { data: { session } } = await supabase.auth.getSession()
                         if (!session) {
-                          alert('Du måste vara inloggad')
+                          alert('You must be logged in')
                           return
                         }
 
@@ -824,7 +824,7 @@ function TeacherAccountPageContent() {
                         const data = await response.json()
 
                         if (!response.ok) {
-                          throw new Error(data.error || 'Kunde inte skapa checkout session')
+                          throw new Error(data.error || 'Could not create checkout session')
                         }
 
                         if (data.url) {
@@ -835,17 +835,17 @@ function TeacherAccountPageContent() {
                         alert(error.message || 'Ett fel uppstod')
                       }
                     }}
-                    className="w-full px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-700 transition-all shadow-lg shadow-cyan-500/20 mt-auto"
+                    className="w-full px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg font-semibold hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 mt-auto"
                   >
-                    Välj Premium
+                    Choose Premium
                   </button>
                 </div>
 
                 {/* Pro Tier */}
-                <div className="p-6 bg-white/5 rounded-xl border border-white/10 hover:border-amber-500/50 transition-all relative flex flex-col">
+                <div className="p-6 bg-white/5 rounded-xl border border-white/[0.12] hover:border-amber-500/50 transition-all relative flex flex-col">
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-gradient-to-r from-amber-500 to-orange-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                      Populär
+                      <span className="bg-white/5 border border-white/[0.12] text-white px-3 py-1 rounded-full text-xs font-semibold">
+                      Popular
                     </span>
                   </div>
                   <div className="flex items-center gap-3 mb-3">
@@ -856,37 +856,37 @@ function TeacherAccountPageContent() {
                     {billingPeriod === 'monthly' ? (
                       <>
                         <span className="text-3xl font-bold text-white">129</span>
-                        <span className="text-gray-400 ml-1">SEK/månad</span>
+                        <span className="text-gray-400 ml-1">SEK/month</span>
                       </>
                     ) : (
                       <>
                         <span className="text-3xl font-bold text-white">1238</span>
-                        <span className="text-gray-400 ml-1">SEK/år</span>
+                        <span className="text-gray-400 ml-1">SEK/year</span>
                         <div className="text-xs text-gray-500 mt-1">
-                          (103 SEK/månad)
+                          (103 SEK/month)
                         </div>
                       </>
                     )}
                   </div>
                   <ul className="space-y-2 mb-4 text-sm text-gray-300 flex-grow">
                     <li className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-emerald-400" />
-                      Obegränsade klasser
+                      <Check className="w-4 h-4 text-gray-400" />
+                      Unlimited classes
                     </li>
                     <li className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-emerald-400" />
-                      Obegränsade elever
+                      <Check className="w-4 h-4 text-gray-400" />
+                      Unlimited students
                     </li>
                     <li className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-emerald-400" />
-                      Obegränsade ordlistor
+                      <Check className="w-4 h-4 text-gray-400" />
+                      Unlimited word lists
                     </li>
                     <li className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-emerald-400" />
+                      <Check className="w-4 h-4 text-gray-400" />
                       Session Mode
                     </li>
                     <li className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-emerald-400" />
+                      <Check className="w-4 h-4 text-gray-400" />
                       Progress & Quiz-statistik
                     </li>
                   </ul>
@@ -895,7 +895,7 @@ function TeacherAccountPageContent() {
                       try {
                         const { data: { session } } = await supabase.auth.getSession()
                         if (!session) {
-                          alert('Du måste vara inloggad')
+                          alert('You must be logged in')
                           return
                         }
 
@@ -914,7 +914,7 @@ function TeacherAccountPageContent() {
                         const data = await response.json()
 
                         if (!response.ok) {
-                          throw new Error(data.error || 'Kunde inte skapa checkout session')
+                          throw new Error(data.error || 'Could not create checkout session')
                         }
 
                         if (data.url) {
@@ -927,17 +927,17 @@ function TeacherAccountPageContent() {
                     }}
                     className="w-full px-4 py-2.5 sm:px-6 sm:py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg font-semibold hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 mt-auto text-sm sm:text-base"
                   >
-                    Välj Pro
+                    Choose Pro
                   </button>
                 </div>
               </div>
               <p className="text-xs text-gray-400 mt-4 text-center">
-                Du kan också <Link href="/pricing" className="text-violet-400 hover:text-violet-300 underline">jämföra alla planer</Link>
+                You can also <Link href="/pricing" className="text-violet-400 hover:text-violet-300 underline">compare all plans</Link>
               </p>
             </div>
             
             {/* Testpilot Code Input */}
-            <div className="pt-4 border-t border-white/10">
+            <div className="pt-4 border-t border-white/[0.12]">
               <button
                 onClick={() => setShowTestpilotInput(!showTestpilotInput)}
                 className="text-sm text-violet-400 hover:text-violet-300 font-medium transition-colors flex items-center gap-2"
@@ -947,7 +947,7 @@ function TeacherAccountPageContent() {
               </button>
               
               {showTestpilotInput && (
-                <div className="mt-4 p-4 bg-white/5 rounded-xl border border-white/10 space-y-3">
+                <div className="mt-4 p-4 bg-white/5 rounded-xl border border-white/[0.12] space-y-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
                       Ange testpilot-kod
@@ -956,8 +956,8 @@ function TeacherAccountPageContent() {
                       type="text"
                       value={testpilotCode}
                       onChange={(e) => setTestpilotCode(e.target.value.toUpperCase())}
-                      placeholder="Ange din kod här"
-                      className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 outline-none transition-all"
+                      placeholder="Enter your code here"
+                      className="w-full px-4 py-2.5 bg-white/5 border border-white/[0.12] rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 outline-none transition-all"
                       disabled={testpilotLoading}
                     />
                   </div>
@@ -985,7 +985,7 @@ function TeacherAccountPageContent() {
                       try {
                         const { data: { session } } = await supabase.auth.getSession()
                         if (!session) {
-                          throw new Error('Du måste vara inloggad')
+                          throw new Error('You must be logged in')
                         }
                         
                         const response = await fetch('/api/redeem-testpilot-code', {
@@ -1000,7 +1000,7 @@ function TeacherAccountPageContent() {
                         const data = await response.json()
                         
                         if (!response.ok) {
-                          throw new Error(data.error || 'Kunde inte aktivera kod')
+                          throw new Error(data.error || 'Could not activate code')
                         }
                         
                         setTestpilotMessage('✅ Pro-planen har aktiverats!')
@@ -1053,13 +1053,13 @@ function TeacherAccountPageContent() {
 
         {/* Customer Portal Button - for managing subscription (not available for test pilot) */}
         {subscriptionTier !== 'free' && !testPilotInfo?.isTestPilot && (
-          <div className="mt-6 pt-6 border-t border-white/10">
+          <div className="mt-6 pt-6 border-t border-white/[0.12]">
             <button
               onClick={async () => {
                 try {
                   const { data: { session } } = await supabase.auth.getSession()
                   if (!session) {
-                    alert('Du måste vara inloggad för att hantera din prenumeration.')
+                    alert('You must be logged in to manage your subscription.')
                     return
                   }
 
@@ -1083,17 +1083,17 @@ function TeacherAccountPageContent() {
                   }
                 } catch (error: any) {
                   console.error('Error opening customer portal:', error)
-                  alert(error.message || 'Ett fel uppstod vid öppning av kundportalen.')
+                  alert(error.message || 'An error occurred while opening the customer portal.')
                 }
               }}
-              className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl font-medium transition-all hover:border-white/20"
+              className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/[0.12] text-white rounded-xl font-medium transition-all hover:border-white/[0.20]"
             >
               <Settings className="w-5 h-5" />
               Hantera prenumeration
               <ExternalLink className="w-4 h-4" />
             </button>
             <p className="text-xs text-gray-400 mt-2 text-center">
-              Uppdatera betalningsmetod, se fakturor, avsluta prenumeration och mer
+              Update payment method, view invoices, cancel subscription and more
             </p>
           </div>
         )}
@@ -1102,12 +1102,12 @@ function TeacherAccountPageContent() {
 
       {/* Usage Stats */}
       <div className="grid md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-white/10 p-6 shadow-xl">
+        <div className="bg-[#161622] rounded-2xl border border-white/[0.12] p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center">
-              <Users className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 bg-white/5 border border-white/[0.12] rounded-xl flex items-center justify-center">
+              <Users className="w-5 h-5 text-cyan-400" />
             </div>
-            <h3 className="text-lg font-semibold text-white">Klasser</h3>
+            <h3 className="text-lg font-semibold text-white">Classes</h3>
           </div>
           <div className="flex items-baseline gap-2 mb-2">
             <span className="text-4xl font-bold text-white">{classCount}</span>
@@ -1125,17 +1125,17 @@ function TeacherAccountPageContent() {
           )}
           {limits.maxClasses !== null && classCount >= limits.maxClasses && (
             <p className="text-sm text-amber-400 font-medium mt-3">
-              Maxgräns nådd för {getTierDisplayName(subscriptionTier)}-planen
+              Limit reached for {getTierDisplayName(subscriptionTier)} plan
             </p>
           )}
         </div>
 
-        <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-white/10 p-6 shadow-xl">
+        <div className="bg-[#161622] rounded-2xl border border-white/[0.12] p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
-              <User className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 bg-white/5 border border-white/[0.12] rounded-xl flex items-center justify-center">
+              <User className="w-5 h-5 text-emerald-400" />
             </div>
-            <h3 className="text-lg font-semibold text-white">Elever</h3>
+            <h3 className="text-lg font-semibold text-white">Students</h3>
           </div>
           <div className="flex items-baseline gap-2 mb-2">
             <span className="text-4xl font-bold text-white">{totalStudents}</span>
@@ -1143,7 +1143,7 @@ function TeacherAccountPageContent() {
               {subscriptionTier === 'free' 
                 ? ` / ${limits.maxTotalStudents}`
                 : subscriptionTier === 'premium'
-                ? ` / ${limits.maxStudentsPerClass} per klass`
+                ? ` / ${limits.maxStudentsPerClass} per class`
                 : ' / ∞'}
             </span>
           </div>
@@ -1157,17 +1157,17 @@ function TeacherAccountPageContent() {
           )}
           {subscriptionTier === 'free' && limits.maxTotalStudents !== null && totalStudents >= limits.maxTotalStudents && (
             <p className="text-sm text-amber-400 font-medium mt-3">
-              Maxgräns nådd för Free-planen
+              Limit reached for Free plan
             </p>
           )}
         </div>
 
-        <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-white/10 p-6 shadow-xl">
+        <div className="bg-[#161622] rounded-2xl border border-white/[0.12] p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
-              <BookOpen className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 bg-white/5 border border-white/[0.12] rounded-xl flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-purple-400" />
             </div>
-            <h3 className="text-lg font-semibold text-white">Ordlistor</h3>
+            <h3 className="text-lg font-semibold text-white">Word lists</h3>
           </div>
           <div className="flex items-baseline gap-2 mb-2">
             <span className="text-4xl font-bold text-white">{wordSetCount}</span>
@@ -1185,23 +1185,23 @@ function TeacherAccountPageContent() {
           )}
           {limits.maxWordSets !== null && wordSetCount >= limits.maxWordSets && (
             <p className="text-sm text-amber-400 font-medium mt-3">
-              Maxgräns nådd för {getTierDisplayName(subscriptionTier)}-planen
+              Limit reached for {getTierDisplayName(subscriptionTier)} plan
             </p>
           )}
         </div>
       </div>
 
       {/* Features Card */}
-      <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-white/10 p-8 shadow-xl">
+      <div className="bg-[#161622] rounded-2xl border border-white/[0.12] p-8">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 bg-white/5 border border-white/[0.12] rounded-xl flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-amber-400" />
           </div>
-          <h2 className="text-xl font-bold text-white">Funktioner i din plan</h2>
+          <h2 className="text-xl font-bold text-white">Features in your plan</h2>
         </div>
         
         <div className="space-y-3">
-          <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5">
+          <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/[0.12]">
             <div className="flex items-center gap-3">
               <Gamepad2 className="w-5 h-5 text-cyan-400" />
               <span className="font-medium text-white">Session Mode</span>
@@ -1214,12 +1214,12 @@ function TeacherAccountPageContent() {
             ) : (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
                 <X className="w-4 h-4 text-gray-500" />
-                <span className="text-sm text-gray-500 font-medium">Ej tillgänglig</span>
+                <span className="text-sm text-gray-500 font-medium">Not available</span>
               </div>
             )}
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5">
+          <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/[0.12]">
             <div className="flex items-center gap-3">
               <TrendingUp className="w-5 h-5 text-purple-400" />
               <span className="font-medium text-white">Progress-statistik</span>
@@ -1232,12 +1232,12 @@ function TeacherAccountPageContent() {
             ) : (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
                 <X className="w-4 h-4 text-gray-500" />
-                <span className="text-sm text-gray-500 font-medium">Ej tillgänglig</span>
+                <span className="text-sm text-gray-500 font-medium">Not available</span>
               </div>
             )}
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5">
+          <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/[0.12]">
             <div className="flex items-center gap-3">
               <BookOpen className="w-5 h-5 text-amber-400" />
               <span className="font-medium text-white">Quiz-statistik</span>
@@ -1250,19 +1250,19 @@ function TeacherAccountPageContent() {
             ) : (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
                 <X className="w-4 h-4 text-gray-500" />
-                <span className="text-sm text-gray-500 font-medium">Ej tillgänglig</span>
+                <span className="text-sm text-gray-500 font-medium">Not available</span>
               </div>
             )}
           </div>
         </div>
 
         {subscriptionTier === 'free' && (
-          <div className="mt-8 pt-6 border-t border-white/10">
+          <div className="mt-8 pt-6 border-t border-white/[0.12]">
             <Link
               href="/pricing"
               className="inline-flex items-center gap-2 text-amber-400 hover:text-amber-300 font-semibold transition-colors"
             >
-              Visa alla planer och uppgradera
+              View all plans and upgrade
               <ExternalLink className="w-4 h-4" />
             </Link>
           </div>
@@ -1278,7 +1278,7 @@ export default function TeacherAccountPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="w-12 h-12 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Laddar kontoinformation...</p>
+          <p className="text-gray-400">Loading account information...</p>
         </div>
       </div>
     }>

@@ -65,7 +65,7 @@ export default function WizardProfilePage() {
     return (
       <div className="container mx-auto px-6 py-12 flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-400">Loading profile...</p>
         </div>
       </div>

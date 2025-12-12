@@ -1013,12 +1013,12 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
             <div className={`px-4 py-3 rounded-2xl backdrop-blur border ${currentPlayer === 1 ? 'bg-white/25 text-white border-white/40' : 'bg-black/25 text-white border-white/10'}`}>
               <div className="text-xs opacity-90">{player1Name}</div>
               <div className="text-2xl font-extrabold">{player1Score}</div>
-              <div className="text-[10px] opacity-80">{currentPlayer === 1 ? 'Din tur' : 'Väntar…'}</div>
+              <div className="text-[10px] opacity-80">{currentPlayer === 1 ? 'Your turn' : 'Waiting…'}</div>
             </div>
             <div className={`px-4 py-3 rounded-2xl backdrop-blur border ${currentPlayer === 2 ? 'bg-white/25 text-white border-white/40' : 'bg-black/25 text-white border-white/10'}`}>
               <div className="text-xs opacity-90">{player2Name}</div>
               <div className="text-2xl font-extrabold">{player2Score}</div>
-              <div className="text-[10px] opacity-80">{currentPlayer === 2 ? 'Din tur' : 'Väntar…'}</div>
+              <div className="text-[10px] opacity-80">{currentPlayer === 2 ? 'Your turn' : 'Waiting…'}</div>
             </div>
           </>
         ) : (
