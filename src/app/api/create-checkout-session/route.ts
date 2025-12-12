@@ -69,9 +69,6 @@ export async function POST(request: NextRequest) {
         tier: tier,
         billingPeriod: yearly ? 'yearly' : 'monthly',
       },
-      payment_intent_data: {
-        statement_descriptor: 'Spell School',
-      },
       subscription_data: {
         metadata: {
           userId: user.id,

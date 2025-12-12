@@ -369,6 +369,137 @@ export async function POST(request: NextRequest) {
       break
     }
 
+    case 'invoice.payment_succeeded': {
+      console.log('💰 Processing invoice.payment_succeeded event')
+      const invoice = event.data.object as any
+      
+      // Only process subscription invoices (not one-time payments)
+      if (!invoice.subscription) {
+        console.log('ℹ️ Not a subscription invoice, skipping')
+        break
+      }
+
+      const customerId = typeof invoice.customer === 'string'
+        ? invoice.customer
+        : invoice.customer?.id
+
+      if (!customerId) {
+        console.error('❌ Missing customer ID in invoice')
+        break
+      }
+
+      // Find user by customer ID
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('id, subscription_tier')
+        .eq('stripe_customer_id', customerId)
+        .single()
+
+      if (!profile) {
+        console.error('❌ Profile not found for customer ID:', customerId)
+        break
+      }
+
+      // Retrieve the subscription to get the correct tier
+      const subscriptionId = typeof invoice.subscription === 'string'
+        ? invoice.subscription
+        : invoice.subscription?.id
+
+      if (!subscriptionId) {
+        console.error('❌ Missing subscription ID in invoice')
+        break
+      }
+
+      try {
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+        
+        // Get tier from subscription metadata or price
+        let tier = subscription.metadata?.tier
+        
+        // If no tier in metadata, try to determine from price
+        if (!tier) {
+          const priceId = subscription.items.data[0]?.price?.id
+          const priceIds: Record<string, { monthly: string; yearly: string }> = {
+            premium: {
+              monthly: process.env.STRIPE_PRICE_PREMIUM_MONTHLY || '',
+              yearly: process.env.STRIPE_PRICE_PREMIUM_YEARLY || '',
+            },
+            pro: {
+              monthly: process.env.STRIPE_PRICE_PRO_MONTHLY || '',
+              yearly: process.env.STRIPE_PRICE_PRO_YEARLY || '',
+            },
+          }
+          
+          for (const [tierName, prices] of Object.entries(priceIds)) {
+            if (priceId === prices.monthly || priceId === prices.yearly) {
+              tier = tierName
+              break
+            }
+          }
+        }
+
+        if (tier && ['premium', 'pro'].includes(tier)) {
+          // Check if user was previously downgraded (e.g., from past_due)
+          if (profile.subscription_tier === 'free') {
+            console.log(`🔄 Restoring user ${profile.id} from free to ${tier} after successful payment`)
+          } else {
+            console.log(`✅ Confirming user ${profile.id} tier ${tier} after successful renewal`)
+          }
+
+          const { error } = await supabaseAdmin
+            .from('profiles')
+            .update({ 
+              subscription_tier: tier,
+              stripe_subscription_id: subscriptionId
+            })
+            .eq('id', profile.id)
+
+          if (error) {
+            console.error('❌ Error updating subscription tier:', error)
+          } else {
+            console.log(`✅ Successfully ensured user ${profile.id} has tier ${tier}`)
+          }
+        }
+      } catch (err: any) {
+        console.error('❌ Error retrieving subscription:', err.message)
+      }
+      break
+    }
+
+    case 'invoice.payment_failed': {
+      console.log('❌ Processing invoice.payment_failed event')
+      const invoice = event.data.object as any
+      
+      if (!invoice.subscription) {
+        console.log('ℹ️ Not a subscription invoice, skipping')
+        break
+      }
+
+      const customerId = typeof invoice.customer === 'string'
+        ? invoice.customer
+        : invoice.customer?.id
+
+      if (!customerId) {
+        console.error('❌ Missing customer ID in invoice')
+        break
+      }
+
+      // Find user by customer ID
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('id, subscription_tier')
+        .eq('stripe_customer_id', customerId)
+        .single()
+
+      if (profile) {
+        console.log(`⚠️ Payment failed for user ${profile.id} (current tier: ${profile.subscription_tier})`)
+        console.log('ℹ️ User will be downgraded when subscription status changes to past_due/unpaid/canceled')
+        // Note: We don't downgrade immediately here - we wait for subscription.updated event
+        // This gives the customer time to update their payment method
+      }
+      break
+    }
+
     default:
       console.log(`Unhandled event type: ${event.type}`)
   }
