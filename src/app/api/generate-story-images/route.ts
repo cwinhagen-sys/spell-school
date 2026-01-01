@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       response_format: 'b64_json'
     })
 
-    const imageData = response.data[0]?.b64_json
+    const imageData = response.data?.[0]?.b64_json
     if (!imageData) {
       throw new Error('No image data returned from DALL-E')
     }
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       imagePath: publicPath,
       storyId,
       segmentId,
-      revisedPrompt: response.data[0]?.revised_prompt
+      revisedPrompt: response.data?.[0]?.revised_prompt
     })
 
   } catch (error: any) {
@@ -135,7 +135,7 @@ export async function PUT(req: NextRequest) {
           response_format: 'b64_json'
         })
 
-        const imageData = response.data[0]?.b64_json
+        const imageData = response.data?.[0]?.b64_json
         if (imageData) {
           const fileName = `${segmentId}.png`
           const filePath = path.join(imagesDir, fileName)
