@@ -670,7 +670,8 @@ function StudentDashboardContent() {
           // Use longer timeout to ensure database has updated (localStorage is already saved above)
           setTimeout(async () => {
             const total = await loadStudentProgress()
-            setPoints(prev => Math.max(prev, total))
+            // Use updatePointsSafely to ensure localStorage is synced
+            updatePointsSafely(total, 'quest-sync-complete')
           }, 1500)
         })
       }
@@ -726,7 +727,8 @@ function StudentDashboardContent() {
     window.setTimeout(() => {
       void (async () => {
         const total = await loadStudentProgress()
-        setPoints(prev => Math.max(prev, total))
+        // Use updatePointsSafely to ensure localStorage is synced
+        updatePointsSafely(total, 'quest-progress-sync')
       })()
     }, 1500)
   }
@@ -1618,8 +1620,9 @@ function StudentDashboardContent() {
       
       // Load permanent progress data
       const total = await loadStudentProgress()
-      // Ensure UI reads the same total immediately
-      setPoints(total)
+      // Ensure UI reads the same total immediately (updatePointsSafely already called in loadStudentProgress)
+      // But call it again here to ensure state is updated
+      updatePointsSafely(total, 'load-student-data')
       
       // Load class information
       await loadClassInfo()
@@ -1814,35 +1817,20 @@ function StudentDashboardContent() {
 
       const dbXP = globalProgress?.total_points || 0
 
-      // Always use database value as source of truth for display
-      // But sync to database if localStorage is higher (to prevent XP loss)
-      const finalXP = dbXP
-      console.log('Debug - Final XP (from database):', finalXP)
+      // CRITICAL FIX: Use the HIGHEST value between localStorage and database to prevent XP loss
+      // This handles cases where XP was added but not yet synced to database
+      const finalXP = Math.max(localXP, dbXP)
+      console.log('Debug - Final XP (max of localStorage and database):', finalXP, { localXP, dbXP })
 
-      // Update localStorage with database value to keep them in sync
+      // Always update localStorage and state with the highest value
       localStorage.setItem(userSpecificKey, finalXP.toString())
       updatePointsSafely(finalXP, 'load-student-progress')
 
-      // If localStorage was higher, sync to database (one-time sync to prevent XP loss)
+      // If localStorage was higher, sync to database in background (to prevent XP loss)
       if (localXP > dbXP && localXP > 0) {
-        console.log('Debug - localStorage XP is higher, syncing to database')
-        syncLocalXPToDatabase(localXP, user.id)
-        // After syncing, reload from database to get the updated value
-        const { data: updatedProgress } = await supabase
-          .from('student_progress')
-          .select('total_points')
-          .eq('student_id', user.id)
-          .is('word_set_id', null)
-          .is('homework_id', null)
-          .limit(1)
-          .maybeSingle()
-        
-        if (updatedProgress?.total_points) {
-          const syncedXP = updatedProgress.total_points
-          localStorage.setItem(userSpecificKey, syncedXP.toString())
-          updatePointsSafely(syncedXP, 'load-student-progress-after-sync')
-          return syncedXP
-        }
+        console.log('Debug - localStorage XP is higher, syncing to database in background')
+        // Sync in background without waiting (non-blocking)
+        void syncLocalXPToDatabase(localXP, user.id)
       }
 
       return finalXP
@@ -1858,12 +1846,12 @@ function StudentDashboardContent() {
           const points = parseInt(localPoints, 10)
           if (!isNaN(points) && points >= 0) {
             console.log('Debug - Fallback to localStorage XP:', points)
-            setPoints(points)
+            updatePointsSafely(points, 'load-student-progress-fallback')
             return points
           }
         }
       }
-      setPoints(0)
+      updatePointsSafely(0, 'load-student-progress-error')
       return 0
     }
   }
@@ -2153,21 +2141,50 @@ function StudentDashboardContent() {
   const syncLocalXPToDatabase = async (localXP: number, userId: string) => {
     try {
       console.log('Background sync: Updating database with local XP:', localXP)
-      // Skip addProgress call since we're directly updating the database
-      // Force update the global record with the local XP total
-      const { error } = await supabase
+      
+      // Get current database value to calculate delta
+      const { data: currentProgress } = await supabase
         .from('student_progress')
-        .upsert({
-          student_id: userId,
-          word_set_id: null,
-          homework_id: null,
-          total_points: localXP,
-          games_played: 0, // Don't overwrite games_played
-          last_played_at: new Date().toISOString(),
-        }, { onConflict: 'student_id,word_set_id,homework_id' })
+        .select('total_points')
+        .eq('student_id', userId)
+        .is('word_set_id', null)
+        .is('homework_id', null)
+        .maybeSingle()
+      
+      const currentDBXP = currentProgress?.total_points || 0
+      const delta = localXP - currentDBXP
+      
+      if (delta <= 0) {
+        console.log('Background sync: No sync needed, database already has correct or higher value')
+        return
+      }
+      
+      // Use increment_student_xp RPC function to add the difference
+      // This is safer than setting absolute value as it handles conflicts correctly
+      const { error } = await supabase.rpc('increment_student_xp', {
+        p_student_id: userId,
+        p_xp_delta: delta,
+        p_game_type: 'local_sync'
+      })
       
       if (error) {
-        console.log('Background sync failed:', error)
+        console.error('Background sync failed:', error)
+        // Fallback to direct update if RPC fails
+        const { error: updateError } = await supabase
+          .from('student_progress')
+          .update({
+            total_points: localXP,
+            last_played_at: new Date().toISOString(),
+          })
+          .eq('student_id', userId)
+          .is('word_set_id', null)
+          .is('homework_id', null)
+        
+        if (updateError) {
+          console.error('Background sync fallback also failed:', updateError)
+        } else {
+          console.log('Background sync: Database updated successfully with local XP (fallback)')
+        }
       } else {
         console.log('Background sync: Database updated successfully with local XP')
       }
