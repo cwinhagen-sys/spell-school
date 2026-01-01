@@ -158,6 +158,13 @@ ${storyGuidance}
   * Avoid generic sentences where multiple words could fit - make each sentence highly specific to its target word with clear contextual clues
   * Each sentence must make it OBVIOUS which word belongs in that gap - there should be no ambiguity or confusion
   * Use specific subjects, verbs, objects, and contexts that naturally guide the reader to the correct word
+  * CRITICAL: Include DETAILED, IDENTIFIABLE CONTEXT in each sentence. For example:
+    - If the word is a sport (e.g., "tennis", "football", "hockey"), include specific equipment, actions, or settings that uniquely identify that sport (e.g., "I hit the ball over the net with a racket" for tennis, "We kick the ball into the goal" for football, "We skate on ice and shoot pucks" for hockey)
+    - If the word is an animal, include distinctive features, habitats, or behaviors (e.g., "The animal has a long trunk and big ears" for elephant)
+    - If the word is a profession, include specific tools, actions, or contexts (e.g., "The person uses a stethoscope to check patients" for doctor)
+    - If the word is a place, include distinctive features, activities, or characteristics (e.g., "You can see lions and giraffes here" for zoo)
+  * Each sentence must contain enough SPECIFIC DETAILS and CONTEXTUAL INFORMATION that a student can logically deduce which word belongs in the gap, even if they don't immediately recognize the word
+  * DO NOT create vague or generic sentences - include concrete, identifiable details that make the answer obvious
 - IMPORTANT: Generate UNIQUE sentences different from previous runs. Vary wording, context, and examples.${isFewWords ? '' : '\n- The last sentence should provide a satisfying conclusion to the story.'}
 
 Output JSON only (no explanations, no reasoning):
@@ -188,16 +195,18 @@ ${wordSet.length > 6 ? `- wordSet[6]="${wordSet[6]}" → solution_text[6] must c
 ${wordSet.length > 7 ? `- wordSet[7]="${wordSet[7]}" → solution_text[7] must contain "${wordSet[7]}", gaps_meta[7].correct="${wordSet[7].toLowerCase()}"` : ''}
 
 CRITICAL: Each word/phrase must be UNIQUE, UNAMBIGUOUS, and OBVIOUSLY correct in its sentence:
-- "${wordSet[0]}" should ONLY fit in sentence 1 - make it grammatically and contextually OBVIOUS that this word belongs here and nowhere else
-${wordSet.length > 1 ? `- "${wordSet[1]}" should ONLY fit in sentence 2 - make it grammatically and contextually OBVIOUS that this word belongs here and nowhere else` : ''}
-${wordSet.length > 2 ? `- "${wordSet[2]}" should ONLY fit in sentence 3 - make it grammatically and contextually OBVIOUS that this word belongs here and nowhere else` : ''}
-${wordSet.length > 3 ? `- "${wordSet[3]}" should ONLY fit in sentence 4 - make it grammatically and contextually OBVIOUS that this word belongs here and nowhere else` : ''}
-${wordSet.length > 4 ? `- "${wordSet[4]}" should ONLY fit in sentence 5 - make it grammatically and contextually OBVIOUS that this word belongs here and nowhere else` : ''}
-${wordSet.length > 5 ? `- "${wordSet[5]}" should ONLY fit in sentence 6 - make it grammatically and contextually OBVIOUS that this word belongs here and nowhere else` : ''}
-${wordSet.length > 6 ? `- "${wordSet[6]}" should ONLY fit in sentence 7 - make it grammatically and contextually OBVIOUS that this word belongs here and nowhere else` : ''}
-${wordSet.length > 7 ? `- "${wordSet[7]}" should ONLY fit in sentence 8 - make it grammatically and contextually OBVIOUS that this word belongs here and nowhere else` : ''}
-- Create distinct, clear contexts so each word is unambiguously tied to ONE specific sentence - use different subjects, verbs, objects, or settings to make it impossible to confuse which word goes where
-- Each sentence must be grammatically correct, clear, and natural-sounding${wordSet.length <= 2 ? '\n- With only ' + wordSet.length + ' word(s), create ' + (wordSet.length === 1 ? 'one complete, meaningful, grammatically perfect sentence' : 'two clearly different, grammatically perfect sentences') + '.' : '\n- The story should have a clear beginning, middle, and satisfying conclusion with perfect grammar throughout'}
+- "${wordSet[0]}" should ONLY fit in sentence 1 - include DETAILED, SPECIFIC CONTEXT that makes this word the ONLY logical choice (e.g., if it's a sport, mention the equipment/actions; if it's an animal, mention distinctive features; if it's a place, mention unique characteristics)
+${wordSet.length > 1 ? `- "${wordSet[1]}" should ONLY fit in sentence 2 - include DETAILED, SPECIFIC CONTEXT that makes this word the ONLY logical choice` : ''}
+${wordSet.length > 2 ? `- "${wordSet[2]}" should ONLY fit in sentence 3 - include DETAILED, SPECIFIC CONTEXT that makes this word the ONLY logical choice` : ''}
+${wordSet.length > 3 ? `- "${wordSet[3]}" should ONLY fit in sentence 4 - include DETAILED, SPECIFIC CONTEXT that makes this word the ONLY logical choice` : ''}
+${wordSet.length > 4 ? `- "${wordSet[4]}" should ONLY fit in sentence 5 - include DETAILED, SPECIFIC CONTEXT that makes this word the ONLY logical choice` : ''}
+${wordSet.length > 5 ? `- "${wordSet[5]}" should ONLY fit in sentence 6 - include DETAILED, SPECIFIC CONTEXT that makes this word the ONLY logical choice` : ''}
+${wordSet.length > 6 ? `- "${wordSet[6]}" should ONLY fit in sentence 7 - include DETAILED, SPECIFIC CONTEXT that makes this word the ONLY logical choice` : ''}
+${wordSet.length > 7 ? `- "${wordSet[7]}" should ONLY fit in sentence 8 - include DETAILED, SPECIFIC CONTEXT that makes this word the ONLY logical choice` : ''}
+- Create distinct, clear contexts with SPECIFIC, IDENTIFIABLE DETAILS so each word is unambiguously tied to ONE specific sentence
+- Each sentence must contain enough CONTEXTUAL INFORMATION (specific actions, objects, features, settings, characteristics) that a student can logically reason which word fits, even without prior knowledge
+- DO NOT use vague or generic descriptions - include concrete details that uniquely identify the target word
+- Each sentence must be grammatically correct, clear, and natural-sounding${wordSet.length <= 2 ? '\n- With only ' + wordSet.length + ' word(s), create ' + (wordSet.length === 1 ? 'one complete, meaningful, grammatically perfect sentence with detailed context' : 'two clearly different, grammatically perfect sentences, each with detailed context') + '.' : '\n- The story should have a clear beginning, middle, and satisfying conclusion with perfect grammar throughout, and each sentence must include detailed context for its target word'}
 
 sig=${signature} difficulty=${difficulty}
 wordSet=${JSON.stringify(wordSet)}

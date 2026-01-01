@@ -926,34 +926,38 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
     })
     const completedStory = completedLines.join(' ')
     
-    // Get scenario name (only if scenario is selected)
-    const scenarioName = selectedScenario ? STORY_SCENARIOS.find(s => s.id === selectedScenario)?.name : undefined
-    
-    // AI evaluation runs in background (doesn't affect score)
-    try {
-      // Call AI evaluation endpoint
-      const evalResponse = await fetch('/api/story-gap/evaluate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          originalStory: gapText,
-          completedStory,
-          correctWords,
-          userWords,
-          scenario: scenarioName
-        })
-      })
+    // AI evaluation runs in background (doesn't affect score) - only in non-session mode
+    if (!sessionMode) {
+      // Get scenario name (only if scenario is selected)
+      const scenarioName = selectedScenario ? STORY_SCENARIOS.find(s => s.id === selectedScenario)?.name : undefined
       
-      if (evalResponse.ok) {
-        const evalData = await evalResponse.json()
-        setEvaluationResult(evalData)
-        // Don't use evalData.total for score - it's AI evaluation score (0-100), not points
-        // Score is already set above based on correct answers
+      try {
+        // Call AI evaluation endpoint
+        const evalResponse = await fetch('/api/story-gap/evaluate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            originalStory: gapText,
+            completedStory,
+            correctWords,
+            userWords,
+            scenario: scenarioName
+          })
+        })
+        
+        if (evalResponse.ok) {
+          const evalData = await evalResponse.json()
+          setEvaluationResult(evalData)
+          // Don't use evalData.total for score - it's AI evaluation score (0-100), not points
+          // Score is already set above based on correct answers
+        }
+      } catch (error) {
+        console.error('Evaluation error:', error)
+        // Score is already set above, so we can ignore evaluation errors
+      } finally {
+        setIsEvaluating(false)
       }
-    } catch (error) {
-      console.error('Evaluation error:', error)
-      // Score is already set above, so we can ignore evaluation errors
-    } finally {
+    } else {
       setIsEvaluating(false)
     }
     
