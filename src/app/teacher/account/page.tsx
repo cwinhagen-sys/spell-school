@@ -723,7 +723,7 @@ function TeacherAccountPageContent() {
                           </p>
                           {checkingResources ? (
                             <p className="text-sm text-red-200/80">Checking resources...</p>
-                          ) : exceedingResources && (exceedingResources.classes.length > TIER_LIMITS.free.maxClasses || exceedingResources.wordSets.length > TIER_LIMITS.free.maxWordSets) ? (
+                          ) : exceedingResources && (exceedingResources.classes.length > (TIER_LIMITS.free.maxClasses ?? 0) || exceedingResources.wordSets.length > (TIER_LIMITS.free.maxWordSets ?? 0)) ? (
                             <>
                               <p className="text-sm text-red-200/80 mb-2">
                                 Your account will be downgraded to the Free plan. You have more classes or word sets than the Free plan allows. Choose what to keep.
