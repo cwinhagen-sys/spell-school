@@ -62,6 +62,14 @@ export default function QuizResultsPage() {
         setCheckingAccess(true)
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { window.location.href = '/'; return }
+        
+        // Check email verification
+        const { isUserEmailVerified } = await import('@/lib/email-verification')
+        if (!isUserEmailVerified(user)) {
+          window.location.href = '/?message=Please verify your email address before accessing teacher features. Check your inbox for the verification link.'
+          return
+        }
+        
         const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
         if (!profile || profile.role !== 'teacher') { window.location.href = '/student'; return }
 

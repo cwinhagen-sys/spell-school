@@ -1,0 +1,132 @@
+# Care for Pet - Audio Text Segments for ElevenLabs
+
+## Instructions
+Copy each text segment below into ElevenLabs to generate the audio files.
+The filename shows what the audio file should be named.
+
+---
+
+## Segment 1: Intro
+**Filename:** `care_pet1.mp3`
+
+Max is scratching at your bedroom door. You hear his whining and get out of bed. It is Saturday morning, and Mom left early for work. Before she left, she told you: 'Max is all yours today! Make sure he has everything he needs.' Max looks at you with big, hopeful eyes. His tail wags slowly. You know he needs food, water, exercise, and attention. You have helped Mom with Max before, but today you are in charge of everything.
+
+---
+
+## Segment 2: Schedule Segment
+**Filename:** `care_pet2.mp3`
+
+You find a note on the kitchen table. It says: 'Max's schedule: 1) Morning walk (30 minutes), 2) Breakfast (one cup of food), 3) Fresh water, 4) Playtime in the afternoon, 5) Evening walk before dinner.' The note is clear and easy to follow. You feel ready to take good care of Max. You should start with the first item on the list.
+
+---
+
+## Segment 3: Memory Segment
+**Filename:** `care_pet3.mp3`
+
+You try to remember what Mom does every morning. She always takes Max outside first... but you cannot remember if it is before or after breakfast. She gives him food, but how much? One cup or two? You are not sure about the exact times. Max is looking at you, waiting. You wish you had paid more attention. Maybe there is a note somewhere with the exact schedule?
+
+---
+
+## Segment 4: Feeding Rush
+**Filename:** `care_pet4.mp3`
+
+You rush to the kitchen and pour food into Max's bowl. You give him a lot because he looks very hungry. But wait - the schedule said 'one cup of food' for breakfast, and you did not measure. Max eats quickly, but then he starts whining. He keeps looking at the door. You realize he needs to go outside, but you fed him too much too fast. Max looks uncomfortable. Maybe you should have started with the walk first, like the schedule said.
+
+---
+
+## Segment 5: Morning Walk
+**Filename:** `care_pet5.mp3`
+
+You put Max's leash on and take him outside. The morning air is fresh. Max is excited and pulls a little, but you hold the leash firmly. You walk around the neighborhood. You remember the schedule said 30 minutes, so you keep walking until you check your watch - exactly 30 minutes! Max sniffs trees and meets a friendly neighbor dog. When you get home, Max looks happy and relaxed. According to the schedule, breakfast is next.
+
+---
+
+## Segment 6: Breakfast Careful
+**Filename:** `care_pet6.mp3`
+
+You measure one cup of dog food, just like the schedule says. You pour it into Max's clean bowl. You also fill his water bowl with fresh, clean water. Max eats slowly and drinks water. He looks satisfied. You remember the schedule said 'Fresh water' as number 3, and you just did that. You also remember to check his water bowl during the day. It is still morning, so you have time to do the other things on the schedule later.
+
+---
+
+## Segment 7: Afternoon Care (No Breakfast)
+**Filename:** `care_pet7.mp3`
+
+In the afternoon, you remember to check on Max. You try to play fetch with him in the backyard. But Max seems slower than usual. He does not run as fast. When you throw the ball, he walks to get it instead of running. You notice his food bowl is still empty from this morning. Max has not eaten all day! He looks tired and weak. You realize you forgot to give him breakfast. You need to fix this right away.
+
+---
+
+## Segment 7 (Alternative): Afternoon Care
+**Filename:** `care_pet7.mp3` (same file, different path)
+
+In the afternoon, you remember to check on Max. The schedule said 'Playtime in the afternoon' as number 4. You play fetch with him in the backyard. He runs and brings the ball back to you. You throw it again and again. Max is having so much fun! After playing, you check his water bowl and refill it. Max looks happy and healthy. The sun is starting to go down. It is almost time for the evening walk.
+
+---
+
+## Segment 8: Forgot Care
+**Filename:** `care_pet8.mp3`
+
+You get busy playing video games and forget about Max. Hours pass. When you finally remember, you go to check on him. Max is sitting by the door, looking sad. His water bowl is empty. He has not eaten since last night. You feel terrible. It is already late afternoon. You quickly give him food and water, but you know you did not take good care of him today. There is still time to do something, but not much.
+
+---
+
+## Ending 1: Excellent Care (3 Stars)
+**Filename:** `care_pet9.mp3`
+
+You take Max for his evening walk. The sun is setting. Max walks calmly beside you. When you get home, Mom arrives from work. She sees Max looking happy and healthy. She checks his food and water bowls - both are full. 'You did such a great job!' Mom says with a big smile. 'Max looks so happy. You followed the schedule perfectly.' You feel proud. Max wags his tail and licks your hand.
+
+---
+
+## Ending 2: Okay Care (2 Stars)
+**Filename:** `care_pet10.mp3`
+
+When Mom comes home, she checks on Max. He looks okay, but not as happy as usual. You fed him and gave him water, but you forgot the evening walk. 'You did your best,' Mom says. 'Max is fine, but next time try to follow the full schedule. He really needs his walks.' You nod. Max comes over and sits by you. You promise yourself to do better next time.
+
+---
+
+## Ending 3: Missing Breakfast (1-2 Stars)
+**Filename:** `care_pet10.mp3` (same file as ending 2, different path)
+
+When Mom comes home, she checks on Max. He looks okay now, but not as energetic as usual. 'Did Max eat breakfast this morning?' Mom asks. You admit you forgot and only fed him in the afternoon. Mom sighs. 'Max needs regular meals. You should have followed the schedule. At least you fed him eventually.' Max comes over and sits by you. You know you need to do better next time.
+
+---
+
+## Ending 4: Missing Food (1 Star)
+**Filename:** `care_pet11.mp3`
+
+When Mom comes home, she immediately notices Max's empty food bowl. 'Did you feed Max today?' she asks. You realize you forgot to give him breakfast. Max looks weak and sad. Mom's face shows disappointment. 'Max needs to eat every day. This is not okay.' She quickly feeds Max herself. You feel terrible. Max looks at you with sad eyes. You promise to never forget his food again.
+
+---
+
+## Ending 5: Poor Care (1 Star)
+**Filename:** `care_pet11.mp3` (same file as ending 4, different path)
+
+Mom comes home and finds Max looking sad. His water bowl is empty. He has not been outside all day. Mom's face looks worried. 'What happened?' she asks. You explain that you forgot or did not follow the schedule. Mom sighs. 'Max depends on us to take care of him. This is important.' You feel bad. Max looks at you with sad eyes. You promise to do better next time.
+
+---
+
+## Summary
+
+**Total unique audio files needed: 8**
+
+1. `care_pet1.mp3` - Intro
+2. `care_pet2.mp3` - Schedule Segment
+3. `care_pet3.mp3` - Memory Segment
+4. `care_pet4.mp3` - Feeding Rush
+5. `care_pet5.mp3` - Morning Walk
+6. `care_pet6.mp3` - Breakfast Careful (also used for Late Breakfast)
+7. `care_pet7.mp3` - Afternoon Care (used for both happy and tired Max versions)
+8. `care_pet8.mp3` - Forgot Care
+9. `care_pet9.mp3` - Ending: Excellent Care (3 stars)
+10. `care_pet10.mp3` - Ending: Okay Care (2 stars) and Missing Breakfast (1-2 stars)
+11. `care_pet11.mp3` - Ending: Missing Food (1 star) and Poor Care (1 star)
+
+**Note:** Some segments share the same audio file because they have the same text or similar enough that the same audio works for both paths.
+
+
+
+
+
+
+
+
+

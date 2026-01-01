@@ -1,0 +1,244 @@
+{
+  "id": "home_breakfast",
+  "scenarioId": "home",
+  "goalId": "breakfast",
+  "title": "Make Breakfast",
+  "description": "Make a special birthday breakfast for Mom",
+  "difficulty": "easy",
+  "difficultyStars": 1,
+  "estimatedMinutes": 5,
+  "introImages": {
+    "boy": "/images/scenarios/home_breakfast/boy/intro.png",
+    "girl": "/images/scenarios/home_breakfast/girl/intro.png"
+  },
+  "xpRewards": {
+    "oneStar": 15,
+    "twoStars": 30,
+    "threeStars": 50
+  },
+  "startSegmentId": "intro",
+  "segments": {
+    "intro": {
+      "id": "intro",
+      "text": "You wake up early on Saturday morning. The sun shines through your window. Today is Mom's birthday! You want to make her a special breakfast. You walk quietly to the kitchen. Dad is still sleeping. The kitchen is clean and quiet. You see eggs in the fridge, bread on the counter, and fresh fruit in a bowl. Mom loves pancakes, but you have never made them alone before.",
+      "audioPath": "/audio/scenarios/home_breakfast/make_breakfast1.mp3",
+      "choices": [
+        {
+          "id": "find_recipe",
+          "text": "Look for a recipe book",
+          "leadsTo": "recipe_segment",
+          "qualityImpact": 1
+        },
+        {
+          "id": "try_memory",
+          "text": "Try to remember how Mom cooks",
+          "leadsTo": "memory_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "wake_dad",
+          "text": "Go wake up Dad for help",
+          "leadsTo": "dad_sleeping",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "recipe_segment": {
+      "id": "recipe_segment",
+      "text": "You find Mom's old recipe book on the shelf. It has a red cover with flowers. You open it carefully. There is a page for 'Easy Pancakes' with pictures! The recipe says you need flour, eggs, milk, and a little sugar. It also shows how much of each thing to use. The steps are numbered and easy to follow. You feel more confident now.",
+      "imagePath": "/images/scenarios/home_breakfast/shared/seg_recipe.png",
+      "audioPath": "/audio/scenarios/home_breakfast/make_breakfast2.mp3",
+      "choices": [
+        {
+          "id": "follow_carefully",
+          "text": "Follow the recipe step by step",
+          "leadsTo": "cooking_careful",
+          "qualityImpact": 1
+        },
+        {
+          "id": "skip_measuring",
+          "text": "Skip measuring, just pour and mix",
+          "leadsTo": "cooking_messy",
+          "qualityImpact": -1
+        },
+        {
+          "id": "make_simple",
+          "text": "Make something simpler instead",
+          "leadsTo": "simple_segment",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "memory_segment": {
+      "id": "memory_segment",
+      "text": "You try to remember watching Mom cook. She always mixed things in a big bowl. But you cannot remember how much flour she used. Was it one cup or three? She added something white... was it milk or water? Your memory is not clear. The kitchen suddenly feels bigger and more confusing.",
+      "imagePath": "/images/scenarios/home_breakfast/shared/seg_memory.png",
+      "audioPath": "/audio/scenarios/home_breakfast/make_breakfast3.mp3",
+      "choices": [
+        {
+          "id": "find_recipe",
+          "text": "Look for a recipe book instead",
+          "leadsTo": "recipe_segment",
+          "qualityImpact": 1
+        },
+        {
+          "id": "try_anyway",
+          "text": "Try cooking from memory anyway",
+          "leadsTo": "cooking_messy",
+          "qualityImpact": -1
+        },
+        {
+          "id": "make_simple",
+          "text": "Make something simple you know",
+          "leadsTo": "simple_segment",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "dad_sleeping": {
+      "id": "dad_sleeping",
+      "text": "You walk quietly to your parents' room. Dad is sleeping deeply. You whisper his name, but he does not wake up. He worked very late last night. You remember he came home after midnight. His face looks tired. Maybe you should let him sleep and try by yourself.",
+      "imagePath": "/images/scenarios/home_breakfast/shared/seg_dad.png",
+      "audioPath": "/audio/scenarios/home_breakfast/make_breakfast4.mp3",
+      "choices": [
+        {
+          "id": "let_sleep",
+          "text": "Let Dad sleep, find a recipe book",
+          "leadsTo": "recipe_segment",
+          "qualityImpact": 1
+        },
+        {
+          "id": "wake_anyway",
+          "text": "Wake him up anyway",
+          "leadsTo": "dad_tired",
+          "qualityImpact": -1
+        },
+        {
+          "id": "make_simple",
+          "text": "Let him sleep, make something simple",
+          "leadsTo": "simple_segment",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "dad_tired": {
+      "id": "dad_tired",
+      "text": "Dad wakes up slowly. He looks very tired. 'What is it?' he asks with a yawn. You tell him about the surprise breakfast. He smiles weakly but then drops a bowl while trying to help. The noise is loud. You hear Mom's voice from the bedroom: 'Is everything okay?' The surprise is ruined before you even started cooking.",
+      "imagePath": "/images/scenarios/home_breakfast/shared/seg_dad_tired.png",
+      "audioPath": "/audio/scenarios/home_breakfast/make_breakfast5.mp3",
+      "isEnding": true,
+      "endingType": "fail",
+      "minStars": 1,
+      "maxStars": 1
+    },
+    "simple_segment": {
+      "id": "simple_segment",
+      "text": "You decide to make something you know well. Toast with jam is easy! You put bread in the toaster and wait. You carefully cut some fruit into small pieces. You pour orange juice into Mom's favorite glass. It is not pancakes, but it is made with love. You arrange everything nicely on a tray.",
+      "imagePath": "/images/scenarios/home_breakfast/shared/seg_simple.png",
+      "audioPath": "/audio/scenarios/home_breakfast/make_breakfast6.mp3",
+      "choices": [
+        {
+          "id": "bring_to_mom",
+          "text": "Bring the tray to Mom's room",
+          "leadsTo": "ending_simple_success",
+          "qualityImpact": 1
+        },
+        {
+          "id": "try_pancakes_too",
+          "text": "Also try to make pancakes",
+          "leadsTo": "cooking_messy",
+          "qualityImpact": -1
+        },
+        {
+          "id": "add_decoration",
+          "text": "Add a flower from the garden",
+          "leadsTo": "ending_simple_success",
+          "qualityImpact": 1
+        }
+      ]
+    },
+    "cooking_careful": {
+      "id": "cooking_careful",
+      "text": "You follow each step in the recipe. First, you measure the flour carefully. Then you add one egg, just like it says. You mix slowly so nothing spills. The batter looks smooth and perfect! You heat the pan on low, just like the recipe shows. A small test pancake turns golden brown. You did it!",
+      "imagePath": "/images/scenarios/home_breakfast/shared/seg_cooking_careful.png",
+      "audioPath": "/audio/scenarios/home_breakfast/make_breakfast7.mp3",
+      "choices": [
+        {
+          "id": "make_more",
+          "text": "Make a beautiful stack of pancakes",
+          "leadsTo": "ending_pancakes_success",
+          "qualityImpact": 1
+        },
+        {
+          "id": "rush_finish",
+          "text": "Hurry up to finish faster",
+          "leadsTo": "ending_simple_success",
+          "qualityImpact": 0
+        },
+        {
+          "id": "get_distracted",
+          "text": "Leave the pan to get decorations",
+          "leadsTo": "ending_mess_fail",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "cooking_messy": {
+      "id": "cooking_messy",
+      "text": "Without measuring, you pour flour into a bowl. A cloud of white powder fills the air! You add eggs, but one falls on the floor. The batter is too thick, so you add more milk. Now it is too thin! When you try to cook it, the pancake sticks to the pan and burns. Smoke rises up. The kitchen is a mess.",
+      "imagePath": "/images/scenarios/home_breakfast/shared/seg_cooking_messy.png",
+      "audioPath": "/audio/scenarios/home_breakfast/make_breakfast8.mp3",
+      "choices": [
+        {
+          "id": "stop_clean",
+          "text": "Stop and clean up the mess",
+          "leadsTo": "simple_segment",
+          "qualityImpact": 1
+        },
+        {
+          "id": "keep_trying",
+          "text": "Keep trying to make it work",
+          "leadsTo": "ending_mess_fail",
+          "qualityImpact": -1
+        },
+        {
+          "id": "call_for_help",
+          "text": "Call for Dad to help",
+          "leadsTo": "dad_tired",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "ending_pancakes_success": {
+      "id": "ending_pancakes_success",
+      "text": "Mom walks into the kitchen and sees the beautiful stack of pancakes. Her eyes light up with surprise and joy. 'You made these all by yourself?' she asks. You nod proudly. The whole family sits down together. The pancakes taste delicious. Mom says it is the best birthday breakfast ever. You feel so happy inside.",
+      "imagePath": "/images/scenarios/home_breakfast/shared/ending_success_pancakes.png",
+      "audioPath": "/audio/scenarios/home_breakfast/make_breakfast9.mp3",
+      "isEnding": true,
+      "endingType": "success",
+      "minStars": 3,
+      "maxStars": 3
+    },
+    "ending_simple_success": {
+      "id": "ending_simple_success",
+      "text": "You carry the tray carefully to Mom's room. She wakes up and sees the breakfast. Her face breaks into a huge smile. 'You made this for me?' she says softly. The toast is perfect. The fruit looks colorful and fresh. Mom hugs you tight. 'This is so thoughtful,' she says. 'The best birthday gift.' You smile, knowing you made her happy.",
+      "imagePath": "/images/scenarios/home_breakfast/shared/ending_success_simple.png",
+      "audioPath": "/audio/scenarios/home_breakfast/make_breakfast10.mp3",
+      "isEnding": true,
+      "endingType": "partial",
+      "minStars": 2,
+      "maxStars": 2
+    },
+    "ending_mess_fail": {
+      "id": "ending_mess_fail",
+      "text": "The smoke alarm starts beeping loudly. Mom and Dad rush into the kitchen. They find flour on the floor, burnt pancakes on the stove, and you standing in the middle of the mess. Mom quickly turns off the stove. The surprise is completely ruined. Everyone helps clean up. You feel sad, but Mom gives you a hug anyway.",
+      "imagePath": "/images/scenarios/home_breakfast/shared/ending_fail_mess.png",
+      "isEnding": true,
+      "endingType": "fail",
+      "minStars": 1,
+      "maxStars": 1
+    }
+  }
+}
+
+

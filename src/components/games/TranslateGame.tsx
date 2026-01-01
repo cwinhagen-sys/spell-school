@@ -442,55 +442,52 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
     return (
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div className="relative w-full max-w-2xl">
-          {/* Glow effect */}
-          <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/30 via-orange-500/20 to-rose-500/30 rounded-3xl blur-xl" />
-          
-          <div className="relative rounded-2xl p-8 shadow-2xl bg-[#12122a] border border-white/10">
+          <div className="relative rounded-2xl p-8 shadow-2xl bg-white/5 backdrop-blur-sm border border-white/10">
             {/* Header */}
             <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/30">
+              <div className="w-16 h-16 bg-white/10 border border-white/10 rounded-xl flex items-center justify-center mx-auto mb-4">
                 <Globe className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">Välj riktning</h2>
-              <p className="text-gray-400 text-sm">Välj vilken riktning du vill översätta</p>
+              <h2 className="text-2xl font-bold text-white mb-2">Select Direction</h2>
+              <p className="text-gray-400 text-sm">Choose which direction you want to translate</p>
             </div>
 
             <div className="space-y-3 mb-8">
-              {/* English to Swedish */}
+              {/* Target to Native */}
               <button
                 onClick={() => startGame('en-to-sv')}
-                className="w-full group p-5 rounded-xl border border-white/10 bg-white/5 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all duration-300"
+                className="w-full group p-5 rounded-xl border border-white/10 bg-white/5 hover:bg-amber-500/10 hover:border-amber-500/30 transition-colors duration-150"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-violet-500/20 to-cyan-500/20 rounded-xl flex items-center justify-center border border-white/10">
-                      <Languages className="w-6 h-6 text-cyan-400" />
+                    <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center border border-white/10">
+                      <Languages className="w-6 h-6 text-amber-400" />
                     </div>
                     <div className="text-left">
-                      <div className="font-bold text-lg mb-1 text-white group-hover:text-cyan-400 transition-colors">Engelska → Svenska</div>
-                      <div className="text-sm text-gray-400">Översätt från engelska till svenska</div>
+                      <div className="font-bold text-lg mb-1 text-white group-hover:text-amber-400 transition-colors">Target → Native</div>
+                      <div className="text-sm text-gray-400">Translate from English to your native language</div>
                     </div>
                   </div>
-                  <ArrowRight className="w-5 h-5 text-cyan-400 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-5 h-5 text-amber-400 group-hover:translate-x-1 transition-transform" />
                 </div>
               </button>
 
-              {/* Swedish to English */}
+              {/* Native to Target */}
               <button
                 onClick={() => startGame('sv-to-en')}
-                className="w-full group p-5 rounded-xl border border-white/10 bg-white/5 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all duration-300"
+                className="w-full group p-5 rounded-xl border border-white/10 bg-white/5 hover:bg-amber-500/10 hover:border-amber-500/30 transition-colors duration-150"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-violet-500/20 to-cyan-500/20 rounded-xl flex items-center justify-center border border-white/10">
-                      <Languages className="w-6 h-6 text-violet-400" />
+                    <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center border border-white/10">
+                      <Languages className="w-6 h-6 text-amber-400" />
                     </div>
                     <div className="text-left">
-                      <div className="font-bold text-lg mb-1 text-white group-hover:text-violet-400 transition-colors">Svenska → Engelska</div>
-                      <div className="text-sm text-gray-400">Översätt från svenska till engelska</div>
+                      <div className="font-bold text-lg mb-1 text-white group-hover:text-amber-400 transition-colors">Native → Target</div>
+                      <div className="text-sm text-gray-400">Translate from your native language to English</div>
                     </div>
                   </div>
-                  <ArrowRight className="w-5 h-5 text-violet-400 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-5 h-5 text-amber-400 group-hover:translate-x-1 transition-transform" />
                 </div>
               </button>
 
@@ -501,12 +498,12 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-xl flex items-center justify-center border border-white/10">
+                    <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center border border-white/10">
                       <RefreshCw className="w-6 h-6 text-amber-400" />
                     </div>
                     <div className="text-left">
-                      <div className="font-bold text-lg mb-1 text-white group-hover:text-amber-400 transition-colors">Blandat</div>
-                      <div className="text-sm text-gray-400">Slumpmässig mix av båda riktningarna</div>
+                      <div className="font-bold text-lg mb-1 text-white group-hover:text-amber-400 transition-colors">Mixed</div>
+                      <div className="text-sm text-gray-400">Random mix of both directions (Native ↔ Target)</div>
                     </div>
                   </div>
                   <ArrowRight className="w-5 h-5 text-amber-400 group-hover:translate-x-1 transition-transform" />
@@ -536,20 +533,17 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
     
     return (
       <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50 overflow-y-auto">
-        <div className="relative w-full max-w-3xl my-8">
-          {/* Glow effect */}
-          <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-rose-500/20 rounded-3xl blur-xl" />
-          
-          <div className="relative bg-[#12122a] rounded-2xl p-8 shadow-2xl border border-white/10">
+        <div className="relative w-full max-w-2xl my-8">
+          <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-white/10">
             {/* Header */}
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl mb-4 shadow-lg shadow-amber-500/30">
-                <CheckCircle className="w-10 h-10 text-white" />
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 border border-white/10 rounded-xl mb-3">
+                <CheckCircle className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-3xl font-bold text-white mb-2">Spelet klart!</h2>
+              <h2 className="text-2xl font-bold text-white mb-2">Game Complete!</h2>
               <div className="flex items-center justify-center gap-6 text-lg">
                 <div className="text-gray-300">
-                  <span className="font-bold text-emerald-400">{finalCorrect}</span> / {total} rätt
+                  <span className="font-bold text-emerald-400">{finalCorrect}</span> / {total} correct
                 </div>
                 <div className="text-gray-600">•</div>
                 <div className="text-gray-300">
@@ -563,9 +557,9 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
             </div>
 
             {/* Word Results Checklist */}
-            <div className="mb-8">
-              <h3 className="text-xl font-bold text-white mb-4">Dina resultat</h3>
-              <div className="bg-white/5 rounded-2xl p-4 border border-white/10 max-h-96 overflow-y-auto">
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-white mb-3">Your Results</h3>
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10 max-h-64 overflow-y-auto custom-scrollbar">
                 <div className="space-y-3">
                   {wordResults.map((result, index) => {
                     // Determine color: Green (first try), Yellow (eventually correct), Red (failed)
@@ -598,16 +592,16 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
                             <div className="flex-1">
                               <div className="font-bold text-white">{result.word}</div>
                               <div className="text-sm text-gray-400">
-                                Rätt svar: <span className="font-medium text-gray-300">{result.translation}</span>
+                                Correct answer: <span className="font-medium text-gray-300">{result.translation}</span>
                               </div>
                               {isYellow && (
                                 <div className="text-sm text-amber-400 mt-1">
-                                  ⚠️ Rätt, men inte på första försöket
+                                  ⚠️ Correct, but not on first attempt
                                 </div>
                               )}
                               {isRed && result.userAnswer && (
                                 <div className="text-sm text-red-400 mt-1">
-                                  Ditt svar: <span className="font-medium">{result.userAnswer}</span>
+                                  Your answer: <span className="font-medium">{result.userAnswer}</span>
                                 </div>
                               )}
                             </div>
@@ -615,7 +609,7 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
                           <div className={`text-xs font-medium mt-1 ${
                             isGreen ? 'text-emerald-400' : isYellow ? 'text-amber-400' : 'text-red-400'
                           }`}>
-                            {result.attempts} försök
+                            {result.attempts} attempts
                           </div>
                         </div>
                       </div>
@@ -630,10 +624,10 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
               {missedWordsCount > 0 && (
                 <button
                   onClick={playAgainMissedWords}
-                  className="w-full group bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-semibold py-4 px-6 rounded-xl transition-all shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2"
+                  className="w-full group bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-semibold py-4 px-6 rounded-xl transition-colors duration-150 flex items-center justify-center gap-2"
                 >
                   <RefreshCw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
-                  <span>Öva på ord att förbättra ({missedWordsCount})</span>
+                  <span>Practice words to improve ({missedWordsCount})</span>
                 </button>
               )}
               
@@ -642,14 +636,14 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
                 className="w-full group bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-semibold py-4 px-6 rounded-xl transition-all shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2"
               >
                 <RotateCcw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
-                <span>Spela igen (alla ord)</span>
+                <span>Play again (all words)</span>
               </button>
 
               <button
                 onClick={onClose}
                 className="w-full px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 font-medium rounded-xl transition-colors"
               >
-                Tillbaka till Dashboard
+                Back to Dashboard
               </button>
             </div>
           </div>
@@ -665,7 +659,7 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
         <div className="bg-[#12122a] rounded-2xl p-8 max-w-md w-full text-center shadow-2xl border border-white/10">
           <Loader2 className="w-12 h-12 text-amber-400 animate-spin mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-white mb-2">Loading...</h2>
-          <p className="text-gray-400">Förbereder din översättningsutmaning</p>
+          <p className="text-gray-400">Preparing your translation challenge</p>
         </div>
       </div>
     )
@@ -675,15 +669,8 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
 
   return (
     <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50">
-      {/* Aurora background effects */}
-      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
-      
       <div className="relative w-full max-w-2xl">
-        {/* Glow effect */}
-        <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-rose-500/20 rounded-3xl blur-xl" />
-        
-        <div className="relative bg-[#12122a] rounded-2xl p-8 shadow-2xl border border-white/10">
+        <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10">
           {/* Close Button */}
           <button
             onClick={onClose}
@@ -699,9 +686,9 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
                 <Languages className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white">Översätt</h2>
+                <h2 className="text-2xl font-bold text-white">Translate</h2>
                 <div className="text-sm text-gray-400">
-                  {direction === 'en-to-sv' ? '🇬🇧 → 🇸🇪' : direction === 'sv-to-en' ? '🇸🇪 → 🇬🇧' : '🔀 Blandat'}
+                  {direction === 'en-to-sv' ? 'Target → Native' : direction === 'sv-to-en' ? 'Native → Target' : '🔀 Mixed'}
                 </div>
               </div>
             </div>
@@ -718,7 +705,7 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
           <div className="mb-8">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-400">
-                Ord {currentWordIndex + 1} av {wordPairs.length}
+                Word {currentWordIndex + 1} of {wordPairs.length}
               </span>
               <span className="text-sm font-medium text-amber-400">{Math.round(progressPercent)}%</span>
             </div>
@@ -731,25 +718,10 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
           </div>
 
           {/* Word Display Card */}
-          <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-2xl p-8 mb-6 border border-white/10">
+          <div className="bg-white/5 rounded-xl p-8 mb-6 border border-white/10">
             <div className="text-center">
-              <div className="inline-block bg-white/10 px-4 py-2 rounded-lg mb-4 border border-white/10">
-                <span className="text-xs font-bold text-amber-400 uppercase tracking-wide">
-                  {currentPair.originalLanguage === 'en' ? '🇬🇧 Engelska' : '🇸🇪 Svenska'}
-                </span>
-              </div>
               <div className="text-5xl font-bold text-white mb-6">
                 {currentPair.original}
-              </div>
-              <div className="flex items-center justify-center space-x-2 mb-4">
-                <div className="h-px w-12 bg-gradient-to-r from-transparent to-amber-500/50"></div>
-                <ArrowRight className="w-5 h-5 text-amber-400" />
-                <div className="h-px w-12 bg-gradient-to-r from-amber-500/50 to-transparent"></div>
-              </div>
-              <div className="inline-block bg-white/10 px-4 py-2 rounded-lg border border-white/10">
-                <span className="text-xs font-bold text-amber-400 uppercase tracking-wide">
-                  Översätt till {currentPair.targetLanguage === 'en' ? '🇬🇧 Engelska' : '🇸🇪 Svenska'}
-                </span>
               </div>
             </div>
           </div>
@@ -770,9 +742,9 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
               <button
                 type="submit"
                 disabled={!userAnswer.trim() || showFeedback}
-                className="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl hover:from-amber-400 hover:to-orange-400 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed transition-all shadow-lg shadow-amber-500/30 hover:shadow-xl hover:scale-105 disabled:hover:scale-100 disabled:shadow-none"
+                className="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl hover:from-amber-400 hover:to-orange-400 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed transition-colors duration-150"
               >
-                Skicka
+                Submit
               </button>
             </div>
           </form>
@@ -787,7 +759,7 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
               {isCorrect ? (
                 <div className="flex items-center justify-center space-x-3 text-emerald-400">
                   <CheckCircle className="w-6 h-6" />
-                  <span className="font-bold text-lg">Rätt! Bra jobbat! 🎉</span>
+                  <span className="font-bold text-lg">Correct! Well done! 🎉</span>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -800,7 +772,7 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
                   {solutionRevealed && (
                     <>
                       <div className="text-center bg-white/5 p-4 rounded-xl border border-white/10">
-                        <div className="text-sm text-gray-400 mb-1">Rätt svar:</div>
+                        <div className="text-sm text-gray-400 mb-1">Correct answer:</div>
                         <div className="text-xl font-bold text-white">{currentPair.target}</div>
                       </div>
                       <button
@@ -808,7 +780,7 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
                         onClick={goToNextWord}
                         className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold hover:from-amber-400 hover:to-orange-400 transition-all shadow-lg shadow-amber-500/30 hover:shadow-xl flex items-center justify-center space-x-2"
                       >
-                        <span>Fortsätt</span>
+                        <span>Continue</span>
                         <ArrowRight className="w-4 h-4" />
                       </button>
                     </>
@@ -822,12 +794,12 @@ export default function TranslateGame({ words, translations, onClose, onScoreUpd
           <div className="flex items-center justify-center space-x-6 text-sm">
             <div className="flex items-center space-x-2 bg-emerald-500/10 px-4 py-2 rounded-lg border border-emerald-500/30">
               <CheckCircle className="w-4 h-4 text-emerald-400" />
-              <span className="font-bold text-emerald-400">{correctCount} / {wordPairs.length} ord</span>
+              <span className="font-bold text-emerald-400">{correctCount} / {wordPairs.length} words</span>
             </div>
             {wrongClicks > 0 && (
               <div className="flex items-center space-x-2 bg-red-500/10 px-4 py-2 rounded-lg border border-red-500/30">
                 <XCircle className="w-4 h-4 text-red-400" />
-                <span className="font-bold text-red-400">{wrongClicks} missade</span>
+                <span className="font-bold text-red-400">{wrongClicks} missed</span>
               </div>
             )}
           </div>

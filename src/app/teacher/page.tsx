@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { isUserEmailVerified } from '@/lib/email-verification'
 import { BookOpen, Calendar, FileText, Users, Clock, ArrowRight, TrendingUp, AlertCircle, CheckCircle, Gamepad2, BarChart3, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
@@ -66,6 +67,13 @@ export default function TeacherDashboard() {
       }
 
       setUser(user)
+
+      // Check email verification (skip in development)
+      if (!isUserEmailVerified(user)) {
+        // Email not verified - redirect to home with message
+        window.location.href = '/?message=Please verify your email address before accessing teacher features. Check your inbox for the verification link.'
+        return
+      }
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -622,55 +630,31 @@ export default function TeacherDashboard() {
                           <span className="font-mono text-amber-400/70">{session.session_code}</span>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-lg font-medium text-white">{session.averageProgress}%</p>
-                        <p className="text-xs text-gray-400">average</p>
-                      </div>
                     </div>
                     
-                    {/* Progress bar */}
-                    <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden mb-3">
-                      <div 
-                        className={`h-full rounded-full transition-all ${
-                          session.averageProgress === 100 
-                            ? 'bg-amber-500' 
-                            : session.averageProgress >= 50 
-                            ? 'bg-orange-500' 
-                            : 'bg-rose-500'
-                        }`}
-                        style={{ width: `${session.averageProgress}%` }}
-                      />
-                    </div>
-                    
-                    {/* Stats row */}
-                    <div className="flex items-center gap-4 text-xs">
-                      <span className="text-gray-400">
-                        <span className="text-amber-400 font-medium">{session.completedCount}</span>
-                        /{session.totalParticipants} completed
-                      </span>
-                      {session.participants.length > 0 && (
+                    {/* Simple completion bar */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-400">
-                          <span className="text-orange-400 font-medium">{session.participants.length}</span> need support
+                          Completed: <span className="text-white font-medium">{session.completedCount}</span> / <span className="text-white font-medium">{session.totalParticipants}</span>
                         </span>
-                      )}
-                    </div>
-                    
-                    {/* Students needing attention */}
-                    {session.participants.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-white/[0.10]">
-                        <p className="text-xs text-gray-500 mb-2">Students below 50%:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {session.participants.map((p) => (
-                            <span 
-                              key={p.id}
-                              className="px-2 py-1 bg-orange-500/10 border border-orange-500/20 rounded text-xs text-orange-400"
-                            >
-                              {p.student_name} ({p.progress}%)
-                            </span>
-                          ))}
-                        </div>
+                        <span className="text-gray-400 text-xs">
+                          {session.totalParticipants > 0 ? Math.round((session.completedCount / session.totalParticipants) * 100) : 0}%
+                        </span>
                       </div>
-                    )}
+                      <div className="h-2.5 bg-white/[0.06] rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full transition-all ${
+                            session.completedCount === session.totalParticipants && session.totalParticipants > 0
+                              ? 'bg-gradient-to-r from-amber-500 to-orange-500' 
+                              : session.completedCount > 0
+                              ? 'bg-gradient-to-r from-orange-500 to-amber-500'
+                              : 'bg-gray-500'
+                          }`}
+                          style={{ width: `${session.totalParticipants > 0 ? (session.completedCount / session.totalParticipants) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </div>
                   </Link>
                 ))}
               </div>

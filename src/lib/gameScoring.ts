@@ -300,3 +300,25 @@ export function calculateDistortedTaleScore(
     }
   }
 }
+
+/**
+ * Calculate points for Word Scramble: 2 points per correct word
+ */
+export function calculateScrambleScore(
+  correctWords: number,
+  totalWords: number,
+  wrongAttempts: number = 0
+): GameScoreResult {
+  const pointsAwarded = Math.max(0, correctWords * 2) // 2 points per correct word
+  const accuracy = totalWords > 0 ? Math.round((correctWords / totalWords) * 100) : 0
+  
+  return {
+    pointsAwarded,
+    accuracy,
+    details: {
+      correctAnswers: correctWords,
+      totalQuestions: totalWords,
+      wrongAttempts
+    }
+  }
+}

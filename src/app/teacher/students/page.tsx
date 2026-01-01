@@ -4,8 +4,9 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Users, Search, Eye, ChevronLeft, Lock, LayoutGrid, List, TrendingUp, Award, Target, Clock, ArrowUpDown, BookOpen, Brain, Keyboard, Globe, BarChart3, Gamepad2, FileText, CheckSquare, Sparkles, GripVertical } from 'lucide-react'
 import StudentDetailsModal from '@/components/StudentDetailsModal'
-import { hasProgressStatsAccess, hasQuizStatsAccess } from '@/lib/subscription'
+import { hasProgressStatsAccess, hasQuizStatsAccess, getUserSubscriptionTier } from '@/lib/subscription'
 import { titleForLevel } from '@/lib/wizardTitles'
+import { getStudentTTSAccess, setStudentTTSAccess } from '@/lib/tts-access'
 import Link from 'next/link'
 
 interface Student {
@@ -118,6 +119,9 @@ export default function ManageStudentsPage() {
   const [hasProgressAccess, setHasProgressAccess] = useState(false)
   const [hasQuizAccess, setHasQuizAccess] = useState(false)
   const [checkingAccess, setCheckingAccess] = useState(true)
+  const [isProTeacher, setIsProTeacher] = useState(false)
+  const [studentTTSAccess, setStudentTTSAccessState] = useState<Map<string, boolean>>(new Map())
+  const [updatingTTS, setUpdatingTTS] = useState<Set<string>>(new Set())
   const [viewMode, setViewMode] = useState<'compact' | 'expanded'>('compact')
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
     student: 200,
@@ -138,8 +142,10 @@ export default function ManageStudentsPage() {
         if (user) {
           const progressAccess = await hasProgressStatsAccess(user.id)
           const quizAccess = await hasQuizStatsAccess(user.id)
+          const tier = await getUserSubscriptionTier(user.id)
           setHasProgressAccess(progressAccess)
           setHasQuizAccess(quizAccess)
+          setIsProTeacher(tier === 'pro')
         }
       } catch (error) {
         console.error('Error checking access:', error)
@@ -151,12 +157,76 @@ export default function ManageStudentsPage() {
     // loadClasses will automatically load students for the selected class
     loadClasses()
   }, [])
+  
+  // Load TTS access status for all students
+  const loadTTSAccess = async (studentIds: string[]) => {
+    if (!isProTeacher) return
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      
+      const accessMap = new Map<string, boolean>()
+      await Promise.all(
+        studentIds.map(async (studentId) => {
+          const hasAccess = await getStudentTTSAccess(studentId, user.id)
+          accessMap.set(studentId, hasAccess)
+        })
+      )
+      setStudentTTSAccessState(accessMap)
+    } catch (error) {
+      console.error('Error loading TTS access:', error)
+    }
+  }
+  
+  // Toggle TTS access for a student
+  const toggleTTSAccess = async (studentId: string) => {
+    if (!isProTeacher) return
+    
+    setUpdatingTTS(prev => new Set(prev).add(studentId))
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      
+      const currentAccess = studentTTSAccess.get(studentId) || false
+      const result = await setStudentTTSAccess(studentId, user.id, !currentAccess)
+      
+      if (result.success) {
+        setStudentTTSAccessState(prev => {
+          const newMap = new Map(prev)
+          newMap.set(studentId, !currentAccess)
+          return newMap
+        })
+        setMessage({
+          type: 'success',
+          text: `TTS access ${!currentAccess ? 'enabled' : 'disabled'} for ${students.find(s => s.id === studentId)?.name || 'student'}`
+        })
+      } else {
+        setMessage({
+          type: 'error',
+          text: result.error || 'Could not update TTS access'
+        })
+      }
+    } catch (error: any) {
+      setMessage({
+        type: 'error',
+        text: error.message || 'Ett fel uppstod'
+      })
+    } finally {
+      setUpdatingTTS(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(studentId)
+        return newSet
+      })
+    }
+  }
 
   const loadClasses = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
-        setMessage({ type: 'error', text: 'Ej autentiserad' })
+        setMessage({ type: 'error', text: 'Not authenticated' })
         return
       }
 
@@ -194,7 +264,7 @@ export default function ManageStudentsPage() {
       // Get the current session token
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
-        setMessage({ type: 'error', text: 'Ej autentiserad' })
+        setMessage({ type: 'error', text: 'Not authenticated' })
         return
       }
 
@@ -252,8 +322,13 @@ export default function ManageStudentsPage() {
             }
           })
         )
-        
+
         setStudents(studentsWithStats)
+        
+        // Load TTS access for all students (if PRO teacher)
+        if (isProTeacher && studentsWithStats.length > 0) {
+          loadTTSAccess(studentsWithStats.map(s => s.id))
+        }
       } else {
         setMessage({ type: 'error', text: data.error || 'Could not load students' })
       }
@@ -271,7 +346,7 @@ export default function ManageStudentsPage() {
       
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
-        setMessage({ type: 'error', text: 'Ej autentiserad' })
+        setMessage({ type: 'error', text: 'Not authenticated' })
         return
       }
 
@@ -538,7 +613,7 @@ export default function ManageStudentsPage() {
       </div>
 
       {/* Search and Filter */}
-      <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-white/10 p-6 mb-8 shadow-xl">
+      <div className="bg-[#161622] rounded-2xl border border-white/[0.12] p-6 mb-8">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">
@@ -548,7 +623,7 @@ export default function ManageStudentsPage() {
                 placeholder="Search students by name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:border-amber-500/50 focus:outline-none transition-all"
+                className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/[0.12] rounded-xl text-white placeholder:text-gray-500 focus:border-amber-500/50 focus:outline-none transition-all"
               />
             </div>
           </div>
@@ -556,16 +631,16 @@ export default function ManageStudentsPage() {
             <select
               value={selectedClass}
               onChange={(e) => handleClassChange(e.target.value)}
-              className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-amber-500/50 focus:outline-none transition-all appearance-none cursor-pointer min-w-[200px]"
+              className="px-4 py-3 bg-white/5 border border-white/[0.12] rounded-xl text-white focus:border-amber-500/50 focus:outline-none transition-all appearance-none cursor-pointer min-w-[200px]"
             >
-              <option value="" className="bg-[#1a1a2e]">All active classes</option>
+              <option value="" className="bg-[#161622]">All active classes</option>
               {classes.map(c => (
-                <option key={c.id} value={c.id} className="bg-[#1a1a2e]">{c.name}</option>
+                <option key={c.id} value={c.id} className="bg-[#161622]">{c.name}</option>
               ))}
             </select>
             <button
               onClick={() => setViewMode(viewMode === 'compact' ? 'expanded' : 'compact')}
-              className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center gap-2"
+              className="px-4 py-3 bg-white/5 border border-white/[0.12] rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center gap-2"
               title={`Switch to ${viewMode === 'compact' ? 'expanded' : 'compact'} view`}
             >
               {viewMode === 'compact' ? <LayoutGrid className="w-4 h-4" /> : <List className="w-4 h-4" />}
@@ -594,7 +669,7 @@ export default function ManageStudentsPage() {
       )}
 
       {/* Students List */}
-      <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-white/10 shadow-xl overflow-hidden">
+      <div className="bg-[#161622] rounded-2xl border border-white/[0.12] overflow-hidden">
         {filteredStudents.length === 0 ? (
           <div className="text-center py-12">
             <Users className="w-16 h-16 text-gray-600 mx-auto mb-4" />
@@ -611,9 +686,9 @@ export default function ManageStudentsPage() {
             </p>
           </div>
         ) : viewMode === 'compact' ? (
-          <div className="overflow-x-auto">
-            <table ref={tableRef} className="w-full border-collapse" style={{ tableLayout: 'fixed' }}>
-              <thead className="bg-white/5 border-b border-white/10">
+          <div className="overflow-hidden">
+            <table ref={tableRef} className="w-full border-collapse" style={{ tableLayout: 'auto', width: '100%' }}>
+              <thead className="bg-white/5 border-b border-white/[0.12]">
                 <tr>
                     {/* Student Column */}
                     <th 
@@ -679,7 +754,7 @@ export default function ManageStudentsPage() {
                       onClick={() => handleSort('games_played')}
                     >
                       <div className="flex items-center gap-2">
-                        <span>Spel</span>
+                        <span>Games</span>
                         <ArrowUpDown className="w-3 h-3 text-gray-500" />
                         {sortBy === 'games_played' && (
                           <span className="text-xs font-bold text-amber-400">{sortOrder === 'asc' ? '↑' : '↓'}</span>
@@ -696,7 +771,7 @@ export default function ManageStudentsPage() {
                       className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider relative select-none hover:bg-white/5 transition-colors"
                       style={{ width: columnWidths.latestGame, minWidth: 120 }}
                     >
-                      <span>Senaste spel</span>
+                      <span>Latest Game</span>
                       <div
                         className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors ${resizingColumn === 'latestGame' ? 'bg-amber-500' : 'hover:bg-amber-400'}`}
                         onMouseDown={(e) => handleResizeStart('latestGame', e)}
@@ -708,7 +783,7 @@ export default function ManageStudentsPage() {
                       className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider relative select-none hover:bg-white/5 transition-colors"
                       style={{ width: columnWidths.quizzes, minWidth: 200 }}
                     >
-                      <span>Senaste quiz</span>
+                      <span>Latest Quiz</span>
                       <div
                         className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors ${resizingColumn === 'quizzes' ? 'bg-amber-500' : 'hover:bg-amber-400'}`}
                         onMouseDown={(e) => handleResizeStart('quizzes', e)}
@@ -824,7 +899,7 @@ export default function ManageStudentsPage() {
                                 )
                               })
                             ) : (
-                              <span className="text-xs text-gray-400">Inga spel</span>
+                              <span className="text-xs text-gray-400">No games</span>
                             )}
                           </div>
                         </td>
@@ -850,7 +925,7 @@ export default function ManageStudentsPage() {
                                   </div>
                                 ))
                               ) : (
-                              <span className="text-xs text-gray-400">Inga quiz</span>
+                              <span className="text-xs text-gray-400">No quizzes</span>
                               )}
                             </div>
                             {student.recent_quiz_results && student.recent_quiz_results.length > 3 && (
@@ -867,8 +942,8 @@ export default function ManageStudentsPage() {
                                 className="text-xs text-amber-400 hover:text-amber-300 mt-1 self-start"
                               >
                                 {isQuizzesExpanded 
-                                  ? `Visa mindre (${student.recent_quiz_results.length - 3} dolda)`
-                                  : `Visa ${student.recent_quiz_results.length - 3} till`
+                                  ? `Show less (${student.recent_quiz_results.length - 3} hidden)`
+                                  : `Show ${student.recent_quiz_results.length - 3} more`
                                 }
                               </button>
                             )}
@@ -877,17 +952,19 @@ export default function ManageStudentsPage() {
                         
                         {/* Actions */}
                         <td className="px-4 py-4">
-                          <button
-                            onClick={() => {
-                              setSelectedStudent(student)
-                              setShowStudentDetails(true)
-                              loadStudentDetails(student.id)
-                            }}
-                            className="p-2 text-gray-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors"
-                            title="Visa detaljer"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                setSelectedStudent(student)
+                                setShowStudentDetails(true)
+                                loadStudentDetails(student.id)
+                              }}
+                              className="p-2 text-gray-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors"
+                              title="Show details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     )
@@ -900,7 +977,7 @@ export default function ManageStudentsPage() {
               {filteredStudents.map((student) => (
                 <div
                   key={student.id}
-                  className="bg-white/5 rounded-xl border border-white/10 p-6 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer"
+                  className="bg-white/5 rounded-xl border border-white/[0.12] p-6 hover:bg-white/10 hover:border-white/[0.20] transition-all cursor-pointer"
                   onClick={() => {
                     setSelectedStudent(student)
                     setShowStudentDetails(true)
@@ -977,8 +1054,8 @@ export default function ManageStudentsPage() {
                   </div>
                   
                   {student.recent_quiz_results && student.recent_quiz_results.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-white/10">
-                      <div className="text-xs font-semibold text-gray-400 mb-2">Senaste quiz</div>
+                    <div className="mt-4 pt-4 border-t border-white/[0.12]">
+                      <div className="text-xs font-semibold text-gray-400 mb-2">Latest Quiz</div>
                       <div className="flex flex-wrap gap-2">
                         {student.recent_quiz_results.map((quiz, idx) => (
                           <div

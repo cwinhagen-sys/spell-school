@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useDailyQuestBadges } from '@/hooks/useDailyQuestBadges'
 import LogoutHandler from '@/components/LogoutHandler'
@@ -8,51 +8,301 @@ import { Trophy, ArrowLeft, Filter, Lock } from 'lucide-react'
 
 export default function BadgesPage() {
   const { badges, stats, loading } = useDailyQuestBadges()
+  const [hasCache, setHasCache] = useState(false)
+  const [isClient, setIsClient] = useState(false)
   
   console.log('BadgesPage render:', { badgesCount: badges.length, loading, stats })
   const [filter, setFilter] = useState<'all' | 'earned' | 'unearned'>('all')
   const [rarityFilter, setRarityFilter] = useState<'all' | 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'>('all')
 
-  const getRarityGradient = (rarity: string, earned: boolean) => {
-    if (!earned) return 'from-gray-800 to-gray-900 border-gray-700'
+  // Check for cache only on client side to avoid hydration mismatch
+  useEffect(() => {
+    setIsClient(true)
+    const cache = localStorage.getItem('daily_quest_badges')
+    setHasCache(!!cache)
+  }, [])
+
+  // Get glow color based on rarity
+  const getRarityGlowColor = (rarity: string, earned: boolean) => {
+    if (!earned) return 'rgba(255, 255, 255, 0.1)'
     switch (rarity) {
-      case 'common': return 'from-slate-600 to-slate-700 border-slate-500'
-      case 'uncommon': return 'from-emerald-600 to-green-700 border-emerald-500'
-      case 'rare': return 'from-blue-600 to-cyan-700 border-blue-500'
-      case 'epic': return 'from-violet-600 to-purple-700 border-violet-500'
-      case 'legendary': return 'from-amber-500 via-yellow-500 to-orange-500 border-amber-400'
-      default: return 'from-slate-600 to-slate-700 border-slate-500'
+      case 'common': return 'rgba(148, 163, 184, 0.6)'
+      case 'uncommon': return 'rgba(16, 185, 129, 0.7)'
+      case 'rare': return 'rgba(59, 130, 246, 0.8)'
+      case 'epic': return 'rgba(139, 92, 246, 0.9)'
+      case 'legendary': return 'rgba(245, 158, 11, 1)'
+      default: return 'rgba(255, 255, 255, 0.3)'
     }
   }
 
-  const getRarityGlow = (rarity: string, earned: boolean) => {
-    if (!earned) return ''
-    switch (rarity) {
-      case 'common': return 'shadow-slate-500/30'
-      case 'uncommon': return 'shadow-emerald-500/40'
-      case 'rare': return 'shadow-blue-500/50'
-      case 'epic': return 'shadow-violet-500/50'
-      case 'legendary': return 'shadow-amber-500/60'
-      default: return ''
-    }
-  }
-
-  const getRarityTextColor = (rarity: string) => {
+  // Get rarity text color
+  const getRarityTextColor = (rarity: string, earned: boolean) => {
+    if (!earned) return 'text-gray-500'
     switch (rarity) {
       case 'common': return 'text-slate-400'
       case 'uncommon': return 'text-emerald-400'
       case 'rare': return 'text-blue-400'
       case 'epic': return 'text-violet-400'
       case 'legendary': return 'text-amber-400'
-      default: return 'text-slate-400'
+      default: return 'text-gray-400'
+    }
+  }
+
+  // Get rarity name
+  const getRarityName = (rarity: string) => {
+    switch (rarity) {
+      case 'common': return 'Common'
+      case 'uncommon': return 'Uncommon'
+      case 'rare': return 'Rare'
+      case 'epic': return 'Epic'
+      case 'legendary': return 'Legendary'
+      default: return 'Common'
+    }
+  }
+
+  // Get glow size and intensity based on rarity
+  const getGlowConfig = (rarity: string, earned: boolean) => {
+    if (!earned) {
+      return {
+        outer: { size: 'w-16 h-16', blur: 'blur(12px)', opacity: 0.3 },
+        middle: { size: 'w-12 h-12', blur: 'blur(8px)', opacity: 0.4 },
+        inner: { size: 'w-8 h-8', blur: 'blur(4px)', opacity: 0.5 }
+      }
+    }
+    switch (rarity) {
+      case 'common':
+        return {
+          outer: { size: 'w-20 h-20', blur: 'blur(16px)', opacity: 0.5 },
+          middle: { size: 'w-16 h-16', blur: 'blur(10px)', opacity: 0.6 },
+          inner: { size: 'w-12 h-12', blur: 'blur(5px)', opacity: 0.7 }
+        }
+      case 'uncommon':
+        return {
+          outer: { size: 'w-24 h-24', blur: 'blur(18px)', opacity: 0.6 },
+          middle: { size: 'w-18 h-18', blur: 'blur(12px)', opacity: 0.7 },
+          inner: { size: 'w-14 h-14', blur: 'blur(6px)', opacity: 0.8 }
+        }
+      case 'rare':
+        return {
+          outer: { size: 'w-28 h-28', blur: 'blur(20px)', opacity: 0.7 },
+          middle: { size: 'w-20 h-20', blur: 'blur(14px)', opacity: 0.8 },
+          inner: { size: 'w-16 h-16', blur: 'blur(8px)', opacity: 0.9 }
+        }
+      case 'epic':
+        return {
+          outer: { size: 'w-32 h-32', blur: 'blur(22px)', opacity: 0.8 },
+          middle: { size: 'w-24 h-24', blur: 'blur(16px)', opacity: 0.85 },
+          inner: { size: 'w-18 h-18', blur: 'blur(10px)', opacity: 0.9 }
+        }
+      case 'legendary':
+        return {
+          outer: { size: 'w-36 h-36', blur: 'blur(24px)', opacity: 0.9 },
+          middle: { size: 'w-28 h-28', blur: 'blur(18px)', opacity: 0.95 },
+          inner: { size: 'w-20 h-20', blur: 'blur(12px)', opacity: 1 }
+        }
+      default:
+        return {
+          outer: { size: 'w-20 h-20', blur: 'blur(16px)', opacity: 0.5 },
+          middle: { size: 'w-16 h-16', blur: 'blur(10px)', opacity: 0.6 },
+          inner: { size: 'w-12 h-12', blur: 'blur(5px)', opacity: 0.7 }
+        }
+    }
+  }
+
+  // Get subtle background accent based on rarity
+  const getRarityAccent = (rarity: string, earned: boolean) => {
+    if (!earned) return ''
+    switch (rarity) {
+      case 'common': return ''
+      case 'uncommon': return 'bg-emerald-500/5'
+      case 'rare': return 'bg-blue-500/5'
+      case 'epic': return 'bg-violet-500/5'
+      case 'legendary': return 'bg-amber-500/10'
+      default: return ''
+    }
+  }
+
+  // Get rarity box colors for styling
+  const getRarityBoxColors = (rarity: string, earned: boolean) => {
+    if (!earned) {
+      return {
+        bg: 'rgba(148, 163, 184, 0.2)',
+        border: 'rgba(148, 163, 184, 0.3)',
+        text: 'rgba(148, 163, 184, 0.8)'
+      }
+    }
+    switch (rarity) {
+      case 'common':
+        return {
+          bg: 'rgba(148, 163, 184, 0.3)',
+          border: 'rgba(148, 163, 184, 0.5)',
+          text: 'rgb(203, 213, 225)'
+        }
+      case 'uncommon':
+        return {
+          bg: 'rgba(16, 185, 129, 0.3)',
+          border: 'rgba(16, 185, 129, 0.5)',
+          text: 'rgb(52, 211, 153)'
+        }
+      case 'rare':
+        return {
+          bg: 'rgba(59, 130, 246, 0.3)',
+          border: 'rgba(59, 130, 246, 0.5)',
+          text: 'rgb(96, 165, 250)'
+        }
+      case 'epic':
+        return {
+          bg: 'rgba(139, 92, 246, 0.3)',
+          border: 'rgba(139, 92, 246, 0.5)',
+          text: 'rgb(167, 139, 250)'
+        }
+      case 'legendary':
+        return {
+          bg: 'rgba(245, 158, 11, 0.3)',
+          border: 'rgba(245, 158, 11, 0.5)',
+          text: 'rgb(251, 191, 36)'
+        }
+      default:
+        return {
+          bg: 'rgba(148, 163, 184, 0.3)',
+          border: 'rgba(148, 163, 184, 0.5)',
+          text: 'rgb(203, 213, 225)'
+        }
+    }
+  }
+
+  // Get badge background image path
+  const getBadgeBackgroundImage = (badge: any): string | null => {
+    const name = badge.name?.toLowerCase() || ''
+    
+    // Map badge names to background image files
+    const backgroundMap: { [key: string]: string } = {
+      'word warrior': 'word_warrior.png',
+      'memory champion': 'memory_champion.png',
+      'spelling bee': 'spelling_bee.png',
+      'choice master': 'choice_master.png',
+      'gap filler': 'gap_filler.png',
+      'spell slinger novice': 'spell_slinger_novice.png',
+      'sentence builder': 'sentence_builder.png',
+      'roulette master': 'roulette_master.png',
+      'multi-game player': 'multi_game_player.png',
+      'perfect score': 'perfect_score.png',
+      'spell slinger expert': 'spell_slinger_expert.png',
+      'grammar guru': 'grammar_guru.png',
+      'roulette legend': 'roulette_legend.png',
+      'marathon runner': 'marathon_runner.png',
+      'perfectionist': 'perfectionist.png',
+      'quiz god': 'quiz_god.png',
+      'speed god': 'speed_god.png',
+      'ultimate gamer': 'ultimate_gamer.png',
+      'first steps': 'first_steps.png',
+      'getting hot': 'getting_hot.png',
+      'week warrior': 'week_warrior.png',
+      'monthly master': 'monthly_master.png',
+      'rising star': 'rising_star.png',
+      'experienced learner': 'experienced_learner.png',
+      'master student': 'master_student.png',
+      'legendary scholar': 'legendary_scholar.png',
+      'breakfast chef': 'breakfast_chef.png',
+      'master chef': 'master_chef.png',
+      'sentence starter': 'sentence_starter.png',
+      'sentence expert': 'sentence_expert.png',
+      'sentence master': 'sentence_master.png',
+    }
+    
+    // Find matching background
+    for (const [key, filename] of Object.entries(backgroundMap)) {
+      if (name.includes(key)) {
+        return `/images/badges/backgrounds/${filename}`
+      }
+    }
+    
+    return null
+  }
+
+  // Get custom design pattern for each badge type (kept for gradient fallback)
+  const getBadgeDesign = (badge: any) => {
+    const icon = badge.icon || '🏆'
+    const earned = badge.earned
+    const rarity = badge.rarity
+    
+    // Common patterns based on icon type
+    if (icon.includes('⚔️') || icon.includes('Warrior')) {
+      return {
+        pattern: 'sword',
+        gradient: earned ? 'from-amber-500/10 via-orange-500/5 to-amber-500/10' : '',
+      }
+    }
+    if (icon.includes('🧠') || icon.includes('Memory') || icon.includes('Champion')) {
+      return {
+        pattern: 'brain',
+        gradient: earned ? 'from-purple-500/10 via-blue-500/5 to-purple-500/10' : '',
+      }
+    }
+    if (icon.includes('⌨️') || icon.includes('Spelling') || icon.includes('Typing')) {
+      return {
+        pattern: 'keyboard',
+        gradient: earned ? 'from-cyan-500/10 via-blue-500/5 to-cyan-500/10' : '',
+      }
+    }
+    if (icon.includes('✅') || icon.includes('Choice') || icon.includes('Master')) {
+      return {
+        pattern: 'check',
+        gradient: earned ? 'from-emerald-500/10 via-green-500/5 to-emerald-500/10' : '',
+      }
+    }
+    if (icon.includes('📝') || icon.includes('Gap') || icon.includes('Sentence')) {
+      return {
+        pattern: 'document',
+        gradient: earned ? 'from-indigo-500/10 via-purple-500/5 to-indigo-500/10' : '',
+      }
+    }
+    if (icon.includes('🎯') || icon.includes('Roulette')) {
+      return {
+        pattern: 'target',
+        gradient: earned ? 'from-rose-500/10 via-pink-500/5 to-rose-500/10' : '',
+      }
+    }
+    if (icon.includes('🎮') || icon.includes('Multi')) {
+      return {
+        pattern: 'gamepad',
+        gradient: earned ? 'from-violet-500/10 via-purple-500/5 to-violet-500/10' : '',
+      }
+    }
+    if (icon.includes('💯') || icon.includes('Perfect')) {
+      return {
+        pattern: 'perfect',
+        gradient: earned ? 'from-amber-500/15 via-yellow-500/8 to-amber-500/15' : '',
+      }
+    }
+    if (icon.includes('🏃') || icon.includes('Marathon')) {
+      return {
+        pattern: 'runner',
+        gradient: earned ? 'from-orange-500/10 via-red-500/5 to-orange-500/10' : '',
+      }
+    }
+    if (icon.includes('⭐') || icon.includes('Perfectionist')) {
+      return {
+        pattern: 'star',
+        gradient: earned ? 'from-yellow-500/15 via-amber-500/8 to-yellow-500/15' : '',
+      }
+    }
+    if (icon.includes('👑') || icon.includes('Legend')) {
+      return {
+        pattern: 'crown',
+        gradient: earned ? 'from-amber-500/20 via-orange-500/10 to-amber-500/20' : '',
+      }
+    }
+    
+    // Default
+    return {
+      pattern: 'default',
+      gradient: earned ? 'from-amber-500/10 via-orange-500/5 to-amber-500/10' : '',
     }
   }
 
   const getBadgeIcon = (badge: any) => {
-    if (badge.earned) {
-      return '🏆'
-    }
-    return badge.icon
+    return badge.icon || '🏆'
   }
 
   const filteredBadges = badges.filter(badge => {
@@ -81,8 +331,8 @@ export default function BadgesPage() {
     return rarityOrder[a.rarity] - rarityOrder[b.rarity]
   })
 
-  const hasCache = typeof window !== 'undefined' && localStorage.getItem('daily_quest_badges')
-  if (loading && badges.length === 0 && !hasCache) {
+  // Only show loading state if we're on client, loading, no badges, and no cache
+  if (isClient && loading && badges.length === 0 && !hasCache) {
     return (
       <div className="container mx-auto px-6 py-12 min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
@@ -125,15 +375,15 @@ export default function BadgesPage() {
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 mb-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div className="text-center">
-                <div className="text-4xl font-bold text-emerald-400">{stats.earned}</div>
+                <div className="text-4xl font-bold text-white">{stats.earned}</div>
                 <div className="text-sm text-gray-400">Earned</div>
               </div>
               <div className="text-center">
-                <div className="text-4xl font-bold text-gray-400">{stats.total - stats.earned}</div>
+                <div className="text-4xl font-bold text-white">{stats.total - stats.earned}</div>
                 <div className="text-sm text-gray-400">Remaining</div>
               </div>
               <div className="text-center">
-                <div className="text-4xl font-bold text-amber-400">{stats.percentage}%</div>
+                <div className="text-4xl font-bold text-white">{stats.percentage}%</div>
                 <div className="text-sm text-gray-400">Complete</div>
               </div>
               <div className="text-center">
@@ -143,7 +393,7 @@ export default function BadgesPage() {
             </div>
             <div className="mt-6 w-full bg-white/10 rounded-full h-3 overflow-hidden">
               <div 
-                className="bg-gradient-to-r from-emerald-500 to-cyan-500 h-3 rounded-full transition-all duration-700" 
+                className="bg-gradient-to-r from-amber-500 to-orange-500 h-3 rounded-full transition-all duration-700" 
                 style={{ width: `${stats.percentage}%` }}
               />
             </div>
@@ -157,85 +407,125 @@ export default function BadgesPage() {
               <select 
                 value={filter} 
                 onChange={(e) => setFilter(e.target.value as any)}
-                className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-500/50 transition-colors"
+                className="px-3 py-2 bg-gray-900/80 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-500/50 transition-colors appearance-none cursor-pointer"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 0.75rem center',
+                  paddingRight: '2.5rem'
+                }}
               >
-                <option value="all" className="bg-[#1a1a2e]">All</option>
-                <option value="earned" className="bg-[#1a1a2e]">Earned</option>
-                <option value="unearned" className="bg-[#1a1a2e]">Unearned</option>
+                <option value="all" className="bg-gray-900 text-white">All</option>
+                <option value="earned" className="bg-gray-900 text-white">Earned</option>
+                <option value="unearned" className="bg-gray-900 text-white">Unearned</option>
               </select>
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-400">Raritet:</label>
+              <label className="text-sm text-gray-400">Rarity:</label>
               <select 
                 value={rarityFilter} 
                 onChange={(e) => setRarityFilter(e.target.value as any)}
-                className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-500/50 transition-colors"
+                className="px-3 py-2 bg-gray-900/80 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-500/50 transition-colors appearance-none cursor-pointer"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 0.75rem center',
+                  paddingRight: '2.5rem'
+                }}
               >
-                <option value="all" className="bg-[#1a1a2e]">All</option>
-                <option value="legendary" className="bg-[#1a1a2e]">Legendary</option>
-                <option value="epic" className="bg-[#1a1a2e]">Epic</option>
-                <option value="rare" className="bg-[#1a1a2e]">Rare</option>
-                <option value="uncommon" className="bg-[#1a1a2e]">Uncommon</option>
-                <option value="common" className="bg-[#1a1a2e]">Common</option>
+                <option value="all" className="bg-gray-900 text-white">All</option>
+                <option value="legendary" className="bg-gray-900 text-white">Legendary</option>
+                <option value="epic" className="bg-gray-900 text-white">Epic</option>
+                <option value="rare" className="bg-gray-900 text-white">Rare</option>
+                <option value="uncommon" className="bg-gray-900 text-white">Uncommon</option>
+                <option value="common" className="bg-gray-900 text-white">Common</option>
               </select>
             </div>
           </div>
 
           {/* Badges Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {sortedBadges.map((badge) => (
-              <div
-                key={badge.id}
-                className={`group relative aspect-square rounded-2xl bg-gradient-to-br ${getRarityGradient(badge.rarity, badge.earned)} border-2 ${badge.earned ? 'shadow-xl' : 'opacity-50'} ${getRarityGlow(badge.rarity, badge.earned)} hover:scale-105 transition-all duration-300 flex flex-col items-center justify-center p-4 cursor-pointer overflow-hidden`}
-                title={`${badge.name} - ${badge.description}`}
-              >
-                {/* Glow effect for legendary */}
-                {badge.earned && badge.rarity === 'legendary' && (
-                  <div className="absolute inset-0 bg-gradient-to-br from-amber-400/20 to-orange-400/20 blur-xl animate-pulse" />
-                )}
-                
-                {/* Earned indicator */}
-                {badge.earned && (
-                  <div className="absolute top-2 right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
-                    <span className="text-white text-xs font-bold">✓</span>
+            {sortedBadges.map((badge) => {
+              const backgroundImage = getBadgeBackgroundImage(badge)
+              const boxColors = getRarityBoxColors(badge.rarity, badge.earned)
+              
+              return (
+                <div
+                  key={badge.id}
+                  className={`group relative aspect-square rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 ${
+                    badge.earned ? 'hover:scale-[1.02]' : ''
+                  } transition-all duration-300 flex flex-col items-center justify-end p-4 cursor-pointer overflow-hidden`}
+                  title={`${badge.name} - ${badge.description}`}
+                >
+                  {/* Custom background image - shown for all badges */}
+                  {backgroundImage && (
+                    <div 
+                      className={`absolute inset-0 transition-opacity duration-300 ${
+                        badge.earned 
+                          ? 'opacity-40 group-hover:opacity-70' 
+                          : 'opacity-20'
+                      }`}
+                      style={{
+                        backgroundImage: `url(${backgroundImage})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'no-repeat'
+                      }}
+                    />
+                  )}
+                  
+                  {/* Dark overlay for better text readability */}
+                  {backgroundImage && (
+                    <div className={`absolute inset-0 transition-opacity duration-300 ${
+                      badge.earned 
+                        ? 'bg-gradient-to-b from-black/70 via-black/50 to-black/80 group-hover:from-black/50 group-hover:via-black/30 group-hover:to-black/60' 
+                        : 'bg-gradient-to-b from-black/80 via-black/70 to-black/90'
+                    }`} />
+                  )}
+                  
+                  {/* Fallback gradient if no background image */}
+                  {!backgroundImage && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-amber-500/10 opacity-50" />
+                  )}
+                  
+                  {/* Content at bottom */}
+                  <div className="relative z-20 w-full flex flex-col items-center gap-2">
+                    {/* Rarity box */}
+                    <div 
+                      className="px-3 py-1.5 rounded-lg font-medium text-xs backdrop-blur-sm border"
+                      style={{
+                        backgroundColor: boxColors.bg,
+                        borderColor: boxColors.border,
+                        color: boxColors.text
+                      }}
+                    >
+                      {getRarityName(badge.rarity)}
+                    </div>
+                    
+                    {/* Badge name */}
+                    <div className={`text-sm font-semibold text-center leading-tight px-2 ${
+                      badge.earned ? 'text-white group-hover:text-white' : 'text-gray-400'
+                    }`}>
+                      {badge.name.replace(' Badge', '')}
+                    </div>
+                    
+                    {/* Earned indicator - date */}
+                    {badge.earned && badge.unlocked_at && (
+                      <div className="text-[10px] text-gray-300/70 mt-1">
+                        {new Date(badge.unlocked_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </div>
+                    )}
                   </div>
-                )}
-                
-                {/* Badge icon */}
-                <div className="relative">
-                  <div className={`text-5xl mb-3 ${badge.earned ? 'group-hover:scale-110 group-hover:rotate-6' : ''} transition-transform`}>
-                    {getBadgeIcon(badge)}
-                  </div>
+                  
+                  {/* Lock overlay for unearned badges */}
+                  {!badge.earned && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[1px] z-10">
+                      <Lock className="w-6 h-6 text-gray-500/50" />
+                    </div>
+                  )}
                 </div>
-                
-                {/* Badge name */}
-                <div className="text-sm font-bold text-center leading-tight px-2 text-white mb-2">
-                  {badge.name.replace(' Badge', '')}
-                </div>
-                
-                {/* Rarity label */}
-                <div className={`text-xs font-semibold px-3 py-1 rounded-full bg-black/30 capitalize ${getRarityTextColor(badge.rarity)}`}>
-                  {badge.rarity === 'legendary' ? 'Legendary' : 
-                   badge.rarity === 'epic' ? 'Epic' :
-                   badge.rarity === 'rare' ? 'Rare' :
-                   badge.rarity === 'uncommon' ? 'Uncommon' : 'Common'}
-                </div>
-                
-                {/* Earned date */}
-                {badge.unlocked_at && (
-                  <div className="text-xs mt-2 text-emerald-400 bg-emerald-500/20 px-2 py-1 rounded-full">
-                    {new Date(badge.unlocked_at).toLocaleDateString('en-US')}
-                  </div>
-                )}
-                
-                {/* Lock icon for unearned badges */}
-                {!badge.earned && (
-                  <div className="absolute bottom-3 right-3">
-                    <Lock className="w-5 h-5 text-gray-600" />
-                  </div>
-                )}
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           {filteredBadges.length === 0 && (

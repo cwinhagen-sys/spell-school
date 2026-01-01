@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import SpellSchoolLanding from '@/components/SpellSchoolLanding'
+import EmailVerificationBanner from '@/components/EmailVerificationBanner'
 import { getGoogleOAuthOptions, getGoogleAuthErrorMessage } from '@/lib/google-auth'
+import { isEmailVerified } from '@/lib/email-verification'
 
 export default function Home() {
   const router = useRouter()
@@ -13,6 +15,8 @@ export default function Home() {
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [checkingAuth, setCheckingAuth] = useState(true)
+  const [showEmailVerificationBanner, setShowEmailVerificationBanner] = useState(false)
+  const [currentUser, setCurrentUser] = useState<any>(null)
 
   // Check for OAuth code parameter and redirect to callback
   useEffect(() => {
@@ -75,14 +79,27 @@ export default function Home() {
         
         // Only redirect if we have a valid session with a user
         if (session?.user) {
-          // User is logged in, check their role and redirect
+          setCurrentUser(session.user)
+          
+          // Check email verification for teachers
           const { data: profile } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', session.user.id)
             .maybeSingle()
           
-          // Only redirect if we have a valid profile with a role
+          // Check if email needs verification (for teachers only)
+          if (profile?.role === 'teacher') {
+            const emailVerified = await isEmailVerified(session.user.id)
+            if (!emailVerified) {
+              // Show banner instead of redirecting
+              setShowEmailVerificationBanner(true)
+              setCheckingAuth(false)
+              return
+            }
+          }
+          
+          // Only redirect if we have a valid profile with a role and email is verified (for teachers)
           if (profile?.role === 'teacher') {
             router.replace('/teacher')
           } else if (profile?.role === 'student') {
@@ -164,10 +181,26 @@ export default function Home() {
     
     console.log('🔐 Attempting email login:', email)
     
-    const { error } = await supabase.auth.signInWithPassword({ email, password: passwordValue })
+    const { data, error } = await supabase.auth.signInWithPassword({ 
+      email, 
+      password: passwordValue 
+    })
+    
     if (error) {
       console.error('❌ Email login error:', error.message)
-      setMessage(`Error: ${error.message}`)
+      
+      // Check if email is not confirmed
+      if (error.message?.toLowerCase().includes('email not confirmed') || 
+          error.message?.toLowerCase().includes('email_not_confirmed')) {
+        setMessage('Please verify your email address before signing in. Check your inbox for the verification link.')
+        // Show email verification banner if user is found but not verified
+        if (data?.user) {
+          setShowEmailVerificationBanner(true)
+          setCurrentUser(data.user)
+        }
+      } else {
+        setMessage(`Error: ${error.message}`)
+      }
     } else {
       console.log('✅ Email login successful!')
       window.location.href = '/auth/callback'
@@ -213,16 +246,16 @@ export default function Home() {
   // Show loading while checking auth
   if (checkingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0a1a] relative overflow-hidden">
-        {/* Background effects */}
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0f0f2a] via-[#0a0a1a] to-[#050510]" />
-          <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-purple-600/20 rounded-full blur-[100px]" />
-          <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-amber-500/10 rounded-full blur-[80px]" />
+      <div className="min-h-screen bg-[#08080f] flex items-center justify-center p-6">
+        {/* Subtle Background */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute inset-0 bg-[#08080f]" />
+          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-amber-500/[0.03] rounded-full blur-[150px]" />
+          <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-orange-500/[0.02] rounded-full blur-[120px]" />
         </div>
         
         <div className="relative text-center">
-          <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-10 h-10 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-400">Loading...</p>
         </div>
       </div>
@@ -230,17 +263,35 @@ export default function Home() {
   }
 
   return (
-    <SpellSchoolLanding
-      logoUrl="/images/memory-card-back.png"
-      posterUrl="/images/memory-card-back.png"
-      onEmailLogin={handleEmailLogin}
-      onGoogleLogin={handleGoogle}
-      loading={loading}
-      message={message}
-      identifier={identifier}
-      setIdentifier={setIdentifier}
-      password={password}
-      setPassword={setPassword}
-    />
+    <div className="min-h-screen bg-[#08080f]">
+      {showEmailVerificationBanner && (
+        <div className="container mx-auto px-4 pt-8 max-w-4xl">
+          <EmailVerificationBanner 
+            className="mb-6"
+            onVerified={async () => {
+              // Refresh user data to check if verified
+              const { data: { user } } = await supabase.auth.getUser()
+              if (user?.email_confirmed_at) {
+                setShowEmailVerificationBanner(false)
+                // Redirect to teacher dashboard
+                router.push('/teacher')
+              }
+            }}
+          />
+        </div>
+      )}
+      <SpellSchoolLanding
+        logoUrl="/images/memory-card-back.png"
+        posterUrl="/images/memory-card-back.png"
+        onEmailLogin={handleEmailLogin}
+        onGoogleLogin={handleGoogle}
+        loading={loading}
+        message={message}
+        identifier={identifier}
+        setIdentifier={setIdentifier}
+        password={password}
+        setPassword={setPassword}
+      />
+    </div>
   )
 }

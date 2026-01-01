@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckCircle2, Circle, Palette, Sparkles, Layers } from 'lucide-react'
+import { CheckCircle2, Circle, Palette, Sparkles, Layers, ArrowLeft } from 'lucide-react'
 import { COLOR_GRIDS } from '@/components/ColorGridSelector'
 
 interface Word {
@@ -20,6 +20,7 @@ interface BlockSelectionUIProps {
   selectedBlocks: string[]
   onToggleBlock: (blockId: string) => void
   onSubmit: () => void
+  onExit?: () => void
 }
 
 /**
@@ -32,7 +33,8 @@ export default function BlockSelectionUI({
   colorBlocks,
   selectedBlocks,
   onToggleBlock,
-  onSubmit
+  onSubmit,
+  onExit
 }: BlockSelectionUIProps) {
   const totalWords = colorBlocks
     .filter(b => selectedBlocks.includes(b.id))
@@ -51,13 +53,22 @@ export default function BlockSelectionUI({
         <div className="bg-[#161622] rounded-2xl border border-white/[0.08] p-8 mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-4">
+              {onExit && (
+                <button
+                  onClick={onExit}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+                  aria-label="Back to dashboard"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+              )}
               <div className="w-14 h-14 bg-[#1a1a2e] border border-white/[0.08] rounded-xl flex items-center justify-center">
                 <Layers className="w-7 h-7 text-amber-400" />
               </div>
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-white">Välj färgblock</h1>
+                <h1 className="text-2xl md:text-3xl font-bold text-white">Select color blocks</h1>
                 <p className="text-gray-500 text-sm md:text-base">
-                  Välj vilka block du vill öva med i denna session
+                  Choose which blocks you want to practice with in this session
                 </p>
               </div>
             </div>
@@ -65,11 +76,11 @@ export default function BlockSelectionUI({
             {/* Selection summary */}
             <div className="flex items-center gap-4">
               <div className="bg-white/5 border border-white/[0.08] rounded-xl px-4 py-3">
-                <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Valda block</div>
+                <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Selected blocks</div>
                 <div className="text-xl font-bold text-white">{selectedBlocks.length} / {colorBlocks.length}</div>
               </div>
               <div className="bg-white/5 border border-white/[0.08] rounded-xl px-4 py-3">
-                <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Totalt ord</div>
+                <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Total words</div>
                 <div className="text-xl font-bold text-amber-400">{totalWords}</div>
               </div>
             </div>
@@ -115,7 +126,7 @@ export default function BlockSelectionUI({
                         {block.color}
                       </h3>
                       <p className="text-sm font-medium text-gray-500">
-                        {block.words.length} ord
+                        {block.words.length} words
                       </p>
                     </div>
                   </div>
@@ -153,7 +164,7 @@ export default function BlockSelectionUI({
                       <span className={`text-xs px-2.5 py-1 rounded-lg ${
                         isSelected ? 'text-white/50' : 'text-gray-500'
                       }`}>
-                        +{block.words.length - 6} till
+                        +{block.words.length - 6} more
                       </span>
                     )}
                   </div>
@@ -172,10 +183,10 @@ export default function BlockSelectionUI({
           {selectedBlocks.length > 0 ? (
             <>
               <Sparkles className="w-5 h-5" />
-              Starta Session med {totalWords} ord
+              Start Session with {totalWords} words
             </>
           ) : (
-            'Välj minst ett block för att fortsätta'
+            'Select at least one block to continue'
           )}
         </button>
       </div>

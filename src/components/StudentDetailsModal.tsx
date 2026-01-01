@@ -93,7 +93,7 @@ export default function StudentDetailsModal({
   const [expandedQuiz, setExpandedQuiz] = useState<string | null>(null)
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('sv-SE', {
+    return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -139,9 +139,9 @@ export default function StudentDetailsModal({
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-[#12122a] rounded-3xl max-w-6xl w-full h-[90vh] overflow-hidden shadow-2xl flex flex-col border border-white/10">
+      <div className="bg-[#161622] rounded-3xl max-w-6xl w-full h-[90vh] overflow-hidden shadow-2xl flex flex-col border border-white/[0.12]">
         {/* Modern Header */}
-        <div className="flex items-center justify-between px-8 py-6 border-b border-white/10 bg-[#0a0a1a] shrink-0">
+        <div className="flex items-center justify-between px-8 py-6 border-b border-white/[0.12] bg-[#161622] shrink-0">
           <div className="flex items-center gap-5">
             <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/20">
               <Star className="w-7 h-7 text-white" />
@@ -163,16 +163,16 @@ export default function StudentDetailsModal({
           </div>
           <button
             onClick={onClose}
-            className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 border border-white/10"
+            className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 border border-white/[0.12]"
           >
             <X className="w-5 h-5 text-gray-400" />
           </button>
         </div>
 
         {/* Minimalist Tabs */}
-        <div className="flex border-b border-white/10 bg-[#0a0a1a] shrink-0">
+        <div className="flex border-b border-white/[0.12] bg-[#161622] shrink-0">
           {[
-            { id: 'overview', label: 'Allmän Info', icon: BarChart3 },
+            { id: 'overview', label: 'Overview', icon: BarChart3 },
             { id: 'quiz', label: 'Quiz', icon: BookOpen }
           ].map((tab) => (
             <button
@@ -190,7 +190,7 @@ export default function StudentDetailsModal({
         </div>
 
         {/* Content */}
-        <div className="p-8 flex-1 overflow-y-auto bg-[#0f0f24]">
+        <div className="p-8 flex-1 overflow-y-auto bg-[#161622]">
           {loading ? (
             <div className="text-center py-16">
               <div className="animate-spin rounded-full h-12 w-12 border-2 border-amber-500/30 border-t-amber-500 mx-auto mb-4"></div>
@@ -198,7 +198,7 @@ export default function StudentDetailsModal({
             </div>
           ) : !details ? (
             <div className="text-center py-16">
-              <p className="text-gray-400 font-medium">Kunde inte ladda elevdetaljer</p>
+              <p className="text-gray-400 font-medium">Could not load student details</p>
             </div>
           ) : (
             <>
@@ -209,13 +209,13 @@ export default function StudentDetailsModal({
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     {/* Overall Accuracy */}
                     <div className="bg-white/5 rounded-xl p-5 border border-emerald-500/30 hover:border-emerald-500/50 transition-all">
-                      <div className="text-sm text-gray-400 mb-1 font-medium">Träffsäkerhet</div>
+                      <div className="text-sm text-gray-400 mb-1 font-medium">Accuracy</div>
                       <div className="text-3xl font-bold text-emerald-400">{details.average_accuracy}%</div>
                     </div>
 
                     {/* Total Sessions */}
                     <div className="bg-white/5 rounded-xl p-5 border border-cyan-500/30 hover:border-cyan-500/50 transition-all">
-                      <div className="text-sm text-gray-400 mb-1 font-medium">Totalt Sessions</div>
+                      <div className="text-sm text-gray-400 mb-1 font-medium">Total Sessions</div>
                       <div className="text-3xl font-bold text-cyan-400">{details.games_played}</div>
                     </div>
 
@@ -234,8 +234,8 @@ export default function StudentDetailsModal({
 
                   {/* Recent Sessions (Latest 3) */}
                   {details.activity_log.length > 0 && (
-                    <div className="bg-white/5 rounded-xl border border-white/10 p-6">
-                      <h3 className="text-lg font-semibold text-white mb-4">Senaste Sessions</h3>
+                    <div className="bg-white/5 rounded-xl border border-white/[0.12] p-6">
+                      <h3 className="text-lg font-semibold text-white mb-4">Recent Sessions</h3>
                       <div className="space-y-3">
                         {details.activity_log.slice(0, 3).map((session, index) => (
                           <div
@@ -275,11 +275,11 @@ export default function StudentDetailsModal({
                 <div className="h-full">
                   {details.quiz_results.length === 0 ? (
                     <div className="text-center py-20">
-                      <div className="w-24 h-24 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-white/10">
+                      <div className="w-24 h-24 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-white/[0.12]">
                         <BookOpen className="w-12 h-12 text-gray-500" />
                       </div>
-                      <p className="text-white font-semibold text-lg mb-2">Inga quiz slutförda ännu</p>
-                      <p className="text-gray-500 text-sm">Quiz-resultat kommer att visas här</p>
+                      <p className="text-white font-semibold text-lg mb-2">No quizzes completed yet</p>
+                      <p className="text-gray-500 text-sm">Quiz results will be displayed here</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -317,7 +317,7 @@ export default function StudentDetailsModal({
                             className={`bg-white/5 rounded-xl border transition-all ${
                               hasDetails 
                                 ? 'border-amber-500/30 hover:border-amber-500/50 cursor-pointer' 
-                                : 'border-white/10 cursor-default'
+                                : 'border-white/[0.12] cursor-default'
                             }`}
                             onClick={() => {
                               if (hasDetails) {
@@ -340,7 +340,7 @@ export default function StudentDetailsModal({
                               
                               <div className="grid grid-cols-3 gap-4 mb-4">
                                 <div className="text-center p-3 bg-white/5 rounded-xl border border-white/5">
-                                  <div className="text-sm text-gray-400 mb-1">Poäng</div>
+                                  <div className="text-sm text-gray-400 mb-1">Score</div>
                                   <div className="text-2xl font-bold text-white">{quiz.score}/{quiz.total}</div>
                                 </div>
                                 <div className="text-center p-3 bg-white/5 rounded-xl border border-white/5">
@@ -348,7 +348,7 @@ export default function StudentDetailsModal({
                                   <div className="text-2xl font-bold text-white">{quiz.accuracy}%</div>
                                 </div>
                                 <div className="text-center p-3 bg-white/5 rounded-xl border border-white/5">
-                                  <div className="text-sm text-gray-400 mb-1">Datum</div>
+                                  <div className="text-sm text-gray-400 mb-1">Date</div>
                                   <div className="text-xs font-medium text-white">{formatDate(quiz.completed_at)}</div>
                                 </div>
                               </div>
@@ -362,36 +362,36 @@ export default function StudentDetailsModal({
                                   }}
                                   className="w-full py-3 text-sm font-semibold text-amber-400 hover:text-white border border-amber-500/30 rounded-xl hover:bg-amber-500/20 transition-all"
                                 >
-                                  {isExpanded ? '▲ Dölj detaljer' : '▼ Visa detaljer per ord'}
+                                  {isExpanded ? '▲ Hide details' : '▼ Show details per word'}
                                 </button>
                               )}
                               {!hasDetails && (
                                 <div className="text-xs text-gray-500 text-center py-3 bg-white/5 rounded-xl border border-white/5">
-                                  Ingen detaljerad feedback tillgänglig för detta quiz
+                                  No detailed feedback available for this quiz
                                 </div>
                               )}
                             </div>
                             
                             {/* Expanded Word Details */}
                             {isExpanded && hasDetails && quiz.word_details && (
-                              <div className="border-t border-white/10 p-5 bg-white/5">
+                              <div className="border-t border-white/[0.12] p-5 bg-white/5">
                                 {/* Summary Stats */}
                                 <div className="grid grid-cols-4 gap-3 mb-4">
                                   <div className="text-center p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
                                     <div className="text-lg font-bold text-emerald-400">{correctWords.length}</div>
-                                    <div className="text-xs text-emerald-500">Rätt</div>
+                                    <div className="text-xs text-emerald-500">Correct</div>
                                   </div>
                                   <div className="text-center p-2 bg-amber-500/10 rounded-xl border border-amber-500/20">
                                     <div className="text-lg font-bold text-amber-400">{partialWords.length}</div>
-                                    <div className="text-xs text-amber-500">Nästan</div>
+                                    <div className="text-xs text-amber-500">Partial</div>
                                   </div>
                                   <div className="text-center p-2 bg-red-500/10 rounded-xl border border-red-500/20">
                                     <div className="text-lg font-bold text-red-400">{wrongWords.length}</div>
-                                    <div className="text-xs text-red-500">Fel</div>
+                                    <div className="text-xs text-red-500">Wrong</div>
                                   </div>
                                   <div className="text-center p-2 bg-white/5 rounded-xl border border-white/10">
                                     <div className="text-lg font-bold text-gray-400">{emptyWords.length}</div>
-                                    <div className="text-xs text-gray-500">Tomt</div>
+                                    <div className="text-xs text-gray-500">Empty</div>
                                   </div>
                                 </div>
                                 
@@ -411,13 +411,13 @@ export default function StudentDetailsModal({
                                         <div className="flex-1">
                                           <div className="font-semibold text-white mb-1">{word.prompt}</div>
                                           <div className="text-sm text-gray-400">
-                                            <span className="font-medium">Förväntat: </span>
+                                            <span className="font-medium">Expected: </span>
                                             <span className="text-gray-300">{word.expected}</span>
                                           </div>
                                           <div className="text-sm text-gray-400">
-                                            <span className="font-medium">Svar: </span>
+                                            <span className="font-medium">Answer: </span>
                                             <span className={word.given ? 'text-gray-300' : 'text-gray-500 italic'}>
-                                              {word.given || '(tomt)'}
+                                              {word.given || '(empty)'}
                                             </span>
                                           </div>
                                         </div>
@@ -427,9 +427,9 @@ export default function StudentDetailsModal({
                                           word.verdict === 'wrong' ? 'bg-red-500/20 text-red-400' :
                                           'bg-white/10 text-gray-400'
                                         }`}>
-                                          {word.verdict === 'correct' ? 'Rätt' :
-                                           word.verdict === 'partial' ? 'Nästan' :
-                                           word.verdict === 'wrong' ? 'Fel' : 'Tomt'}
+                                          {word.verdict === 'correct' ? 'Correct' :
+                                           word.verdict === 'partial' ? 'Partial' :
+                                           word.verdict === 'wrong' ? 'Wrong' : 'Empty'}
                                         </div>
                                       </div>
                                     </div>

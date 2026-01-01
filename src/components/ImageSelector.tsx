@@ -4,9 +4,16 @@ import { useState, useEffect } from 'react'
 import { Upload, Search, X, Image as ImageIcon } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
+export interface ImageData {
+  image_url: string
+  photographer_name?: string
+  photographer_url?: string
+  unsplash_url?: string
+}
+
 interface ImageSelectorProps {
   value?: string
-  onChange: (imageUrl: string) => void
+  onChange: (imageData: ImageData) => void
   onClear: () => void
   word: string
   wordIndex?: number
@@ -19,8 +26,15 @@ interface UnsplashImage {
     regular: string
   }
   alt_description: string
+  links: {
+    download_location: string
+  }
   user: {
     name: string
+    links: {
+      html: string
+    }
+    username: string
   }
 }
 
@@ -46,7 +60,7 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
       }
       
       const response = await fetch(
-        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=12&client_id=${apiKey}`
+        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=12&content_filter=high&client_id=${apiKey}`
       )
       
       if (response.ok) {
@@ -91,9 +105,43 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
     return publicUrl
   }
 
+  // Trigger Unsplash download tracking
+  const triggerDownloadTracking = async (downloadLocation: string) => {
+    try {
+      const apiKey = process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY
+      if (!apiKey || apiKey === 'YOUR_UNSPLASH_ACCESS_KEY') return
+      
+      // Call download endpoint to track usage (required by Unsplash API guidelines)
+      await fetch(downloadLocation, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Client-ID ${apiKey}`
+        }
+      })
+    } catch (error) {
+      // Fail silently - don't block user if tracking fails
+      console.error('Error tracking Unsplash download:', error)
+    }
+  }
+
   // Handle image selection
-  const handleImageSelect = async (imageUrl: string) => {
-    onChange(imageUrl)
+  const handleImageSelect = async (image: UnsplashImage) => {
+    // Trigger download tracking (required for Production API access)
+    await triggerDownloadTracking(image.links.download_location)
+    
+    // Build photographer URLs with UTM parameters as required by Unsplash
+    const photographerUrl = `${image.user.links.html}?utm_source=spell-school&utm_medium=referral`
+    const unsplashUrl = `https://unsplash.com/?utm_source=spell-school&utm_medium=referral`
+    
+    // Create image data object with attribution info
+    const imageData: ImageData = {
+      image_url: image.urls.regular,
+      photographer_name: image.user.name,
+      photographer_url: photographerUrl,
+      unsplash_url: unsplashUrl
+    }
+    
+    onChange(imageData)
     setShowModal(false)
   }
 
@@ -104,7 +152,10 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
     try {
       setLoading(true)
       const imageUrl = await uploadToStorage(uploadFile)
-      onChange(imageUrl)
+      // For uploaded images, no photographer info (user's own image)
+      onChange({
+        image_url: imageUrl
+      })
       setShowModal(false)
       setUploadFile(null)
       setUploadPreview(null)
@@ -132,6 +183,42 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
       }
     }
   }, [word])
+
+  // Add custom scrollbar styles for dark theme
+  useEffect(() => {
+    const styleId = 'image-selector-scrollbar-styles'
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style')
+      style.id = styleId
+      style.textContent = `
+        .image-grid-scroll::-webkit-scrollbar {
+          width: 8px;
+        }
+        .image-grid-scroll::-webkit-scrollbar-track {
+          background: transparent;
+          border-radius: 4px;
+        }
+        .image-grid-scroll::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 4px;
+          border: 2px solid transparent;
+          background-clip: padding-box;
+        }
+        .image-grid-scroll::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.3);
+          background-clip: padding-box;
+        }
+        .image-grid-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+        }
+      `
+      document.head.appendChild(style)
+    }
+    return () => {
+      // Don't remove style on unmount as it might be used by other instances
+    }
+  }, [])
 
   return (
     <>
@@ -169,41 +256,44 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
 
       {/* Inline Image Selector */}
       {showModal && (
-        <div className="mt-4 p-4 bg-[#1a1a2e] rounded-xl border border-white/10">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="font-medium text-white">Select image for "{word}"</h4>
+        <div className="mt-4 p-5 bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-xl border border-white/20 shadow-2xl shadow-black/50">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h4 className="font-semibold text-white text-base">Select image for "{word}"</h4>
+              <p className="text-xs text-gray-400 mt-0.5">Choose from Unsplash or upload your own</p>
+            </div>
             <button
               onClick={() => setShowModal(false)}
-              className="text-gray-500 hover:text-white p-1 hover:bg-white/10 rounded-lg transition-colors"
+              className="text-gray-400 hover:text-white p-2 hover:bg-white/10 rounded-lg transition-all"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
           
           {/* Search bar */}
-          <div className="flex gap-2 mb-4">
+          <div className="flex gap-3 mb-5">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && searchImages(searchQuery)}
                 placeholder="Search for images..."
-                className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-none transition-all"
+                className="w-full pl-10 pr-4 py-3 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-none transition-all backdrop-blur-sm"
               />
             </div>
             <button
               onClick={() => searchImages(searchQuery)}
               disabled={loading}
-              className="px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 font-medium transition-all"
+              className="px-5 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 font-medium transition-all shadow-lg shadow-cyan-500/20"
             >
               {loading ? 'Searching...' : 'Search'}
             </button>
           </div>
 
           {/* Upload section */}
-          <div className="mb-4 p-4 bg-white/5 rounded-xl border border-white/10">
+          <div className="mb-5 p-4 bg-white/[0.03] rounded-xl border border-white/10 backdrop-blur-sm">
             <h5 className="font-medium mb-3 text-gray-300 text-sm">Or upload your own image:</h5>
             <div className="flex items-center gap-4">
               <input
@@ -236,7 +326,9 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
           </div>
 
           {/* Image grid */}
-          <div className="max-h-64 overflow-y-auto">
+          <div 
+            className="image-grid-scroll max-h-64 overflow-y-auto pr-2"
+          >
             {loading ? (
               <div className="text-center py-8">
                 <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto mb-3" />
@@ -256,16 +348,16 @@ export default function ImageSelector({ value, onChange, onClear, word, wordInde
                 {unsplashImages.map((image) => (
                   <button
                     key={image.id}
-                    onClick={() => handleImageSelect(image.urls.regular)}
-                    className="group relative aspect-square overflow-hidden rounded-xl border border-white/10 hover:border-cyan-500/50 transition-all"
+                    onClick={() => handleImageSelect(image)}
+                    className="group relative aspect-square overflow-hidden rounded-xl border-2 border-white/10 hover:border-cyan-500/60 transition-all shadow-md hover:shadow-xl hover:shadow-cyan-500/20"
                   >
                     <img
                       src={image.urls.small}
                       alt={image.alt_description}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                     />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                      <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">Select</span>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-2">
+                      <span className="text-white text-xs font-semibold">Select</span>
                     </div>
                   </button>
                 ))}

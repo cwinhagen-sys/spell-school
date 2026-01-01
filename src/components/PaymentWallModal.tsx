@@ -28,13 +28,13 @@ export default function PaymentWallModal({
       name: 'Premium',
       icon: Zap,
       color: 'from-cyan-500 to-blue-600',
-      price: '79 SEK/month',
+      price: '29 SEK/month',
     },
     pro: {
       name: 'Pro',
       icon: Crown,
       color: 'from-amber-500 to-orange-600',
-      price: '129 SEK/month',
+      price: '49 SEK/month',
     },
   }
 

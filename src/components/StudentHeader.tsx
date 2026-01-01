@@ -211,37 +211,37 @@ export default function StudentHeader() {
       id: 'profile',
       label: 'Profile',
       href: '/student/profile',
-      icon: <User className="w-4 h-4" />
+      icon: <User className="w-4 h-4 text-blue-400" />
     },
     {
       id: 'levels',
-      label: 'Level & XP',
+      label: 'Level & Arcane Points',
       href: '/student/levels',
-      icon: <TrendingUp className="w-4 h-4" />
+      icon: <TrendingUp className="w-4 h-4 text-emerald-400" />
     },
     {
       id: 'quests',
       label: 'Quests',
       href: '/student/quests',
-      icon: <Target className="w-4 h-4" />
+      icon: <Target className="w-4 h-4 text-amber-400" />
     },
     {
       id: 'badges',
       label: 'Badges',
       href: '/student/badges',
-      icon: <Trophy className="w-4 h-4" />
+      icon: <Trophy className="w-4 h-4 text-violet-400" />
     },
     {
       id: 'wordsets',
       label: 'Word Sets',
       href: '/student/word-sets',
-      icon: <BookOpen className="w-4 h-4" />
+      icon: <BookOpen className="w-4 h-4 text-cyan-400" />
     },
     {
-      id: 'games',
-      label: 'Games',
+      id: 'vocabulary-games',
+      label: 'Vocabulary Games',
       href: '/student/games',
-      icon: <Gamepad2 className="w-4 h-4" />,
+      icon: <Gamepad2 className="w-4 h-4 text-pink-400" />,
       subItems: [
         { label: 'Flashcards', href: '#flashcards' },
         { label: 'Multiple Choice', href: '#choice' },
@@ -257,7 +257,7 @@ export default function StudentHeader() {
       id: 'leaderboard',
       label: 'Leaderboard',
       href: '/student/leaderboard',
-      icon: <Users className="w-4 h-4" />
+      icon: <Users className="w-4 h-4 text-orange-400" />
     }
   ]
 
@@ -324,7 +324,7 @@ export default function StudentHeader() {
                     aria-haspopup={item.subItems && item.subItems.length > 0}
                     aria-expanded={openDropdown === item.label}
                   >
-                    <span className={active ? 'text-amber-400' : ''}>{item.icon}</span>
+                    {item.icon}
                     <span>{item.label}</span>
                     {item.subItems && item.subItems.length > 0 && (
                       <ChevronDown 
@@ -335,7 +335,7 @@ export default function StudentHeader() {
 
                   {/* Dropdown Menu */}
                   {openDropdown === item.label && item.subItems && (
-                    <div className="absolute top-full left-0 mt-2 w-56 bg-[#12122a] rounded-xl shadow-2xl border border-white/10 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="absolute top-full left-0 mt-2 w-56 bg-white/5 backdrop-blur-sm rounded-xl shadow-2xl border border-white/10 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                       <div className="py-2">
                         {item.subItems.map((subItem, subIndex) => {
                           const gameType = subItem.href.replace('#', '')
@@ -353,13 +353,15 @@ export default function StudentHeader() {
                             </button>
                           )
                         })}
-                        <Link
-                          href={item.href}
-                          className="block px-4 py-2.5 text-sm font-semibold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 transition-colors border-t border-white/5 mt-1"
-                          onClick={() => setOpenDropdown(null)}
-                        >
-                          View all games →
-                        </Link>
+                        {item.id === 'vocabulary-games' && (
+                          <Link
+                            href={item.href}
+                            className="block px-4 py-2.5 text-sm font-semibold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 transition-colors border-t border-white/10 mt-1"
+                            onClick={() => setOpenDropdown(null)}
+                          >
+                            View all games →
+                          </Link>
+                        )}
                       </div>
                     </div>
                   )}
@@ -439,7 +441,7 @@ export default function StudentHeader() {
                     `}
                   >
                     <div className="flex items-center gap-2">
-                      <span className={active ? 'text-amber-400' : ''}>{item.icon}</span>
+                      {item.icon}
                       <span>{item.label}</span>
                     </div>
                     {item.subItems && item.subItems.length > 0 && (
@@ -469,16 +471,18 @@ export default function StudentHeader() {
                           </button>
                         )
                       })}
-                      <Link
-                        href={item.href}
-                        className="block px-4 py-2.5 text-sm font-semibold text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors"
-                        onClick={() => {
-                          setMobileMenuOpen(false)
-                          setOpenDropdown(null)
-                        }}
-                      >
-                        Visa alla spel →
-                      </Link>
+                      {item.id === 'vocabulary-games' && (
+                        <Link
+                          href={item.href}
+                          className="block px-4 py-2.5 text-sm font-semibold text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors"
+                          onClick={() => {
+                            setMobileMenuOpen(false)
+                            setOpenDropdown(null)
+                          }}
+                        >
+                          View all games →
+                        </Link>
+                      )}
                     </div>
                   )}
                 </div>

@@ -1,16 +1,5 @@
--- Add session_name column to sessions table
--- This allows teachers to give sessions custom names instead of using word set title
+-- Add session_name column to sessions table if it doesn't exist
+-- Run this in Supabase SQL Editor
 
-DO $$ 
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'sessions' 
-    AND column_name = 'session_name'
-  ) THEN
-    ALTER TABLE sessions 
-    ADD COLUMN session_name VARCHAR(255);
-  END IF;
-END $$;
-
-
+ALTER TABLE sessions
+ADD COLUMN IF NOT EXISTS session_name TEXT;

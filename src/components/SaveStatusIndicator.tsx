@@ -319,49 +319,7 @@ Check browser console for database errors!
 
   const statusInfo = getStatusInfo()
 
-  return (
-    <AnimatePresence>
-      {isVisible && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: 10 }}
-          transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="fixed bottom-6 right-6 z-50"
-        >
-          <div className={`
-            ${statusInfo.bgColor} 
-            ${statusInfo.borderColor}
-            backdrop-blur-sm 
-            border-2
-            rounded-xl 
-            shadow-lg 
-            px-4 
-            py-3 
-            flex 
-            items-center 
-            gap-3
-            min-w-[240px]
-          `}>
-            {statusInfo.icon}
-            <div className="flex-1">
-              <span className={`text-sm font-medium ${statusInfo.textColor}`}>
-                {statusInfo.text}
-              </span>
-              {lastSaveTime && status === 'saved' && (
-                <div className="text-xs text-gray-500 mt-0.5">
-                  {lastSaveTime.toLocaleTimeString('sv-SE', { 
-                    hour: '2-digit', 
-                    minute: '2-digit',
-                    second: '2-digit'
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  )
+  // Hidden - no longer needed
+  return null
 }
 

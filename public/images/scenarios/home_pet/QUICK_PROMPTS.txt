@@ -1,0 +1,40 @@
+QUICK COPY-PASTE PROMPTS - COMIC BOOK STYLE (NO PEOPLE/ANIMALS)
+================================================================
+
+All prompts focus on environments and objects only. Comic book illustration style.
+
+---
+
+1. seg_schedule.png
+Comic book illustration style. Warm kitchen interior. Wooden or modern kitchen table with handwritten note/paper showing care schedule. Morning sunlight through window. Clean organized kitchen with cabinets. Warm, helpful mood. Bold lines, vibrant colors, comic book panel style. No people, no animals. Focus on table, note, kitchen environment.
+
+---
+
+2. seg_memory.png
+Comic book illustration style. Kitchen or hallway interior. Scene suggests uncertainty - items slightly out of place, clock on wall showing morning. Warm morning light. Slightly confused atmosphere. Bold lines, vibrant colors, comic book panel style. No people, no animals. Focus on environment suggesting someone trying to remember.
+
+---
+
+5. seg_breakfast.png
+Comic book illustration style. Clean organized kitchen interior. Dog food bowl on floor with properly measured food (one cup). Fresh water bowl nearby, full. Both bowls clean and properly placed. Morning light. Clean, organized, proper care atmosphere. Bold lines, vibrant colors, comic book panel style. No people, no animals. Focus on two bowls and clean kitchen.
+
+---
+
+6. seg_afternoon.png
+Comic book illustration style. Friendly backyard scene. Green grass, maybe fence. Ball visible on grass. Water bowl nearby, full. Afternoon golden light. Fun, energetic, outdoor play atmosphere. Bold lines, vibrant colors, comic book panel style. No people, no animals. Focus on backyard, grass, ball, water bowl.
+
+---
+
+8. ending_success.png
+Comic book illustration style. Option A: Evening neighborhood sidewalk, sunset with warm orange and pink sky, leash visible. Option B: Warm home interior, dog food bowl full, water bowl full, both properly placed. Success atmosphere. Bold lines, vibrant warm colors, comic book panel style. No people, no animals. Focus on success setting or full bowls.
+
+---
+
+9. ending_okay.png
+Comic book illustration style. Home interior. Dog food bowl visible (partially empty or not perfect). Water bowl visible (partially empty). Scene suggests something missed. Partial success mood. Bold lines, warm muted colors, comic book panel style. No people, no animals. Focus on bowls showing partial care.
+
+---
+
+10. ending_fail.png
+Comic book illustration style. Home interior. Empty dog food bowl, completely empty. Empty water bowl, completely empty. Door visible in background. Neglectful, sad atmosphere. Bold lines, muted sad colors, comic book panel style. No people, no animals. Focus on empty bowls, door, neglected atmosphere.
+

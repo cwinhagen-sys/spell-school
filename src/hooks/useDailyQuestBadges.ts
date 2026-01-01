@@ -10,7 +10,9 @@ export interface DailyQuestBadge {
   icon: string
   category: string
   rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
-  quest_id: string
+  quest_id?: string
+  requirement_type?: string
+  requirement_value?: number
   unlocked_at?: string
   earned: boolean
 }
@@ -53,10 +55,11 @@ export function useDailyQuestBadges() {
       }
 
       // Then sync from database in background
+      // Load badges with quest_id (daily quests) OR scenario badges (requirement_type = 'scenario_stars')
       const { data, error } = await supabase
         .from('badges')
-        .select('id, name, description, icon, category, rarity, quest_id, created_at, updated_at')
-        .not('quest_id', 'is', null)
+        .select('id, name, description, icon, category, rarity, quest_id, requirement_type, requirement_value, created_at, updated_at')
+        .or('quest_id.not.is.null,requirement_type.eq.scenario_stars')
         .order('rarity', { ascending: true })
 
       if (error) {

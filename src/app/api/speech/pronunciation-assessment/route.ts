@@ -102,27 +102,136 @@ export async function POST(request: NextRequest) {
 
     // Use Azure Speech SDK for pronunciation assessment with phoneme-level analysis
     // This provides actual phonetic analysis, not just transcription matching
-    return new Promise<NextResponse>((resolve) => {
+    try {
+      return new Promise<NextResponse>((resolve, reject) => {
+      let transcript = ''
+      let accuracyScoreFromAzure: number | null = null
+      let pronunciationResult: any = null
+      let resolved = false
+      let recognizer: sdk.SpeechRecognizer | null = null
+
+      const safeResolve = (response: NextResponse) => {
+        if (!resolved) {
+          resolved = true
+          clearTimeout(timeoutId)
+          if (recognizer) {
+            try {
+              recognizer.close()
+            } catch (e) {
+              // Ignore errors when closing
+            }
+          }
+          resolve(response)
+        }
+      }
+
       // Set up timeout to prevent hanging (10 seconds)
+      const requestStartTime = Date.now()
       const timeoutId = setTimeout(() => {
+        const elapsedTime = Date.now() - requestStartTime
         console.error('⏱️ Pronunciation assessment timeout - Azure SDK did not respond within 10 seconds')
-        resolve(
-          NextResponse.json(
-            { 
-              error: 'Pronunciation assessment timeout',
-              details: 'The assessment took too long. Please try again.',
-              isCorrect: false,
-              accuracyScore: 0,
-              feedback: 'Analysen tog för lång tid. Försök igen.',
-              transcript: ''
-            },
-            { status: 504 }
+        console.error('⏱️ Timeout details:', {
+          resolved,
+          elapsedTime: `${elapsedTime}ms`,
+          audioBufferSize: audioBuffer?.byteLength,
+          hasRecognizer: !!recognizer,
+          recognizerState: recognizer?.properties ? 'created' : 'not created'
+        })
+        
+        // Try to cancel the recognition if it's still running
+        if (recognizer && !resolved) {
+          try {
+            console.log('🛑 Attempting to cancel Azure Speech recognition...')
+            recognizer.stopContinuousRecognitionAsync(
+              () => {
+                console.log('✅ Recognition canceled successfully')
+              },
+              (cancelError: string) => {
+                console.error('❌ Error canceling recognition:', cancelError)
+              }
+            )
+          } catch (cancelError: any) {
+            console.error('❌ Exception while canceling recognition:', cancelError)
+          }
+        }
+        
+        if (!resolved) {
+          safeResolve(
+            NextResponse.json(
+              { 
+                error: 'Pronunciation assessment timeout',
+                details: `The assessment took too long (${elapsedTime}ms). Azure Speech Service may be unresponsive or subscription may have issues.`,
+                isCorrect: false,
+                accuracyScore: 0,
+                feedback: 'Analysen tog för lång tid. Detta kan bero på att Azure Speech Service inte svarar. Kontrollera din subscription och försök igen.',
+                transcript: ''
+              },
+              { status: 504 }
+            )
           )
-        )
+        }
       }, 10000) // 10 second timeout
 
-      const speechConfig = sdk.SpeechConfig.fromSubscription(apiKey, region)
-      speechConfig.speechRecognitionLanguage = 'en-US'
+      // Validate Azure credentials before creating config
+      console.log('🔑 Validating Azure credentials...', {
+        hasKey: !!apiKey,
+        keyLength: apiKey?.length || 0,
+        keyPrefix: apiKey?.substring(0, 8) || 'N/A',
+        region: region || 'N/A'
+      })
+
+      if (!apiKey || apiKey.length < 10) {
+        console.error('❌ Invalid Azure Speech API key')
+        clearTimeout(timeoutId)
+        return NextResponse.json(
+          { 
+            error: 'Invalid Azure Speech API key',
+            details: 'The API key appears to be invalid or too short',
+            isCorrect: false,
+            accuracyScore: 0,
+            feedback: 'Azure Speech Service är inte korrekt konfigurerad. Kontakta support.',
+            transcript: ''
+          },
+          { status: 500 }
+        )
+      }
+
+      if (!region || region.length < 3) {
+        console.error('❌ Invalid Azure Speech region')
+        clearTimeout(timeoutId)
+        return NextResponse.json(
+          { 
+            error: 'Invalid Azure Speech region',
+            details: 'The region appears to be invalid',
+            isCorrect: false,
+            accuracyScore: 0,
+            feedback: 'Azure Speech Service region är inte korrekt konfigurerad. Kontakta support.',
+            transcript: ''
+          },
+          { status: 500 }
+        )
+      }
+
+      let speechConfig: sdk.SpeechConfig
+      try {
+        speechConfig = sdk.SpeechConfig.fromSubscription(apiKey, region)
+        speechConfig.speechRecognitionLanguage = 'en-US'
+        console.log('✅ Azure Speech config created successfully')
+      } catch (configError: any) {
+        console.error('❌ Error creating Azure Speech config:', configError)
+        clearTimeout(timeoutId)
+        return NextResponse.json(
+          { 
+            error: 'Failed to create Azure Speech configuration',
+            details: configError?.message || 'Could not initialize Azure Speech SDK with provided credentials',
+            isCorrect: false,
+            accuracyScore: 0,
+            feedback: 'Kunde inte ansluta till Azure Speech Service. Kontrollera din subscription och försök igen.',
+            transcript: ''
+          },
+          { status: 500 }
+        )
+      }
 
       // Create pronunciation assessment config with phoneme-level granularity
       const pronunciationConfig = new sdk.PronunciationAssessmentConfig(
@@ -132,92 +241,278 @@ export async function POST(request: NextRequest) {
         true // Enable miscue detection
       )
 
+      // Validate audio buffer
+      if (!audioBuffer || audioBuffer.byteLength === 0) {
+        console.error('❌ Invalid audio buffer: empty or null')
+        clearTimeout(timeoutId)
+        return NextResponse.json(
+          { 
+            error: 'Invalid audio data',
+            details: 'Audio buffer is empty or invalid',
+            isCorrect: false,
+            accuracyScore: 0,
+            feedback: 'Ljudfilen är ogiltig. Försök spela in igen.',
+            transcript: ''
+          },
+          { status: 400 }
+        )
+      }
+
+      console.log('🎤 Audio buffer info:', {
+        size: audioBuffer.byteLength,
+        sizeKB: Math.round(audioBuffer.byteLength / 1024)
+      })
+
       // Create push audio input stream
       const pushStream = sdk.AudioInputStream.createPushStream()
       
-      // Convert ArrayBuffer to Buffer for Node.js, then to ArrayBuffer for Azure SDK
-      const buffer = Buffer.from(audioBuffer)
-      // Azure SDK accepts Buffer, but TypeScript types expect ArrayBuffer
-      // Convert Buffer back to ArrayBuffer for type safety
-      const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
-      pushStream.write(arrayBuffer)
-      pushStream.close()
+      try {
+        // Convert ArrayBuffer to Buffer for Node.js, then to ArrayBuffer for Azure SDK
+        const buffer = Buffer.from(audioBuffer)
+        // Azure SDK accepts Buffer, but TypeScript types expect ArrayBuffer
+        // Convert Buffer back to ArrayBuffer for type safety
+        const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
+        
+        console.log('🎤 Writing audio to stream:', {
+          bufferSize: buffer.length,
+          arrayBufferSize: arrayBuffer.byteLength,
+          audioBufferSize: audioBuffer.byteLength
+        })
+        
+        // Write audio data to stream
+        pushStream.write(arrayBuffer)
+        pushStream.close()
+        
+        console.log('✅ Audio data written to stream successfully')
+      } catch (streamError: any) {
+        console.error('❌ Error writing to audio stream:', streamError)
+        clearTimeout(timeoutId)
+        return NextResponse.json(
+          { 
+            error: 'Failed to process audio stream',
+            details: streamError?.message || 'Could not write audio data to stream',
+            isCorrect: false,
+            accuracyScore: 0,
+            feedback: 'Kunde inte bearbeta ljudfilen. Försök igen.',
+            transcript: ''
+          },
+          { status: 500 }
+        )
+      }
 
       // Create audio config from stream
       const audioConfig = sdk.AudioConfig.fromStreamInput(pushStream)
 
       // Create speech recognizer
-      const recognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig)
-      pronunciationConfig.applyTo(recognizer)
-
-      let transcript = ''
-      let accuracyScoreFromAzure: number | null = null
-      let pronunciationResult: any = null
-      let resolved = false
-
-      const safeResolve = (response: NextResponse) => {
-        if (!resolved) {
-          resolved = true
-          clearTimeout(timeoutId)
-          resolve(response)
+      try {
+        recognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig)
+        pronunciationConfig.applyTo(recognizer)
+        console.log('✅ Speech recognizer created successfully')
+        
+        // Add event listeners to track recognizer state
+        recognizer.sessionStarted = (s: any, e: sdk.SessionEventArgs) => {
+          console.log('🎤 Azure Speech session started')
         }
+        
+        recognizer.sessionStopped = (s: any, e: sdk.SessionEventArgs) => {
+          console.log('🎤 Azure Speech session stopped')
+        }
+        
+        recognizer.canceled = (s: any, e: sdk.SpeechRecognitionCanceledEventArgs) => {
+          console.error('❌ Azure Speech recognition canceled:', {
+            reason: e.reason,
+            errorCode: e.errorCode,
+            errorDetails: e.errorDetails
+          })
+          
+          // If recognition was canceled, resolve with error
+          if (!resolved) {
+            let userMessage = 'Uttalsanalys avbröts. Försök igen.'
+            if (e.reason === sdk.CancellationReason.Error) {
+              userMessage = 'Ett fel uppstod vid uttalsanalys. Kontrollera din Azure subscription och försök igen.'
+            } else if (e.reason === sdk.CancellationReason.EndOfStream) {
+              userMessage = 'Ljudströmmen avslutades för tidigt. Försök spela in igen.'
+            }
+            
+            safeResolve(
+              NextResponse.json(
+                { 
+                  error: 'Speech recognition canceled',
+                  details: e.errorDetails || `Reason: ${e.reason}`,
+                  isCorrect: false,
+                  accuracyScore: 0,
+                  feedback: userMessage,
+                  transcript: ''
+                },
+                { status: 500 }
+              )
+            )
+          }
+        }
+      } catch (recognizerError: any) {
+        console.error('❌ Error creating speech recognizer:', recognizerError)
+        clearTimeout(timeoutId)
+        return NextResponse.json(
+          { 
+            error: 'Failed to create speech recognizer',
+            details: recognizerError?.message || 'Could not initialize Azure Speech SDK',
+            isCorrect: false,
+            accuracyScore: 0,
+            feedback: 'Kunde inte initiera uttalsanalys. Försök igen.',
+            transcript: ''
+          },
+          { status: 500 }
+        )
       }
 
-      recognizer.recognizeOnceAsync(
-        (result: sdk.SpeechRecognitionResult) => {
-          recognizer.close()
-
-          if (result.reason === sdk.ResultReason.RecognizedSpeech) {
-            transcript = result.text.toLowerCase().trim()
-
-            // Get pronunciation assessment result
-            const pronunciationAssessmentResult = 
-              sdk.PronunciationAssessmentResult.fromResult(result)
+      console.log('🎤 Starting Azure Speech recognition...')
+      const recognitionStartTime = Date.now()
+      
+      try {
+        recognizer.recognizeOnceAsync(
+          (result: sdk.SpeechRecognitionResult) => {
+            const recognitionTime = Date.now() - recognitionStartTime
+            console.log('🎤 Azure Speech recognition callback received:', {
+              reason: result.reason,
+              text: result.text,
+              reasonText: sdk.ResultReason[result.reason],
+              duration: `${recognitionTime}ms`
+            })
             
-            if (pronunciationAssessmentResult) {
-              accuracyScoreFromAzure = pronunciationAssessmentResult.accuracyScore
-              pronunciationResult = {
-                accuracyScore: pronunciationAssessmentResult.accuracyScore,
-                pronunciationScore: pronunciationAssessmentResult.pronunciationScore,
-                completenessScore: pronunciationAssessmentResult.completenessScore,
-                fluencyScore: pronunciationAssessmentResult.fluencyScore
+            recognizer.close()
+
+            if (result.reason === sdk.ResultReason.RecognizedSpeech) {
+              transcript = result.text.toLowerCase().trim()
+
+              // Get pronunciation assessment result
+              const pronunciationAssessmentResult = 
+                sdk.PronunciationAssessmentResult.fromResult(result)
+              
+              if (pronunciationAssessmentResult) {
+                accuracyScoreFromAzure = pronunciationAssessmentResult.accuracyScore
+                pronunciationResult = {
+                  accuracyScore: pronunciationAssessmentResult.accuracyScore,
+                  pronunciationScore: pronunciationAssessmentResult.pronunciationScore,
+                  completenessScore: pronunciationAssessmentResult.completenessScore,
+                  fluencyScore: pronunciationAssessmentResult.fluencyScore
+                }
+
+                console.log('🎯 Azure Pronunciation Assessment Result:', {
+                  transcript,
+                  accuracyScore: accuracyScoreFromAzure,
+                  pronunciationScore: pronunciationAssessmentResult.pronunciationScore,
+                  completenessScore: pronunciationAssessmentResult.completenessScore,
+                  fluencyScore: pronunciationAssessmentResult.fluencyScore
+                })
+              } else {
+                console.warn('⚠️ Pronunciation assessment result not available')
               }
-
-              console.log('🎯 Azure Pronunciation Assessment Result:', {
-                transcript,
-                accuracyScore: accuracyScoreFromAzure,
-                pronunciationScore: pronunciationAssessmentResult.pronunciationScore,
-                completenessScore: pronunciationAssessmentResult.completenessScore,
-                fluencyScore: pronunciationAssessmentResult.fluencyScore
-              })
             } else {
-              console.warn('⚠️ Pronunciation assessment result not available')
+              console.warn('⚠️ Azure recognition failed:', {
+                reason: result.reason,
+                reasonText: sdk.ResultReason[result.reason],
+                text: result.text
+              })
             }
-          } else {
-            console.warn('Azure recognition failed:', result.reason)
-          }
 
-          // Continue with processing...
-          processPronunciationResult(
-            transcript,
-            word,
-            accuracyScoreFromAzure,
-            pronunciationResult,
-            safeResolve
-          )
-        },
-        (error: string) => {
-          recognizer.close()
-          console.error('❌ Azure Speech SDK error:', error)
-          safeResolve(
-            NextResponse.json(
-              { error: 'Failed to assess pronunciation', details: error },
-              { status: 500 }
+            // Continue with processing...
+            processPronunciationResult(
+              transcript,
+              word,
+              accuracyScoreFromAzure,
+              pronunciationResult,
+              safeResolve
             )
-          )
-        }
+          },
+          (error: string) => {
+            console.error('❌ Azure Speech SDK error callback:', error)
+            
+            // Check for common Azure subscription errors
+            let userFriendlyMessage = 'Kunde inte analysera uttal. Försök igen.'
+            if (error?.includes('401') || error?.includes('Unauthorized') || error?.includes('authentication')) {
+              userFriendlyMessage = 'Azure Speech Service-autentisering misslyckades. Kontrollera att din API-nyckel är korrekt och att din subscription är aktiv.'
+              console.error('🔑 Azure authentication error - check API key and subscription')
+            } else if (error?.includes('403') || error?.includes('Forbidden')) {
+              userFriendlyMessage = 'Azure Speech Service nekade åtkomst. Kontrollera att din subscription har rätt behörigheter.'
+              console.error('🚫 Azure access denied - check subscription permissions')
+            } else if (error?.includes('429') || error?.includes('rate limit') || error?.includes('quota')) {
+              userFriendlyMessage = 'Azure Speech Service har nått sin gräns. Försök igen om en stund.'
+              console.error('⏱️ Azure rate limit exceeded')
+            } else if (error?.includes('404') || error?.includes('Not Found')) {
+              userFriendlyMessage = 'Azure Speech Service hittades inte. Kontrollera att din region är korrekt.'
+              console.error('🌍 Azure region error - check region setting')
+            }
+            
+            recognizer.close()
+            safeResolve(
+              NextResponse.json(
+                { 
+                  error: 'Failed to assess pronunciation', 
+                  details: error,
+                  isCorrect: false,
+                  accuracyScore: 0,
+                  feedback: userFriendlyMessage,
+                  transcript: ''
+                },
+                { status: 500 }
+              )
+            )
+          }
+        )
+      } catch (asyncError: any) {
+        console.error('❌ Error calling recognizeOnceAsync:', asyncError)
+        recognizer.close()
+        clearTimeout(timeoutId)
+        return NextResponse.json(
+          { 
+            error: 'Failed to start speech recognition',
+            details: asyncError?.message || 'Could not call Azure Speech SDK',
+            isCorrect: false,
+            accuracyScore: 0,
+            feedback: 'Kunde inte starta uttalsanalys. Försök igen.',
+            transcript: ''
+          },
+          { status: 500 }
+        )
+      }
+      }).catch((promiseError: any) => {
+        console.error('❌ Promise error in pronunciation assessment:', {
+          message: promiseError?.message,
+          stack: promiseError?.stack,
+          name: promiseError?.name,
+          error: promiseError
+        })
+        return NextResponse.json(
+          { 
+            error: 'Failed to assess pronunciation', 
+            details: promiseError?.message || 'Promise rejected',
+            isCorrect: false,
+            accuracyScore: 0,
+            feedback: 'Ett fel uppstod vid uttalsanalys. Försök igen.',
+            transcript: ''
+          },
+          { status: 500 }
+        )
+      })
+    } catch (promiseCreationError: any) {
+      console.error('❌ Error creating Promise for pronunciation assessment:', {
+        message: promiseCreationError?.message,
+        stack: promiseCreationError?.stack,
+        name: promiseCreationError?.name,
+        error: promiseCreationError
+      })
+      return NextResponse.json(
+        { 
+          error: 'Failed to initialize pronunciation assessment', 
+          details: promiseCreationError?.message || 'Could not create assessment promise',
+          isCorrect: false,
+          accuracyScore: 0,
+          feedback: 'Kunde inte initiera uttalsanalys. Försök igen.',
+          transcript: ''
+        },
+        { status: 500 }
       )
-    })
+    }
 
     // Helper function to process pronunciation result
     function processPronunciationResult(
@@ -418,9 +713,22 @@ export async function POST(request: NextRequest) {
       }))
     }
   } catch (error: any) {
-    console.error('Pronunciation assessment error:', error)
+    console.error('❌ Pronunciation assessment error (outer catch):', {
+      message: error?.message,
+      stack: error?.stack,
+      name: error?.name,
+      error: error
+    })
     return NextResponse.json(
-      { error: 'Failed to assess pronunciation', details: error.message },
+      { 
+        error: 'Failed to assess pronunciation', 
+        details: error?.message || 'Unknown error occurred',
+        errorType: error?.name || 'Unknown',
+        isCorrect: false,
+        accuracyScore: 0,
+        feedback: 'Ett fel uppstod vid uttalsanalys. Försök igen.',
+        transcript: ''
+      },
       { status: 500 }
     )
   }

@@ -123,28 +123,29 @@ function buildPrompt(opts: {
   }[difficulty]
 
   // Single prompt - minimize reasoning, output JSON directly
-  const system = `Generate a story-gap exercise as a COHESIVE NARRATIVE. Output JSON directly. Be concise.
+  const isFewWords = wordSet.length <= 2
+  const storyGuidance = isFewWords
+    ? `- CREATE SIMPLE, CLEAR SENTENCES: With only ${wordSet.length} word(s), create ${wordSet.length === 1 ? 'one clear, complete sentence' : 'two distinct sentences'}. ${wordSet.length === 1 ? 'Make it a complete, meaningful sentence that naturally uses the word.' : 'Make each sentence unique and specific to its word, so they clearly differ from each other.'}`
+    : `- CREATE A COHERENT STORY: The sentences should form a complete mini-story with a beginning, middle, and satisfying ending. The story should flow naturally from sentence to sentence.`
+  
+  const system = `Generate a story-gap exercise${isFewWords ? ' with simple, clear sentences' : ' as a COHESIVE NARRATIVE'}. Output JSON directly. Be concise.
 
 ${difficultyGuidance}${scenarioGuidance}
 
 Rules:
-- CREATE A COHERENT STORY: The sentences should form a complete mini-story with a beginning, middle, and satisfying ending.
+${storyGuidance}
 - CRITICAL ORDER REQUIREMENT: The order MUST match wordSet exactly.
-  * solution_text[0] must contain wordSet[0]
-  * solution_text[1] must contain wordSet[1]
-  * solution_text[2] must contain wordSet[2]
+  * solution_text[0] must contain wordSet[0]${wordSet.length > 1 ? ', solution_text[1] must contain wordSet[1]' : ''}
   * ... and so on for all N words
-  * gaps_meta[0].correct must equal wordSet[0] (lowercase)
-  * gaps_meta[1].correct must equal wordSet[1] (lowercase)
+  * gaps_meta[0].correct must equal wordSet[0] (lowercase)${wordSet.length > 1 ? ', gaps_meta[1].correct must equal wordSet[1] (lowercase)' : ''}
   * ... and so on
-  * used_words must be EXACTLY wordSet in the SAME ORDER: ["wordSet[0]", "wordSet[1]", ...]
+  * used_words must be EXACTLY wordSet in the SAME ORDER: ["wordSet[0]"${wordSet.length > 1 ? ', "wordSet[1]"' : ''}, ...]
 - Exactly N lines in gap_text and N lines in solution_text (one per word in wordSet order).
 - One line = one sentence. One "______" per gap line. 
 - CRITICAL: Every line MUST end with a period (.), exclamation (!), or question mark (?).
 - Use the EXACT surface form wordSet[i] in solution_text[i] (case-insensitive ok).
 - No placeholders ("The word is...", "This is a...").
-- No component overlap between multi-word targets across different lines.
-- The story should flow naturally from sentence to sentence.${animalGuidance}
+- No component overlap between multi-word targets across different lines.${isFewWords ? '' : '\n- The story should flow naturally from sentence to sentence.'}${animalGuidance}
 - Duplicate words in wordSet are allowed - use them in different contexts.
 - CRITICAL UNIQUENESS REQUIREMENT: Each gap word/phrase must be UNIQUE to its sentence.
   * wordSet[i] should ONLY fit grammatically and semantically in sentence[i]
@@ -152,8 +153,7 @@ Rules:
   * Create distinct contexts, subjects, verbs, or sentence structures so each word is clearly tied to ONE specific sentence
   * For example: if wordSet contains "by day" and "by night", create sentences where "by day" only fits one context and "by night" only fits another
   * Avoid generic sentences where multiple words could fit - make each sentence specific to its target word
-- IMPORTANT: Generate UNIQUE sentences different from previous runs. Vary wording, context, and examples.
-- The last sentence should provide a satisfying conclusion to the story.
+- IMPORTANT: Generate UNIQUE sentences different from previous runs. Vary wording, context, and examples.${isFewWords ? '' : '\n- The last sentence should provide a satisfying conclusion to the story.'}
 
 Output JSON only (no explanations, no reasoning):
 {
@@ -164,13 +164,17 @@ Output JSON only (no explanations, no reasoning):
   "notes": []
 }`.trim()
 
-  const scenarioText = scenario ? `\nSETTING: Create a cohesive story that takes place at/in "${scenario}".` : ''
+  const scenarioText = scenario 
+    ? (isFewWords 
+        ? `\nSETTING: Create a sentence${wordSet.length === 1 ? '' : 's'} that ${wordSet.length === 1 ? 'takes place at/in or relates to' : 'take place at/in or relate to'} "${scenario}".`
+        : `\nSETTING: Create a cohesive story that takes place at/in "${scenario}".`)
+    : ''
 
-  const user = `Generate a unique story for this run.${scenarioText}
+  const user = `Generate ${isFewWords ? 'a unique sentence' + (wordSet.length === 1 ? '' : 's') : 'a unique story'} for this run.${scenarioText}
 
 CRITICAL: Maintain exact order:
 - wordSet[0]="${wordSet[0]}" → solution_text[0] must contain "${wordSet[0]}", gaps_meta[0].correct="${wordSet[0].toLowerCase()}"
-- wordSet[1]="${wordSet[1]}" → solution_text[1] must contain "${wordSet[1]}", gaps_meta[1].correct="${wordSet[1].toLowerCase()}"
+${wordSet.length > 1 ? `- wordSet[1]="${wordSet[1]}" → solution_text[1] must contain "${wordSet[1]}", gaps_meta[1].correct="${wordSet[1].toLowerCase()}"` : ''}
 ${wordSet.length > 2 ? `- wordSet[2]="${wordSet[2]}" → solution_text[2] must contain "${wordSet[2]}", gaps_meta[2].correct="${wordSet[2].toLowerCase()}"` : ''}
 ${wordSet.length > 3 ? `- wordSet[3]="${wordSet[3]}" → solution_text[3] must contain "${wordSet[3]}", gaps_meta[3].correct="${wordSet[3].toLowerCase()}"` : ''}
 ${wordSet.length > 4 ? `- wordSet[4]="${wordSet[4]}" → solution_text[4] must contain "${wordSet[4]}", gaps_meta[4].correct="${wordSet[4].toLowerCase()}"` : ''}
@@ -180,15 +184,14 @@ ${wordSet.length > 7 ? `- wordSet[7]="${wordSet[7]}" → solution_text[7] must c
 
 CRITICAL: Each word/phrase must be UNIQUE to its sentence:
 - "${wordSet[0]}" should ONLY fit in sentence 1, not in any other sentence
-- "${wordSet[1]}" should ONLY fit in sentence 2, not in any other sentence
+${wordSet.length > 1 ? `- "${wordSet[1]}" should ONLY fit in sentence 2, not in any other sentence` : ''}
 ${wordSet.length > 2 ? `- "${wordSet[2]}" should ONLY fit in sentence 3, not in any other sentence` : ''}
 ${wordSet.length > 3 ? `- "${wordSet[3]}" should ONLY fit in sentence 4, not in any other sentence` : ''}
 ${wordSet.length > 4 ? `- "${wordSet[4]}" should ONLY fit in sentence 5, not in any other sentence` : ''}
 ${wordSet.length > 5 ? `- "${wordSet[5]}" should ONLY fit in sentence 6, not in any other sentence` : ''}
 ${wordSet.length > 6 ? `- "${wordSet[6]}" should ONLY fit in sentence 7, not in any other sentence` : ''}
 ${wordSet.length > 7 ? `- "${wordSet[7]}" should ONLY fit in sentence 8, not in any other sentence` : ''}
-- Create distinct contexts so each word is clearly tied to ONE specific sentence
-- The story should have a clear beginning, middle, and satisfying conclusion
+- Create distinct contexts so each word is clearly tied to ONE specific sentence${wordSet.length <= 2 ? '\n- With only ' + wordSet.length + ' word(s), create ' + (wordSet.length === 1 ? 'one complete, meaningful sentence' : 'two clearly different sentences') + '.' : '\n- The story should have a clear beginning, middle, and satisfying conclusion'}
 
 sig=${signature} difficulty=${difficulty}
 wordSet=${JSON.stringify(wordSet)}

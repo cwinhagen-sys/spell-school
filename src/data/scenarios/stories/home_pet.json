@@ -1,0 +1,326 @@
+{
+  "id": "home_pet",
+  "scenarioId": "home",
+  "goalId": "pet",
+  "title": "Care for Pet",
+  "description": "Take good care of your dog for the whole day",
+  "difficulty": "easy",
+  "difficultyStars": 1,
+  "estimatedMinutes": 5,
+  "introImages": {
+    "boy": "/images/scenarios/home_pet/boy/intro.png",
+    "girl": "/images/scenarios/home_pet/girl/intro.png"
+  },
+  "xpRewards": {
+    "oneStar": 15,
+    "twoStars": 30,
+    "threeStars": 50
+  },
+  "startSegmentId": "intro",
+  "segments": {
+    "intro": {
+      "id": "intro",
+      "text": "Max is scratching at your bedroom door. You hear his whining and get out of bed. It is Saturday morning, and Mom left early for work. Before she left, she told you: 'Max is all yours today! Make sure he has everything he needs.' Max looks at you with big, hopeful eyes. His tail wags slowly. You know he needs food, water, exercise, and attention. You have helped Mom with Max before, but today you are in charge of everything.",
+      "audioPath": "/audio/scenarios/home_pet/care_pet1.mp3",
+      "choices": [
+        {
+          "id": "remember_what_mom_does",
+          "text": "Try to remember what Mom usually does",
+          "leadsTo": "memory_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "just_feed_him",
+          "text": "Just give him food right away",
+          "leadsTo": "feeding_rush",
+          "qualityImpact": -1
+        },
+        {
+          "id": "check_schedule",
+          "text": "Check the care schedule Mom left",
+          "leadsTo": "schedule_segment",
+          "qualityImpact": 1
+        }
+      ]
+    },
+    "schedule_segment": {
+      "id": "schedule_segment",
+      "text": "You find a note on the kitchen table. It says: 'Max's schedule: 1) Morning walk (30 minutes), 2) Breakfast (one cup of food), 3) Fresh water, 4) Playtime in the afternoon, 5) Evening walk before dinner.' The note is clear and easy to follow. You feel ready to take good care of Max. You should start with the first item on the list.",
+      "imagePath": "/images/scenarios/home_pet/shared/seg_schedule.png",
+      "audioPath": "/audio/scenarios/home_pet/care_pet2.mp3",
+      "choices": [
+        {
+          "id": "do_later",
+          "text": "Do everything later, play games first",
+          "leadsTo": "forgot_care",
+          "qualityImpact": -1
+        },
+        {
+          "id": "start_morning_walk",
+          "text": "Start with the morning walk",
+          "leadsTo": "morning_walk",
+          "qualityImpact": 1
+        },
+        {
+          "id": "start_breakfast",
+          "text": "Start with breakfast instead",
+          "leadsTo": "feeding_rush",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "memory_segment": {
+      "id": "memory_segment",
+      "text": "You try to remember what Mom does every morning. She always takes Max outside first... but you cannot remember if it is before or after breakfast. She gives him food, but how much? One cup or two? You are not sure about the exact times. Max is looking at you, waiting. You wish you had paid more attention. Maybe there is a note somewhere with the exact schedule?",
+      "imagePath": "/images/scenarios/home_pet/shared/seg_memory.png",
+      "audioPath": "/audio/scenarios/home_pet/care_pet3.mp3",
+      "choices": [
+        {
+          "id": "just_feed",
+          "text": "Just give him food and water",
+          "leadsTo": "feeding_rush",
+          "qualityImpact": -1
+        },
+        {
+          "id": "look_for_schedule",
+          "text": "Look for a schedule or note on the kitchen table",
+          "leadsTo": "schedule_segment",
+          "qualityImpact": 1
+        },
+        {
+          "id": "guess_walk_first",
+          "text": "Guess: take him outside first, then feed",
+          "leadsTo": "morning_walk",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "feeding_rush": {
+      "id": "feeding_rush",
+      "text": "You rush to the kitchen and pour food into Max's bowl. You give him a lot because he looks very hungry. But wait - the schedule said 'one cup of food' for breakfast, and you did not measure. Max eats quickly, but then he starts whining. He keeps looking at the door. You realize he needs to go outside, but you fed him too much too fast. Max looks uncomfortable. Maybe you should have started with the walk first, like the schedule said.",
+      "imagePath": "/images/scenarios/home_pet/shared/seg_feeding_rush.png",
+      "audioPath": "/audio/scenarios/home_pet/care_pet4.mp3",
+      "choices": [
+        {
+          "id": "ignore_whining",
+          "text": "Ignore him, he will be fine",
+          "leadsTo": "ending_poor_care",
+          "qualityImpact": -1
+        },
+        {
+          "id": "take_him_out",
+          "text": "Take him outside right away",
+          "leadsTo": "morning_walk",
+          "qualityImpact": 1
+        },
+        {
+          "id": "check_schedule_now",
+          "text": "Look at the schedule again to see what to do",
+          "leadsTo": "schedule_segment",
+          "qualityImpact": 1
+        }
+      ]
+    },
+    "morning_walk": {
+      "id": "morning_walk",
+      "text": "You put Max's leash on and take him outside. The morning air is fresh. Max is excited and pulls a little, but you hold the leash firmly. You walk around the neighborhood. You remember the schedule said 30 minutes, so you keep walking until you check your watch - exactly 30 minutes! Max sniffs trees and meets a friendly neighbor dog. When you get home, Max looks happy and relaxed. According to the schedule, breakfast is next.",
+      "imagePath": "/images/scenarios/home_pet/shared/seg_walk.png",
+      "audioPath": "/audio/scenarios/home_pet/care_pet5.mp3",
+      "choices": [
+        {
+          "id": "give_breakfast",
+          "text": "Give Max breakfast now",
+          "leadsTo": "breakfast_careful",
+          "qualityImpact": 1
+        },
+        {
+          "id": "play_first",
+          "text": "Play with him first, feed later",
+          "leadsTo": "afternoon_care_no_breakfast",
+          "qualityImpact": -1
+        },
+        {
+          "id": "skip_breakfast",
+          "text": "Skip breakfast for now",
+          "leadsTo": "afternoon_care_no_breakfast",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "breakfast_careful": {
+      "id": "breakfast_careful",
+      "text": "You measure one cup of dog food, just like the schedule says. You pour it into Max's clean bowl. You also fill his water bowl with fresh, clean water. Max eats slowly and drinks water. He looks satisfied. You remember the schedule said 'Fresh water' as number 3, and you just did that. You also remember to check his water bowl during the day. It is still morning, so you have time to do the other things on the schedule later.",
+      "imagePath": "/images/scenarios/home_pet/shared/seg_breakfast.png",
+      "audioPath": "/audio/scenarios/home_pet/care_pet6.mp3",
+      "choices": [
+        {
+          "id": "wait_for_afternoon",
+          "text": "Wait until afternoon for playtime",
+          "leadsTo": "afternoon_care",
+          "qualityImpact": 1
+        },
+        {
+          "id": "play_now_instead",
+          "text": "Play with Max now instead of waiting",
+          "leadsTo": "afternoon_care",
+          "qualityImpact": 0
+        },
+        {
+          "id": "do_nothing_more",
+          "text": "That is enough for now",
+          "leadsTo": "ending_okay_care",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "afternoon_care_no_breakfast": {
+      "id": "afternoon_care_no_breakfast",
+      "text": "In the afternoon, you remember to check on Max. You try to play fetch with him in the backyard. But Max seems slower than usual. He does not run as fast. When you throw the ball, he walks to get it instead of running. You notice his food bowl is still empty from this morning. Max has not eaten all day! He looks tired and weak. You realize you forgot to give him breakfast. You need to fix this right away.",
+      "imagePath": "/images/scenarios/home_pet/shared/seg_afternoon.png",
+      "audioPath": "/audio/scenarios/home_pet/care_pet71.mp3",
+      "choices": [
+        {
+          "id": "give_food_now",
+          "text": "Give Max food right away",
+          "leadsTo": "late_breakfast",
+          "qualityImpact": 0
+        },
+        {
+          "id": "ignore_hunger",
+          "text": "He will be fine, continue playing",
+          "leadsTo": "ending_missing_food",
+          "qualityImpact": -1
+        },
+        {
+          "id": "go_to_kitchen",
+          "text": "Go to the kitchen to get his food",
+          "leadsTo": "late_breakfast",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "late_breakfast": {
+      "id": "late_breakfast",
+      "text": "You quickly measure one cup of food and give it to Max. He eats it all very fast. He was really hungry! After eating, Max seems a little better, but he still looks tired. You should have fed him this morning. You also fill his water bowl. Max drinks a lot of water. At least you fixed it now, but you know you should have followed the schedule better.",
+      "imagePath": "/images/scenarios/home_pet/shared/seg_breakfast.png",
+      "audioPath": "/audio/scenarios/home_pet/care_pet62.mp3",
+      "choices": [
+        {
+          "id": "evening_walk_late",
+          "text": "Take Max for his evening walk",
+          "leadsTo": "ending_missing_breakfast",
+          "qualityImpact": 0
+        },
+        {
+          "id": "skip_evening_late",
+          "text": "Skip the evening walk, he is too tired",
+          "leadsTo": "ending_missing_breakfast",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "afternoon_care": {
+      "id": "afternoon_care",
+      "text": "In the afternoon, you remember to check on Max. The schedule said 'Playtime in the afternoon' as number 4. You play fetch with him in the backyard. He runs and brings the ball back to you. You throw it again and again. Max is having so much fun! After playing, you check his water bowl and refill it. Max looks happy and healthy. The sun is starting to go down. It is almost time for the evening walk.",
+      "imagePath": "/images/scenarios/home_pet/shared/seg_afternoon.png",
+      "audioPath": "/audio/scenarios/home_pet/care_pet7.mp3",
+      "choices": [
+        {
+          "id": "skip_evening",
+          "text": "Skip the evening walk",
+          "leadsTo": "ending_okay_care",
+          "qualityImpact": 0
+        },
+        {
+          "id": "rest_instead",
+          "text": "Let Max rest, he played enough",
+          "leadsTo": "ending_okay_care",
+          "qualityImpact": 0
+        },
+        {
+          "id": "evening_walk",
+          "text": "Take Max for his evening walk",
+          "leadsTo": "ending_excellent_care",
+          "qualityImpact": 1
+        }
+      ]
+    },
+    "ending_missing_food": {
+      "id": "ending_missing_food",
+      "text": "When Mom comes home, she immediately notices Max's empty food bowl. 'Did you feed Max today?' she asks. You realize you forgot to give him breakfast. Max looks weak and sad. Mom's face shows disappointment. 'Max needs to eat every day. This is not okay.' She quickly feeds Max herself. You feel terrible. Max looks at you with sad eyes. You promise to never forget his food again.",
+      "imagePath": "/images/scenarios/home_pet/shared/ending_fail.png",
+      "audioPath": "/audio/scenarios/home_pet/care_pet11.mp3",
+      "isEnding": true,
+      "endingType": "fail",
+      "minStars": 1,
+      "maxStars": 1
+    },
+    "ending_missing_breakfast": {
+      "id": "ending_missing_breakfast",
+      "text": "When Mom comes home, she checks on Max. He looks okay now, but not as energetic as usual. 'Did Max eat breakfast this morning?' Mom asks. You admit you forgot and only fed him in the afternoon. Mom sighs. 'Max needs regular meals. You should have followed the schedule. At least you fed him eventually.' Max comes over and sits by you. You know you need to do better next time.",
+      "imagePath": "/images/scenarios/home_pet/shared/ending_okay.png",
+      "audioPath": "/audio/scenarios/home_pet/care_pet101.mp3",
+      "isEnding": true,
+      "endingType": "partial",
+      "minStars": 1,
+      "maxStars": 2
+    },
+    "forgot_care": {
+      "id": "forgot_care",
+      "text": "You get busy playing video games and forget about Max. Hours pass. When you finally remember, you go to check on him. Max is sitting by the door, looking sad. His water bowl is empty. He has not eaten since last night. You feel terrible. It is already late afternoon. You quickly give him food and water, but you know you did not take good care of him today. There is still time to do something, but not much.",
+      "imagePath": "/images/scenarios/home_pet/shared/seg_forgot.png",
+      "audioPath": "/audio/scenarios/home_pet/care_pet8.mp3",
+      "choices": [
+        {
+          "id": "try_fix",
+          "text": "Take Max outside for a quick walk",
+          "leadsTo": "ending_okay_care",
+          "qualityImpact": 0
+        },
+        {
+          "id": "give_up",
+          "text": "It is too late to fix everything",
+          "leadsTo": "ending_poor_care",
+          "qualityImpact": -1
+        },
+        {
+          "id": "call_mom",
+          "text": "Call Mom to tell her what happened",
+          "leadsTo": "ending_poor_care",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "ending_excellent_care": {
+      "id": "ending_excellent_care",
+      "text": "You take Max for his evening walk. The sun is setting. Max walks calmly beside you. When you get home, Mom arrives from work. She sees Max looking happy and healthy. She checks his food and water bowls - both are full. 'You did such a great job!' Mom says with a big smile. 'Max looks so happy. You followed the schedule perfectly.' You feel proud. Max wags his tail and licks your hand.",
+      "imagePath": "/images/scenarios/home_pet/shared/ending_success.png",
+      "audioPath": "/audio/scenarios/home_pet/care_pet9.mp3",
+      "isEnding": true,
+      "endingType": "success",
+      "minStars": 3,
+      "maxStars": 3
+    },
+    "ending_okay_care": {
+      "id": "ending_okay_care",
+      "text": "When Mom comes home, she checks on Max. He looks okay, but not as happy as usual. You fed him and gave him water, but you forgot the evening walk. 'You did your best,' Mom says. 'Max is fine, but next time try to follow the full schedule. He really needs his walks.' You nod. Max comes over and sits by you. You promise yourself to do better next time.",
+      "imagePath": "/images/scenarios/home_pet/shared/ending_okay.png",
+      "audioPath": "/audio/scenarios/home_pet/care_pet10.mp3",
+      "isEnding": true,
+      "endingType": "partial",
+      "minStars": 2,
+      "maxStars": 2
+    },
+    "ending_poor_care": {
+      "id": "ending_poor_care",
+      "text": "Mom comes home and finds Max looking sad. His water bowl is empty. He has not been outside all day. Mom's face looks worried. 'What happened?' she asks. You explain that you forgot or did not follow the schedule. Mom sighs. 'Max depends on us to take care of him. This is important.' You feel bad. Max looks at you with sad eyes. You promise to do better next time.",
+      "imagePath": "/images/scenarios/home_pet/shared/ending_fail.png",
+      "audioPath": "/audio/scenarios/home_pet/care_pet112.mp3",
+      "isEnding": true,
+      "endingType": "fail",
+      "minStars": 1,
+      "maxStars": 1
+    }
+  }
+}
+

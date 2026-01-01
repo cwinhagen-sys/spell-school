@@ -64,60 +64,60 @@ IMPORTANT: First check if the student just wrote words without making a sentence
   * "nice" → "nicer", "nicest" (comparative/superlative)
 - EXAMPLES of proper sentences: "I need a raise.", "I am happy!", "I go to school?", "I need a raise if I'm going to keep this living standard.", "The handwriting had a gun customer.", "What's going on with the chewing gum?", "I'm not happy.", "Don't go there.", "I taught myself to say for goodness' sake.", "It doesn't make any sense that the cashier should quit.", "It does not make any sense that the cashier should quit.", "I am happier today.", "She is running fast.", "The word 'happy' means glad.", "I see a note.", "I write a note.", "I read a book.", "I have a car.", "I eat an apple.", "Did you notice when I saw the crazy tiger?", "I notice when I see a tiger.", "Do you notice the tiger?", "I saw a tiger when I was walking.", "The tiger was crazy when I saw it."
 
-Kontrollera meningen utifrån fyra parametrar:
-1. Grammatik och skrivregler – t.ex. korrekt användning av verb (I am, he is), ordföljd, stor bokstav i början, skiljetecken på slutet (. ! ?).
-2. Stavning – uppmärksamma uppenbara felstavningar.
-3. Meningens struktur och längd – finns subjekt + verb? Är meningen kort, lagom eller utvecklad?
-4. Ordval – använder eleven enkla ord, eller provar mer avancerade uttryck?
+Check the sentence based on four parameters:
+1. Grammar and writing rules – e.g. correct use of verbs (I am, he is), word order, capital letter at the start, punctuation at the end (. ! ?).
+2. Spelling – note obvious spelling mistakes.
+3. Sentence structure and length – does it have subject + verb? Is the sentence short, medium, or developed?
+4. Word choice – does the student use simple words, or try more advanced expressions?
 
-Feedback ska alltid ha följande struktur:
-1. **Positiv inledning:** Börja alltid med något eleven gjort bra. 
-   Exempel: "Bra försök!", "Din mening är lätt att förstå.", "Toppen att du använder hela ordlistan."
-2. **Direkt feedback:** Peka ut EXAKT vilka fel som finns och hur de ska rättas. 
-   Exempel: "Du skriver 'I is' men det ska vara 'I am'." eller "Du skriver 'reading' men det ska vara 'read'."
-3. **Korrekt exempel:** Ge den korrekta versionen av meningen eller den felaktiga delen.
-   Exempel: "Skriv istället: 'I am happy.'" eller "Rätt: 'Did you read the note I gave you?'"
+Feedback should always have the following structure:
+1. **Positive opening:** Always start with something the student did well. 
+   Examples: "Good try!", "Your sentence is easy to understand.", "Great that you used all the words."
+2. **Direct feedback:** Point out EXACTLY what errors exist and how to fix them. 
+   Examples: "You wrote 'I is' but it should be 'I am'." or "You wrote 'reading' but it should be 'read'."
+3. **Correct example:** Give the correct version of the sentence or the incorrect part.
+   Examples: "Write instead: 'I am happy.'" or "Correct: 'Did you read the note I gave you?'"
 
-KRITISKT VIKTIGT: Var ALLTID SPECIFIK och DIREKT. Peka ut EXAKT vilka ord som är fel och vad de ska vara.
+CRITICALLY IMPORTANT: Always be SPECIFIC and DIRECT. Point out EXACTLY which words are wrong and what they should be.
 
-VIKTIGT: "The handwriting had a gun customer." ÄR en fullständig mening (subjekt + verb + objekt) även om den inte är logisk. 
-ALDRIG säg "Du skrev bara ord utan att göra en mening" för denna typ av mening.
+IMPORTANT: "The handwriting had a gun customer." IS a complete sentence (subject + verb + object) even if it's not logical. 
+NEVER say "You only wrote words without making a sentence" for this type of sentence.
 
-KONSEKVENS: Ge ALLTID samma typ av feedback för samma typ av mening. Om en mening har subjekt + verb + objekt, behandla den ALLTID som en mening, inte som "bara ord".
+CONSISTENCY: Always give the same type of feedback for the same type of sentence. If a sentence has subject + verb + object, always treat it as a sentence, not as "just words".
 
-Om eleven skriver "Did you reading the note I give you?" ska du ALDRIG säga "meningen behöver mer struktur". 
-Istället ska du säga: "Bra försök att använda orden! Du skriver 'reading' men det ska vara 'read'. Du skriver också 'give' men det ska vara 'gave'. Rätt: 'Did you read the note I gave you?'"
+If the student writes "Did you reading the note I give you?" you should NEVER say "the sentence needs more structure". 
+Instead, you should say: "Good try using the words! You wrote 'reading' but it should be 'read'. You also wrote 'give' but it should be 'gave'. Correct: 'Did you read the note I gave you?'"
 
-Om eleven skriver "I is happy" ska du säga: "Bra försök att använda orden! Du skriver 'I is' men det ska vara 'I am'. Rätt: 'I am happy.'"
+If the student writes "I is happy" you should say: "Good try using the words! You wrote 'I is' but it should be 'I am'. Correct: 'I am happy.'"
 
-Om eleven skriver "Im calm" ska du säga: "Bra försök att använda orden! Du skriver 'Im' men det ska vara 'I'm' med apostrof. Rätt: 'I'm calm.'"
+If the student writes "Im calm" you should say: "Good try using the words! You wrote 'Im' but it should be 'I'm' with an apostrophe. Correct: 'I'm calm.'"
 
-Om eleven skriver "Dont go" ska du säga: "Bra försök att använda orden! Du skriver 'Dont' men det ska vara 'Don't' med apostrof. Rätt: 'Don't go there.'"
+If the student writes "Dont go" you should say: "Good try using the words! You wrote 'Dont' but it should be 'Don't' with an apostrophe. Correct: 'Don't go there.'"
 
-Om eleven skriver "I cant do it" ska du säga: "Bra försök att använda orden! Du skriver 'cant' men det ska vara 'can't' med apostrof. Rätt: 'I can't do it.'"
+If the student writes "I cant do it" you should say: "Good try using the words! You wrote 'cant' but it should be 'can't' with an apostrophe. Correct: 'I can't do it.'"
 
-Om eleven skriver "Hes happy" ska du säga: "Bra försök att använda orden! Du skriver 'Hes' men det ska vara 'He's' med apostrof. Rätt: 'He's happy.'"
+If the student writes "Hes happy" you should say: "Good try using the words! You wrote 'Hes' but it should be 'He's' with an apostrophe. Correct: 'He's happy.'"
 
-Om eleven skriver "Shes running" ska du säga: "Bra försök att använda orden! Du skriver 'Shes' men det ska vara 'She's' med apostrof. Rätt: 'She's running.'"
+If the student writes "Shes running" you should say: "Good try using the words! You wrote 'Shes' but it should be 'She's' with an apostrophe. Correct: 'She's running.'"
 
-Om eleven skriver "Theyre here" ska du säga: "Bra försök att använda orden! Du skriver 'Theyre' men det ska vara 'They're' med apostrof. Rätt: 'They're here.'"
+If the student writes "Theyre here" you should say: "Good try using the words! You wrote 'Theyre' but it should be 'They're' with an apostrophe. Correct: 'They're here.'"
 
-Om eleven skriver "Were going" ska du säga: "Bra försök att använda orden! Du skriver 'Were' men det ska vara 'We're' med apostrof. Rätt: 'We're going home.'"
+If the student writes "Were going" you should say: "Good try using the words! You wrote 'Were' but it should be 'We're' with an apostrophe. Correct: 'We're going home.'"
 
-Om eleven skriver "Youre nice" ska du säga: "Bra försök att använda orden! Du skriver 'Youre' men det ska vara 'You're' med apostrof. Rätt: 'You're nice.'"
+If the student writes "Youre nice" you should say: "Good try using the words! You wrote 'Youre' but it should be 'You're' with an apostrophe. Correct: 'You're nice.'"
 
-Om eleven skriver "Its working" ska du säga: "Bra försök att använda orden! Du skriver 'Its' men det ska vara 'It's' med apostrof. Rätt: 'It's working.'"
+If the student writes "Its working" you should say: "Good try using the words! You wrote 'Its' but it should be 'It's' with an apostrophe. Correct: 'It's working.'"
 
 
 
-VIKTIGT: Alltid föreslå engelska korrigeringar, ALDRIG svenska ord. Om eleven skriver "failed to write down" ska du föreslå "failed to write down" eller "couldn't write down", INTE "misslyckas med att skriva ner".
+IMPORTANT: Always suggest English corrections, NEVER Swedish words. If the student writes "failed to write down" you should suggest "failed to write down" or "couldn't write down", NOT "misslyckas med att skriva ner".
 
-VIKTIGT: Stavfel ska INTE dra av poäng. Om eleven skriver "I am hapy" istället för "I am happy", ge full poäng men nämn stavfelet i feedbacken: "Bra försök! Din mening är grammatiskt korrekt. Du skriver 'hapy' men det ska vara 'happy'. Rätt: 'I am happy.'"
+IMPORTANT: Spelling errors should NOT reduce points. If the student writes "I am hapy" instead of "I am happy", give full points but mention the spelling error in the feedback: "Good try! Your sentence is grammatically correct. You wrote 'hapy' but it should be 'happy'. Correct: 'I am happy.'"
 
-ALDRIG använd generiska fraser som "meningen behöver mer struktur" eller "lägg till verb". Var alltid SPECIFIK!
+NEVER use generic phrases like "the sentence needs more structure" or "add a verb". Always be SPECIFIC!
 
-Feedbacken ska vara kortfattad (2–3 meningar totalt), tydlig och uppmuntrande i tonen. 
-Undvik tekniska termer och långa förklaringar – anpassa språket till en 12-åring.
+The feedback should be concise (2-3 sentences total), clear and encouraging in tone. 
+Avoid technical terms and long explanations – adapt the language for a 12-year-old.
 
 CRITICAL: When giving examples, ALWAYS use the actual words from the required words list in CONTEXTUALLY APPROPRIATE sentences. The example must make logical sense and be something a 12-year-old would actually write. For example:
 - If required word is "irritated" (adjective), use "I am irritated when I wait for the bus"
@@ -142,53 +142,53 @@ NEVER give examples that don't make logical sense or are inappropriate for a 12-
 3. Use the word in its correct grammatical context
 4. Be something a student would actually write
 
-For proper sentences, look for these common mistakes Swedish students make and give SPECIFIC feedback:
-- "I is" → "Du skriver 'I is' men det ska vara 'I am'"
-- "He are" → "Du skriver 'He are' men det ska vara 'He is'"
-- "They was" → "Du skriver 'They was' men det ska vara 'They were'"
-- "an cat" → "Du skriver 'an cat' men det ska vara 'a cat'"
-- "on the house" → "Du skriver 'on the house' men det ska vara 'in the house'"
-- "I go school" → "Du skriver 'I go school' men det ska vara 'I go to school'"
-- "I calm" → "Du skriver 'I calm' men det ska vara 'I am calm'"
-- "I am note" → "Du skriver 'I am note' men 'note' är ett substantiv, inte ett adjektiv. Rätt: 'I write a note to my dad.'"
-- "I feel seal" → "Du skriver 'I feel seal' men 'seal' är ett substantiv (säl), inte ett adjektiv. Rätt: 'I see a seal at the zoo.'"
-- "Did you reading" → "Du skriver 'reading' men det ska vara 'read'"
-- "I give you" (past tense) → "Du skriver 'give' men det ska vara 'gave'"
-- "I am go" → "Du skriver 'I am go' men det ska vara 'I go'"
-- "I can to go" → "Du skriver 'can to go' men det ska vara 'can go'"
+For proper sentences, look for these common mistakes students make and give SPECIFIC feedback:
+- "I is" → "You wrote 'I is' but it should be 'I am'"
+- "He are" → "You wrote 'He are' but it should be 'He is'"
+- "They was" → "You wrote 'They was' but it should be 'They were'"
+- "an cat" → "You wrote 'an cat' but it should be 'a cat'"
+- "on the house" → "You wrote 'on the house' but it should be 'in the house'"
+- "I go school" → "You wrote 'I go school' but it should be 'I go to school'"
+- "I calm" → "You wrote 'I calm' but it should be 'I am calm'"
+- "I am note" → "You wrote 'I am note' but 'note' is a noun, not an adjective. Correct: 'I write a note to my dad.'"
+- "I feel seal" → "You wrote 'I feel seal' but 'seal' is a noun, not an adjective. Correct: 'I see a seal at the zoo.'"
+- "Did you reading" → "You wrote 'reading' but it should be 'read'"
+- "I give you" (past tense) → "You wrote 'give' but it should be 'gave'"
+- "I am go" → "You wrote 'I am go' but it should be 'I go'"
+- "I can to go" → "You wrote 'can to go' but it should be 'can go'"
 
 CRITICAL - WRONG WORD TYPE (NOUN USED AS ADJECTIVE):
 When a student uses a NOUN after verbs like "feel", "am", "is", "are" (where an ADJECTIVE is expected), ALWAYS point this out specifically:
-- "I feel seal" → "Du skriver 'I feel seal' men 'seal' är ett substantiv, inte ett adjektiv. Om du menar 'säl' (djuret), skriv: 'I see a seal at the zoo.' eller 'I saw a seal swimming.' Om du tänkte på något annat ord, försök igen."
-- "I am book" → "Du skriver 'I am book' men 'book' är ett substantiv, inte ett adjektiv. Rätt: 'I read a book.'"
-- "He is car" → "Du skriver 'He is car' men 'car' är ett substantiv, inte ett adjektiv. Rätt: 'He has a car.'"
+- "I feel seal" → "You wrote 'I feel seal' but 'seal' is a noun, not an adjective. If you mean the animal, write: 'I see a seal at the zoo.' or 'I saw a seal swimming.'"
+- "I am book" → "You wrote 'I am book' but 'book' is a noun, not an adjective. Correct: 'I read a book.'"
+- "He is car" → "You wrote 'He is car' but 'car' is a noun, not an adjective. Correct: 'He has a car.'"
 
-This is a VERY common mistake when Swedish students confuse word types. Always give:
+This is a VERY common mistake when students confuse word types. Always give:
 1. What they wrote wrong
 2. Why it's wrong (word type explanation)
 3. A corrected sentence using the word correctly
 
-RUN-ON/TVÅ MENINGAR I EN (IMPORTANT):
-- Om eleven skriver två självständiga satser utan konjunktion eller korrekt skiljetecken (t.ex. "The daylight is bright I cant see."), ska detta ALDRIG klassas som "bara ord". Det är en mening med ett strukturfel (run-on).
-- Ge färg "yellow" (eller "red" om texten är helt osammanhängande), och ge DIREKT fix:
-  * Förslag 1 (konjunktion): "The daylight is bright, so I can't see."
-  * Förslag 2 (semikolon): "The daylight is bright; I can't see."
-  * Förslag 3 (två meningar): "The daylight is bright. I can't see."
-  * Påpeka också kontraktion: "cant" → "can't".
-- Exakt feedback-exempel för meningen ovan: "Bra försök! Du har två satser ihop utan bindeord eller skiljetecken mellan dem, och 'cant' saknar apostrof. Rätt: 'The daylight is bright, so I can't see.' eller 'The daylight is bright. I can't see.'"
+RUN-ON/TWO SENTENCES IN ONE (IMPORTANT):
+- If the student writes two independent clauses without a conjunction or proper punctuation (e.g. "The daylight is bright I cant see."), this should NEVER be classified as "just words". It is a sentence with a structural error (run-on).
+- Give color "yellow" (or "red" if the text is completely incoherent), and give DIRECT fix:
+  * Suggestion 1 (conjunction): "The daylight is bright, so I can't see."
+  * Suggestion 2 (semicolon): "The daylight is bright; I can't see."
+  * Suggestion 3 (two sentences): "The daylight is bright. I can't see."
+  * Also point out contraction: "cant" → "can't".
+- Exact feedback example for the sentence above: "Good try! You have two sentences together without a connecting word or punctuation between them, and 'cant' is missing an apostrophe. Correct: 'The daylight is bright, so I can't see.' or 'The daylight is bright. I can't see.'"
 
 CRITICAL FOR RUN-ON SENTENCES: When suggesting corrections for run-on sentences, ALWAYS use the ACTUAL words from the student's sentence, NOT random examples. For instance:
-- If student writes "You are an amazing story please", suggest: "You are an amazing story. Please tell me more!" eller "You are amazing, please tell me a story!"
-- If student writes "The daylight is bright I cant see", suggest: "The daylight is bright, so I can't see." eller "The daylight is bright. I can't see."
+- If student writes "You are an amazing story please", suggest: "You are an amazing story. Please tell me more!" or "You are amazing, please tell me a story!"
+- If student writes "The daylight is bright I cant see", suggest: "The daylight is bright, so I can't see." or "The daylight is bright. I can't see."
 - If student writes "I has found the cat why is it dead?", suggest: "I have found the cat. Why is it dead?" (separate with period between the two sentences)
 - NEVER suggest unrelated examples like "Pick up the trash" unless those exact words are in the student's sentence!
 
 CRITICAL - TWO SENTENCES WRITTEN TOGETHER:
 When a student writes two complete sentences together without proper separation (like "I found the cat why is it dead?"), be VERY SPECIFIC:
-- DON'T say: "Du har en fråga utan korrekt skiljetecken"
-- DO say: "Du har två meningar ihop utan punkt eller annat skiljetecken mellan dem. Rätt: 'I have found the cat. Why is it dead?'"
-- Explain that they need to SEPARATE the sentences with a period (punkt) or semicolon (semikolon)
-- Example: "I found the cat why is it dead?" → "Bra försök! Du skriver 'I has' men det ska vara 'I have'. Du har också två meningar ihop utan punkt mellan dem. Rätt: 'I have found the cat. Why is it dead?'"
+- DON'T say: "You have a question without correct punctuation"
+- DO say: "You have two sentences together without a period or other punctuation between them. Correct: 'I have found the cat. Why is it dead?'"
+- Explain that they need to SEPARATE the sentences with a period or semicolon
+- Example: "I found the cat why is it dead?" → "Good try! You wrote 'I has' but it should be 'I have'. You also have two sentences together without a period between them. Correct: 'I have found the cat. Why is it dead?'"
 
 Consider these factors for the quality score:
 - Grammar correctness (0-0.6 points) - Most important factor
@@ -200,30 +200,30 @@ FEEDBACK RULES:
 1. If student only wrote words (no sentence): 
    - Quality: 0.0
    - Color: "red"
-   - Feedback: "Bra försök att använda orden! Du skrev bara ord utan att göra en mening. Försök att använda ordet/orden i en mening. Ex: '[CONTEXTUALLY_APPROPRIATE_SENTENCE]'"
+   - Feedback: "Good try using the words! You only wrote words without making a sentence. Try to use the word/words in a sentence. Example: '[CONTEXTUALLY_APPROPRIATE_SENTENCE]'"
    - IMPORTANT: Replace [CONTEXTUALLY_APPROPRIATE_SENTENCE] with a logical, age-appropriate sentence using the actual word from the wheel
 
 2. If student wrote a sentence (even if grammatically incorrect):
    - GREEN (color: "green"): Perfect or near-perfect sentence (quality 0.8-1.0)
-     - Feedback: "Utmärkt! Din mening är grammatiskt korrekt och tydlig. Du använder orden på ett bra sätt. Fortsätt så!"
+     - Feedback: "Excellent! Your sentence is grammatically correct and clear. You use the words well. Keep it up!"
      - NOTE: Points = number of words in sentence
    - YELLOW (color: "yellow"): Sentence has grammatical errors but is understandable (quality 0.3-0.7)
      - Examples: "He pretend notice" → "He pretends to notice", "I is happy" → "I am happy", "I feel seal" → "I see a seal" (wrong word type)
-     - Feedback: "Bra försök att använda orden! Du skriver 'X' men det ska vara 'Y'. Rätt: 'Z'"
-     - Run-on specific: Om två satser saknar bindeord/skiljetecken, påpeka detta och ge två förbättrade varianter (komma + konjunktion OCH semikolon) samt rätta vanliga kontraktioner ('cant' → "can't").
-     - Wrong word type: Om substantiv används som adjektiv (t.ex. "I feel seal", "I am book"), förklara att ordet är fel ordtyp och ge korrekt användning.
+     - Feedback: "Good try using the words! You wrote 'X' but it should be 'Y'. Correct: 'Z'"
+     - Run-on specific: If two clauses lack connecting words/punctuation, point this out and give two improved variants (comma + conjunction AND semicolon) and correct common contractions ('cant' → "can't").
+     - Wrong word type: If a noun is used as an adjective (e.g. "I feel seal", "I am book"), explain that the word is the wrong word type and give correct usage.
      - NOTE: Points = half the number of words in sentence
    - RED (color: "red"): Only for completely illogical sentences or major structural problems (quality 0.0-0.2)
      - Examples: Sentences with multiple major errors that make it unreadable
      - Wrong word type errors like "I am note" or "I feel seal" should be YELLOW, not RED (they show an attempt to use the word)
-     - ALDRIG använd "meningen behöver mer struktur" - peka alltid ut specifika fel!
+     - NEVER use "the sentence needs more structure" - always point out specific errors!
      - NOTE: Points = 0
 
 Examples of good feedback for sentences:
-- GREEN: "Utmärkt! Din mening är grammatiskt korrekt och tydlig. Du använder orden på ett bra sätt. Fortsätt så!"
-- YELLOW: "Bra försök att använda orden! Du skriver 'I is' men det ska vara 'I am'. Rätt: 'I am happy when I play with my friends.'"
-- YELLOW: "Bra försök att använda orden! Du skriver 'reading' men det ska vara 'read'. Du skriver också 'give' men det ska vara 'gave'. Rätt: 'Did you read the note I gave you?'"
-- YELLOW: "Bra försök att använda orden! Du skriver 'I feel seal' men 'seal' är ett substantiv (säl), inte ett adjektiv. Om du menar djuret, skriv: 'I see a seal at the zoo.' eller 'I saw a seal swimming.'"
+- GREEN: "Excellent! Your sentence is grammatically correct and clear. You use the words well. Keep it up!"
+- YELLOW: "Good try using the words! You wrote 'I is' but it should be 'I am'. Correct: 'I am happy when I play with my friends.'"
+- YELLOW: "Good try using the words! You wrote 'reading' but it should be 'read'. You also wrote 'give' but it should be 'gave'. Correct: 'Did you read the note I gave you?'"
+- YELLOW: "Good try using the words! You wrote 'I feel seal' but 'seal' is a noun, not an adjective. If you mean the animal, write: 'I see a seal at the zoo.' or 'I saw a seal swimming.'"
 
 IMPORTANT: When giving correction examples, make sure they:
 1. Use the actual words from the required words list
@@ -231,14 +231,14 @@ IMPORTANT: When giving correction examples, make sure they:
 3. Are age-appropriate for a 12-year-old
 4. Sound natural and something a student would actually write
 
-WRONG EXAMPLE (never do this): "Du skriver 'failed to write down' men det skulle vara bättre att använda 'misslyckas med att skriva ner'"
-CORRECT EXAMPLE: "Bra försök att använda orden! Du skriver 'failed to write down' men det ska vara 'couldn't write down'. Rätt: 'Jim couldn't write down a paper slip.'"
+WRONG EXAMPLE (never do this): "You wrote 'failed to write down' but it would be better to use 'misslyckas med att skriva ner'"
+CORRECT EXAMPLE: "Good try using the words! You wrote 'failed to write down' but it should be 'couldn't write down'. Correct: 'Jim couldn't write down a paper slip.'"
 
 Respond in JSON format:
 {
   "quality": 0.0,
   "color": "red",
-  "feedback": "Bra försök att använda orden! Du skrev bara ord utan att göra en mening. Försök att använda ordet/orden i en mening. Ex: 'I am [ACTUAL_WORD] when I [ACTION].'"
+  "feedback": "Good try using the words! You only wrote words without making a sentence. Try to use the word/words in a sentence. Example: 'I am [ACTUAL_WORD] when I [ACTION].'"
 }
 
 Remember: Replace [CONTEXTUALLY_APPROPRIATE_SENTENCE] with a logical, age-appropriate sentence using the exact word from the required words list. The example must make sense and be something a 12-year-old would actually write.`
@@ -249,7 +249,7 @@ Remember: Replace [CONTEXTUALLY_APPROPRIATE_SENTENCE] with a logical, age-approp
       messages: [
         {
           role: 'system',
-          content: 'You are a helpful Swedish language teacher. Always respond in valid JSON format. Be consistent in your analysis.'
+          content: 'You are a helpful English language teacher. Always respond in valid JSON format. Be consistent in your analysis. All feedback must be in English.'
         },
         {
           role: 'user',
@@ -274,7 +274,7 @@ Remember: Replace [CONTEXTUALLY_APPROPRIATE_SENTENCE] with a logical, age-approp
       // Fallback analysis
       analysis = {
         quality: 0.7,
-        feedback: "Bra försök! Din mening innehåller de nödvändiga orden. Fortsätt öva för att förbättra grammatiken och meningsstrukturen."
+        feedback: "Good try! Your sentence contains the required words. Keep practicing to improve grammar and sentence structure."
       }
     }
 
@@ -290,14 +290,14 @@ Remember: Replace [CONTEXTUALLY_APPROPRIATE_SENTENCE] with a logical, age-approp
       analysis = {
         quality: 0.5,
         color: 'yellow',
-        feedback: 'Bra försök! Din mening behöver några små rättningar. Försök att använda rätt skiljetecken (. ! ?) och kontrollera grammatiken.'
+        feedback: 'Good try! Your sentence needs some small corrections. Try to use correct punctuation (. ! ?) and check your grammar.'
       }
     }
 
     return NextResponse.json({
       quality: analysis.quality,
       color: analysis.color || "yellow",
-      feedback: analysis.feedback || "Bra jobbat! Fortsätt öva för att förbättra dina språkfärdigheter."
+      feedback: analysis.feedback || "Well done! Keep practicing to improve your language skills."
     })
 
   } catch (error) {
@@ -307,14 +307,14 @@ Remember: Replace [CONTEXTUALLY_APPROPRIATE_SENTENCE] with a logical, age-approp
     if (error instanceof Error && error.message.includes('API key')) {
       return NextResponse.json({
         quality: 0.6,
-        feedback: "Bra försök! Din mening innehåller de nödvändiga orden. (AI-analys tillfälligt otillgänglig)"
+        feedback: "Good try! Your sentence contains the required words. (AI analysis temporarily unavailable)"
       })
     }
     
     // Fallback response
     return NextResponse.json({
       quality: 0.6,
-      feedback: "Bra försök! Din mening innehåller de nödvändiga orden. Fortsätt öva för att förbättra dina språkfärdigheter."
+      feedback: "Good try! Your sentence contains the required words. Keep practicing to improve your language skills."
     })
   }
 }

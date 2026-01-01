@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { levelForXp } from '@/lib/leveling'
-import { titleForLevel } from '@/lib/wizardTitles'
+import { titleForLevel, TITLE_STEPS } from '@/lib/wizardTitles'
 import { Star, User, Award, Sparkles, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 
@@ -148,18 +148,11 @@ export default function WizardProfilePage() {
               Available Titles
             </h3>
             <div className="grid grid-cols-3 gap-3">
-              {[
-                { level: 10, title: 'Torch Apprentice', image: '/assets/wizard/wizard_torch.png' },
-                { level: 20, title: 'Flame Guardian', image: '/assets/wizard/wizard_orbs.png' },
-                { level: 30, title: 'Rune Adept', image: '/assets/wizard/wizard_book.png' },
-                { level: 40, title: 'Arcanist', image: '/assets/wizard/wizard_pentagram.png' },
-                { level: 50, title: 'Wizard Warrior', image: '/assets/wizard/wizard_sword.png' },
-                { level: 60, title: 'Sigil Master', image: '/assets/wizard/wizard_staff.png' },
-              ].map((wizard) => {
-                const unlocked = leveling.level >= wizard.level
+              {TITLE_STEPS.slice(0, 6).map((step) => {
+                const unlocked = leveling.level >= step.at
                 return (
                   <div
-                    key={wizard.level}
+                    key={step.at}
                     className={`p-3 rounded-xl border text-center transition-all ${
                       unlocked
                         ? 'border-amber-500/30 bg-amber-500/10'
@@ -167,16 +160,16 @@ export default function WizardProfilePage() {
                     }`}
                   >
                     <div className="w-12 h-12 mx-auto mb-2 rounded-full overflow-hidden bg-white/5">
-                      {wizard.image && unlocked ? (
-                        <img src={wizard.image} alt={wizard.title} className="w-full h-full object-cover" />
+                      {step.image && unlocked ? (
+                        <img src={step.image} alt={step.title} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <Star className="w-6 h-6 text-gray-600" />
                         </div>
                       )}
                     </div>
-                    <div className="text-xs font-semibold text-gray-300">{wizard.title}</div>
-                    <div className="text-xs text-gray-500">Lv.{wizard.level}</div>
+                    <div className="text-xs font-semibold text-gray-300">{step.title}</div>
+                    <div className="text-xs text-gray-500">Lv.{step.at}</div>
                   </div>
                 )
               })}

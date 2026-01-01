@@ -13,6 +13,11 @@ interface WordSet {
   title: string
 }
 
+interface Class {
+  id: string
+  name: string
+}
+
 interface Game extends GameMetadata {
   color: string
 }
@@ -392,7 +397,9 @@ function DetailsDrawer({
 export default function SessionGameSelection() {
   const router = useRouter()
   const [wordSets, setWordSets] = useState<WordSet[]>([])
+  const [classes, setClasses] = useState<Class[]>([])
   const [selectedWordSet, setSelectedWordSet] = useState<string>('')
+  const [selectedClasses, setSelectedClasses] = useState<string[]>([]) // Array of class IDs
   const [sessionName, setSessionName] = useState<string>('')
   const [dueDate, setDueDate] = useState<string>('')
   const [selectedGames, setSelectedGames] = useState<string[]>([])
@@ -412,6 +419,7 @@ export default function SessionGameSelection() {
 
   useEffect(() => {
     loadWordSets()
+    loadClasses()
   }, [])
 
   const loadWordSets = async () => {
@@ -430,6 +438,26 @@ export default function SessionGameSelection() {
     } catch (error) {
       console.error('Error loading word sets:', error)
       setError('Could not load word lists')
+    }
+  }
+
+  const loadClasses = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data, error } = await supabase
+        .from('classes')
+        .select('id, name')
+        .eq('teacher_id', user.id)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setClasses(data || [])
+    } catch (error) {
+      console.error('Error loading classes:', error)
+      // Don't show error for classes, just log it
     }
   }
 
@@ -576,6 +604,23 @@ export default function SessionGameSelection() {
 
       if (insertError) throw insertError
 
+      // Link session to selected classes
+      if (selectedClasses.length > 0) {
+        const sessionClassLinks = selectedClasses.map(classId => ({
+          session_id: data.id,
+          class_id: classId
+        }))
+
+        const { error: linkError } = await supabase
+          .from('session_classes')
+          .insert(sessionClassLinks)
+
+        if (linkError) {
+          console.error('Error linking session to classes:', linkError)
+          // Don't throw - session was created successfully, just log the error
+        }
+      }
+
       router.push(`/teacher/sessions/${data.id}`)
     } catch (error: any) {
       console.error('Error creating session:', error)
@@ -680,12 +725,12 @@ export default function SessionGameSelection() {
                 <select
                   value={selectedWordSet}
                   onChange={(e) => setSelectedWordSet(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all appearance-none cursor-pointer"
+                  className="w-full px-4 py-3 bg-[#161622] border border-white/[0.12] rounded-xl text-white focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all appearance-none cursor-pointer"
                   required
                 >
-                  <option value="" className="bg-[#1a1a2e]">Select word list...</option>
+                  <option value="" className="bg-[#161622]">Select word list...</option>
                   {wordSets.map((ws) => (
-                    <option key={ws.id} value={ws.id} className="bg-[#1a1a2e]">
+                    <option key={ws.id} value={ws.id} className="bg-[#161622]">
                       {ws.title}
                     </option>
                   ))}
@@ -702,10 +747,48 @@ export default function SessionGameSelection() {
                 onChange={(e) => setDueDate(e.target.value)}
                 min={getMinDate()}
                 max={getMaxDate()}
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all"
+                className="w-full px-4 py-3 bg-[#161622] border border-white/[0.12] rounded-xl text-white focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all [color-scheme:dark]"
                 required
               />
             </div>
+          </div>
+
+          {/* Class selection */}
+          <div className="pt-6 border-t border-white/10">
+            <label className="block text-sm font-medium text-gray-300 mb-3">
+              Share with classes (optional)
+            </label>
+            <p className="text-xs text-gray-400 mb-3">
+              Select which classes should have access to this session. Students in selected classes will see this session in their dashboard.
+            </p>
+            {classes.length === 0 ? (
+              <div className="text-sm text-gray-400">
+                No classes available. <Link href="/teacher/classes" className="text-amber-400 underline hover:text-amber-300">Create a class first</Link>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {classes.map((cls) => (
+                  <label
+                    key={cls.id}
+                    className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-xl cursor-pointer hover:bg-white/10 transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedClasses.includes(cls.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedClasses(prev => [...prev, cls.id])
+                        } else {
+                          setSelectedClasses(prev => prev.filter(id => id !== cls.id))
+                        }
+                      }}
+                      className="w-5 h-5 text-amber-500 bg-white/5 border-white/20 rounded focus:ring-amber-500/50"
+                    />
+                    <span className="text-gray-300">{cls.name}</span>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Quiz options */}
@@ -735,7 +818,7 @@ export default function SessionGameSelection() {
                     onChange={(e) => setQuizGradingType(e.target.value as 'ai' | 'manual')}
                     className="w-4 h-4 text-amber-500"
                   />
-                  <span className="text-gray-300">AI grading</span>
+                  <span className="text-gray-300">Automatic grading</span>
                 </label>
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input

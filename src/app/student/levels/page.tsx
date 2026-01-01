@@ -6,7 +6,7 @@ import { levelForXp, cumulativeXp, deltaXp } from '@/lib/leveling'
 import { TITLE_STEPS, titleForLevel } from '@/lib/wizardTitles'
 import Link from 'next/link'
 import LogoutHandler from '@/components/LogoutHandler'
-import { TrendingUp, ArrowLeft, Star, Crown, Lock } from 'lucide-react'
+import { TrendingUp, ArrowLeft, Star, Crown, Lock, Gem } from 'lucide-react'
 
 export default function LevelsPage() {
   const [points, setPoints] = useState(0)
@@ -48,7 +48,7 @@ export default function LevelsPage() {
           setPoints(total)
         }
       } catch (e: any) {
-        setMessage(`Could not load XP${e?.message ? `: ${e.message}` : ''}`)
+        setMessage(`Could not load AP${e?.message ? `: ${e.message}` : ''}`)
       } finally {
         setLoading(false)
       }
@@ -80,7 +80,7 @@ export default function LevelsPage() {
               <div className="absolute -inset-1 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl blur opacity-30" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-white">Level & XP</h1>
+                <h1 className="text-3xl font-bold text-white">Level & Arcane Points</h1>
                 <p className="text-gray-400">Track your progress</p>
               </div>
             </div>
@@ -105,7 +105,10 @@ export default function LevelsPage() {
                 <div className="text-center">
                   <div className="text-sm text-gray-400 mb-2">Current Level</div>
                   <div className="text-6xl font-bold text-white mb-2">{lev.level}</div>
-                  <div className="text-lg text-amber-400">{points.toLocaleString()} Total XP</div>
+                  <div className="flex items-center justify-center gap-2 text-lg text-amber-400">
+                    <Gem className="w-5 h-5" />
+                    {points.toLocaleString()} Total AP
+                  </div>
                 </div>
                 {lev.level < 100 && (
                   <>
@@ -116,7 +119,7 @@ export default function LevelsPage() {
                       />
                     </div>
                     <div className="text-center text-gray-400">
-                      <span className="text-amber-400 font-semibold">{Math.max(0, deltaXp(lev.level + 1) - xpIntoLevel)}</span> XP left to Level {lev.level + 1}
+                      <span className="text-amber-400 font-semibold">{Math.max(0, deltaXp(lev.level + 1) - xpIntoLevel)}</span> AP left to Level {lev.level + 1}
                     </div>
                   </>
                 )}

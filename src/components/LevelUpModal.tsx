@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Crown, Star, Sparkles } from 'lucide-react'
+import { Star } from 'lucide-react'
 
 type Props = {
   level: number
@@ -43,16 +43,14 @@ export default function LevelUpModal({ level, title, image, description, onClose
   
   // Generate particles
   const particles = useMemo(() => {
-    const colors = isMilestone 
-      ? ['#fbbf24', '#f59e0b', '#fcd34d', '#fde68a'] 
-      : ['#a78bfa', '#8b5cf6', '#c4b5fd', '#ddd6fe']
+    const colors = ['#f97316', '#fb923c', '#fdba74', '#fbbf24']
     return Array.from({ length: 20 }, (_, i) => ({
       id: i,
       delay: Math.random() * 0.3,
       x: 10 + Math.random() * 80,
       color: colors[Math.floor(Math.random() * colors.length)]
     }))
-  }, [isMilestone])
+  }, [])
 
   useEffect(() => {
     const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -92,26 +90,8 @@ export default function LevelUpModal({ level, title, image, description, onClose
               ))}
             </div>
             
-            {/* Glow effect */}
-            <div className={`absolute -inset-4 rounded-3xl blur-2xl ${
-              isMilestone 
-                ? 'bg-gradient-to-br from-amber-500/40 to-orange-500/40' 
-                : 'bg-gradient-to-br from-violet-500/40 to-fuchsia-500/40'
-            }`} />
-
             {/* Main Card */}
-            <div className={`relative rounded-3xl ${
-              isMilestone 
-                ? 'bg-gradient-to-br from-[#1a1510] to-[#12122a] border-2 border-amber-500/50' 
-                : 'bg-gradient-to-br from-[#151020] to-[#12122a] border-2 border-violet-500/50'
-            } p-8 shadow-2xl overflow-hidden min-w-[340px]`}>
-              
-              {/* Top gradient bar */}
-              <div className={`absolute top-0 left-0 right-0 h-1.5 ${
-                isMilestone 
-                  ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-400' 
-                  : 'bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400'
-              }`} />
+            <div className="relative rounded-2xl bg-[#12122a] border border-white/10 p-8 shadow-2xl overflow-hidden min-w-[340px]">
 
               {/* Level Up Text */}
               <motion.div
@@ -120,37 +100,21 @@ export default function LevelUpModal({ level, title, image, description, onClose
                 transition={{ delay: 0.1 }}
                 className="text-center mb-4 flex items-center justify-center gap-2"
               >
-                {isMilestone ? (
-                  <Crown className="w-7 h-7 text-amber-400" />
-                ) : (
-                  <Sparkles className="w-7 h-7 text-violet-400" />
-                )}
-                <h2 className={`text-2xl font-bold ${
-                  isMilestone ? 'text-amber-400' : 'text-violet-400'
-                }`}>
+                <Star className="w-7 h-7 text-orange-400" />
+                <h2 className="text-2xl font-bold text-white">
                   Level Up!
                 </h2>
               </motion.div>
 
-              {/* Level Number - Big and Glowing */}
+              {/* Level Number */}
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 15 }}
                 className="text-center mb-6"
               >
-                <div className={`relative inline-flex items-center justify-center w-32 h-32 rounded-full ${
-                  isMilestone 
-                    ? 'bg-gradient-to-br from-amber-500/20 to-orange-500/20 border-4 border-amber-500/50' 
-                    : 'bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 border-4 border-violet-500/50'
-                }`}>
-                  {/* Inner glow */}
-                  <div className={`absolute inset-2 rounded-full blur-xl ${
-                    isMilestone ? 'bg-amber-500/30' : 'bg-violet-500/30'
-                  }`} />
-                  <span className={`relative text-6xl font-black ${
-                    isMilestone ? 'text-amber-400' : 'text-violet-400'
-                  }`}>
+                <div className="relative inline-flex items-center justify-center w-32 h-32 rounded-full bg-white/5 border-2 border-orange-500/30">
+                  <span className="relative text-6xl font-black text-white">
                     {level}
                   </span>
                 </div>
@@ -164,15 +128,15 @@ export default function LevelUpModal({ level, title, image, description, onClose
                   transition={{ delay: 0.3 }}
                   className="text-center mb-6"
                 >
-                  <div className="flex items-center justify-center gap-3 bg-amber-500/10 rounded-xl p-4 border border-amber-500/20">
+                  <div className="flex items-center justify-center gap-3 bg-white/5 rounded-xl p-4 border border-white/10">
                     {image && (
-                      <div className="w-14 h-14 rounded-full overflow-hidden ring-2 ring-amber-400 shadow-lg shadow-amber-500/30">
+                      <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-orange-500/30">
                         <img src={image} alt={title} className="w-full h-full object-cover" />
                       </div>
                     )}
                     <div className="text-left">
-                      <div className="text-xs text-amber-400/70 font-medium">Ny titel</div>
-                      <div className="text-lg font-bold text-amber-400">{title}</div>
+                      <div className="text-xs text-gray-400 font-medium">New Title</div>
+                      <div className="text-lg font-bold text-white">{title}</div>
                     </div>
                   </div>
                 </motion.div>
@@ -185,18 +149,12 @@ export default function LevelUpModal({ level, title, image, description, onClose
                 transition={{ delay: 0.3, duration: 0.6 }}
                 className="mb-6"
               >
-                <div className={`h-2 rounded-full overflow-hidden ${
-                  isMilestone ? 'bg-amber-500/20' : 'bg-violet-500/20'
-                }`}>
+                <div className="h-2 rounded-full overflow-hidden bg-white/10">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: "100%" }}
                     transition={{ delay: 0.4, duration: 0.8, ease: "easeOut" }}
-                    className={`h-full rounded-full ${
-                      isMilestone 
-                        ? 'bg-gradient-to-r from-amber-400 to-orange-400' 
-                        : 'bg-gradient-to-r from-violet-400 to-fuchsia-400'
-                    }`}
+                    className="h-full rounded-full bg-orange-500"
                   />
                 </div>
               </motion.div>
@@ -208,8 +166,8 @@ export default function LevelUpModal({ level, title, image, description, onClose
                 transition={{ delay: 0.8 }}
                 className="text-center"
               >
-                <p className="text-xs text-gray-500 font-medium">
-                  Tryck för att fortsätta
+                <p className="text-xs text-gray-400 font-medium">
+                  Click to continue
                 </p>
               </motion.div>
             </div>

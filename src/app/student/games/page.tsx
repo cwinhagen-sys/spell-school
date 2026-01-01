@@ -6,6 +6,7 @@ import GameCard from '@/components/GameCard'
 import { BookOpen, Gamepad2, X } from 'lucide-react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
+import { type TrackingContext } from '@/lib/tracking'
 
 interface Homework {
   id: string
@@ -22,6 +23,7 @@ export default function GamesPage() {
   const [selectedHomework, setSelectedHomework] = useState<Homework | null>(null)
   const [showHomeworkSelection, setShowHomeworkSelection] = useState(false)
   const [pendingGame, setPendingGame] = useState<string | null>(null)
+  const [showAllOldWordSets, setShowAllOldWordSets] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -88,7 +90,14 @@ export default function GamesPage() {
         const today = new Date()
         today.setHours(23, 59, 59, 999)
         const active = mapped.filter(h => !h.due_date || new Date(h.due_date) >= today)
-        const old = mapped.filter(h => h.due_date && new Date(h.due_date) < today)
+        const old = mapped
+          .filter(h => h.due_date && new Date(h.due_date) < today)
+          .sort((a, b) => {
+            // Sort by due_date descending (newest first)
+            const dateA = a.due_date ? new Date(a.due_date).getTime() : 0
+            const dateB = b.due_date ? new Date(b.due_date).getTime() : 0
+            return dateB - dateA
+          })
 
         setHomeworks(active)
         setOldWordSets(old)
@@ -100,6 +109,14 @@ export default function GamesPage() {
     }
     load()
   }, [])
+
+  const getTrackingContext = (): TrackingContext => {
+    return {
+      wordSetId: selectedHomework?.id,
+      homeworkId: selectedHomework?.id,
+      isWordBundle: false
+    }
+  }
 
   const handleGameClick = (gameType: string) => {
     if (homeworks.length === 0 && oldWordSets.length === 0) {
@@ -114,6 +131,7 @@ export default function GamesPage() {
       setShowHomeworkSelection(true)
     }
   }
+
 
   if (loading) {
     return (
@@ -156,60 +174,78 @@ export default function GamesPage() {
         ) : (
           <>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {/* Flashcards (blue) */}
               <GameCard
                 title="Flashcards"
-                color="cyan"
+                color="blue"
                 icon={<span className="text-3xl">🃏</span>}
                 onClick={() => handleGameClick('flashcards')}
               />
+
+              {/* Multiple Choice (green) */}
               <GameCard
                 title="Multiple Choice"
-                color="emerald"
+                color="green"
                 icon={<span className="text-3xl">✅</span>}
                 onClick={() => handleGameClick('choice')}
               />
+
+              {/* Memory Game (orange) */}
               <GameCard
-                title="Memory"
+                title="Memory Game"
                 color="orange"
                 icon={<span className="text-3xl">🧠</span>}
                 onClick={() => handleGameClick('match')}
               />
+
+              {/* Word Scramble (orange) */}
               <GameCard
-                title="Matching Pairs"
-                color="violet"
-                icon={<span className="text-3xl">🔗</span>}
-                onClick={() => handleGameClick('connect')}
+                title="Word Scramble"
+                color="orange"
+                icon={<span className="text-3xl">🔀</span>}
+                onClick={() => handleGameClick('scramble')}
               />
+
+              {/* Typing Challenge (pink) */}
               <GameCard
                 title="Typing Challenge"
                 color="pink"
                 icon={<span className="text-3xl">⌨️</span>}
                 onClick={() => handleGameClick('typing')}
               />
+
+              {/* Translate (yellow) */}
               <GameCard
                 title="Translate"
-                color="teal"
+                color="yellow"
                 icon={<span className="text-3xl">🌐</span>}
                 onClick={() => handleGameClick('translate')}
               />
+
+              {/* Sentence Gap (teal) */}
               <GameCard
                 title="Sentence Gap"
-                color="indigo"
-                icon={<span className="text-3xl">📝</span>}
+                color="teal"
+                icon={<span className="text-3xl">📖</span>}
                 onClick={() => handleGameClick('storygap')}
               />
+
+              {/* Word Roulette (red) */}
               <GameCard
                 title="Word Roulette"
-                color="rose"
+                color="red"
                 icon={<span className="text-3xl">🎰</span>}
                 onClick={() => handleGameClick('roulette')}
               />
+
+              {/* Quiz (indigo) */}
               <GameCard
-                title="Word Scramble"
-                color="teal"
-                icon={<span className="text-3xl">🔀</span>}
-                onClick={() => handleGameClick('scramble')}
+                title="Quiz"
+                color="indigo"
+                icon={<span className="text-3xl">📝</span>}
+                onClick={() => handleGameClick('quiz')}
               />
+
             </div>
 
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 text-center text-sm text-gray-400 border border-white/10">
@@ -236,14 +272,14 @@ export default function GamesPage() {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
               >
-                <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/30 to-orange-500/30 rounded-3xl blur-xl" />
-                <div className="relative bg-[#12122a] border border-white/10 rounded-2xl p-6">
+                <div className="relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xl font-bold text-white">Select Word Set</h3>
                     <button
                       onClick={() => {
                         setShowHomeworkSelection(false)
                         setPendingGame(null)
+                        setShowAllOldWordSets(false)
                       }}
                       className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
                     >
@@ -261,16 +297,38 @@ export default function GamesPage() {
                         }}
                         className="w-full text-left p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-amber-500/30 transition-all group"
                       >
-                        <div className="flex items-center gap-3">
-                          <span className="w-4 h-4 rounded-full shadow-lg" style={{ backgroundColor: hw.color || '#a855f7' }} />
+                        <div className="flex flex-col gap-1">
                           <span className="font-medium text-white group-hover:text-amber-400 transition-colors">{hw.title}</span>
+                          {hw.due_date && (
+                            <span className="text-xs italic text-gray-400">
+                              Due: {new Date(hw.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                          )}
                         </div>
                       </button>
                     ))}
                     {oldWordSets.length > 0 && (
                       <>
-                        <div className="text-xs text-gray-500 pt-4 pb-2 border-t border-white/5 mt-4">Older Word Sets</div>
-                        {oldWordSets.map((hw) => (
+                        <div className="flex items-center justify-between pt-4 pb-2 border-t border-white/10 mt-4">
+                          <div className="text-xs text-gray-500">Older Word Sets</div>
+                          {oldWordSets.length > 10 && !showAllOldWordSets && (
+                            <button
+                              onClick={() => setShowAllOldWordSets(true)}
+                              className="text-xs text-amber-400 hover:text-amber-300 font-medium"
+                            >
+                              Show all ({oldWordSets.length})
+                            </button>
+                          )}
+                          {showAllOldWordSets && oldWordSets.length > 10 && (
+                            <button
+                              onClick={() => setShowAllOldWordSets(false)}
+                              className="text-xs text-gray-400 hover:text-gray-300 font-medium"
+                            >
+                              Show less
+                            </button>
+                          )}
+                        </div>
+                        {(showAllOldWordSets ? oldWordSets : oldWordSets.slice(0, 10)).map((hw) => (
                           <button
                             key={hw.id}
                             onClick={() => {
@@ -278,11 +336,15 @@ export default function GamesPage() {
                               setShowHomeworkSelection(false)
                               window.location.href = `/student?game=${pendingGame}&homework=${hw.id}`
                             }}
-                            className="w-full text-left p-4 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all opacity-70"
+                            className="w-full text-left p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-amber-500/30 transition-all opacity-70 group"
                           >
-                            <div className="flex items-center gap-3">
-                              <span className="w-4 h-4 rounded-full" style={{ backgroundColor: hw.color || '#6b7280' }} />
-                              <span className="font-medium text-gray-400">{hw.title}</span>
+                            <div className="flex flex-col gap-1">
+                              <span className="font-medium text-gray-400 group-hover:text-amber-400 transition-colors">{hw.title}</span>
+                              {hw.due_date && (
+                                <span className="text-xs italic text-gray-500">
+                                  Was due: {new Date(hw.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </span>
+                              )}
                             </div>
                           </button>
                         ))}
@@ -294,6 +356,7 @@ export default function GamesPage() {
             </motion.div>
           )}
         </AnimatePresence>
+
       </div>
     </div>
   )

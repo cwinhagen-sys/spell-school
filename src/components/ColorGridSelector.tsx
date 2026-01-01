@@ -259,10 +259,7 @@ export default function ColorGridSelector({
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Glow effect */}
-        <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/30 via-orange-500/20 to-rose-500/30 rounded-3xl blur-xl" />
-        
-        <div className="relative rounded-2xl p-6 shadow-2xl bg-[#12122a] border border-white/10 flex flex-col overflow-hidden">
+        <div className="relative rounded-2xl p-6 shadow-2xl bg-white/5 backdrop-blur-sm border border-white/10 flex flex-col overflow-hidden">
           {/* Header */}
           <div className="flex-shrink-0 mb-6">
             <div className="flex items-center justify-between">
@@ -331,7 +328,7 @@ export default function ColorGridSelector({
                     
                     {/* Selection indicator - checkmark (outside button for better visibility) */}
                     {isSelected && (
-                      <div className="absolute -top-0.5 right-0 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg border-2 border-[#12122a] z-10">
+                      <div className="absolute -top-0.5 right-0 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg border-2 border-white/5 z-10">
                         <span className="text-white text-xs font-bold">✓</span>
                       </div>
                     )}

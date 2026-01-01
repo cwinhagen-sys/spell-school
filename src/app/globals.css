@@ -7,7 +7,7 @@
     --brand-700: #4338ca;
     --radius-card: 1rem;
   }
-  html, body { @apply bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800; }
+  html, body { @apply bg-[#08080f] text-white; }
   a { @apply text-indigo-600 no-underline hover:text-indigo-700; }
 }
 
@@ -115,4 +115,81 @@
 
 .animate-xp-float {
   animation: xpFloat 2s ease-out forwards;
+}
+
+/* Dark Scrollbar Styles */
+.scrollbar-dark {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.scrollbar-dark::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-dark::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-dark::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+.scrollbar-dark::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Global dark scrollbar for dark themed pages */
+.dark-theme-scrollbar,
+.dark-theme-scrollbar * {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.dark-theme-scrollbar::-webkit-scrollbar,
+.dark-theme-scrollbar *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark-theme-scrollbar::-webkit-scrollbar-track,
+.dark-theme-scrollbar *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dark-theme-scrollbar::-webkit-scrollbar-thumb,
+.dark-theme-scrollbar *::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+.dark-theme-scrollbar::-webkit-scrollbar-thumb:hover,
+.dark-theme-scrollbar *::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Custom scrollbar for modals matching bg-white/5 theme */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }

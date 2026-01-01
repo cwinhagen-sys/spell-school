@@ -182,7 +182,7 @@ export default function LeaderboardPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-[#161622] border border-white/[0.08] rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center">
               <Users className="w-6 h-6 text-amber-400" />
             </div>
             <div>
@@ -193,12 +193,12 @@ export default function LeaderboardPage() {
         </div>
 
         {error ? (
-          <div className="bg-[#161622] border border-red-500/20 rounded-xl p-6 text-center text-red-400">
+          <div className="bg-white/5 border border-red-500/20 rounded-xl p-6 text-center text-red-400">
             {error}
           </div>
         ) : leaderboardPlayers.length === 0 ? (
-          <div className="bg-[#161622] rounded-xl border border-white/[0.08] p-12 text-center">
-            <div className="w-14 h-14 bg-[#1a1a2e] rounded-xl flex items-center justify-center mx-auto mb-4 border border-white/[0.06]">
+          <div className="bg-white/5 rounded-xl border border-white/10 p-12 text-center">
+            <div className="w-14 h-14 bg-white/5 rounded-xl flex items-center justify-center mx-auto mb-4 border border-white/10">
               <Trophy className="w-7 h-7 text-gray-600" />
             </div>
             <p className="text-gray-400">No leaderboard available</p>
@@ -216,10 +216,10 @@ export default function LeaderboardPage() {
               return (
                 <div 
                   key={category.key} 
-                  className="bg-[#161622] rounded-xl border border-white/[0.08] p-5"
+                  className="bg-white/5 rounded-xl border border-white/10 p-5"
                 >
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-9 h-9 bg-[#1a1a2e] rounded-lg flex items-center justify-center border border-white/[0.06]">
+                    <div className="w-9 h-9 bg-white/5 rounded-lg flex items-center justify-center border border-white/10">
                       <span className={category.iconColor}>{category.icon}</span>
                     </div>
                     <div>
@@ -238,7 +238,7 @@ export default function LeaderboardPage() {
                           className={`flex items-center justify-between rounded-lg px-3 py-2.5 transition-all ${
                             isCurrentUser
                               ? 'bg-amber-500/10 border border-amber-500/20'
-                              : 'bg-[#1a1a2e] border border-white/[0.04] hover:border-white/[0.08]'
+                              : 'bg-white/5 border border-white/10 hover:bg-white/10'
                           }`}
                         >
                           <div className="flex items-center gap-3">
@@ -255,7 +255,7 @@ export default function LeaderboardPage() {
                                   ? 'bg-gray-400 text-gray-900'
                                   : rank === 3
                                   ? 'bg-orange-500 text-white'
-                                  : 'bg-[#252538] border border-white/10 text-gray-400'
+                                  : 'bg-white/5 border border-white/10 text-gray-400'
                               }`}>
                                 {rank}
                               </div>
@@ -290,7 +290,7 @@ export default function LeaderboardPage() {
           </div>
         )}
 
-        <div className="mt-6 p-4 bg-[#161622] rounded-xl text-center text-xs text-gray-500 border border-white/[0.08]">
+        <div className="mt-6 p-4 bg-white/5 rounded-xl text-center text-xs text-gray-500 border border-white/10">
           <p>The leaderboard updates after each game played</p>
         </div>
       </div>

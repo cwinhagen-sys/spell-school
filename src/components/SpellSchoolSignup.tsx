@@ -50,8 +50,8 @@ const tiers = [
   {
     id: 'premium',
     name: 'Premium',
-    monthlyPrice: 79,
-    yearlyPrice: 758,
+    monthlyPrice: 29,
+    yearlyPrice: 299,
     description: 'For teachers who want more control',
     color: 'from-amber-500 to-orange-500',
     icon: Zap,
@@ -68,8 +68,8 @@ const tiers = [
   {
     id: 'pro',
     name: 'Pro',
-    monthlyPrice: 129,
-    yearlyPrice: 1238,
+    monthlyPrice: 49,
+    yearlyPrice: 499,
     description: 'Full control and insights',
     color: 'from-rose-500 to-pink-500',
     icon: Crown,
@@ -105,25 +105,12 @@ export default function SpellSchoolSignup({
   showGoogle = true,
   initialTier = null,
 }: SpellSchoolSignupProps) {
-  const [selectedTier, setSelectedTier] = useState<string | null>(initialTier)
-  const [showTierSelection, setShowTierSelection] = useState(true)
-  const [yearly, setYearly] = useState(false)
+  // Always use free tier for new signups - no tier selection
+  const selectedTier = 'free'
+  const yearly = false
 
-  useEffect(() => {
-    // Check if tier is provided as prop
-    if (initialTier && ['free', 'premium', 'pro'].includes(initialTier)) {
-      setSelectedTier(initialTier)
-      setShowTierSelection(false)
-    } else if (!isStudent) {
-      // Automatically select free tier for new signups
-      setSelectedTier('free')
-      setShowTierSelection(false)
-    } else {
-      setShowTierSelection(false)
-    }
-  }, [initialTier, isStudent])
-
-  if (showTierSelection && !isStudent) {
+  // Tier selection removed - always go directly to form
+  if (false) {
     return (
       <div className="min-h-screen bg-[#08080f] flex items-center justify-center p-4 relative overflow-hidden">
         {/* Subtle Background */}
@@ -273,63 +260,6 @@ export default function SpellSchoolSignup({
         animate={{ opacity: 1, scale: 1 }}
         className="relative bg-[#12122a] rounded-2xl shadow-2xl max-w-xl w-full p-8 md:p-10 border border-white/10"
       >
-        {selectedTier && !isStudent && (
-          <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/10">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm text-gray-400">Selected plan:</span>
-              <span className="text-white font-semibold capitalize">{selectedTier}</span>
-            </div>
-            
-            {/* Billing Period Toggle - only show for paid tiers */}
-            {selectedTier !== 'free' && (
-              <div className="mb-3">
-                <span className="text-xs text-gray-400 mb-2 block">Billing period:</span>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setYearly(false)}
-                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                      !yearly
-                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                        : 'bg-white/5 text-gray-400 hover:bg-white/10'
-                    }`}
-                  >
-                    Monthly
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setYearly(true)}
-                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                      yearly
-                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                        : 'bg-white/5 text-gray-400 hover:bg-white/10'
-                    }`}
-                  >
-                    Yearly
-                  </button>
-                </div>
-                {yearly && (
-                  <p className="text-xs text-gray-400 mt-2 text-center">
-                    Save {Math.round((tiers.find(t => t.id === selectedTier)?.monthlyPrice || 0) * 12 - (tiers.find(t => t.id === selectedTier)?.yearlyPrice || 0))} SEK per year
-                  </p>
-                )}
-              </div>
-            )}
-            
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedTier(null)
-                setShowTierSelection(true)
-                setYearly(false)
-              }}
-              className="text-xs text-amber-400 hover:text-amber-300"
-            >
-              Change plan
-            </button>
-          </div>
-        )}
-
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-white mb-2">
             {isStudent ? 'Create Student Account' : 'Create Teacher Account'}
@@ -358,7 +288,7 @@ export default function SpellSchoolSignup({
           setClassCode={setClassCode}
           isStudent={isStudent}
           showGoogle={showGoogle}
-          selectedTier={selectedTier || undefined}
+          selectedTier={selectedTier}
           yearly={yearly}
         />
       </motion.div>
@@ -411,8 +341,16 @@ function FormContents({
   selectedTier,
   yearly = false,
 }: FormContentsProps) {
+  // Check if signup was successful (user needs to verify email)
+  const signupSuccessful = message?.includes('check your email') || 
+                           message?.includes('Account created successfully') ||
+                           (message?.includes('✅') && !message?.includes('Error') && !message?.includes('error'))
+  
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    // Prevent submission if signup was already successful
+    if (signupSuccessful) return;
+    
     if (onEmailSignup) {
       if (isStudent) {
         // For students, email is generated automatically, so we pass empty string
@@ -425,8 +363,8 @@ function FormContents({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {/* Google CTA */}
-      {showGoogle && onGoogleSignup && (
+      {/* Google CTA - Hide if signup was successful */}
+      {!signupSuccessful && showGoogle && onGoogleSignup && (
         <>
           <button
             type="button"
@@ -451,7 +389,7 @@ function FormContents({
       )}
 
       {/* Student-specific fields */}
-      {isStudent && (
+      {isStudent && !signupSuccessful && (
         <>
           {/* Username */}
           <label className="block">
@@ -464,7 +402,8 @@ function FormContents({
                 value={username}
                 onChange={(e) => setUsername?.(e.target.value)}
                 placeholder="Choose a username"
-                className="w-full pl-10 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all"
+                disabled={signupSuccessful}
+                className="w-full pl-10 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
           </label>
@@ -506,8 +445,8 @@ function FormContents({
       )}
 
       {/* Teacher-specific fields */}
-      {!isStudent && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {!isStudent && !signupSuccessful && (
+        <>
           {/* Name */}
           <label className="block">
             <span className="text-sm font-medium text-gray-300 mb-1.5 block">Full Name</span>
@@ -519,7 +458,8 @@ function FormContents({
                 value={name}
                 onChange={(e) => setName?.(e.target.value)}
                 placeholder="Your full name"
-                className="w-full pl-10 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all"
+                disabled={signupSuccessful}
+                className="w-full pl-10 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
           </label>
@@ -535,29 +475,33 @@ function FormContents({
                 value={email}
                 onChange={(e) => setEmail?.(e.target.value)}
                 placeholder="you@school.com"
-                className="w-full pl-10 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all"
+                disabled={signupSuccessful}
+                className="w-full pl-10 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
           </label>
-        </div>
+        </>
       )}
 
       {/* Password */}
-      <label className="block">
-        <span className="text-sm font-medium text-gray-300 mb-1.5 block">Password</span>
-        <div className="relative">
-          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none"/>
-          <input
-            required
-            type="password"
-            value={password}
-            onChange={(e) => setPassword?.(e.target.value)}
-            placeholder="••••••••"
-            minLength={6}
-            className="w-full pl-10 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all"
-          />
-        </div>
-      </label>
+      {!signupSuccessful && (
+        <label className="block">
+          <span className="text-sm font-medium text-gray-300 mb-1.5 block">Password</span>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none"/>
+            <input
+              required
+              type="password"
+              value={password}
+              onChange={(e) => setPassword?.(e.target.value)}
+              placeholder="••••••••"
+              minLength={6}
+              disabled={signupSuccessful}
+              className="w-full pl-10 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+          </div>
+        </label>
+      )}
 
       {/* Error/Success message */}
       {message && (
@@ -570,15 +514,17 @@ function FormContents({
         </div>
       )}
 
-      {/* Submit */}
-      <button
-        type="submit"
-        disabled={loading || (!isStudent && !selectedTier)}
-        className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white px-4 py-3.5 rounded-xl font-semibold hover:from-amber-400 hover:to-orange-500 transition-all shadow-lg shadow-amber-500/30 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-      >
-        {loading ? 'Creating account...' : (isStudent ? 'Create Student Account' : 'Create Teacher Account')}
-        {!loading && <ArrowRight className="w-4 h-4" />}
-      </button>
+      {/* Submit - Hide button if signup was successful (check your email message) */}
+      {!message?.includes('check your email') && !message?.includes('Account created successfully') && (
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white px-4 py-3.5 rounded-xl font-semibold hover:from-amber-400 hover:to-orange-500 transition-all shadow-lg shadow-amber-500/30 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          {loading ? 'Creating account...' : (isStudent ? 'Create Student Account' : 'Create Teacher Account')}
+          {!loading && <ArrowRight className="w-4 h-4" />}
+        </button>
+      )}
 
       {/* Helpers */}
       <p className="text-center text-sm text-gray-400">

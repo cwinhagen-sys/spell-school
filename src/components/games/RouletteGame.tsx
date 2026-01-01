@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { RotateCcw, ArrowLeft, Star, CheckCircle, XCircle, Send, Target } from 'lucide-react'
+import { RotateCcw, ArrowLeft, ArrowRight, Star, CheckCircle, XCircle, Send, Target } from 'lucide-react'
 import { startGameSession, endGameSession, updateStudentProgress, type TrackingContext } from '@/lib/tracking'
 import UniversalGameCompleteModal from '@/components/UniversalGameCompleteModal'
 import { calculateRouletteScore } from '@/lib/gameScoring'
@@ -51,6 +51,9 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
   const [totalScore, setTotalScore] = useState(0)
   const [showFinishButton, setShowFinishButton] = useState(false)
   const [hasSubmitted, setHasSubmitted] = useState(false)
+  const [showContinueButton, setShowContinueButton] = useState(false)
+  const [showWritingView, setShowWritingView] = useState(false)
+  const [sentenceQuality, setSentenceQuality] = useState<'green' | 'yellow' | 'red' | null>(null) // Store sentence quality from AI analysis
   
   // Wheel animation
   const [wheelRotation, setWheelRotation] = useState(0)
@@ -124,6 +127,14 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
     return inappropriateWords.some(word => lowerSentence.includes(word))
   }
 
+  // Auto-start game immediately when component mounts
+  useEffect(() => {
+    if (spinMode === null && !showGridSelector) {
+      setSpinMode(1)
+      setSpinsRemaining(1)
+    }
+  }, [spinMode, showGridSelector])
+
   // Initialize game session
   useEffect(() => {
     if (showGridSelector) return
@@ -147,6 +158,19 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
   useEffect(() => {
     if (showGridSelector) return
     
+    // Don't draw until words are properly initialized
+    // In non-session mode, wait for selectedGrids to be set and gameEnglishWords to be populated
+    if (!sessionMode && selectedGrids.length > 0 && gameEnglishWords.length === 0) {
+      console.log('Waiting for words to be initialized from selected grids...')
+      return
+    }
+    
+    // In session mode, wait for words prop
+    if (sessionMode && (!words || words.length === 0)) {
+      console.log('Waiting for words in session mode...')
+      return
+    }
+    
     const drawWheel = () => {
       const canvas = wheelRef.current
       if (!canvas) {
@@ -161,7 +185,25 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
       }
 
       // Use English words for display on the wheel
-      const wordsToUse = gameEnglishWords.length > 0 ? gameEnglishWords : (gameWords.length > 0 ? gameWords.map(w => getTranslation(w)) : words)
+      // If we have selectedGrids, we MUST use gameEnglishWords (don't fallback to words prop)
+      let wordsToUse: string[] = []
+      if (!sessionMode && selectedGrids.length > 0) {
+        // In grid selection mode, only use gameEnglishWords (from selected grids)
+        wordsToUse = gameEnglishWords
+      } else if (sessionMode) {
+        // In session mode, use gameEnglishWords or words prop
+        wordsToUse = gameEnglishWords.length > 0 ? gameEnglishWords : (words || [])
+      } else {
+        // Fallback: use gameEnglishWords, gameWords, or words prop
+        wordsToUse = gameEnglishWords.length > 0 ? gameEnglishWords : (gameWords.length > 0 ? gameWords.map(w => getTranslation(w)) : (words || []))
+      }
+      
+      // Don't draw if no words available
+      if (wordsToUse.length === 0) {
+        console.log('No words available to draw on wheel')
+        return false
+      }
+      
       console.log('Drawing wheel with', wordsToUse.length, 'words (English):', wordsToUse)
 
       const colors = [
@@ -256,7 +298,7 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
 
     // Start trying to draw
     tryDraw()
-  }, [gameWords, gameEnglishWords, words, selectedWordIndex, isSpinning, spunWords, showGridSelector])
+  }, [gameWords, gameEnglishWords, words, selectedWordIndex, isSpinning, spunWords, showGridSelector, selectedGrids, sessionMode])
 
   // Validate sentence
   const validateSentence = (sentence: string): boolean => {
@@ -420,11 +462,7 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
       setSpunWords(prev => [...prev, newSpunWord])
       setSpinsRemaining(prev => prev - 1)
       setIsSpinning(false)
-      
-      // If no more spins, enable sentence input
-      if (spinsRemaining === 1) {
-        setFeedback({ type: 'info', message: 'Now write a sentence using all the words!' })
-      }
+      setShowContinueButton(true)
     }, 4700) // Slightly longer than animation duration
   }
 
@@ -439,12 +477,12 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
     }
 
     if (!validateSentence(currentSentence)) {
-      setFeedback({ type: 'error', message: 'Sentence must start with a capital letter and end with . ! or ?' })
+      setFeedback({ type: 'error', message: 'Sentence must start with a capital letter and end with punctuation (. ! or ?)' })
       return
     }
     
     if (containsInappropriateWords(currentSentence)) {
-      setFeedback({ type: 'error', message: 'Please use appropriate language. Remove any inappropriate words from your sentence.' })
+      setFeedback({ type: 'error', message: 'Please use appropriate language in your sentence.' })
       return
     }
     
@@ -473,6 +511,9 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
       }
       
       const result = await response.json()
+      
+      // Store sentence quality for use in finishGame
+      setSentenceQuality(result.color || 'red')
       
       // Use the new universal scoring system: Points based on sentence quality and word count
       const wordCount = currentSentence.trim().split(/\s+/).length
@@ -515,7 +556,7 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
       
          setFeedback({ 
      type: feedbackType as 'success' | 'error' | 'info', 
-     message: scoreResult.pointsAwarded === 0 ? result.feedback : `Great! You earned ${scoreResult.pointsAwarded} points. ${result.feedback}` 
+     message: scoreResult.pointsAwarded === 0 ? result.feedback : `You earned ${scoreResult.pointsAwarded} points. ${result.feedback}` 
    })
       
       // Mark as submitted and show finish button
@@ -526,7 +567,7 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
       console.error('Error analyzing sentence:', error)
       setFeedback({ 
         type: 'error', 
-        message: 'Kunde inte analysera meningen just nu. Du får ändå poäng för att använda alla orden!' 
+        message: 'Unable to analyze sentence at this time. Points awarded for using all required words.' 
       })
       
       // Give some points anyway for completing the task
@@ -536,6 +577,9 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
       
       // INSTANT UI UPDATE: Send fallback points to parent for immediate UI update
       onScoreUpdate(50, fallbackScore, 'roulette') // 50% quest score for fallback
+      
+      // Store sentence quality as red for fallback (not complete)
+      setSentenceQuality('red')
       
       setShowFinishButton(true)
     } finally {
@@ -547,9 +591,10 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
   const finishGame = async () => {
     if (sessionMode) {
       // In session mode, pass correctAnswers and totalWords for percentage calculation
-      // Roulette: if they completed the sentence, count as 100% correct
+      // Roulette: only count as complete if sentence quality is 'green' (good)
       const totalWords = spunWords.length
-      const correctWords = totalWords // If they finished, all words were used correctly
+      // Only count as correct if sentence quality is green, otherwise count as partially correct (0% for red/yellow means not complete)
+      const correctWords = sentenceQuality === 'green' ? totalWords : 0
       onScoreUpdate(correctWords, totalWords, 'roulette')
       
       // Automatically return to game selection after a delay
@@ -604,6 +649,8 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
     setCurrentAngle(0)
     setSelectedWordIndex(-1)
     setGameFinished(false)
+    setShowContinueButton(false)
+    setShowWritingView(false)
     setShowFinishButton(false)
     setHasSubmitted(false)
     setElapsedSec(0)
@@ -665,241 +712,181 @@ export default function RouletteGame({ words, translations, onClose, onScoreUpda
     )
   }
 
-  // Mode selection screen
+  // Mode selection screen - skip it, auto-start is handled in useEffect above
   if (!spinMode) {
-    return (
-      <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50 overflow-y-auto">
-        {/* Aurora background effects */}
-        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
-        
-        <div className="relative bg-[#12122a] rounded-2xl p-6 w-full max-w-2xl shadow-2xl border border-white/10 my-4 text-center">
-          {/* Header */}
-          <div className="flex items-center justify-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/30">
-              <Target className="w-8 h-8 text-white" />
-            </div>
-            <div className="ml-4">
-              <h2 className="text-3xl font-bold text-white">Ordroulette</h2>
-              <p className="text-sm text-gray-400">Snurra och skriv meningar!</p>
-            </div>
-          </div>
-
-          <div className="mb-8">
-            <p className="text-lg text-gray-300 mb-6">
-              Snurra på hjulet och skriv en mening med de valda orden!
-            </p>
-            
-            <div className="bg-white/5 rounded-xl p-6 mb-6 border border-white/10">
-              <div className="text-sm font-semibold text-white mb-2 uppercase tracking-wide">Så här fungerar det:</div>
-              <div className="text-sm text-gray-400 text-left space-y-1">
-                <div>• Klicka på hjulet för att snurra</div>
-                <div>• Använd alla valda ord i en mening</div>
-                <div>• Poäng = Antal ord i din mening</div>
-              </div>
-            </div>
-            
-            <button
-              onClick={() => {
-                setSpinMode(1)
-                setSpinsRemaining(1)
-              }}
-              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white py-4 px-8 rounded-xl font-bold text-lg transition-all shadow-lg shadow-amber-500/30"
-            >
-              Starta spelet
-            </button>
-          </div>
-          
-          <button 
-            onClick={onClose} 
-            className="text-gray-400 hover:text-white font-medium transition-colors"
-          >
-            Tillbaka till Dashboard
-          </button>
-        </div>
-      </div>
-    )
+    return null
   }
 
   // Main game screen
   return (
     <div className="fixed inset-0 bg-[#0a0a1a] p-4 z-50 overflow-y-auto">
-      {/* Aurora background effects */}
-      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+      {/* Background effects */}
       
-      <div className="relative bg-[#12122a] rounded-2xl p-6 w-full max-w-5xl shadow-2xl border border-white/10 my-8 mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/30">
-              <Target className="w-6 h-6 text-white" />
+      {/* Writing View - Separate screen after all spins */}
+      {showWritingView && spinsRemaining === 0 ? (
+        <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-6 w-full max-w-3xl shadow-2xl border border-white/10 my-8 mx-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-white/10 border border-white/20 rounded-xl flex items-center justify-center">
+                <Target className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white">Write Your Sentence</h2>
+                <p className="text-sm text-gray-400">Use all selected words</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-2xl font-bold text-white">Ordroulette</h2>
-              <p className="text-sm text-gray-400">Snurra och skriv meningar!</p>
-            </div>
+            <button 
+              onClick={onClose} 
+              className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center transition-colors border border-white/10"
+            >
+              <span className="text-gray-400 text-xl">×</span>
+            </button>
           </div>
-          <button 
-            onClick={onClose} 
-            className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center transition-colors border border-white/10"
-          >
-            <span className="text-gray-400 text-xl">×</span>
-          </button>
-        </div>
 
-
-
-                 {/* Wheel */}
-         <div className="flex justify-center mb-8">
-           <div className="relative" style={{ width: '400px', height: '400px' }}>
-             <style jsx>{`
-               .marker {
-                 position: absolute;
-                 top: -48px;
-                 left: 50%;
-                 transform: translateX(-50%);
-                 width: 0;
-                 height: 0;
-                 border-left: 24px solid transparent;
-                 border-right: 24px solid transparent;
-                 border-top: 48px solid #f59e0b;
-                 z-index: 10;
-                 filter: drop-shadow(0 4px 8px rgba(245, 158, 11, 0.5));
-               }
-             `}</style>
-             {/* Large pointer at 12 o'clock */}
-             <div className="marker"></div>
-             <canvas 
-               ref={wheelRef}
-               id="wheel" 
-               className="wheel" 
-               width="400" 
-               height="400"
-               onClick={spinWheel}
-               style={{
-                 width: '100%',
-                 height: '100%',
-                 borderRadius: '50%',
-                 border: '8px solid rgba(255, 255, 255, 0.2)',
-                 boxShadow: '0 0 30px rgba(245, 158, 11, 0.3), inset 0 0 20px rgba(0,0,0,0.2)',
-                 transition: 'transform 4s cubic-bezier(0.25, 1, 0.5, 1)',
-                 transform: `rotate(${wheelRotation}deg)`,
-                 backgroundColor: 'rgba(18, 18, 42, 0.8)',
-                 cursor: isSpinning ? 'not-allowed' : 'pointer'
-               }}
-             />
-           </div>
-         </div>
-
-        {/* Spun Words Display */}
-        {spunWords.length > 0 && (
-          <div className="mb-8 p-6 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-2xl border border-amber-500/30">
-            <h3 className="text-lg font-bold mb-4 text-white flex items-center">
-              <Target className="w-5 h-5 mr-2 text-amber-400" />
-              Valda ord:
-            </h3>
-            <div className="flex flex-wrap gap-3">
-              {spunWords.map((spun, index) => (
-                <div key={index} className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-amber-500/30">
-                  {spun.word}
-                </div>
-              ))}
+          {/* Selected Words */}
+          {spunWords.length > 0 && (
+            <div className="mb-6 p-5 bg-white/5 rounded-xl border border-white/10">
+              <h3 className="text-base font-semibold mb-3 text-white">
+                Selected Words
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {spunWords.map((spun, index) => (
+                  <div key={index} className="bg-white/10 border border-white/20 text-white px-3 py-1.5 rounded-lg text-sm font-medium">
+                    {spun.word}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Spin Instructions */}
-        {spinsRemaining > 0 && (
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center space-x-2 bg-amber-500/10 px-6 py-3 rounded-xl border border-amber-500/30">
-              <p className="text-amber-300 font-medium">
-                {isSpinning ? 'Snurrar...' : 'Klicka på hjulet för att snurra!'}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Sentence Input */}
-        {spinsRemaining === 0 && (
-          <div className="mb-8">
-            <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-2xl p-6 border border-amber-500/30">
-              <h3 className="text-xl font-bold mb-4 text-white flex items-center">
-                <Send className="w-5 h-5 mr-2 text-emerald-400" />
-                Skriv en mening med alla orden:
+          {/* Sentence Input */}
+          <div className="mb-6">
+            <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+              <h3 className="text-lg font-bold mb-4 text-white">
+                Write a sentence using all selected words
               </h3>
               <div className="space-y-4">
                 <textarea
                   value={currentSentence}
                   onChange={(e) => setCurrentSentence(e.target.value)}
-                  placeholder="Skriv din mening här..."
-                  className="w-full p-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 resize-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                  rows={3}
+                  placeholder="Write your sentence here..."
+                  className="w-full p-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 resize-none focus:border-white/20 focus:ring-2 focus:ring-white/10 transition-all"
+                  rows={4}
                 />
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="text-sm font-medium">
                     {containsInappropriateWords(currentSentence) ? (
-                      <span className="text-red-400 flex items-center">
-                        <span className="mr-1">⚠</span>
-                        Använd lämpligt språk
+                      <span className="text-red-400">
+                        Use appropriate language
                       </span>
                     ) : (
-                      <span className="text-gray-400 flex items-center">
-                        <span className="mr-1">💡</span>
-                        Måste börja med stor bokstav och sluta med . ! eller ?
+                      <span className="text-gray-400">
+                        Start with a capital letter and end with punctuation
                       </span>
                     )}
                   </div>
                   <button
                     onClick={submitSentence}
                     disabled={!validateSentence(currentSentence) || isSubmitting || hasSubmitted || containsInappropriateWords(currentSentence)}
-                    className={`px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg ${
+                    className={`px-6 py-3 rounded-xl font-semibold transition-colors duration-150 flex items-center gap-2 ${
                       !validateSentence(currentSentence) || isSubmitting || hasSubmitted || containsInappropriateWords(currentSentence)
-                        ? 'bg-white/5 text-gray-500 cursor-not-allowed border border-white/5'
-                        : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-400 hover:to-orange-400 hover:shadow-xl shadow-amber-500/30'
+                        ? 'bg-white/5 text-gray-500 cursor-not-allowed border border-white/10'
+                        : 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
                     }`}
                   >
                     <Send className="w-4 h-4" />
-                    {isSubmitting ? 'Analyserar...' : hasSubmitted ? 'Skickat' : 'Skicka'}
+                    {isSubmitting ? 'Analyzing...' : hasSubmitted ? 'Submitted' : 'Submit'}
                   </button>
                 </div>
               </div>
             </div>
           </div>
-        )}
 
-        {/* Feedback */}
-        {feedback && (
-          <div className={`p-6 rounded-2xl mb-8 border ${
-            feedback.type === 'success' ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' :
-            feedback.type === 'error' ? 'bg-red-500/10 text-red-300 border-red-500/30' :
-            'bg-amber-500/10 text-amber-300 border-amber-500/30'
-          }`}>
-            <div className="mb-4 text-lg font-medium">{feedback.message}</div>
-            {showFinishButton && (
-              <div className="text-center">
-                <button
-                  onClick={finishGame}
-                  className="bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3 px-8 rounded-xl font-semibold hover:from-amber-400 hover:to-orange-400 transition-all shadow-lg shadow-amber-500/30 hover:shadow-xl"
-                >
-                  Avsluta spel
-                </button>
-              </div>
+          {/* Feedback */}
+          {feedback && (
+            <div className={`p-5 rounded-xl mb-6 border ${
+              feedback.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-100' :
+              feedback.type === 'error' ? 'bg-red-500/10 border-red-500/30 text-red-100' :
+              'bg-amber-500/10 border-amber-500/30 text-amber-100'
+            }`}>
+              <div className="text-base font-medium leading-relaxed">{feedback.message}</div>
+              {showFinishButton && (
+                <div className="text-center mt-4">
+                  <button
+                    onClick={finishGame}
+                    className="bg-white/10 border border-white/20 text-white py-2.5 px-6 rounded-xl font-semibold hover:bg-white/20 transition-colors duration-150"
+                  >
+                    Finish Game
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Wheel View - Only wheel, no text or information */
+        <div className="fixed inset-0 flex items-center justify-center">
+          <div className="flex items-center gap-8">
+            {/* Wheel */}
+            <div className="relative" style={{ width: '400px', height: '400px' }}>
+              <style dangerouslySetInnerHTML={{__html: `
+                .marker {
+                  position: absolute;
+                  top: -48px;
+                  left: 50%;
+                  transform: translateX(-50%);
+                  width: 0;
+                  height: 0;
+                  border-left: 24px solid transparent;
+                  border-right: 24px solid transparent;
+                  border-top: 48px solid #f59e0b;
+                  z-index: 10;
+                  filter: drop-shadow(0 4px 8px rgba(245, 158, 11, 0.5));
+                }
+              `}} />
+              {/* Large pointer at 12 o'clock */}
+              <div className="marker"></div>
+              <canvas 
+                ref={wheelRef}
+                id="wheel" 
+                className="wheel" 
+                width="400" 
+                height="400"
+                onClick={spinWheel}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: '50%',
+                  border: '8px solid rgba(255, 255, 255, 0.2)',
+                  boxShadow: '0 0 30px rgba(245, 158, 11, 0.3), inset 0 0 20px rgba(0,0,0,0.2)',
+                  transition: 'transform 4s cubic-bezier(0.25, 1, 0.5, 1)',
+                  transform: `rotate(${wheelRotation}deg)`,
+                  backgroundColor: 'rgba(18, 18, 42, 0.8)',
+                  cursor: isSpinning ? 'not-allowed' : 'pointer'
+                }}
+              />
+            </div>
+
+            {/* Arrow button to proceed - Only show after spin is complete */}
+            {!isSpinning && showContinueButton && (
+              <button
+                onClick={() => {
+                  if (spinsRemaining === 0) {
+                    setShowContinueButton(false)
+                    setShowWritingView(true)
+                  } else {
+                    setShowContinueButton(false)
+                  }
+                }}
+                className="w-16 h-16 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full flex items-center justify-center transition-all duration-150 text-white hover:scale-110"
+              >
+                <ArrowRight className="w-8 h-8" />
+              </button>
             )}
           </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex justify-center gap-4">
-          <button 
-            onClick={restartGame} 
-            className="bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 py-3 px-6 rounded-xl font-semibold transition-all flex items-center gap-2"
-          >
-            <RotateCcw className="w-4 h-4" />
-            Starta om
-          </button>
         </div>
-      </div>
+      )}
     </div>
   )
 }

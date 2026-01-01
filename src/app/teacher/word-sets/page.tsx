@@ -2,13 +2,20 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import ImageSelector from '@/components/ImageSelector'
-import { FileText, Edit2, Trash2, Plus, X, Save, Sparkles, ArrowLeft, AlertTriangle } from 'lucide-react'
+import ImageSelector, { type ImageData } from '@/components/ImageSelector'
+import { FileText, Edit2, Trash2, Plus, X, Save, Sparkles, ArrowLeft, AlertTriangle, ArrowRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { canCreateWordSet, getUserSubscriptionTier, TIER_LIMITS } from '@/lib/subscription'
 import PaymentWallModal from '@/components/PaymentWallModal'
 
-type Word = { en: string; sv: string; image_url?: string }
+type Word = { 
+  en: string
+  sv: string
+  image_url?: string
+  photographer_name?: string
+  photographer_url?: string
+  unsplash_url?: string
+}
 type WordSet = { id: string; title: string; words: Word[]; created_at: string }
 
 export default function TeacherWordSetsPage() {
@@ -73,6 +80,14 @@ export default function TeacherWordSetsPage() {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { window.location.href = '/'; return }
+      
+      // Check email verification
+      const { isUserEmailVerified } = await import('@/lib/email-verification')
+      if (!isUserEmailVerified(user)) {
+        window.location.href = '/?message=Please verify your email address before accessing teacher features. Check your inbox for the verification link.'
+        return
+      }
+      
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
@@ -333,14 +348,26 @@ export default function TeacherWordSetsPage() {
                   <span className="text-xs font-medium text-gray-500">Image:</span>
                   <ImageSelector
                     value={r.image_url}
-                    onChange={(imageUrl) => {
+                    onChange={(imageData: ImageData) => {
                       const copy = [...editRows]
-                      copy[i] = { ...copy[i], image_url: imageUrl }
+                      copy[i] = { 
+                        ...copy[i], 
+                        image_url: imageData.image_url,
+                        photographer_name: imageData.photographer_name,
+                        photographer_url: imageData.photographer_url,
+                        unsplash_url: imageData.unsplash_url
+                      }
                       setEditRows(copy)
                     }}
                     onClear={() => {
                       const copy = [...editRows]
-                      copy[i] = { ...copy[i], image_url: undefined }
+                      copy[i] = { 
+                        ...copy[i], 
+                        image_url: undefined,
+                        photographer_name: undefined,
+                        photographer_url: undefined,
+                        unsplash_url: undefined
+                      }
                       setEditRows(copy)
                     }}
                     word={r.en || 'word'}
@@ -542,14 +569,26 @@ export default function TeacherWordSetsPage() {
                 <span className="text-xs font-medium text-gray-500">Image:</span>
                 <ImageSelector
                   value={r.image_url}
-                  onChange={(imageUrl) => {
+                  onChange={(imageData: ImageData) => {
                     const copy = [...rows]
-                    copy[i] = { ...copy[i], image_url: imageUrl }
+                    copy[i] = { 
+                      ...copy[i], 
+                      image_url: imageData.image_url,
+                      photographer_name: imageData.photographer_name,
+                      photographer_url: imageData.photographer_url,
+                      unsplash_url: imageData.unsplash_url
+                    }
                     setRows(copy)
                   }}
                   onClear={() => {
                     const copy = [...rows]
-                    copy[i] = { ...copy[i], image_url: undefined }
+                    copy[i] = { 
+                      ...copy[i], 
+                      image_url: undefined,
+                      photographer_name: undefined,
+                      photographer_url: undefined,
+                      unsplash_url: undefined
+                    }
                     setRows(copy)
                   }}
                   word={r.en || 'word'}
@@ -607,7 +646,16 @@ export default function TeacherWordSetsPage() {
                 transition={{ delay: index * 0.05 }}
                 className="group relative bg-[#161622] border border-white/[0.12] rounded-xl overflow-hidden hover:border-amber-500/30 transition-all p-5"
               >
-                <div className="flex items-start justify-between gap-3 mb-3">
+                {/* Assign button in top right corner */}
+                <button
+                  onClick={() => window.location.href = `/teacher/assign?wordSet=${ws.id}`}
+                  className="absolute top-3 right-3 w-8 h-8 bg-white/5 hover:bg-orange-500/20 border border-white/10 hover:border-orange-500/30 rounded-lg flex items-center justify-center transition-all group/btn"
+                  title="Assign this word list"
+                >
+                  <ArrowRight className="w-4 h-4 text-gray-400 group-hover/btn:text-orange-400 transition-colors" />
+                </button>
+                
+                <div className="flex items-start justify-between gap-3 mb-3 pr-10">
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-bold text-white mb-1 truncate">{ws.title}</h3>
                     <div className="flex items-center gap-3 text-sm text-gray-400">

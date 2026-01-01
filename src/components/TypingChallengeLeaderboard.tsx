@@ -61,14 +61,11 @@ export default function TypingChallengeLeaderboard({
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto" onClick={onClose}>
-      <div className="relative bg-[#12122a] rounded-3xl p-6 w-full max-w-2xl shadow-2xl my-8 max-h-[90vh] flex flex-col border border-white/10" onClick={(e) => e.stopPropagation()}>
-        {/* Glow effect */}
-        <div className="absolute -inset-1 bg-gradient-to-br from-violet-500/30 via-cyan-500/20 to-fuchsia-500/30 rounded-3xl blur-xl" />
-        
+      <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-6 w-full max-w-2xl shadow-2xl my-8 max-h-[90vh] flex flex-col border border-white/10" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="relative flex items-center justify-between mb-6 flex-shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
+            <div className="w-12 h-12 bg-white/10 border border-white/10 rounded-xl flex items-center justify-center">
               <Trophy className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -86,10 +83,10 @@ export default function TypingChallengeLeaderboard({
 
         {/* User's Result (if top 10) */}
         {userRank && userRank <= 10 && userKpm !== undefined && userTime !== undefined && (
-          <div className="relative mb-6 p-4 bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-2xl border-2 border-amber-500/50 flex-shrink-0">
+          <div className="relative mb-6 p-4 bg-amber-500/20 rounded-xl border border-amber-500/50 flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg shadow-amber-500/30">
+                <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-lg">{userRank}</span>
                 </div>
                 <div>
@@ -122,9 +119,7 @@ export default function TypingChallengeLeaderboard({
                     key={entry.id}
                     className={`flex items-center justify-between p-4 rounded-xl border ${
                       isUser
-                        ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-amber-500/50'
-                        : index % 2 === 0
-                        ? 'bg-white/5 border-white/10'
+                        ? 'bg-amber-500/20 border-amber-500/50'
                         : 'bg-white/5 border-white/10'
                     }`}
                   >
@@ -132,7 +127,7 @@ export default function TypingChallengeLeaderboard({
                       <div
                         className={`w-10 h-10 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
                           entry.rank === 1
-                            ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30'
+                            ? 'bg-amber-500 text-white'
                             : entry.rank === 2
                             ? 'bg-white/20 text-gray-300 border border-white/20'
                             : entry.rank === 3

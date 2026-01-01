@@ -102,7 +102,7 @@ function AuthCallbackContent() {
         if (!session.user.email_confirmed_at && !isDevelopment && !isGoogleOAuth) {
           setStatus('Please verify your email address first. Check your inbox.')
           await supabase.auth.signOut()
-          router.replace('/?message=Vänligen verifiera din e-postadress innan du loggar in.')
+          router.replace('/?message=Please verify your email address before signing in. Check your inbox for the verification link.')
           return
         }
         

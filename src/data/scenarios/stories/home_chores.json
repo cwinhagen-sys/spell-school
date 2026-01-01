@@ -1,0 +1,1056 @@
+{
+  "id": "home_chores",
+  "scenarioId": "home",
+  "goalId": "chores",
+  "title": "Finish Chores",
+  "description": "Complete all your chores properly before your friends arrive at 6 PM",
+  "difficulty": "medium",
+  "difficultyStars": 2,
+  "estimatedMinutes": 6,
+  "introImages": {
+    "boy": "/images/scenarios/home_chores/boy/intro.png",
+    "girl": "/images/scenarios/home_chores/girl/intro.png"
+  },
+  "xpRewards": {
+    "oneStar": 20,
+    "twoStars": 40,
+    "threeStars": 60
+  },
+  "startSegmentId": "intro",
+  "segments": {
+    "intro": {
+      "id": "intro",
+      "text": "It's Saturday afternoon, 3:00 PM. You're relaxing in your room when you notice a note on your desk. It's from Mom, written in her neat handwriting: 'Hi sweetie! I had to run some errands. Please finish these chores before I get home. I might be home earlier than 5:30 PM, so please do everything properly - I will check! Your friends are coming over at 6 PM, so you'll want to be done by then. Here's the list: 1) Clean your room thoroughly (put away clothes, make bed, organize desk), 2) Take out the trash and recycling (make sure it's sorted correctly), 3) Wash the dishes from breakfast, 4) Water the plants in the living room, 5) Hang up the laundry that's in the dryer. Thanks! Love, Mom.' You look around your room - it's pretty messy. Clothes are everywhere, your desk is covered with papers, and there's even a glass that might tip over. In the kitchen, you can see breakfast dishes in the sink. In the hallway, there's a laundry basket. You hear your little sister singing in her room down the hall. You have about two and a half hours, but Mom might come home early. You need to plan this carefully.",
+      "audioPath": "/audio/scenarios/home_chores/chores1.mp3",
+      "choices": [
+        {
+          "id": "read_plan",
+          "text": "Read the list carefully and make a quick plan",
+          "leadsTo": "planning_segment",
+          "qualityImpact": 1
+        },
+        {
+          "id": "start_room",
+          "text": "Start cleaning your room right away",
+          "leadsTo": "cleaning_room_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "check_phone",
+          "text": "Check your phone first, just for a minute",
+          "leadsTo": "phone_distraction",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "planning_segment": {
+      "id": "planning_segment",
+      "text": "You sit down with the list and think strategically. Cleaning your room thoroughly will take the longest - maybe 45 minutes if you do it properly. The trash is heavy, so you should do that when you're already going outside. The dishes won't take long, maybe 15 minutes, but there might be stuck-on food. The plants need water, and that's quick - just 5 minutes if you're careful. The laundry is already dry, so hanging it up should be fast too, maybe 10 minutes. You also notice Mom wrote 'I might be home earlier than 5:30 PM' - that means you need to do things properly, not just quickly. You have two strategies: do the hardest task first when you have energy, or do quick wins first to build momentum. You could also ask your sister to help with one small task.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_plan.png",
+      "audioPath": "/audio/scenarios/home_chores/chores2.mp3",
+      "choices": [
+        {
+          "id": "hardest_first",
+          "text": "Do the hardest task first: clean your room",
+          "leadsTo": "cleaning_room_segment",
+          "qualityImpact": 1
+        },
+        {
+          "id": "quick_wins",
+          "text": "Do quick wins first: dishes and laundry",
+          "leadsTo": "quick_tasks_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "ask_sister_help",
+          "text": "Ask your sister to help with one task",
+          "leadsTo": "sister_help_segment",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "cleaning_room_segment": {
+      "id": "cleaning_room_segment",
+      "text": "You start cleaning your room. It's quite a mess. Clothes are scattered on the floor and chair. Your desk is covered with papers, books, and pens. There's a glass of water that's dangerously close to the edge. Your bed is unmade. You know Mom will check, so you need to do this properly. But you also need to be efficient. You could do a thorough job with proper sorting, or you could do a quick job by just putting things away. There's also a 'zone method' where you clean one area at a time, which might save energy.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_room_start.png",
+      "audioPath": "/audio/scenarios/home_chores/chores3.mp3",
+      "choices": [
+        {
+          "id": "thorough_cleaning",
+          "text": "Do a thorough cleaning with proper sorting",
+          "leadsTo": "cleaning_thorough",
+          "qualityImpact": 1
+        },
+        {
+          "id": "quick_cleaning",
+          "text": "Do a quick cleaning - just put things away",
+          "leadsTo": "cleaning_quick",
+          "qualityImpact": -1
+        },
+        {
+          "id": "zone_method",
+          "text": "Use the zone method: 10 minutes per area",
+          "leadsTo": "cleaning_zones",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "cleaning_thorough": {
+      "id": "cleaning_thorough",
+      "text": "You decide to do a proper, thorough cleaning. You sort your clothes - clean ones go in the closet properly hung up, dirty ones in the hamper. You organize your desk carefully: books on the shelf by size, papers in folders, pens in the drawer. You make your bed neatly, smoothing out all the covers and fluffing the pillows. You even wipe down surfaces with a damp cloth. It takes about 45 minutes, but when you're done, your room looks really nice. You feel proud and organized. The hardest task is done properly. You check the clock - 3:45 PM. You still have plenty of time, and you have energy left because you worked steadily.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_room_clean.png",
+      "audioPath": "/audio/scenarios/home_chores/chores4.mp3",
+      "choices": [
+        {
+          "id": "continue_planned",
+          "text": "Continue with the next chore as planned",
+          "leadsTo": "trash_segment",
+          "qualityImpact": 1
+        },
+        {
+          "id": "do_dishes",
+          "text": "Wash the dishes now",
+          "leadsTo": "dishes_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "check_phone_break",
+          "text": "Take a quick break and check your phone",
+          "leadsTo": "phone_distraction",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "cleaning_quick": {
+      "id": "cleaning_quick",
+      "text": "You decide to do a quick cleaning. You shove clothes into drawers without sorting, push papers into a pile on your desk, quickly make your bed, and move the glass to a safer spot. It takes about 20 minutes, much faster than a thorough cleaning. But when you look around, you can see it's not really clean - just hidden. The drawers are messy, the desk still looks cluttered, and the bed is made but not neatly. You know Mom will notice these details when she checks. You saved time, but you might have to redo some of this later. You check the clock - 3:20 PM. You have time, but you're not sure if this was the right choice.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_room_start.png",
+      "audioPath": "/audio/scenarios/home_chores/chores5.mp3",
+      "choices": [
+        {
+          "id": "continue_anyway",
+          "text": "Continue with other chores",
+          "leadsTo": "trash_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "fix_room",
+          "text": "Go back and fix the room properly",
+          "leadsTo": "cleaning_thorough",
+          "qualityImpact": 1
+        },
+        {
+          "id": "rush_rest",
+          "text": "Rush through the rest to save time",
+          "leadsTo": "rush_chores",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "cleaning_zones": {
+      "id": "cleaning_zones",
+      "text": "You use the zone method: you set a timer for 10 minutes per area. First zone: clothes - 10 minutes of focused sorting and putting away. Second zone: desk - 10 minutes of organizing. Third zone: bed and surfaces - 10 minutes of making it neat. This method helps you stay focused and not get overwhelmed. You finish in about 35 minutes. Your room looks good - not perfect, but definitely clean and organized. You saved some energy by working in focused bursts. You check the clock - 3:35 PM. You're making good progress and still feel energetic.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_room_clean.png",
+      "audioPath": "/audio/scenarios/home_chores/chores6.mp3",
+      "choices": [
+        {
+          "id": "continue_focused",
+          "text": "Continue with the next chore",
+          "leadsTo": "trash_segment",
+          "qualityImpact": 1
+        },
+        {
+          "id": "do_dishes",
+          "text": "Wash the dishes",
+          "leadsTo": "dishes_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "take_short_break",
+          "text": "Take a short break",
+          "leadsTo": "break_segment",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "phone_distraction": {
+      "id": "phone_distraction",
+      "text": "You pick up your phone to check messages. A friend has texted: 'Hey! Can we come at 5:30 instead of 6? That would be great! :)' You think about it. That's only two and a half hours away now. You still have all your chores to do. You scroll through a few more messages and maybe watch a short video. Before you know it, 15 minutes have passed. It's now 3:15 PM, and you haven't started any chores yet. You feel a bit panicked. You should have started working right away. Now you'll have to work faster, and you might not do everything as well as you wanted. You put your phone down and rush to start.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_tv.png",
+      "audioPath": "/audio/scenarios/home_chores/chores7.mp3",
+      "choices": [
+        {
+          "id": "start_room",
+          "text": "Start cleaning your room immediately",
+          "leadsTo": "cleaning_room_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "rush_all",
+          "text": "Rush through everything quickly",
+          "leadsTo": "rush_chores",
+          "qualityImpact": -1
+        },
+        {
+          "id": "reply_friend",
+          "text": "Reply to your friend first",
+          "leadsTo": "friend_text_segment",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "friend_text_segment": {
+      "id": "friend_text_segment",
+      "text": "Your friend wants to come at 5:30 PM instead of 6 PM. That's only two and a half hours away. You think about your chores. If you work efficiently, you might be done by 5:30, but it will be tight. You could say yes and work faster, but that might mean you'll rush and make mistakes. Or you could say that 6 PM works better, which gives you more time to do things properly. But you don't want to disappoint your friend. You also could say 'maybe' and see how it goes, but that creates uncertainty and stress.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_check_time.png",
+      "audioPath": "/audio/scenarios/home_chores/chores8.mp3",
+      "choices": [
+        {
+          "id": "say_six_better",
+          "text": "Text: '6 PM works better for me'",
+          "leadsTo": "cleaning_room_segment",
+          "qualityImpact": 1
+        },
+        {
+          "id": "say_yes_rush",
+          "text": "Say yes and work faster",
+          "leadsTo": "rush_chores",
+          "qualityImpact": -1
+        },
+        {
+          "id": "say_maybe",
+          "text": "Say 'maybe' and continue",
+          "leadsTo": "cleaning_room_segment",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "sister_help_segment": {
+      "id": "sister_help_segment",
+      "text": "You walk to your sister's room and knock on the door. 'Hey, can you help me with some chores? Mom left a list.' Your sister, who is seven years old, looks up from her toys. 'Okay! What do I get to do?' she asks excitedly. Then she adds: 'But I want a cookie after, okay?' You think about what she could handle. She's good at simple tasks when she focuses, but sometimes she gets distracted or makes mistakes. You could give her the plants to water with clear instructions, or ask her to help with dishes by drying them. You could also give her a mini-task like sorting socks or fetching hangers.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_sister_help.png",
+      "audioPath": "/audio/scenarios/home_chores/chores9.mp3",
+      "choices": [
+        {
+          "id": "give_plants_instructions",
+          "text": "Give her plants with clear instructions and show her once",
+          "leadsTo": "sister_plants",
+          "qualityImpact": 0
+        },
+        {
+          "id": "give_dishes_dry",
+          "text": "Ask her to dry dishes while you wash",
+          "leadsTo": "sister_dishes",
+          "qualityImpact": 0
+        },
+        {
+          "id": "give_mini_task",
+          "text": "Give her a mini-task: sort socks or fetch hangers",
+          "leadsTo": "sister_mini_task",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "sister_plants": {
+      "id": "sister_plants",
+      "text": "You show your sister how to water the plants. 'Check the soil first - if it's dry, water it. If it's still wet, skip it. Pour slowly, like this.' You demonstrate with one plant. She nods seriously. 'I can do it!' she says. You go to clean your room. About 20 minutes later, you hear a crash from the living room. You rush in to find your sister standing over a broken flowerpot, water everywhere on the floor. 'I'm sorry!' she says, tears in her eyes. 'I was trying to be careful, but I tripped over the rug.' You help her clean up the mess, which takes another 15 minutes. The plant is okay, but the pot is broken. You realize asking for help wasn't the best idea this time. You'll have to work faster now to finish everything, and you'll need to explain the broken pot to Mom.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_sister_sad.png",
+      "audioPath": "/audio/scenarios/home_chores/chores10.mp3",
+      "choices": [
+        {
+          "id": "continue_alone",
+          "text": "Continue with the chores yourself",
+          "leadsTo": "cleaning_room_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "rush_through",
+          "text": "Rush through the rest quickly",
+          "leadsTo": "rush_chores",
+          "qualityImpact": -1
+        },
+        {
+          "id": "fix_plants",
+          "text": "Fix the plants properly yourself",
+          "leadsTo": "plants_segment",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "sister_dishes": {
+      "id": "sister_dishes",
+      "text": "You ask your sister to help with the dishes. 'You can dry them and put them away,' you tell her. 'And you'll get a cookie after!' She gets excited and runs to the kitchen. You start washing, and she dries each dish carefully. She's actually doing a great job - she's being careful not to drop anything, and she's even organizing the cupboards as she puts things away. 'Look, I'm putting all the plates together!' she says proudly. After 20 minutes, not only are all the breakfast dishes done, but she's also started drying some extra dishes that were in the sink. 'I saw there were more, so I did those too!' she says. The dishes are done perfectly. This actually worked out great. You have more time now, and your sister is happy.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_teamwork.png",
+      "audioPath": "/audio/scenarios/home_chores/chores11.mp3",
+      "choices": [
+        {
+          "id": "continue_motivated",
+          "text": "Continue with the rest, feeling motivated",
+          "leadsTo": "cleaning_room_segment",
+          "qualityImpact": 1
+        },
+        {
+          "id": "let_help_more",
+          "text": "Ask her to help with more chores",
+          "leadsTo": "sister_more_help",
+          "qualityImpact": 0
+        },
+        {
+          "id": "give_cookie_now",
+          "text": "Give her the cookie now as a reward",
+          "leadsTo": "break_segment",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "sister_mini_task": {
+      "id": "sister_mini_task",
+      "text": "You give your sister a simple mini-task. 'Can you sort the socks from the laundry basket? Match them up and put them in pairs.' She gets excited. 'I'm good at matching!' she says. You go to clean your room. When you check on her later, she's done a great job - all the socks are matched and organized. 'Look! I even folded them!' she says proudly. This was a good choice - she helped without any problems, and you saved some time. You feel good about working together. You give her a high-five and continue with your chores.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_teamwork.png",
+      "audioPath": "/audio/scenarios/home_chores/chores12.mp3",
+      "choices": [
+        {
+          "id": "continue_room",
+          "text": "Continue cleaning your room",
+          "leadsTo": "cleaning_room_segment",
+          "qualityImpact": 1
+        },
+        {
+          "id": "do_trash",
+          "text": "Take out the trash",
+          "leadsTo": "trash_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "do_dishes",
+          "text": "Wash the dishes",
+          "leadsTo": "dishes_segment",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "sister_more_help": {
+      "id": "sister_more_help",
+      "text": "Your sister did such a great job with the dishes that you ask if she wants to help with more. 'Can you help me take out the trash?' you ask. She gets excited. 'Okay! But I still want my cookie!' Together, you carry the heavy trash bags outside. She's small, but she helps by holding the door open and pointing out which bin is which. 'That one is for recycling!' she says proudly. You work together, and it's actually fun. When you're done, she asks, 'What else can I do?' You think about it. She could help with your room, but that might be too much. Or she could water the plants, but you remember what happened last time you asked her to do that.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_teamwork.png",
+      "audioPath": "/audio/scenarios/home_chores/chores13.mp3",
+      "choices": [
+        {
+          "id": "let_help_room",
+          "text": "Let her help organize your room",
+          "leadsTo": "sister_room_help",
+          "qualityImpact": 0
+        },
+        {
+          "id": "do_rest_alone",
+          "text": "Do the rest yourself",
+          "leadsTo": "cleaning_room_segment",
+          "qualityImpact": 1
+        },
+        {
+          "id": "give_plants_again",
+          "text": "Ask her to water plants again, very carefully",
+          "leadsTo": "sister_plants",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "sister_room_help": {
+      "id": "sister_room_help",
+      "text": "You let your sister help with your room. She's actually really good at organizing! She helps you sort your books by size, organizes your pens by color, and even makes your bed look extra neat. 'I learned this from Mom!' she says. Together, you finish your room in 30 minutes, and it looks great. She even finds some things you thought were lost. 'Here's your favorite pen!' she says, holding it up. You're impressed. Working together turned out to be a great idea. You have more time now, and you're both having fun. You feel like you're a good team. You give her the cookie she wanted, and she's happy.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_teamwork.png",
+      "audioPath": "/audio/scenarios/home_chores/chores14.mp3",
+      "choices": [
+        {
+          "id": "continue_together",
+          "text": "Continue working together",
+          "leadsTo": "trash_segment",
+          "qualityImpact": 1
+        },
+        {
+          "id": "finish_alone",
+          "text": "Finish the rest yourself",
+          "leadsTo": "dishes_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "take_break_together",
+          "text": "Take a break together",
+          "leadsTo": "break_segment",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "quick_tasks_segment": {
+      "id": "quick_tasks_segment",
+      "text": "You decide to do the quick tasks first to build momentum. You wash the dishes - that takes 15 minutes. You hang up the laundry - 10 minutes. Great! Two things done in just 25 minutes. You feel accomplished. But now you look at your room, and it's still a mess. That's the biggest task, and you're already feeling a bit tired. You also still need to take out the trash and water the plants. You check the clock - 3:25 PM. You have time, but you wish you had started with the hardest task when you had more energy. Still, you've made progress. You take a deep breath and decide what to do next.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_dishes.png",
+      "audioPath": "/audio/scenarios/home_chores/chores15.mp3",
+      "choices": [
+        {
+          "id": "clean_room_now",
+          "text": "Clean your room now",
+          "leadsTo": "cleaning_room_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "do_trash_first",
+          "text": "Take out trash first, then clean room",
+          "leadsTo": "trash_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "rush_cleaning",
+          "text": "Rush through cleaning your room",
+          "leadsTo": "rush_chores",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "trash_segment": {
+      "id": "trash_segment",
+      "text": "You gather the trash bags from the kitchen and your room. They're pretty heavy, especially the recycling bag with all the bottles and cans. You carry them outside to the big trash bins. The sun is warm, and it feels good to be outside for a moment. But as you're about to throw everything in, you notice that the recycling isn't sorted correctly. There are plastic bottles mixed with paper, and glass mixed with cans. Mom's note said 'make sure it's sorted correctly.' You could sort it properly now, which will take a few extra minutes, or you could just put it all in quickly and hope no one notices.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_trash_first.png",
+      "audioPath": "/audio/scenarios/home_chores/chores16.mp3",
+      "choices": [
+        {
+          "id": "sort_properly",
+          "text": "Sort the recycling properly",
+          "leadsTo": "trash_sorted",
+          "qualityImpact": 1
+        },
+        {
+          "id": "quick_out",
+          "text": "Put it all out quickly",
+          "leadsTo": "trash_quick",
+          "qualityImpact": -1
+        },
+        {
+          "id": "sort_visible",
+          "text": "Sort only the most visible items",
+          "leadsTo": "trash_partial",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "trash_sorted": {
+      "id": "trash_sorted",
+      "text": "You take the time to sort the recycling properly. You separate the plastic bottles into one bin, the paper into another, the glass into a third, and the cans into the right place. It takes about 10 extra minutes, but you know it's the right thing to do. When you're done, everything is sorted correctly. You feel good about doing it properly. You come back inside and check the clock - 4:15 PM. You're making good progress, and you know Mom will appreciate that you followed her instructions carefully.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_trash_after.png",
+      "audioPath": "/audio/scenarios/home_chores/chores17.mp3",
+      "choices": [
+        {
+          "id": "do_dishes",
+          "text": "Wash the dishes next",
+          "leadsTo": "dishes_segment",
+          "qualityImpact": 1
+        },
+        {
+          "id": "water_plants",
+          "text": "Water the plants",
+          "leadsTo": "plants_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "hang_laundry",
+          "text": "Hang up the laundry",
+          "leadsTo": "laundry_segment",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "trash_quick": {
+      "id": "trash_quick",
+      "text": "You decide to just put everything out quickly without sorting. You throw the bags into the bins and go back inside. It only took 3 minutes. But as you walk back, you feel a bit guilty. Mom specifically said to make sure it's sorted correctly. You know she'll probably notice when she checks. But you saved time, and you can use that time to do other things properly. You check the clock - 4:03 PM. You have time, but you're not sure if this was the right choice.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_trash_after.png",
+      "audioPath": "/audio/scenarios/home_chores/chores18.mp3",
+      "choices": [
+        {
+          "id": "continue_anyway",
+          "text": "Continue with other chores",
+          "leadsTo": "dishes_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "go_back_sort",
+          "text": "Go back and sort it properly",
+          "leadsTo": "trash_sorted",
+          "qualityImpact": 1
+        },
+        {
+          "id": "rush_rest",
+          "text": "Rush through the rest",
+          "leadsTo": "rush_chores",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "trash_partial": {
+      "id": "trash_partial",
+      "text": "You sort the most visible items - the plastic bottles and paper that are on top. You put those in the right bins, but you don't sort everything completely. It takes about 5 minutes. It's better than nothing, but not perfect. You come back inside and check the clock - 4:05 PM. You're making progress, but you know you could have done better. You decide to continue with the other chores and do them properly.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_trash_after.png",
+      "audioPath": "/audio/scenarios/home_chores/chores19.mp3",
+      "choices": [
+        {
+          "id": "do_dishes",
+          "text": "Wash the dishes",
+          "leadsTo": "dishes_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "clean_room",
+          "text": "Clean your room",
+          "leadsTo": "cleaning_room_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "water_plants",
+          "text": "Water the plants",
+          "leadsTo": "plants_segment",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "dishes_segment": {
+      "id": "dishes_segment",
+      "text": "You go to the kitchen and see the breakfast dishes in the sink. There are plates, bowls, cups, and some pots and pans. You notice one pot has something stuck on the bottom - it looks like it was burned. That will take extra time to scrub. You could fill it with water and let it soak while you wash the other dishes, which is smart and efficient. Or you could scrub it right away, which will take longer but you'll be done with it. Or you could just rinse it quickly and put it away, hoping Mom won't notice the burned food.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_dishes.png",
+      "audioPath": "/audio/scenarios/home_chores/chores20.mp3",
+      "choices": [
+        {
+          "id": "soak_while_washing",
+          "text": "Let the pot soak while you wash other dishes",
+          "leadsTo": "dishes_smart",
+          "qualityImpact": 1
+        },
+        {
+          "id": "scrub_directly",
+          "text": "Scrub the pot directly",
+          "leadsTo": "dishes_thorough",
+          "qualityImpact": 0
+        },
+        {
+          "id": "rinse_quickly",
+          "text": "Rinse quickly and put away",
+          "leadsTo": "dishes_rushed",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "dishes_smart": {
+      "id": "dishes_smart",
+      "text": "You fill the pot with warm, soapy water and let it soak. While it soaks, you wash all the other dishes carefully. You scrub each plate, bowl, and cup, making sure to get all the food off. You rinse them with hot water and place them in the drying rack. After about 15 minutes, the other dishes are done. Now you go back to the pot - the burned food has softened, and it's much easier to scrub off. You finish washing it properly. The sink is empty, and all the dishes are clean, including the pot. This was a smart way to do it - you saved time and energy while still doing a good job. You check the clock - 4:20 PM.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_dishes.png",
+      "audioPath": "/audio/scenarios/home_chores/chores21.mp3",
+      "choices": [
+        {
+          "id": "continue_planned",
+          "text": "Continue with the next chore",
+          "leadsTo": "plants_segment",
+          "qualityImpact": 1
+        },
+        {
+          "id": "check_time",
+          "text": "Check how much time is left",
+          "leadsTo": "check_time_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "take_short_break",
+          "text": "Take a short break",
+          "leadsTo": "break_segment",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "dishes_thorough": {
+      "id": "dishes_thorough",
+      "text": "You decide to scrub the pot directly. You use a scrub brush and lots of soap, and you work at the burned food. It's tough, and it takes about 10 minutes just for this one pot. Your hands get tired. Then you wash all the other dishes. By the time you're done, it's been about 25 minutes total. The dishes are all clean, including the pot, but you used more time and energy than you needed to. You check the clock - 4:25 PM. You're still on schedule, but you're feeling a bit more tired than you expected.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_dishes.png",
+      "audioPath": "/audio/scenarios/home_chores/chores22.mp3",
+      "choices": [
+        {
+          "id": "continue",
+          "text": "Continue with the next chore",
+          "leadsTo": "plants_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "take_break",
+          "text": "Take a short break",
+          "leadsTo": "break_segment",
+          "qualityImpact": -1
+        },
+        {
+          "id": "rush_rest",
+          "text": "Rush through the rest",
+          "leadsTo": "rush_chores",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "dishes_rushed": {
+      "id": "dishes_rushed",
+      "text": "You decide to just rinse the pot quickly and put it away. You wash the other dishes fast, not really checking if they're all clean. Some still have a bit of food on them. You finish in about 10 minutes, much faster than it should take. But you know the pot still has burned food on it, and some dishes aren't really clean. You're hoping Mom won't check too carefully. You check the clock - 4:10 PM. You saved time, but you know you didn't do a good job. You feel a bit guilty.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_dishes.png",
+      "audioPath": "/audio/scenarios/home_chores/chores23.mp3",
+      "choices": [
+        {
+          "id": "continue_anyway",
+          "text": "Continue with other chores",
+          "leadsTo": "plants_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "go_back_fix",
+          "text": "Go back and fix the dishes properly",
+          "leadsTo": "dishes_smart",
+          "qualityImpact": 1
+        },
+        {
+          "id": "rush_all",
+          "text": "Rush through everything",
+          "leadsTo": "rush_chores",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "plants_segment": {
+      "id": "plants_segment",
+      "text": "You go to the living room with the watering can. There are five plants that need water - two on the windowsill, one on the coffee table, and two on the floor. You check the soil of each plant by touching it. Some feel dry and crumbly, others are still a bit moist. You know that overwatering can be just as bad as underwatering. You could water each plant carefully based on how dry the soil feels, or you could just water them all the same amount quickly. Or you could skip some and do them later, but they might look droopy.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_water.png",
+      "audioPath": "/audio/scenarios/home_chores/chores24.mp3",
+      "choices": [
+        {
+          "id": "check_water_carefully",
+          "text": "Check each plant and water accordingly",
+          "leadsTo": "plants_careful",
+          "qualityImpact": 1
+        },
+        {
+          "id": "water_all_same",
+          "text": "Water all plants the same amount",
+          "leadsTo": "plants_equal",
+          "qualityImpact": 0
+        },
+        {
+          "id": "skip_for_later",
+          "text": "Skip some and do them later",
+          "leadsTo": "plants_skipped",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "plants_careful": {
+      "id": "plants_careful",
+      "text": "You check each plant carefully. The two on the windowsill feel dry, so you water them well. The one on the coffee table is still moist, so you give it just a little water. The two on the floor are different - one is dry, one is still okay. You water each one according to its needs. You pour slowly, watching the water soak into the soil. You even wipe up a few drops that spilled on the windowsill. The plants look happy and healthy. This was quick but careful - about 5 minutes. You're almost done with everything. You feel good about taking care of the plants properly.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_water.png",
+      "audioPath": "/audio/scenarios/home_chores/chores25.mp3",
+      "choices": [
+        {
+          "id": "do_laundry",
+          "text": "Hang up the laundry",
+          "leadsTo": "laundry_segment",
+          "qualityImpact": 1
+        },
+        {
+          "id": "check_list",
+          "text": "Check what's left on the list",
+          "leadsTo": "check_list_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "think_done",
+          "text": "Think you're done and relax",
+          "leadsTo": "ending_incomplete",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "plants_equal": {
+      "id": "plants_equal",
+      "text": "You decide to water all the plants the same amount. You pour water into each pot without really checking how dry they are. It's quick - about 3 minutes. But as you're finishing, you notice that one plant's saucer is overflowing with water. That plant probably didn't need that much water. You also realize that one of the dry plants might not have gotten enough. You feel a bit uncertain. You hope it will be okay, but you know you could have been more careful. You check the clock - 4:28 PM.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_water.png",
+      "audioPath": "/audio/scenarios/home_chores/chores26.mp3",
+      "choices": [
+        {
+          "id": "fix_overflow",
+          "text": "Fix the overflow and check the plants",
+          "leadsTo": "plants_careful",
+          "qualityImpact": 1
+        },
+        {
+          "id": "continue",
+          "text": "Continue with laundry",
+          "leadsTo": "laundry_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "hope_okay",
+          "text": "Hope it will be okay",
+          "leadsTo": "laundry_segment",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "plants_skipped": {
+      "id": "plants_skipped",
+      "text": "You decide to skip some plants and do them later. You water the ones that look really droopy, but you skip the ones that look okay. It's very quick - just 2 minutes. But as you're walking away, you notice the plants you skipped are starting to look sad too. You feel a bit guilty. You know you should water them all, but you're trying to save time. You check the clock - 4:27 PM. You still have time, but you're not sure if skipping was the right choice.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_water.png",
+      "audioPath": "/audio/scenarios/home_chores/chores27.mp3",
+      "choices": [
+        {
+          "id": "water_rest",
+          "text": "Go back and water the rest",
+          "leadsTo": "plants_careful",
+          "qualityImpact": 1
+        },
+        {
+          "id": "continue",
+          "text": "Continue with other chores",
+          "leadsTo": "laundry_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "hope_okay",
+          "text": "Hope they'll be okay",
+          "leadsTo": "ending_incomplete",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "laundry_segment": {
+      "id": "laundry_segment",
+      "text": "You go to the laundry room and open the dryer. It's full of warm, clean clothes - towels, t-shirts, and some of Mom's work clothes. You need to hang them up properly. You could hang everything nicely on hangers so they don't wrinkle, which takes time but looks good. Or you could fold things quickly into piles, which is faster but might wrinkle. Or you could just put everything back in a basket and deal with it later, but that risks forgetting about it.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_room_clean.png",
+      "audioPath": "/audio/scenarios/home_chores/chores28.mp3",
+      "choices": [
+        {
+          "id": "hang_properly",
+          "text": "Hang everything properly on hangers",
+          "leadsTo": "laundry_proper",
+          "qualityImpact": 1
+        },
+        {
+          "id": "fold_quickly",
+          "text": "Fold quickly into piles",
+          "leadsTo": "laundry_folded",
+          "qualityImpact": 0
+        },
+        {
+          "id": "basket_later",
+          "text": "Put in basket to deal with later",
+          "leadsTo": "laundry_basket",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "laundry_proper": {
+      "id": "laundry_proper",
+      "text": "You take the time to hang everything properly. You hang the shirts on hangers so they don't wrinkle. The towels go on the towel rack in the bathroom. You fold the t-shirts neatly and put them in the right drawers. You're careful to match socks and fold everything nicely. When you're done, the laundry is all put away properly. You check the clock - 4:45 PM. You've finished everything on the list! You feel proud and accomplished. You still have time before your friends arrive, and everything looks good.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_room_clean.png",
+      "audioPath": "/audio/scenarios/home_chores/chores29.mp3",
+      "choices": [
+        {
+          "id": "double_check",
+          "text": "Double-check that everything is done",
+          "leadsTo": "mom_early_check",
+          "qualityImpact": 1
+        },
+        {
+          "id": "think_done",
+          "text": "You're done, time to relax",
+          "leadsTo": "ending_good",
+          "qualityImpact": 0
+        },
+        {
+          "id": "forgot_something",
+          "text": "Wait, did I do everything?",
+          "leadsTo": "check_list_segment",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "laundry_folded": {
+      "id": "laundry_folded",
+      "text": "You fold everything quickly into neat piles. The shirts are folded, the towels are stacked, the t-shirts are in piles. It's faster than hanging, taking about 6 minutes. The clothes are put away, but some of the shirts might be a bit wrinkled. You check the clock - 4:36 PM. You're done with everything. You feel good, but you know it could have been better if you had hung the shirts. Still, everything is done, and you have time.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_room_clean.png",
+      "audioPath": "/audio/scenarios/home_chores/chores30.mp3",
+      "choices": [
+        {
+          "id": "check_everything",
+          "text": "Check that everything is done",
+          "leadsTo": "mom_early_check",
+          "qualityImpact": 0
+        },
+        {
+          "id": "think_done",
+          "text": "You're done",
+          "leadsTo": "ending_good",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "laundry_basket": {
+      "id": "laundry_basket",
+      "text": "You decide to just put everything back in a basket for now. 'I'll deal with it later,' you think. You put the basket in your room and continue with other chores. But as time passes, you get busy with other things, and you forget about the laundry. You check the clock - 4:40 PM. You think you're done, but you realize you never actually hung up the laundry. It's still in the basket. You need to go back and do it, or you'll have to explain to Mom why it's not done.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_room_start.png",
+      "audioPath": "/audio/scenarios/home_chores/chores31.mp3",
+      "choices": [
+        {
+          "id": "do_laundry_now",
+          "text": "Go back and hang up the laundry now",
+          "leadsTo": "laundry_proper",
+          "qualityImpact": 1
+        },
+        {
+          "id": "hope_forget",
+          "text": "Hope Mom won't notice",
+          "leadsTo": "ending_incomplete",
+          "qualityImpact": -1
+        },
+        {
+          "id": "tell_mom",
+          "text": "Decide to tell Mom you forgot",
+          "leadsTo": "ending_honest",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "rush_chores": {
+      "id": "rush_chores",
+      "text": "You decide to rush through everything to save time. You quickly shove things in your room, take out the trash without checking if it's sorted, wash the dishes fast but miss some spots, water the plants quickly without checking, and throw the laundry in drawers without folding. You finish everything in record time - about an hour total. You check the clock - 4:00 PM. Great! You have two hours before your friends arrive. But when you look around, you notice things aren't quite right. Your room still looks messy if you look closely. The dishes have some food still stuck on them. The plants got too much or too little water. The laundry is all wrinkled. You know Mom will notice these details when she checks, especially since she said she might come home early.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_rush.png",
+      "audioPath": "/audio/scenarios/home_chores/chores32.mp3",
+      "choices": [
+        {
+          "id": "fix_mistakes",
+          "text": "Go back and fix the mistakes",
+          "leadsTo": "fix_segment",
+          "qualityImpact": 1
+        },
+        {
+          "id": "hope_okay",
+          "text": "Hope it's good enough",
+          "leadsTo": "ending_poor",
+          "qualityImpact": -1
+        },
+        {
+          "id": "hide_problems",
+          "text": "Try to hide the problems",
+          "leadsTo": "ending_poor",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "break_segment": {
+      "id": "break_segment",
+      "text": "You decide to take a break. You sit down, grab a snack, and maybe watch a short video or play a game for a bit. Time passes quickly when you're having fun. Before you know it, you check the clock and realize 30-45 minutes have gone by. It's now around 4:15-4:30 PM, and you still have several chores left. You feel a bit panicked. You should have kept going. Now you'll have to work faster, and you might not do everything as well as you wanted. You get up and rush to continue with the chores, but you're feeling stressed and tired from the break.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_snack_break.png",
+      "audioPath": "/audio/scenarios/home_chores/chores33.mp3",
+      "choices": [
+        {
+          "id": "rush_now",
+          "text": "Rush through the remaining chores",
+          "leadsTo": "rush_chores",
+          "qualityImpact": -1
+        },
+        {
+          "id": "do_best",
+          "text": "Do your best with the time left",
+          "leadsTo": "dishes_segment",
+          "qualityImpact": 0
+        },
+        {
+          "id": "skip_one",
+          "text": "Skip one chore to save time",
+          "leadsTo": "skip_chore_segment",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "fix_segment": {
+      "id": "fix_segment",
+      "text": "You realize you made mistakes by rushing, so you go back to fix them. You properly organize your room, making sure everything is in its place. You re-wash the dishes that still had food on them. You check the plants and fix any overwatering or underwatering. You refold the laundry properly. It takes another 30 minutes, but now everything looks good. You check the clock - 4:30 PM. You're still on time, and everything is done properly. You feel much better about your work. Quality matters, and you're glad you took the time to fix things. Mom said she might come home early, so doing things properly was the right choice.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_room_clean.png",
+      "audioPath": "/audio/scenarios/home_chores/chores34.mp3",
+      "choices": [
+        {
+          "id": "check_everything",
+          "text": "Double-check everything is perfect",
+          "leadsTo": "mom_early_check",
+          "qualityImpact": 1
+        },
+        {
+          "id": "think_done",
+          "text": "You're done, time to relax",
+          "leadsTo": "ending_good",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "check_time_segment": {
+      "id": "check_time_segment",
+      "text": "You check the clock. It's around 4:20 PM. You've been working for about an hour and twenty minutes. You think about what's left: you still need to water the plants and hang up the laundry. Your room is done, trash is out, dishes are done. You have about an hour before Mom might get home (she said she might be early), and an hour and forty minutes before your friends arrive. That should be plenty of time. You feel confident. You're making good progress and staying on schedule. You can finish everything and still have time to get ready for your friends.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_check_time.png",
+      "audioPath": "/audio/scenarios/home_chores/chores35.mp3",
+      "choices": [
+        {
+          "id": "continue_planned",
+          "text": "Continue with the remaining chores",
+          "leadsTo": "plants_segment",
+          "qualityImpact": 1
+        },
+        {
+          "id": "take_break",
+          "text": "Take a short break",
+          "leadsTo": "break_segment",
+          "qualityImpact": -1
+        },
+        {
+          "id": "rush_rest",
+          "text": "Rush through the rest",
+          "leadsTo": "rush_chores",
+          "qualityImpact": -1
+        }
+      ]
+    },
+    "check_list_segment": {
+      "id": "check_list_segment",
+      "text": "You pull out Mom's list and check what you've done. Room cleaning - yes, done. Trash - yes, taken out. Dishes - yes, washed. Plants - hmm, did you water them? You're not sure. Laundry - you think you did that, but you're not certain. You go around the house checking. The plants look okay, but you're not sure if you actually watered them or just thought about it. The laundry - you check the dryer, and yes, it's empty. You check the closet, and the clothes are there. Good. But the plants... you should probably water them just to be safe, especially since Mom said she might come home early and will check.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_plan.png",
+      "audioPath": "/audio/scenarios/home_chores/chores36.mp3",
+      "choices": [
+        {
+          "id": "water_plants",
+          "text": "Water the plants to be sure",
+          "leadsTo": "plants_segment",
+          "qualityImpact": 1
+        },
+        {
+          "id": "think_done",
+          "text": "Think everything is done",
+          "leadsTo": "ending_good",
+          "qualityImpact": 0
+        },
+        {
+          "id": "forgot_laundry",
+          "text": "Wait, did I do the laundry?",
+          "leadsTo": "laundry_segment",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "skip_chore_segment": {
+      "id": "skip_chore_segment",
+      "text": "You decide to skip one chore to save time. You look at the list and think about which one Mom might not notice. The laundry? No, she'll see it's still in the dryer. The plants? They might be okay for one more day. You decide to skip watering the plants. You finish everything else - your room is clean, trash is out, dishes are done, laundry is hung up. You check the clock - 4:30 PM. Perfect timing. But as you're relaxing, you notice the plants look really droopy and sad. You feel a bit guilty. Maybe you should have watered them after all, especially since Mom said she will check.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_ignore.png",
+      "audioPath": "/audio/scenarios/home_chores/chores37.mp3",
+      "choices": [
+        {
+          "id": "water_now",
+          "text": "Water the plants now",
+          "leadsTo": "plants_segment",
+          "qualityImpact": 1
+        },
+        {
+          "id": "hope_okay",
+          "text": "Hope they'll be okay",
+          "leadsTo": "ending_incomplete",
+          "qualityImpact": -1
+        },
+        {
+          "id": "tell_mom",
+          "text": "Decide to tell Mom you forgot",
+          "leadsTo": "ending_honest",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "mom_early_check": {
+      "id": "mom_early_check",
+      "text": "You hear keys in the door, or you get a text: 'On my way home now!' It's 5:10 PM - Mom is coming home early, just like she said she might. You quickly do a final sweep. You check your room - looks good. You check the trash - sorted properly. You check the dishes - all clean, including that pot. You check the plants - they look healthy and properly watered. You check the laundry - all hung up nicely. Everything is done properly. You even notice a surface in the hallway that looks dusty, so you quickly wipe it down. You feel ready. When Mom arrives, she'll see everything is done well.",
+      "imagePath": "/images/scenarios/home_chores/shared/seg_ask_mom.png",
+      "audioPath": "/audio/scenarios/home_chores/chores38.mp3",
+      "choices": [
+        {
+          "id": "everything_perfect",
+          "text": "Everything looks perfect",
+          "leadsTo": "ending_perfect",
+          "qualityImpact": 1
+        },
+        {
+          "id": "fix_visible",
+          "text": "Fix the most visible things",
+          "leadsTo": "ending_good",
+          "qualityImpact": 0
+        },
+        {
+          "id": "hope_okay",
+          "text": "Hope it's good enough",
+          "leadsTo": "ending_good",
+          "qualityImpact": 0
+        }
+      ]
+    },
+    "ending_perfect": {
+      "id": "ending_perfect",
+      "text": "When Mom arrives home, she walks through the house checking everything. Your room is spotless - clothes put away properly, bed made neatly, desk organized. The trash and recycling are in the right bins, sorted correctly. The dishes are clean and put away, including that pot with the burned food - it's sparkling. The plants are watered properly and look healthy. The laundry is hung up nicely on hangers, no wrinkles. She even notices you wiped down a surface in the hallway. 'Wow, you did an amazing job!' she says with a big smile. 'Everything looks perfect, and you even did a little extra. I'm so proud of you. You planned well and did everything with care.' You feel great. You managed your time, worked efficiently, and did everything properly. This is exactly how it should be done.",
+      "imagePath": "/images/scenarios/home_chores/shared/ending_success_complete.png",
+      "audioPath": "/audio/scenarios/home_chores/chores39.mp3",
+      "isEnding": true,
+      "endingType": "success",
+      "minStars": 3,
+      "maxStars": 3
+    },
+    "ending_good": {
+      "id": "ending_good",
+      "text": "When Mom gets home, she walks through the house checking your work. Most things look good - your room is clean, the trash is out, the dishes are done, the laundry is hung up. But she notices a few small things. 'The plants look a bit droopy - did you water them all?' she asks. Or maybe: 'The dishes are mostly clean, but this pot still has some food stuck on it.' Or: 'The recycling isn't sorted quite right - I see plastic mixed with paper.' You realize you did most things well, but you missed some details or didn't do everything perfectly. 'You did a good job overall,' Mom says. 'Next time, try to be a bit more thorough and check the details.' You nod. You know you could have done better, but at least you finished everything.",
+      "imagePath": "/images/scenarios/home_chores/shared/ending_success_late.png",
+      "audioPath": "/audio/scenarios/home_chores/chores40.mp3",
+      "isEnding": true,
+      "endingType": "partial",
+      "minStars": 2,
+      "maxStars": 2
+    },
+    "ending_incomplete": {
+      "id": "ending_incomplete",
+      "text": "When Mom gets home, she checks your work. She notices right away that something is missing. 'Did you water the plants?' she asks, looking at the droopy leaves. Or: 'The laundry is still in the dryer - did you forget to hang it up?' You realize you skipped one of the chores or forgot to do it. Mom's face shows disappointment. 'I asked you to do all five things on the list. You did four of them, but you missed one. That's not what I asked for.' You feel bad. You know you should have been more careful and checked the list. 'Next time, check the list twice to make sure you did everything,' Mom says. You promise to do better.",
+      "imagePath": "/images/scenarios/home_chores/shared/ending_fail_incomplete.png",
+      "audioPath": "/audio/scenarios/home_chores/chores41.mp3",
+      "isEnding": true,
+      "endingType": "fail",
+      "minStars": 1,
+      "maxStars": 1
+    },
+    "ending_poor": {
+      "id": "ending_poor",
+      "text": "When Mom gets home, she checks your work. She notices that things aren't done well. 'Your room still looks messy if you look closely - things are just shoved in drawers,' she says. 'And these dishes aren't really clean - there's still food on them.' Or: 'The plants got too much water - look, the soil is soggy and water is overflowing.' Or: 'The recycling isn't sorted at all - everything is mixed together.' She sighs. 'I know you were in a hurry, but rushing through things means you don't do them properly. Quality is important too, not just speed. And I said I would check.' You feel embarrassed. You know you should have taken more time and done things right. 'Next time, take your time and do it properly,' Mom says. You promise to be more careful.",
+      "imagePath": "/images/scenarios/home_chores/shared/ending_fail_quality.png",
+      "audioPath": "/audio/scenarios/home_chores/chores42.mp3",
+      "isEnding": true,
+      "endingType": "fail",
+      "minStars": 1,
+      "maxStars": 1
+    },
+    "ending_honest": {
+      "id": "ending_honest",
+      "text": "When Mom gets home, you tell her honestly: 'I'm sorry, I forgot to water the plants. I got distracted and ran out of time. I did finish four out of five things though.' Mom looks at you, and her expression softens. 'Thank you for being honest with me,' she says. 'That's important. You did finish most of the chores, which is good. But next time, try to check the list to make sure you don't forget anything.' She helps you water the plants together. 'Honesty is always better than trying to hide mistakes,' she says. 'I appreciate that you told me the truth.' You feel better. You didn't do everything perfectly, but you were honest, and that matters. Mom appreciates that.",
+      "imagePath": "/images/scenarios/home_chores/shared/ending_success_simple.png",
+      "audioPath": "/audio/scenarios/home_chores/chores43.mp3",
+      "isEnding": true,
+      "endingType": "partial",
+      "minStars": 2,
+      "maxStars": 2
+    }
+  }
+}
+
+
+
+
+
+
+
+
+

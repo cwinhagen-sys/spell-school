@@ -44,6 +44,7 @@ interface GameSelectionUIProps {
   onChangeBlocks: () => void
   onExitSession: () => void
   onSelectGame: (gameIndex: number, gameId: string) => void
+  showBackToDashboard?: boolean
   onQuizClick: () => void
   onQuizDetailsClick: () => Promise<void>
   onCloseQuizDetails: () => void
@@ -105,7 +106,8 @@ export default function GameSelectionUI({
   onSelectGame,
   onQuizClick,
   onQuizDetailsClick,
-  onCloseQuizDetails
+  onCloseQuizDetails,
+  showBackToDashboard = false
 }: GameSelectionUIProps) {
   const getGameName = (gameId: string): string => {
     const metadata = getGameMetadata(gameId)
@@ -148,15 +150,15 @@ export default function GameSelectionUI({
               </div>
               <div>
                 <div className="flex items-center gap-3">
-                  <h1 className="text-2xl font-bold text-white">Aktiviteter</h1>
+                  <h1 className="text-2xl font-bold text-white">Activities</h1>
                   {allGamesCompleted && (
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
                       <Trophy className="w-4 h-4 text-emerald-400" />
-                      <span className="text-xs font-semibold text-emerald-400">Allt klart!</span>
+                      <span className="text-xs font-semibold text-emerald-400">All done!</span>
                     </div>
                   )}
                 </div>
-                <p className="text-sm text-gray-500 mt-0.5">Spela spelen i ordning för att låsa upp nästa</p>
+                <p className="text-sm text-gray-500 mt-0.5">Play games in order to unlock the next one</p>
               </div>
             </div>
             
@@ -165,13 +167,13 @@ export default function GameSelectionUI({
                 onClick={onChangeBlocks}
                 className="px-4 py-2.5 bg-white/5 border border-white/[0.08] text-gray-400 rounded-xl font-medium hover:bg-white/10 hover:text-white transition-all text-sm"
               >
-                Byt block
+                Change blocks
               </button>
               <button
                 onClick={onExitSession}
                 className="px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl font-medium hover:bg-red-500/20 transition-all text-sm"
               >
-                Avsluta
+                {showBackToDashboard ? 'Back to Dashboard' : 'Exit'}
               </button>
             </div>
           </div>
@@ -181,12 +183,12 @@ export default function GameSelectionUI({
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 <div className="text-sm font-semibold text-white">
-                  {completedGames} av {totalGames} klara
+                  {completedGames} of {totalGames} completed
                 </div>
                 {allGamesCompleted && (
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                    <span className="text-xs text-emerald-400 font-medium">Session klar</span>
+                    <span className="text-xs text-emerald-400 font-medium">Session complete</span>
                   </div>
                 )}
               </div>
@@ -254,19 +256,19 @@ export default function GameSelectionUI({
                       {isCompleted && (
                         <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
                           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                          <span className="text-xs font-semibold text-emerald-400">Klar</span>
+                          <span className="text-xs font-semibold text-emerald-400">Complete</span>
                         </div>
                       )}
                       {isLocked && !isCompleted && (
                         <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/[0.08] rounded-full">
                           <Lock className="w-4 h-4 text-gray-500" />
-                          <span className="text-xs font-semibold text-gray-500">Låst</span>
+                          <span className="text-xs font-semibold text-gray-500">Locked</span>
                         </div>
                       )}
                       {isCurrent && !isCompleted && (
                         <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full">
                           <Play className="w-4 h-4 text-amber-400" />
-                          <span className="text-xs font-semibold text-amber-400">Nästa</span>
+                          <span className="text-xs font-semibold text-amber-400">Next</span>
                         </div>
                       )}
                     </div>
@@ -286,7 +288,7 @@ export default function GameSelectionUI({
                     {/* Progress */}
                     <div className="mb-5">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Rundor</span>
+                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Rounds</span>
                         <span className="text-sm font-bold text-white">{roundsCompleted} / {requiredRounds}</span>
                       </div>
                       <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
@@ -321,17 +323,17 @@ export default function GameSelectionUI({
                       {isCompleted ? (
                         <>
                           <RotateCcw className="w-4 h-4" />
-                          Spela igen
+                          Play again
                         </>
                       ) : isLocked ? (
                         <>
                           <Lock className="w-4 h-4" />
-                          Låst
+                          Locked
                         </>
                       ) : (
                         <>
                           <Play className="w-4 h-4" />
-                          Spela nu
+                          Play now
                         </>
                       )}
                     </button>
@@ -356,8 +358,8 @@ export default function GameSelectionUI({
                         <BarChart3 className="w-7 h-7 text-purple-400" />
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-xl font-bold text-white mb-1">Quiz - Resultat</h3>
-                        <p className="text-sm text-gray-500">Tryck för att se detaljer</p>
+                        <h3 className="text-xl font-bold text-white mb-1">Quiz - Results</h3>
+                        <p className="text-sm text-gray-500">Click to see details</p>
                       </div>
                       <div className={`px-4 py-2 rounded-xl text-lg font-bold ${
                         quizResult.percentage >= 80 
@@ -372,11 +374,11 @@ export default function GameSelectionUI({
                     
                     <div className="grid grid-cols-3 gap-4 p-4 bg-white/5 rounded-xl border border-white/[0.08]">
                       <div className="text-center">
-                        <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Poäng</div>
+                        <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Score</div>
                         <div className="text-2xl font-bold text-white">{quizResult.score}/{quizResult.total}</div>
                       </div>
                       <div className="text-center border-x border-white/[0.08]">
-                        <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Procent</div>
+                        <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Percentage</div>
                         <div className={`text-2xl font-bold ${
                           quizResult.percentage >= 80 ? 'text-emerald-400' :
                           quizResult.percentage >= 60 ? 'text-amber-400' :
@@ -386,15 +388,15 @@ export default function GameSelectionUI({
                         </div>
                       </div>
                       <div className="text-center">
-                        <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Betyg</div>
+                        <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Grade</div>
                         <div className={`text-lg font-bold ${
                           quizResult.percentage >= 80 ? 'text-emerald-400' :
                           quizResult.percentage >= 60 ? 'text-amber-400' :
                           'text-red-400'
                         }`}>
-                          {quizResult.percentage >= 80 ? 'Toppen!' : 
-                           quizResult.percentage >= 60 ? 'Bra!' : 
-                           'Öva mer!'}
+                          {quizResult.percentage >= 80 ? 'Excellent!' : 
+                           quizResult.percentage >= 60 ? 'Good!' : 
+                           'Keep practicing!'}
                         </div>
                       </div>
                     </div>
@@ -412,7 +414,7 @@ export default function GameSelectionUI({
                       </div>
                       <div className="flex items-center gap-2 text-gray-500">
                         <Lock className="w-5 h-5" />
-                        <span className="text-sm font-medium">Inskickad</span>
+                        <span className="text-sm font-medium">Submitted</span>
                       </div>
                     </div>
                   </div>
@@ -426,7 +428,7 @@ export default function GameSelectionUI({
                     </div>
                     <div className="flex-1">
                       <h3 className="text-xl font-bold text-white mb-1">Quiz</h3>
-                      <p className="text-sm text-gray-500">Testa dina kunskaper på de valda orden</p>
+                      <p className="text-sm text-gray-500">Test your knowledge on the selected words</p>
                     </div>
                   </div>
                   <button
@@ -434,7 +436,7 @@ export default function GameSelectionUI({
                     className="w-full py-3.5 px-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
                   >
                     <Play className="w-5 h-5" />
-                    Starta Quiz
+                    Start Quiz
                   </button>
                 </div>
               )}
@@ -451,7 +453,7 @@ export default function GameSelectionUI({
                       <div className="w-10 h-10 bg-[#1a1a2e] border border-white/[0.08] rounded-xl flex items-center justify-center">
                         <BarChart3 className="w-5 h-5 text-purple-400" />
                       </div>
-                      <h2 className="text-xl font-bold text-white">Quiz Detaljer</h2>
+                      <h2 className="text-xl font-bold text-white">Quiz Details</h2>
                     </div>
                     <button
                       onClick={onCloseQuizDetails}
@@ -487,7 +489,7 @@ export default function GameSelectionUI({
                                   <span className="font-semibold text-white">{detail.word_en}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs text-gray-500 uppercase">Ditt svar:</span>
+                                  <span className="text-xs text-gray-500 uppercase">Your answer:</span>
                                   <span className={`text-sm font-medium ${
                                     detail.student_answer.trim() === '' 
                                       ? 'text-gray-500 italic' 

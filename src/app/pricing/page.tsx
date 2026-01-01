@@ -28,8 +28,8 @@ const tiers = [
   },
   {
     name: 'Premium',
-    monthlyPrice: 79,
-    yearlyPrice: 758, // 79 * 12 * 0.8 (20% rabatt)
+    monthlyPrice: 29,
+    yearlyPrice: 299,
     description: 'För lärare som vill ha mer kontroll',
     color: 'from-teal-500 to-emerald-600',
     hoverColor: 'from-teal-600 to-emerald-700',
@@ -48,8 +48,8 @@ const tiers = [
   },
   {
     name: 'Pro',
-    monthlyPrice: 129,
-    yearlyPrice: 1238, // 129 * 12 * 0.8 (20% rabatt)
+    monthlyPrice: 49,
+    yearlyPrice: 499,
     description: 'Fullständig kontroll och insikter',
     color: 'from-amber-500 to-orange-600',
     hoverColor: 'from-amber-600 to-orange-700',

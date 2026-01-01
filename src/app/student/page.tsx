@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { useActivityTracking } from '@/hooks/useActivityTracking'
 import { markUserAsLoggedOut } from '@/lib/activity'
 import { syncManager } from '@/lib/syncManager'
-import { BookOpen, Target, Star, Users, ChevronDown, Calendar, LogOut, Trophy, Gamepad2 } from 'lucide-react'
+import { BookOpen, Target, Star, Users, ChevronDown, Calendar, LogOut, Trophy, X, Gem } from 'lucide-react'
 import Link from 'next/link'
 import { levelForXp } from '@/lib/leveling'
 import { titleForLevel } from '@/lib/wizardTitles'
@@ -20,6 +22,7 @@ import QuizGame from '@/components/games/QuizGame'
 import MultipleChoiceGame from '@/components/games/MultipleChoiceGame'
 import RouletteGame from '@/components/games/RouletteGame'
 import StoryBuilderGame from '@/components/games/StoryBuilderGame'
+import ScenarioGame from '@/components/games/ScenarioGame'
 import ScrambleGame from '@/components/games/ScrambleGame'
 import { type TrackingContext, updateStudentProgress as addProgress } from '@/lib/tracking'
 import { enqueueQuestProgress, enqueueQuestComplete } from '@/lib/questOutbox'
@@ -163,7 +166,9 @@ export default function StudentDashboard() {
   // Track user activity for better "Playing" status
   useActivityTracking()
   
+  const searchParams = useSearchParams()
   const [user, setUser] = useState<any>(null)
+  const [initialScenarioEnvironment, setInitialScenarioEnvironment] = useState<string | null>(null)
   const [homeworks, setHomeworks] = useState<Homework[]>([])
   const [oldWordSets, setOldWordSets] = useState<Homework[]>([])
   const [points, setPoints] = useState(0)
@@ -179,11 +184,12 @@ export default function StudentDashboard() {
   const [showChoice, setShowChoice] = useState(false)
   const [showRoulette, setShowRoulette] = useState(false)
   const [showDistortedTale, setShowDistortedTale] = useState(false)
-  const [showScramble, setShowScramble] = useState(false)
-  const [pendingGame, setPendingGame] = useState<'flashcards' | 'match' | 'typing' | 'translate' | 'connect' | 'quiz' | 'choice' | 'storygap' | 'roulette' | 'distorted_tale' | 'scramble' | null>(null)
+  const [showScenarioGame, setShowScenarioGame] = useState(false)
+  const [showSpellCasting, setShowSpellCasting] = useState(false)
+  const [pendingGame, setPendingGame] = useState<'flashcards' | 'match' | 'typing' | 'translate' | 'connect' | 'quiz' | 'choice' | 'storygap' | 'roulette' | 'distorted_tale' | 'scenario' | 'scramble' | null>(null)
   const [selectedHomework, setSelectedHomework] = useState<Homework | null>(null)
   const [showHomeworkSelection, setShowHomeworkSelection] = useState(false)
-  const [activeTab, setActiveTab] = useState<'active' | 'old'>('active')
+  const [showAllOldWordSets, setShowAllOldWordSets] = useState(false)
   const [showLevelUp, setShowLevelUp] = useState<{ level: number; title?: string; image?: string; description?: string } | null>(null)
   const [showWizardModal, setShowWizardModal] = useState(false)
   const [showWordSetModal, setShowWordSetModal] = useState(false)
@@ -191,6 +197,14 @@ export default function StudentDashboard() {
   const [wordSetTab, setWordSetTab] = useState(0)
   const [classInfo, setClassInfo] = useState<{id: string, name: string} | null>(null)
   const [teacherInfo, setTeacherInfo] = useState<{name: string} | null>(null)
+  const [activeSessions, setActiveSessions] = useState<Array<{
+    id: string
+    session_code: string
+    session_name: string | null
+    due_date: string
+    enabled_games: string[]
+    word_set_title: string
+  }>>([])
   const [dailyQuests, setDailyQuests] = useState<any[]>([])
   const [questProgress, setQuestProgress] = useState<{[key: string]: number}>({})
   const [showBonusNotification, setShowBonusNotification] = useState(false)
@@ -259,7 +273,9 @@ export default function StudentDashboard() {
       { id: 'perfect_3', title: 'Perfectionist', description: 'Get 100% accuracy in 3 different games', target: 3, xp: 85, icon: '⭐' },
       { id: 'quiz_perfect', title: 'Quiz God', description: 'Get 100% accuracy in Quiz', target: 1, xp: 70, icon: '🎓' },
       { id: 'typing_speed', title: 'Speed God', description: 'Complete Typing Challenge under 25 seconds', target: 1, xp: 75, icon: '⚡' },
-      { id: 'roulette_perfect_20_words', title: 'Sentence Master', description: 'Create a perfect sentence with 20+ words', target: 1, xp: 100, icon: '📚' }
+      { id: 'roulette_perfect_20_words', title: 'Sentence Master', description: 'Create a perfect sentence with 20+ words', target: 1, xp: 100, icon: '📚' },
+      { id: 'scenario_breakfast_2_stars', title: 'Breakfast Chef', description: 'Complete "Make Breakfast" scenario with 2 stars', target: 1, xp: 50, icon: '👨‍🍳' },
+      { id: 'scenario_breakfast_3_stars', title: 'Master Chef', description: 'Complete "Make Breakfast" scenario with 3 stars (perfect!)', target: 1, xp: 75, icon: '🏆' }
     ]
   }
 
@@ -369,7 +385,7 @@ export default function StudentDashboard() {
 
 
   // Update quest progress (synchronous version for instant feedback)
-  const updateQuestProgressSync = async (gameType: string, score: number = 1, userId?: string) => {
+  const updateQuestProgressSync = async (gameType: string, score: number = 1, userId?: string, scenarioInfo?: { scenarioId: string, goalId: string, success: boolean, stars?: number }) => {
     const today = new Date().toDateString()
     const userKey = userId ? `_${userId}` : ''
     
@@ -582,6 +598,16 @@ export default function StudentDashboard() {
         case 'marathon_10':
           quest.progress = Math.min(quest.progress + 1, quest.target)
           break
+        case 'scenario_breakfast_2_stars':
+          if (scenarioInfo && scenarioInfo.scenarioId === 'home' && scenarioInfo.goalId === 'breakfast' && scenarioInfo.success && scenarioInfo.stars >= 2) {
+            quest.progress = quest.target
+          }
+          break
+        case 'scenario_breakfast_3_stars':
+          if (scenarioInfo && scenarioInfo.scenarioId === 'home' && scenarioInfo.goalId === 'breakfast' && scenarioInfo.success && scenarioInfo.stars >= 3) {
+            quest.progress = quest.target
+          }
+          break
       }
 
       if (quest.progress >= quest.target && !quest.completed) {
@@ -597,6 +623,13 @@ export default function StudentDashboard() {
         })
         
         // INSTANT UI UPDATE: Award badge immediately for instant animation
+        // Only award badge if quest exists in dailyQuests (is an active daily quest)
+        const questExists = dailyQuests.some(q => q.id === quest.id)
+        if (!questExists) {
+          console.log(`⚠️ Quest ${quest.id} (${quest.title}) not found in dailyQuests, skipping badge award`)
+          return
+        }
+        
         console.log(`🎯 Calling awardBadgeForQuest for quest ID: ${quest.id} (${quest.title})`)
         
         // Award badge immediately for instant feedback
@@ -637,6 +670,12 @@ export default function StudentDashboard() {
         }
       }
     })
+
+    // Award scenario badges when scenario is completed with correct stars
+    // But only if corresponding daily quest is active and just completed for the first time
+    if (scenarioInfo && scenarioInfo.scenarioId === 'home' && scenarioInfo.goalId === 'breakfast' && scenarioInfo.success && scenarioInfo.stars) {
+      await checkScenarioBadges(scenarioInfo.stars)
+    }
 
     if (updated || progressChanged) {
       setDailyQuests(quests)
@@ -714,6 +753,54 @@ export default function StudentDashboard() {
       setTimeout(() => setShowBonusNotification(false), 5000) // Hide after 5 seconds
     } else if (allCompleted && localStorage.getItem(bonusKey)) {
       console.log('All quests completed, bonus already awarded today')
+    }
+  }
+
+  // Check and award scenario badges when scenario is completed
+  // Badges are only awarded if corresponding daily quest is active and just completed for the first time
+  const checkScenarioBadges = async (stars: number) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Map stars to quest IDs
+      const questIdMap: { [stars: number]: string } = {
+        2: 'scenario_breakfast_2_stars',
+        3: 'scenario_breakfast_3_stars'
+      }
+
+      const questId = questIdMap[stars]
+      if (!questId) return
+
+      // Check if this quest exists in active dailyQuests
+      const quest = dailyQuests.find(q => q.id === questId)
+      if (!quest) {
+        console.log(`⚠️ Scenario quest ${questId} not found in active dailyQuests, skipping badge award`)
+        return
+      }
+
+      // Check if quest was just completed (not already completed)
+      if (!quest.completed) {
+        console.log(`⚠️ Scenario quest ${questId} not completed yet, skipping badge award`)
+        return
+      }
+
+      // Check if quest was just completed for the first time (progress just reached target)
+      // This is handled by the quest completion logic above, so we can award the badge
+      console.log(`🎯 Awarding scenario badge for quest: ${questId} (${quest.title})`)
+      
+      try {
+        const badgeAwarded = await awardBadgeForQuest(questId)
+        if (badgeAwarded) {
+          console.log(`🏆 Scenario badge awarded for quest: ${quest.title}`)
+        } else {
+          console.log(`❌ No scenario badge awarded for quest: ${quest.title} (probably already earned)`)
+        }
+      } catch (error) {
+        console.error('Error awarding scenario badge:', error)
+      }
+    } catch (error) {
+      console.error('Error checking scenario badges:', error)
     }
   }
 
@@ -947,6 +1034,13 @@ export default function StudentDashboard() {
       
       await loadStudentData()
       
+      // Handle scenario URL parameter after data is loaded
+      const scenarioParam = searchParams?.get('scenario')
+      if (scenarioParam) {
+        setInitialScenarioEnvironment(scenarioParam)
+        setShowScenarioGame(true)
+      }
+      
       // Initialize quest outbox for robust synchronization
       const { questOutbox } = await import('@/lib/questOutbox')
       await questOutbox.initialize()
@@ -1090,6 +1184,7 @@ export default function StudentDashboard() {
     } else {
       setLeaderboardData(null)
     }
+
   }, [classInfo?.id])
 
   // Listen to animation queue for badge popups
@@ -1501,11 +1596,119 @@ export default function StudentDashboard() {
       // Load class information
       await loadClassInfo()
       
+      // Load active sessions
+      await loadActiveSessions()
+      
     } catch (error) {
       console.error('Error loading student data:', error)
       setMessage('Failed to load data')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadActiveSessions = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Get student's classes
+      const { data: classStudents } = await supabase
+        .from('class_students')
+        .select('class_id')
+        .eq('student_id', user.id)
+
+      if (!classStudents || classStudents.length === 0) {
+        setActiveSessions([])
+        return
+      }
+
+      const classIds = classStudents.map(cs => cs.class_id)
+
+      // Get active sessions linked to these classes
+      // First, get session IDs from session_classes
+      const { data: sessionClassLinks, error: linkError } = await supabase
+        .from('session_classes')
+        .select('session_id')
+        .in('class_id', classIds)
+
+      if (linkError) {
+        console.error('Error loading session-class links:', linkError)
+        setActiveSessions([])
+        return
+      }
+
+      if (!sessionClassLinks || sessionClassLinks.length === 0) {
+        setActiveSessions([])
+        return
+      }
+
+      const sessionIds = [...new Set(sessionClassLinks.map(sc => sc.session_id))]
+
+      // Then, get the sessions
+      const { data: sessions, error: sessionError } = await supabase
+        .from('sessions')
+        .select(`
+          id,
+          session_code,
+          session_name,
+          due_date,
+          enabled_games,
+          is_active,
+          word_set_id
+        `)
+        .in('id', sessionIds)
+        .eq('is_active', true)
+        .gte('due_date', new Date().toISOString())
+
+      if (sessionError) {
+        console.error('Error loading sessions:', sessionError)
+        setActiveSessions([])
+        return
+      }
+
+      if (!sessions || sessions.length === 0) {
+        setActiveSessions([])
+        return
+      }
+
+      // Fetch word set titles separately
+      const wordSetIds = [...new Set(sessions.map((s: any) => s.word_set_id).filter(Boolean))]
+      const wordSetTitles: Record<string, string> = {}
+      
+      if (wordSetIds.length > 0) {
+        const { data: wordSets } = await supabase
+          .from('word_sets')
+          .select('id, title')
+          .in('id', wordSetIds)
+
+        if (wordSets) {
+          wordSets.forEach((ws: any) => {
+            wordSetTitles[ws.id] = ws.title
+          })
+        }
+      }
+
+      // Transform sessions data
+      const activeSessionList = sessions.map((session: any) => ({
+        id: session.id,
+        session_code: session.session_code,
+        session_name: session.session_name,
+        due_date: session.due_date,
+        enabled_games: session.enabled_games || [],
+        word_set_title: session.word_set_id ? (wordSetTitles[session.word_set_id] || 'Session') : 'Session'
+      })) as Array<{
+        id: string
+        session_code: string
+        session_name: string | null
+        due_date: string
+        enabled_games: string[]
+        word_set_title: string
+      }>
+
+      setActiveSessions(activeSessionList)
+    } catch (error) {
+      console.error('Error loading active sessions:', error)
     }
   }
 
@@ -1722,12 +1925,24 @@ export default function StudentDashboard() {
         if (!Array.isArray(words)) return []
         const out: string[] = []
         for (const item of words) {
-          if (typeof item === 'string') out.push(item)
-          else if (item && typeof item === 'object') {
-            if (typeof item.en === 'string') out.push(item.en)
-            else if (typeof item.word === 'string') out.push(item.word)
+          if (typeof item === 'string') {
+            out.push(item)
+          } else if (item && typeof item === 'object') {
+            // Handle item.en - must be a non-empty string
+            if (typeof item.en === 'string' && item.en.trim() !== '') {
+              out.push(item.en)
+            } 
+            // Fallback to item.word if item.en is missing/empty
+            else if (typeof item.word === 'string' && item.word.trim() !== '') {
+              out.push(item.word)
+            }
+            // If neither en nor word exists, skip (but log for debugging)
+            else {
+              console.warn('Skipping word item with no valid en/word field:', item)
+            }
           }
         }
+        console.log(`extractEnglishWords: extracted ${out.length} words from ${words.length} items`)
         return out
       }
 
@@ -1812,11 +2027,13 @@ export default function StudentDashboard() {
         return dateB - dateA // Newest first
       })
       
-      const sortedOld = old.sort((a, b) => {
-        const dateA = new Date(a.created_at).getTime()
-        const dateB = new Date(b.created_at).getTime()
-        return dateB - dateA // Newest first
-      })
+      const sortedOld = old
+        .sort((a, b) => {
+          // Sort by due_date descending (newest first)
+          const dateA = a.due_date ? new Date(a.due_date).getTime() : 0
+          const dateB = b.due_date ? new Date(b.due_date).getTime() : 0
+          return dateB - dateA
+        })
 
       console.log('Mapped homeworks (sorted by newest):', sortedActive)
       console.log('Setting homeworks to:', sortedActive.length, 'items')
@@ -1835,12 +2052,14 @@ export default function StudentDashboard() {
       setMessage('No vocabulary sets available. Please wait for your teacher to assign vocabulary.')
       return
     }
-    // For flashcards, always start directly - color grid selection will handle word set selection
-    // Use first available homework or old word set
-    const homework = homeworks[0] || oldWordSets[0]
-    if (homework) {
-      setSelectedHomework(homework)
+    // If only one word set, start directly
+    if (homeworks.length === 1 && oldWordSets.length === 0) {
+      setSelectedHomework(homeworks[0])
       setShowFlashcardGame(true)
+    } else {
+      // Show homework selection modal
+      setPendingGame('flashcards')
+      setShowHomeworkSelection(true)
     }
   }
 
@@ -1961,8 +2180,8 @@ export default function StudentDashboard() {
     })
   }
 
-  const handleScoreUpdate = (newScore: number, newTotal?: number, gameType?: string) => {
-    console.log('🎯 handleScoreUpdate called:', { newScore, newTotal, gameType, currentPoints: points })
+  const handleScoreUpdate = (newScore: number, newTotal?: number, gameType?: string, metadata?: { scenarioId: string, goalId: string, success: boolean, stars?: number }) => {
+    console.log('🎯 handleScoreUpdate called:', { newScore, newTotal, gameType, metadata, currentPoints: points })
     
     // OPTIMISTIC UI UPDATE: Update quest progress immediately for instant feedback
     if (gameType) {
@@ -1972,7 +2191,7 @@ export default function StudentDashboard() {
       
       // INSTANT: Update quest progress synchronously for immediate UI feedback (no await!)
       // Get user ID from current user state for instant quest updates
-      void updateQuestProgressSync(gameType, questScore, user?.id)
+      void updateQuestProgressSync(gameType, questScore, user?.id, metadata)
       
       // BACKGROUND: Update streak in background (non-blocking)
       void recomputeStreak()
@@ -1981,7 +2200,7 @@ export default function StudentDashboard() {
     
     // OPTIMISTIC UI UPDATE: Handle points based on game type
     if (typeof newTotal === 'number' && Number.isFinite(newTotal)) {
-      if (gameType === 'choice' || gameType === 'match' || gameType === 'translate' || gameType === 'connect' || gameType === 'story_gap' || gameType === 'roulette' || gameType === 'typing' || gameType === 'flashcards' || gameType === 'scramble') {
+      if (gameType === 'choice' || gameType === 'match' || gameType === 'translate' || gameType === 'connect' || gameType === 'story_gap' || gameType === 'roulette' || gameType === 'typing' || gameType === 'flashcards' || gameType === 'scenario_adventure' || gameType === 'scramble') {
         // For games using new scoring system, newTotal represents points to ADD, not total points
         const currentPoints = points
         const totalAfterGame = currentPoints + newTotal
@@ -2076,7 +2295,8 @@ export default function StudentDashboard() {
   const selectHomeworkForGame = async (homework: Homework) => {
     setSelectedHomework(homework)
     setShowHomeworkSelection(false)
-    
+    setShowAllOldWordSets(false)
+
     // Start the pending game with the selected homework
     if (pendingGame === 'flashcards') {
       setShowFlashcardGame(true)
@@ -2084,6 +2304,8 @@ export default function StudentDashboard() {
       setShowWordMatchingGame(true)
     } else if (pendingGame === 'typing') {
       setShowTypingChallenge(true)
+    } else if (pendingGame === 'scramble') {
+      setShowSpellCasting(true)
     } else if (pendingGame === 'translate') {
       setShowTranslateGame(true)
     } else if (pendingGame === 'connect') {
@@ -2099,8 +2321,6 @@ export default function StudentDashboard() {
       setShowRoulette(true)
     } else if (pendingGame === 'distorted_tale') {
       setShowDistortedTale(true)
-    } else if (pendingGame === 'scramble') {
-      setShowScramble(true)
     }
   }
 
@@ -2147,8 +2367,11 @@ export default function StudentDashboard() {
               </div>
               <div className="flex items-center gap-4 flex-wrap">
                 <div className="text-center px-4 py-2 bg-white/10 rounded-xl backdrop-blur-sm border border-white/10">
-                  <div className="text-3xl font-bold text-amber-400">{points.toLocaleString()}</div>
-                  <div className="text-sm text-gray-300">Total XP</div>
+                  <div className="flex items-center justify-center gap-2">
+                    <Gem className="w-5 h-5 text-amber-400" />
+                    <div className="text-3xl font-bold text-amber-400">{points.toLocaleString()}</div>
+                  </div>
+                  <div className="text-sm text-gray-300">Arcane Points</div>
                 </div>
                 {currentStreak > 0 && (
                   <div className="text-center px-4 py-2 bg-white/10 rounded-xl backdrop-blur-sm border border-white/10">
@@ -2156,23 +2379,16 @@ export default function StudentDashboard() {
                     <div className="text-sm text-gray-300">Day streak</div>
                   </div>
                 )}
-                <Link
-                  href="/session/join"
-                  className="px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl hover:from-amber-400 hover:to-orange-400 transition-all flex items-center gap-2 text-sm font-semibold text-white shadow-lg shadow-amber-500/30"
-                >
-                  <Gamepad2 className="w-4 h-4" />
-                  Join session
-                </Link>
               </div>
             </div>
             
-            {/* XP Progress Bar */}
+            {/* AP Progress Bar */}
             <div className="mt-6">
               <div className="flex items-center justify-between text-sm mb-2">
                 <span className="text-gray-300">Progress to Level {leveling.level + 1}</span>
                 <span className="font-semibold text-white">
                   {leveling.nextDelta > 0 
-                    ? `${Math.round(leveling.progressToNext * leveling.nextDelta)} / ${leveling.nextDelta} XP`
+                    ? `${Math.round(leveling.progressToNext * leveling.nextDelta)} / ${leveling.nextDelta} AP`
                     : 'Max level reached!'
                   }
                 </span>
@@ -2185,7 +2401,7 @@ export default function StudentDashboard() {
               </div>
               {leveling.nextDelta > 0 && (
                 <div className="text-xs text-gray-400 mt-1 text-right">
-                  {leveling.nextDelta - Math.round(leveling.progressToNext * leveling.nextDelta)} XP left to next level
+                  {leveling.nextDelta - Math.round(leveling.progressToNext * leveling.nextDelta)} AP left to next level
                 </div>
               )}
             </div>
@@ -2215,18 +2431,78 @@ export default function StudentDashboard() {
                 const progressPercent = (quest.progress / quest.target) * 100
                 const isCompleted = quest.completed
                 
+                // Map quest ID to badge background image
+                const getQuestBackgroundImage = (questId: string): string | null => {
+                  const backgroundMap: { [key: string]: string } = {
+                    'play_3_games': 'word_warrior.png',
+                    'memory_2': 'memory_champion.png',
+                    'typing_1': 'spelling_bee.png',
+                    'choice_3_perfect': 'choice_master.png',
+                    'sentence_gap_perfect': 'gap_filler.png',
+                    'spell_slinger_100': 'spell_slinger_novice.png',
+                    'sentence_gap_2': 'sentence_builder.png',
+                    'roulette_3': 'roulette_master.png',
+                    'multi_game_4': 'multi_game_player.png',
+                    'perfect_score_1': 'perfect_score.png',
+                    'spell_slinger_1200': 'spell_slinger_expert.png',
+                    'sentence_gap_5': 'grammar_guru.png',
+                    'roulette_5': 'roulette_legend.png',
+                    'marathon_10': 'marathon_runner.png',
+                    'perfect_3': 'perfectionist.png',
+                    'quiz_perfect': 'quiz_god.png',
+                    'typing_speed': 'speed_god.png',
+                    'roulette_perfect_5_words': 'sentence_starter.png',
+                    'roulette_perfect_10_words': 'sentence_expert.png',
+                    'roulette_perfect_20_words': 'sentence_master.png',
+                    'scenario_breakfast_2_stars': 'breakfast_chef.png',
+                    'scenario_breakfast_3_stars': 'master_chef.png'
+                  }
+                  
+                  const filename = backgroundMap[questId]
+                  return filename ? `/images/badges/backgrounds/${filename}` : null
+                }
+                
+                const backgroundImage = getQuestBackgroundImage(quest.id)
+                
                 return (
                   <div
                     key={quest.id}
-                    className={`p-4 rounded-xl border transition-all ${
+                    className={`p-4 rounded-xl border transition-all relative overflow-hidden ${
                       isCompleted
                         ? 'bg-emerald-500/20 border-emerald-500/30'
                         : 'bg-white/5 border-white/10 hover:border-amber-500/30'
                     }`}
                   >
+                    {/* Background image */}
+                    {backgroundImage && (
+                      <div 
+                        className={`absolute inset-0 transition-opacity duration-300 ${
+                          isCompleted 
+                            ? 'opacity-30' 
+                            : 'opacity-20'
+                        }`}
+                        style={{
+                          backgroundImage: `url(${backgroundImage})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                          backgroundRepeat: 'no-repeat'
+                        }}
+                      />
+                    )}
+                    
+                    {/* Dark overlay for readability */}
+                    {backgroundImage && (
+                      <div className={`absolute inset-0 transition-opacity duration-300 ${
+                        isCompleted 
+                          ? 'bg-gradient-to-br from-black/60 via-black/50 to-black/60' 
+                          : 'bg-gradient-to-br from-black/70 via-black/60 to-black/70'
+                      }`} />
+                    )}
+                    
+                    {/* Content */}
+                    <div className="relative z-10">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
-                        <span className="text-2xl">{quest.icon}</span>
                         <div>
                           <div className="font-semibold text-white">{quest.title}</div>
                           <div className="text-xs text-gray-400">{quest.description}</div>
@@ -2236,7 +2512,10 @@ export default function StudentDashboard() {
                         {isCompleted ? (
                           <span className="text-emerald-400 font-bold text-lg">✓</span>
                         ) : (
-                          <span className="text-sm font-semibold text-amber-400">+{quest.xp} XP</span>
+                          <div className="flex items-center gap-1">
+                            <Gem className="w-3.5 h-3.5 text-amber-400" />
+                            <span className="text-sm font-semibold text-white">+{quest.xp} AP</span>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -2262,6 +2541,7 @@ export default function StudentDashboard() {
                         </div>
                       </div>
                     )}
+                    </div>
                   </div>
                 )
               })}
@@ -2271,7 +2551,10 @@ export default function StudentDashboard() {
                     <span className="text-3xl">🏆</span>
                     <div>
                       <div className="font-bold text-amber-400">All quests completed!</div>
-                      <div className="text-sm text-amber-300/80">+100 XP Bonus earned</div>
+                      <div className="flex items-center gap-1 text-sm text-amber-300/80">
+                        <Gem className="w-3.5 h-3.5 text-amber-300/80" />
+                        +100 AP Bonus earned
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2352,34 +2635,83 @@ export default function StudentDashboard() {
                       setShowWordSetModal(true)
                     }}
                   >
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className="w-4 h-4 rounded-full shadow-lg" style={{ backgroundColor: homework.color || '#a855f7' }} />
-                      <span className="text-sm font-semibold text-white truncate group-hover:text-amber-400 transition-colors">{homework.title}</span>
+                    <div className="mb-3">
+                      <span className="text-sm font-semibold text-white truncate group-hover:text-amber-400 transition-colors block">{homework.title}</span>
                     </div>
                     <div className="text-xs text-gray-500">
-                      Deadline: {homework.due_date ? new Date(homework.due_date).toLocaleDateString('en-US') : 'No deadline'}
+                      {homework.due_date ? (
+                        new Date(homework.due_date) < new Date() ? (
+                          <span className="text-red-400">Expired: {new Date(homework.due_date).toLocaleDateString('en-US')}</span>
+                        ) : (
+                          <span className="text-emerald-400">Deadline: {new Date(homework.due_date).toLocaleDateString('en-US')}</span>
+                        )
+                      ) : (
+                        'No deadline'
+                      )}
                     </div>
                   </div>
                 ))
               })()}
-              {homeworks.length > 10 && (
+              {homeworks.length > 4 && (
                 <div className="col-span-full text-center pt-4">
-                  <a href="/student/word-sets" className="text-sm text-amber-400 hover:text-amber-300 underline">
-                    View all word sets ({homeworks.length})
-                  </a>
+                  <Link href="/student/word-sets" className="text-sm text-amber-400 hover:text-amber-300 underline">
+                    View all active word sets ({homeworks.length})
+                  </Link>
                 </div>
               )}
             </div>
           </div>
         </div>
 
+        {/* Old Word Sets - Separate Section */}
+        {oldWordSets.length > 0 && (
+          <div className="mb-8">
+            <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm shadow-xl p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-gray-400" />
+                  Previous Word Sets
+                </h2>
+                <span className="text-sm text-gray-500">
+                  {oldWordSets.length} set{oldWordSets.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {oldWordSets.slice(0, 4).map((homework) => (
+                  <div 
+                    key={homework.id} 
+                    className="border border-white/10 bg-white/5 rounded-xl p-4 hover:bg-white/10 hover:border-gray-500/30 transition-all cursor-pointer group opacity-70"
+                    onClick={() => {
+                      setSelectedWordSet(homework)
+                      setShowWordSetModal(true)
+                    }}
+                  >
+                    <div className="mb-3">
+                      <span className="text-sm font-semibold text-gray-300 truncate group-hover:text-white transition-colors block">{homework.title}</span>
+                    </div>
+                    <div className="text-xs text-red-400">
+                      Expired{homework.due_date ? `: ${new Date(homework.due_date).toLocaleDateString('en-US')}` : ''}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {oldWordSets.length > 4 && (
+                <div className="text-center pt-4">
+                  <Link href="/student/word-sets" className="text-sm text-gray-400 hover:text-gray-300 underline">
+                    View all previous word sets ({oldWordSets.length})
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Games Recommendation & Leaderboard */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Games Recommendation */}
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 shadow-xl p-6">
+          <div className="bg-white/5 rounded-2xl border border-white/10 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <span className="text-2xl">🎮</span>
                 Practice Games
               </h2>
               <Link 
@@ -2408,91 +2740,47 @@ export default function StudentDashboard() {
             </div>
           </div>
 
-          {/* Leaderboard Snippet - Level Leaderboard Grid */}
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 shadow-xl p-6">
+          {/* Active Sessions */}
+          <div className="bg-white/5 rounded-2xl border border-white/10 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Users className="w-5 h-5 text-amber-400" />
-                Leaderboard
-              </h2>
-              <Link 
-                href="/student/leaderboard"
-                className="text-sm text-amber-400 hover:text-amber-300 font-medium"
-              >
-                View all →
-              </Link>
+              <h2 className="text-lg font-bold text-white">Active Sessions</h2>
             </div>
-            {leaderboardPlayers && leaderboardPlayers.length > 0 ? (
-              <div className="space-y-2">
-                {leaderboardPlayers
-                  .slice()
-                  .sort((a, b) => (b.level || 0) - (a.level || 0))
-                  .slice(0, Math.min(5, leaderboardPlayers.length))
-                  .map((player, index) => {
-                    const rank = index + 1
-                    const isTopThree = rank <= 3
-                    const isCurrentUser = player.id === leaderboardData?.currentUserId
-                    
-                    const medalColors = {
-                      1: 'from-amber-400 to-yellow-500 shadow-amber-500/50',
-                      2: 'from-gray-300 to-gray-400 shadow-gray-400/50',
-                      3: 'from-orange-400 to-amber-500 shadow-orange-500/50'
-                    }
-                    
-                    return (
-                      <div
-                        key={`level-${player.id}`}
-                        className={`flex items-center justify-between rounded-xl border px-3 py-2.5 transition-all ${
-                          isCurrentUser
-                            ? 'border-amber-500/50 bg-amber-500/20'
-                            : 'border-white/10 bg-white/5 hover:bg-white/10'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="relative">
-                            <img
-                              src={player.wizardImage}
-                              alt={player.displayName || 'Student'}
-                              className={`w-10 h-10 rounded-full object-cover border-2 ${
-                                isTopThree ? 'border-white shadow-lg' : 'border-white/30'
-                              }`}
-                            />
-                            <div className={`absolute -top-1 -left-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shadow-lg ${
-                              isTopThree 
-                                ? `bg-gradient-to-br ${medalColors[rank as 1 | 2 | 3]} text-white`
-                                : 'bg-[#1a1a2e] border border-white/20 text-gray-400'
-                            }`}>
-                              {rank}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-sm font-semibold text-white flex items-center gap-2">
-                              {player.displayName || 'Student'}
-                              {isCurrentUser && (
-                                <span className="text-xs font-medium text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded-full">
-                                  You
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {player.totalPoints.toLocaleString()} XP
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-bold text-amber-400">
-                            Lv {player.level}
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
+            {activeSessions.length === 0 ? (
+              <div className="text-center py-8 text-sm text-gray-400">
+                No active sessions. Sessions assigned to your classes will appear here.
               </div>
             ) : (
-              <div className="text-center py-8">
-                <Users className="w-12 h-12 text-gray-600 mx-auto mb-2" />
-                <p className="text-sm text-gray-400">No leaderboard yet</p>
-                <p className="text-xs text-gray-500 mt-1">Start playing to get on the leaderboard!</p>
+              <div className="space-y-3">
+                {activeSessions.map((session) => (
+                  <Link
+                    key={session.id}
+                    href={`/session/${session.id}/play?autoJoin=true`}
+                    className="block p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-amber-500/50 transition-all cursor-pointer"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-white mb-1">
+                          {session.session_name || `Session ${session.session_code}`}
+                        </h3>
+                        <p className="text-sm text-gray-400 mb-2">
+                          {session.word_set_title}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span>{session.enabled_games.length} games</span>
+                          <span>•</span>
+                          <span>
+                            Due: {new Date(session.due_date).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="ml-4">
+                        <div className="px-3 py-1 bg-amber-500/20 border border-amber-500/30 rounded-lg text-amber-400 text-xs font-mono font-semibold">
+                          {session.session_code}
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
               </div>
             )}
           </div>
@@ -2503,7 +2791,7 @@ export default function StudentDashboard() {
           {/* Games Section */}
           <div className="space-y-8" data-section="games">
           {/* Games */}
-          <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-8 shadow-xl">
+          <div className="bg-white/5 rounded-2xl border border-white/10 p-8">
             <div className="flex items-center mb-6">
               <div>
                 <h2 className="text-xl font-bold text-white">Spel</h2>
@@ -2549,22 +2837,21 @@ export default function StudentDashboard() {
                 onClick={startWordMatchingGame}
               />
 
-              {/* Matching Pairs (teal) */}
+              {/* Word Scramble (orange) */}
               <GameCard
-                title="Matching Pairs"
-                color="teal"
-                icon={<span className="text-3xl">🔗</span>}
+                title="Word Scramble"
+                color="orange"
+                icon={<span className="text-3xl">🔀</span>}
                 onClick={() => {
                   if (homeworks.length === 0 && oldWordSets.length === 0) {
                     alert('No word sets assigned yet. Please ask your teacher to assign some word sets.')
                     return
                   }
                   if (homeworks.length === 1 && oldWordSets.length === 0) {
-                    const only = homeworks[0]
-                    if (!selectedHomework) setSelectedHomework(only)
-                    setShowLineMatchingGame(true)
+                    setSelectedHomework(homeworks[0])
+                    setShowSpellCasting(true)
                   } else {
-                    setPendingGame('connect')
+                    setPendingGame('scramble')
                     setShowHomeworkSelection(true)
                   }
                 }}
@@ -2669,6 +2956,7 @@ export default function StudentDashboard() {
                 }}
               />
 
+
               {/* Distorted Tale (fuchsia) - HIDDEN FOR NOW */}
               {/* <GameCard
                 title="Distorted Tale"
@@ -2693,10 +2981,10 @@ export default function StudentDashboard() {
           </div>
 
           {/* Class Leaderboards */}
-          <div className="rounded-2xl border border-white/10 bg-[#12122a]/80 p-8 shadow-xl backdrop-blur-sm" data-section="leaderboard">
+          <div className="bg-white/5 rounded-2xl border border-white/10 p-8 shadow-xl" data-section="leaderboard">
             <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center mr-4 shadow-lg shadow-amber-500/30">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center">
                   <Trophy className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -2714,14 +3002,16 @@ export default function StudentDashboard() {
               </div>
             ) : (
               <div className="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
-                <Trophy className="w-16 h-16 text-amber-500/50 mx-auto mb-4" />
+                <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <Trophy className="w-8 h-8 text-gray-400" />
+                </div>
                 <h3 className="text-lg font-semibold text-white mb-2">View leaderboard</h3>
                 <p className="text-sm text-gray-400 mb-6">
                   See which classmates lead in different categories
                 </p>
                 <Link
                   href="/student/leaderboard"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg shadow-amber-500/30"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30 text-white font-semibold rounded-xl transition-all"
                 >
                   <Trophy className="w-5 h-5" />
                   Open leaderboard
@@ -2831,12 +3121,25 @@ export default function StudentDashboard() {
           />
         )}
 
-        {showScramble && getCurrentGameData() && (
+        {showScenarioGame && (
+          <ScenarioGame
+            onClose={() => setShowScenarioGame(false)}
+            trackingContext={getTrackingContext()}
+            onScoreUpdate={(points, newTotal, gameType, metadata) => {
+              handleScoreUpdate(points, newTotal, gameType || 'scenario_adventure', metadata)
+            }}
+            initialEnvironmentId={initialScenarioEnvironment || undefined}
+          />
+        )}
+
+        {showSpellCasting && getCurrentGameData() && (
           <ScrambleGame
             words={getCurrentGameData()!.words}
             translations={getCurrentGameData()!.translations}
-            onClose={() => setShowScramble(false)}
+            onClose={() => setShowSpellCasting(false)}
             onScoreUpdate={(score: number, total?: number) => handleScoreUpdate(score, total, 'scramble')}
+            themeColor={getCurrentGameData()!.color}
+            gridConfig={getCurrentGameData()!.grid_config}
           />
         )}
 
@@ -2948,165 +3251,96 @@ export default function StudentDashboard() {
 
 
         {/* Homework Selection Modal */}
-        {showHomeworkSelection && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="relative w-full max-w-4xl my-4">
-              <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/30 via-orange-500/20 to-rose-500/30 rounded-3xl blur-xl" />
-              <div className="relative bg-[#12122a] rounded-3xl p-6 shadow-2xl border border-white/10 max-h-[90vh] flex flex-col">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6 flex-shrink-0">
-                  <div className="flex items-center space-x-4">
-                    <div className="relative">
-                      <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
-                        <BookOpen className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="absolute -inset-1 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl blur opacity-30" />
+        <AnimatePresence>
+          {showHomeworkSelection && (
+            <motion.div 
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <motion.div 
+                className="relative w-full max-w-md"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+              >
+                <div className="relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-white">Select Word Set</h3>
+                    <button
+                      onClick={() => {
+                        setShowHomeworkSelection(false)
+                        setPendingGame(null)
+                        setShowAllOldWordSets(false)
+                      }}
+                      className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+                    >
+                      <X className="w-5 h-5 text-gray-400" />
+                    </button>
                   </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-white">Select Word Set</h2>
-                    <p className="text-sm text-gray-400">Choose which word set you want to practice with</p>
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {homeworks.map((hw) => (
+                      <button
+                        key={hw.id}
+                        onClick={() => selectHomeworkForGame(hw)}
+                        className="w-full text-left p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-amber-500/30 transition-all group"
+                      >
+                        <div className="flex flex-col gap-1">
+                          <span className="font-medium text-white group-hover:text-amber-400 transition-colors">{hw.title}</span>
+                          {hw.due_date && (
+                            <span className="text-xs italic text-gray-400">
+                              Due: {new Date(hw.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                    {oldWordSets.length > 0 && (
+                      <>
+                        <div className="flex items-center justify-between pt-4 pb-2 border-t border-white/10 mt-4">
+                          <div className="text-xs text-gray-500">Older Word Sets</div>
+                          {oldWordSets.length > 10 && !showAllOldWordSets && (
+                            <button
+                              onClick={() => setShowAllOldWordSets(true)}
+                              className="text-xs text-amber-400 hover:text-amber-300 font-medium"
+                            >
+                              Show all ({oldWordSets.length})
+                            </button>
+                          )}
+                          {showAllOldWordSets && oldWordSets.length > 10 && (
+                            <button
+                              onClick={() => setShowAllOldWordSets(false)}
+                              className="text-xs text-gray-400 hover:text-gray-300 font-medium"
+                            >
+                              Show less
+                            </button>
+                          )}
+                        </div>
+                        {(showAllOldWordSets ? oldWordSets : oldWordSets.slice(0, 10)).map((hw) => (
+                          <button
+                            key={hw.id}
+                            onClick={() => selectHomeworkForGame(hw)}
+                            className="w-full text-left p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-amber-500/30 transition-all opacity-70 group"
+                          >
+                            <div className="flex flex-col gap-1">
+                              <span className="font-medium text-gray-400 group-hover:text-amber-400 transition-colors">{hw.title}</span>
+                              {hw.due_date && (
+                                <span className="text-xs italic text-gray-500">
+                                  Was due: {new Date(hw.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </>
+                    )}
                   </div>
                 </div>
-                <button 
-                  onClick={() => {
-                    setShowHomeworkSelection(false)
-                    setActiveTab('active')
-                  }}
-                  className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center transition-colors"
-                >
-                  <span className="text-gray-400 text-xl">×</span>
-                </button>
-              </div>
-              
-              {/* Tabs */}
-              <div className="flex gap-3 mb-6 flex-shrink-0">
-                <button
-                  onClick={() => setActiveTab('active')}
-                  className={`flex-1 px-6 py-3 text-center font-semibold rounded-xl border transition-all flex items-center justify-center gap-2 ${
-                    activeTab === 'active'
-                      ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
-                      : 'bg-white/5 border-white/10 text-gray-400 hover:bg-amber-500/10 hover:border-amber-500/30'
-                  }`}
-                >
-                  <Star className={`w-5 h-5 ${activeTab === 'active' ? 'text-amber-400' : 'text-gray-500'}`} />
-                  Active Word Sets
-                  {homeworks.length > 0 && (
-                    <span className={`ml-1 px-2 py-1 rounded-lg text-xs font-medium ${
-                      activeTab === 'active' ? 'bg-amber-500/30 text-amber-300' : 'bg-white/10 text-gray-500'
-                    }`}>
-                      {homeworks.length}
-                    </span>
-                  )}
-                </button>
-                <button
-                  onClick={() => setActiveTab('old')}
-                  className={`flex-1 px-6 py-3 text-center font-semibold rounded-xl border transition-all flex items-center justify-center gap-2 ${
-                    activeTab === 'old'
-                      ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
-                      : 'bg-white/5 border-white/10 text-gray-400 hover:bg-amber-500/10 hover:border-amber-500/30'
-                  }`}
-                >
-                  <BookOpen className={`w-5 h-5 ${activeTab === 'old' ? 'text-amber-400' : 'text-gray-500'}`} />
-                  Older Word Sets
-                  {oldWordSets.length > 0 && (
-                    <span className={`ml-1 px-2 py-1 rounded-lg text-xs font-medium ${
-                      activeTab === 'old' ? 'bg-amber-500/30 text-amber-300' : 'bg-white/10 text-gray-500'
-                    }`}>
-                      {oldWordSets.length}
-                    </span>
-                  )}
-                </button>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto pr-2">
-                {activeTab === 'active' && (
-                  <>
-                    {homeworks.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {homeworks.map((homework) => (
-                          <button
-                            key={homework.id}
-                            onClick={() => selectHomeworkForGame(homework)}
-                            className="text-left p-5 rounded-xl border border-white/10 bg-white/5 hover:bg-amber-500/10 hover:border-amber-500/30 transition-all group"
-                          >
-                            <div className="flex items-center gap-3 mb-3">
-                              {homework.color && (
-                                <div 
-                                  className="w-4 h-4 rounded-full shadow-lg" 
-                                  style={{ backgroundColor: homework.color }}
-                                />
-                              )}
-                              <h3 className="font-semibold text-lg text-white group-hover:text-amber-400 transition-colors">{homework.title}</h3>
-                            </div>
-                            {homework.due_date && (
-                              <div className="flex items-center gap-2 text-sm">
-                                <Calendar className="w-4 h-4 text-amber-400" />
-                                <span className="text-amber-400 font-medium">
-                                  Deadline: {new Date(homework.due_date).toLocaleDateString('en-US')}
-                                </span>
-                              </div>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <div className="w-20 h-20 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10">
-                          <BookOpen className="w-10 h-10 text-gray-600" />
-                        </div>
-                        <p className="text-gray-400 text-lg font-semibold mb-2">No active word sets</p>
-                        <p className="text-gray-500 text-sm">All word sets are completed or expired</p>
-                      </div>
-                    )}
-                  </>
-                )}
-                
-                {activeTab === 'old' && (
-                  <>
-                    {oldWordSets.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {oldWordSets.map((homework) => (
-                          <button
-                            key={homework.id}
-                            onClick={() => selectHomeworkForGame(homework)}
-                            className="text-left p-5 rounded-xl border border-white/10 bg-white/5 hover:bg-amber-500/10 hover:border-amber-500/30 transition-all opacity-80 group"
-                          >
-                            <div className="flex items-center gap-3 mb-3">
-                              {homework.color && (
-                                <div 
-                                  className="w-4 h-4 rounded-full" 
-                                  style={{ backgroundColor: homework.color }}
-                                />
-                              )}
-                              <h3 className="font-semibold text-lg text-gray-300 group-hover:text-amber-400 transition-colors">{homework.title}</h3>
-                            </div>
-                            {homework.due_date && (
-                              <div className="flex items-center gap-2 text-sm">
-                                <Calendar className="w-4 h-4 text-gray-500" />
-                                <span className="text-gray-500 italic">
-                                  Expired: {new Date(homework.due_date).toLocaleDateString('en-US')}
-                                </span>
-                              </div>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <div className="w-20 h-20 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10">
-                          <BookOpen className="w-10 h-10 text-gray-600" />
-                        </div>
-                        <p className="text-gray-400 text-lg font-semibold mb-2">No older word sets</p>
-                        <p className="text-gray-500 text-sm">All word sets are active</p>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-            </div>
-          </div>
-        )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       {showLevelUp && (
         <LevelUpModal
@@ -3359,7 +3593,10 @@ export default function StudentDashboard() {
             <span className="text-2xl">🏆</span>
             <div>
               <div className="font-bold text-lg">All quests completed!</div>
-              <div className="text-sm opacity-90">+100 XP Bonus earned!</div>
+              <div className="flex items-center gap-1 text-sm opacity-90">
+                <Gem className="w-3.5 h-3.5" />
+                +100 AP Bonus earned!
+              </div>
             </div>
           </div>
         </div>

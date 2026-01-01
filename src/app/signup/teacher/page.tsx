@@ -60,28 +60,45 @@ function TeacherSignupContent() {
         }
       })
 
-      if (error) throw error
+      if (error) {
+        // Check if it's a user already exists error
+        if (error.message?.toLowerCase().includes('user already registered') || 
+            error.message?.toLowerCase().includes('email address is already registered') ||
+            error.message?.toLowerCase().includes('already been registered') ||
+            error.status === 422) {
+          throw new Error('An account with this email address already exists. Please sign in instead or use a different email address.')
+        }
+        throw error
+      }
 
       if (!data.user) {
         throw new Error('User creation failed')
       }
 
-      // Create profile with teacher role - always start with 'free' tier
-      // Premium/Pro will be upgraded after successful payment via webhook
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: data.user.id,
+      // Create profile via API route (uses service role to bypass RLS)
+      // This is necessary when email verification is enabled and user doesn't have a session yet
+      // The API route can work with or without authentication token
+      const profileResponse = await fetch('/api/create-teacher-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: data.user.id, // Pass user ID directly
           email: emailValue,
-          role: 'teacher',
           name: nameValue,
-          subscription_tier: 'free' // Start with free, upgrade after payment
+          role: 'teacher',
+          subscription_tier: 'free'
         })
+      })
 
-      if (profileError) throw profileError
+      const profileData = await profileResponse.json()
+      
+      if (!profileResponse.ok) {
+        throw new Error(profileData.error || 'Failed to create profile')
+      }
 
       // All signups start with free tier - payment wall will appear when limits are reached
-      // Continue with normal signup flow
       // Check if we're in development mode
       const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost'
       
@@ -96,10 +113,14 @@ function TeacherSignupContent() {
         })
         
         if (signInError) {
-          setMessage('Account created successfully! However, automatic login failed. Please log in manually.')
-          setTimeout(() => {
-            router.push('/')
-          }, 2000)
+          // Check if error is due to email not being verified
+          if (signInError.message?.toLowerCase().includes('email not confirmed') || 
+              signInError.message?.toLowerCase().includes('email_not_confirmed')) {
+            setMessage('✅ Account created successfully! Please check your email inbox to verify your account before signing in.')
+          } else {
+            setMessage('Account created successfully! However, automatic login failed. Please log in manually.')
+          }
+          setLoading(false)
         } else {
           // Redirect to teacher dashboard
           setTimeout(() => {
@@ -107,25 +128,15 @@ function TeacherSignupContent() {
           }, 1000)
         }
       } else {
-        setMessage('Account created successfully! Logging you in...')
+        // In production, require email verification
+        // Don't redirect - just show message in signup form
+        setMessage('✅ Account created successfully! Please check your email inbox to verify your account before signing in.')
         
-        // Sign in the user automatically
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: emailValue,
-          password: passwordValue
-        })
-        
-        if (signInError) {
-          setMessage('Account created successfully! However, automatic login failed. Please log in manually.')
-          setTimeout(() => {
-            router.push('/')
-          }, 2000)
-        } else {
-          // Redirect to teacher dashboard
-          setTimeout(() => {
-            router.push('/teacher')
-          }, 1000)
-        }
+        // Clear form fields
+        setName('')
+        setEmail('')
+        setPassword('')
+        setLoading(false)
       }
 
     } catch (error: any) {

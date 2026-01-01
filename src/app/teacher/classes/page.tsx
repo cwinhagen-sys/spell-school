@@ -78,6 +78,14 @@ export default function TeacherClassesPage() {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { window.location.href = '/'; return }
+      
+      // Check email verification
+      const { isUserEmailVerified } = await import('@/lib/email-verification')
+      if (!isUserEmailVerified(user)) {
+        window.location.href = '/?message=Please verify your email address before accessing teacher features. Check your inbox for the verification link.'
+        return
+      }
+      
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
@@ -1525,7 +1533,7 @@ export default function TeacherClassesPage() {
                   <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
                     <h4 className="font-semibold text-red-400 mb-2 flex items-center gap-2">
                       <Trash2 className="w-4 h-4" />
-                      Detta raderar permanent:
+                      This permanently deletes:
                     </h4>
                     <ul className="text-sm text-red-300/80 space-y-1">
                       <li>• All student progress and scores</li>

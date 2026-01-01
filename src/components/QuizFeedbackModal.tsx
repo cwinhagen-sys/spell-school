@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDownIcon, ChevronUpIcon, CheckCircleIcon, ExclamationTriangleIcon, XCircleIcon, EyeIcon } from '@heroicons/react/24/outline'
 
 interface Evaluation {
   prompt: string
@@ -130,20 +129,6 @@ export default function QuizFeedbackModal({
     }
   }
 
-  const getCategoryIcon = (category: Category) => {
-    switch (category) {
-      case 'perfect':
-        return <CheckCircleIcon className="w-5 h-5 text-emerald-600" />
-      case 'almost_there':
-        return <ExclamationTriangleIcon className="w-5 h-5 text-yellow-600" />
-      case 'good_try':
-        return <ExclamationTriangleIcon className="w-5 h-5 text-amber-600" />
-      case 'remaining':
-        return <EyeIcon className="w-5 h-5 text-gray-500" />
-      case 'all':
-        return <CheckCircleIcon className="w-5 h-5 text-blue-600" />
-    }
-  }
 
   const getCategoryTitle = (category: Category, count: number) => {
     switch (category) {
@@ -175,60 +160,67 @@ export default function QuizFeedbackModal({
     }
   }
 
+  const getCategoryColor = (category: Category) => {
+    switch (category) {
+      case 'perfect':
+        return 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'
+      case 'almost_there':
+        return 'bg-amber-500/20 border-amber-500/50 text-amber-400'
+      case 'good_try':
+      case 'remaining':
+        return 'bg-red-500/20 border-red-500/50 text-red-400'
+      case 'all':
+      default:
+        return 'bg-white/10 border-white/20 text-white'
+    }
+  }
+
+  const getWordTileColor = (item: CategorizedEvaluation) => {
+    if (item.category === 'perfect') {
+      return 'bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20'
+    } else if (item.category === 'almost_there') {
+      return 'bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20'
+    } else if (item.points === 0 || item.category === 'good_try' || item.category === 'remaining') {
+      return 'bg-red-500/10 border-red-500/30 hover:bg-red-500/20'
+    }
+    return 'bg-white/5 border-white/10 hover:bg-white/10'
+  }
+
   const currentData = getCurrentCategoryData()
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[1000] overflow-y-auto">
-      <div className="relative bg-[#12122a] rounded-3xl p-6 max-w-5xl w-full max-h-[95vh] overflow-y-auto overflow-x-hidden shadow-2xl border border-white/10 my-auto">
-        {/* Glow effect */}
-        <div className="absolute -inset-1 bg-gradient-to-br from-violet-500/30 via-cyan-500/20 to-fuchsia-500/30 rounded-3xl blur-xl" />
-        
-        {/* Header with celebration message - More compact */}
-        <div className="relative text-center mb-6">
+      <div className="relative bg-[#12122a] rounded-2xl p-6 max-w-5xl w-full max-h-[95vh] overflow-y-auto overflow-x-hidden shadow-2xl border border-white/10 my-auto">
+        {/* Header */}
+        <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-white mb-1">
-            Great! You learned {learnedCount} new words!
+            Quiz Results
           </h2>
           <p className="text-sm text-gray-400">
-            Score: {totalScore}/{maxScore} points
+            Score: {totalScore}/{maxScore} points • {learnedCount} words learned
           </p>
         </div>
 
-        {/* Category buttons - More compact */}
-        <div className="relative flex flex-wrap gap-2 mb-6 justify-center">
+        {/* Category buttons */}
+        <div className="flex flex-wrap gap-2 mb-6 justify-center">
           {[
-            { key: 'all', count: categorizedEvaluations.length, label: 'All words', color: 'blue' },
-            { key: 'perfect', count: perfectAnswers.length, label: 'Perfect', color: 'emerald' },
-            { key: 'almost_there', count: almostThereAnswers.length, label: 'Almost there', color: 'yellow' },
-            { key: 'good_try', count: goodTryAnswers.length, label: 'Good try', color: 'amber' },
-            { key: 'remaining', count: remainingAnswers.length, label: 'Remaining', color: 'gray' }
-          ].map(({ key, count, label, color }) => {
-            const getButtonColors = () => {
-              if (activeCategory === key) {
-                switch (color) {
-                  case 'emerald': return 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 border border-emerald-400'
-                  case 'yellow': return 'bg-yellow-500 text-white shadow-lg shadow-yellow-500/30 border border-yellow-400'
-                  case 'amber': return 'bg-amber-500 text-white shadow-lg shadow-amber-500/30 border border-amber-400'
-                  case 'blue': return 'bg-blue-500 text-white shadow-lg shadow-blue-500/30 border border-blue-400'
-                  case 'gray': return 'bg-gray-500 text-white shadow-lg shadow-gray-500/30 border border-gray-400'
-                  default: return 'bg-blue-500 text-white shadow-lg shadow-blue-500/30 border border-blue-400'
-                }
-              } else {
-                switch (color) {
-                  case 'emerald': return 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30'
-                  case 'yellow': return 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border border-yellow-500/30'
-                  case 'amber': return 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/30'
-                  case 'blue': return 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/30'
-                  case 'gray': return 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30 border border-gray-500/30'
-                  default: return 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30 border border-gray-500/30'
-                }
-              }
-            }
-
+            { key: 'all', count: categorizedEvaluations.length, label: 'All words' },
+            { key: 'perfect', count: perfectAnswers.length, label: 'Perfect' },
+            { key: 'almost_there', count: almostThereAnswers.length, label: 'Almost there' },
+            { key: 'good_try', count: goodTryAnswers.length, label: 'Good try' },
+            { key: 'remaining', count: remainingAnswers.length, label: 'Remaining' }
+          ].map(({ key, count, label }) => {
+            const isActive = activeCategory === key
+            const categoryColor = getCategoryColor(key as Category)
             return (
               <button
                 key={key}
                 onClick={() => setActiveCategory(key as Category)}
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${getButtonColors()}`}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
+                  isActive
+                    ? categoryColor
+                    : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
+                }`}
               >
                 {label} ({count})
               </button>
@@ -236,8 +228,8 @@ export default function QuizFeedbackModal({
           })}
         </div>
 
-        {/* Current category description - More compact */}
-        <div className="relative mb-4 text-center">
+        {/* Current category description */}
+        <div className="mb-4 text-center">
           <h3 className="text-lg font-semibold text-white mb-1">
             {getCategoryTitle(activeCategory, currentData.length)}
           </h3>
@@ -246,48 +238,14 @@ export default function QuizFeedbackModal({
           </p>
         </div>
 
-        {/* Words grid - More compact, no horizontal scroll, scrollbar only when needed */}
+        {/* Words grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-6 max-h-[50vh] overflow-y-auto overflow-x-hidden">
           {currentData.map((item, index) => {
-            // Determine color scheme based on category and points
-            const getColorScheme = () => {
-              if (item.category === 'perfect') {
-                return {
-                  card: 'bg-emerald-500/20 border-emerald-500/50 hover:bg-emerald-500/30',
-                  border: 'border-emerald-500/50',
-                  accent: 'text-emerald-400',
-                  points: 'text-emerald-400'
-                }
-              } else if (item.category === 'almost_there') {
-                return {
-                  card: 'bg-yellow-500/20 border-yellow-500/50 hover:bg-yellow-500/30',
-                  border: 'border-yellow-500/50',
-                  accent: 'text-yellow-400',
-                  points: 'text-yellow-400'
-                }
-              } else if (item.category === 'good_try') {
-                return {
-                  card: 'bg-amber-500/20 border-amber-500/50 hover:bg-amber-500/30',
-                  border: 'border-amber-500/50',
-                  accent: 'text-amber-400',
-                  points: 'text-amber-400'
-                }
-              } else {
-                return {
-                  card: 'bg-white/5 border-white/10 hover:bg-white/10',
-                  border: 'border-white/10',
-                  accent: 'text-gray-400',
-                  points: 'text-gray-400'
-                }
-              }
-            }
-
-            const colors = getColorScheme()
-
+            const tileColor = getWordTileColor(item)
             return (
               <div
                 key={index}
-                className={`p-3 ${colors.card} rounded-lg border ${colors.border} hover:shadow-md transition-all cursor-pointer`}
+                className={`p-3 border rounded-lg transition-all cursor-pointer ${tileColor}`}
                 onClick={() => onWordClick?.(item.prompt)}
               >
                 <div className="flex items-start justify-between gap-2 min-w-0">
@@ -309,7 +267,7 @@ export default function QuizFeedbackModal({
                   </div>
                   {item.points > 0 && (
                     <div className="text-right shrink-0 flex-shrink-0">
-                      <div className={`text-lg font-bold ${colors.points}`}>{item.points}</div>
+                      <div className="text-lg font-bold text-white">{item.points}</div>
                       <div className="text-xs text-gray-400">pts</div>
                     </div>
                   )}
@@ -319,11 +277,11 @@ export default function QuizFeedbackModal({
           })}
         </div>
 
-        {/* Footer - More compact */}
-        <div className="relative pt-4 border-t border-white/10 text-center">
+        {/* Footer */}
+        <div className="pt-4 border-t border-white/10 text-center">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-xl font-semibold hover:from-violet-400 hover:to-cyan-400 transition-all shadow-lg shadow-violet-500/30 hover:shadow-xl hover:shadow-violet-500/40 text-sm"
+            className="px-6 py-2.5 bg-white/10 border border-white/20 text-white rounded-xl font-semibold hover:bg-white/20 transition-all text-sm"
           >
             Continue Learning
           </button>

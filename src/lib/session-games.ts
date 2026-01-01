@@ -14,64 +14,64 @@ export const SESSION_GAMES: GameMetadata[] = [
   {
     id: 'flashcards',
     name: 'Flashcards',
-    description: 'Vänd kort och träna ord',
-    keywords: ['ordbilder', 'uttal', 'grundläggande'],
+    description: 'Flip cards and practice words',
+    keywords: ['word recognition', 'pronunciation', 'foundational'],
     recommendedOrder: 1,
     icon: '📚'
   },
   {
     id: 'multiple_choice',
     name: 'Multiple Choice',
-    description: 'Välj rätt översättning',
-    keywords: ['igenkänning', 'validering', 'snabbhet'],
+    description: 'Choose the correct translation',
+    keywords: ['recognition', 'validation', 'speed'],
     recommendedOrder: 2,
     icon: '✅'
   },
   {
     id: 'memory',
     name: 'Memory',
-    description: 'Matcha ord med översättningar',
-    keywords: ['association', 'minne', 'visuell inlärning'],
+    description: 'Match words with translations',
+    keywords: ['association', 'memory', 'visual learning'],
     recommendedOrder: 3,
     icon: '🧠'
   },
   {
     id: 'word_scramble',
     name: 'Word Scramble',
-    description: 'Bygg ord från blandade bokstäver',
-    keywords: ['stavning', 'bokstavsordning', 'koncentration'],
+    description: 'Build words from scrambled letters',
+    keywords: ['spelling', 'letter order', 'concentration'],
     recommendedOrder: 4,
     icon: '🔤'
   },
   {
     id: 'sentence_gap',
     name: 'Sentence Gap',
-    description: 'Fyll i luckorna i meningar',
-    keywords: ['djupare förståelse', 'kontext', 'grammatik'],
+    description: 'Fill in the gaps in sentences',
+    keywords: ['deeper understanding', 'context', 'grammar'],
     recommendedOrder: 5,
     icon: '📝'
   },
   {
     id: 'translate',
     name: 'Translate',
-    description: 'Översätt ord mellan språk',
-    keywords: ['översättning', 'stavning', 'precision'],
+    description: 'Translate words between languages',
+    keywords: ['translation', 'spelling', 'precision'],
     recommendedOrder: 6,
     icon: '🌐'
   },
   {
     id: 'flashcards_test',
     name: 'Flashcards Test',
-    description: 'Uttala engelska ordet när du ser svenska sidan',
-    keywords: ['uttal', 'test'],
+    description: 'Pronounce the English word when you see the Swedish side',
+    keywords: ['pronunciation', 'test'],
     recommendedOrder: 7,
     icon: '🎤'
   },
   {
     id: 'word_roulette',
     name: 'Word Roulette',
-    description: 'Skriv meningar med orden',
-    keywords: ['kreativitet', 'meningar', 'användning'],
+    description: 'Write sentences with the words',
+    keywords: ['creativity', 'sentences', 'application'],
     recommendedOrder: 8,
     icon: '🎯'
   }

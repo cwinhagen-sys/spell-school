@@ -3,9 +3,10 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { getUserSubscriptionTier, getTierDisplayName, getTierPrice, TIER_LIMITS, getTestPilotInfo, type SubscriptionTier } from '@/lib/subscription'
+import { getUserSubscriptionTier, getTierDisplayName, getTierPrice, TIER_LIMITS, getTestPilotInfo, getExceedingResources, type SubscriptionTier } from '@/lib/subscription'
 import { Check, X, Crown, Zap, ArrowRight, ExternalLink, User, Users, BookOpen, Sparkles, Shield, TrendingUp, Gamepad2, AlertCircle, CreditCard, Settings, Key, Calendar, Clock } from 'lucide-react'
 import Link from 'next/link'
+import DowngradeModal from '@/components/DowngradeModal'
 
 interface UpgradeButtonProps {
   currentTier: SubscriptionTier
@@ -184,7 +185,7 @@ function UpgradeButton({ currentTier, targetTier, onUpgrade, isDowngrade = false
                 {/* Billing Period Toggle */}
                 <div className="mb-3 p-3 bg-white/5 rounded-lg border border-white/[0.12]">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-300">Faktureringsperiod:</span>
+                    <span className="text-sm text-gray-300">Billing period:</span>
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -302,6 +303,13 @@ function TeacherAccountPageContent() {
   const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null)
   const [subscriptionLoading, setSubscriptionLoading] = useState(false)
   const [testPilotInfo, setTestPilotInfo] = useState<{ isTestPilot: boolean; expiresAt: Date | null; usedAt: Date | null } | null>(null)
+  const [showDowngradeModal, setShowDowngradeModal] = useState(false)
+  const [exceedingResources, setExceedingResources] = useState<{
+    classes: Array<{ id: string; name: string; studentCount: number }>
+    wordSets: Array<{ id: string; title: string }>
+    totalStudents: number
+  } | null>(null)
+  const [checkingResources, setCheckingResources] = useState(false)
   const searchParams = useSearchParams()
 
   useEffect(() => {
@@ -425,6 +433,34 @@ function TeacherAccountPageContent() {
         if (tier === 'pro') {
           testPilot = await getTestPilotInfo(user.id)
           setTestPilotInfo(testPilot)
+          
+          // Check if test pilot is expired or expiring soon, and check exceeding resources
+          if (testPilot.isTestPilot && testPilot.expiresAt) {
+            const daysLeft = Math.ceil((testPilot.expiresAt.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+            if (daysLeft <= 7) {
+              // Check what resources exceed free tier limits
+              setCheckingResources(true)
+              try {
+                const resources = await getExceedingResources(user.id)
+                setExceedingResources(resources)
+              } catch (error) {
+                console.error('Error checking exceeding resources:', error)
+              } finally {
+                setCheckingResources(false)
+              }
+            }
+          } else if (!testPilot.isTestPilot && tier === 'pro') {
+            // Test pilot expired but still has pro tier (needs manual downgrade), check resources
+            setCheckingResources(true)
+            try {
+              const resources = await getExceedingResources(user.id)
+              setExceedingResources(resources)
+            } catch (error) {
+              console.error('Error checking exceeding resources:', error)
+            } finally {
+              setCheckingResources(false)
+            }
+          }
         }
 
         // Get subscription info if user has a paid tier (and not test pilot)
@@ -587,48 +623,130 @@ function TeacherAccountPageContent() {
           <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/[0.12]">
             <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-400" />
-              Testpilot-period
+              Test pilot period
             </h3>
             <div className="space-y-3">
               <p className="text-sm text-gray-300">
                 You have the Pro plan as a test pilot for 1 month. This period will automatically convert to the Free plan when it ends.
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {testPilotInfo.usedAt && (
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center border border-white/[0.12]">
-                      <Calendar className="w-4 h-4 text-cyan-400" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-400">Aktiverades</p>
-                      <p className="text-sm font-medium text-white">
-                        {testPilotInfo.usedAt.toLocaleDateString('en-US', { 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {testPilotInfo.expiresAt && (
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center border border-white/[0.12]">
-                      <Clock className="w-4 h-4 text-amber-400" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-400">Expires</p>
-                      <p className="text-sm font-medium text-white">
-                        {testPilotInfo.expiresAt.toLocaleDateString('en-US', { 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                )}
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center border border-white/[0.12]">
+                  <Clock className="w-4 h-4 text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">Downgrades to Free plan</p>
+                  <p className="text-sm font-medium text-white">
+                    {(() => {
+                      // Use expiresAt if available, otherwise calculate from usedAt
+                      let expiresAt = testPilotInfo.expiresAt
+                      
+                      if (!expiresAt) {
+                        if (testPilotInfo.usedAt) {
+                          // Calculate from usedAt (1 month from when code was used)
+                          expiresAt = new Date(testPilotInfo.usedAt)
+                          expiresAt.setMonth(expiresAt.getMonth() + 1)
+                        } else {
+                          // Should not happen, but fallback to null (will show error)
+                          return 'Unknown'
+                        }
+                      }
+                      
+                      return expiresAt.toLocaleDateString('sv-SE', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })
+                    })()}
+                  </p>
+                </div>
               </div>
+              {/* Warning if expiring soon or expired */}
+              {(() => {
+                if (!testPilotInfo) return null
+                
+                // Use expiresAt if available, otherwise calculate from usedAt
+                let expiresAt = testPilotInfo.expiresAt
+                
+                if (!expiresAt) {
+                  if (testPilotInfo.usedAt) {
+                    // Calculate from usedAt (1 month from when code was used)
+                    expiresAt = new Date(testPilotInfo.usedAt)
+                    expiresAt.setMonth(expiresAt.getMonth() + 1)
+                  } else {
+                    // Should not happen if testPilotInfo.isTestPilot is true
+                    // Skip warning if we don't have date info
+                    return null
+                  }
+                }
+                
+                // Check if expired (if isTestPilot is false, it's expired)
+                const isExpired = !testPilotInfo.isTestPilot
+                const daysLeft = Math.ceil((expiresAt.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+                
+                // Show warning if expiring within 7 days or already expired
+                if (daysLeft !== null && daysLeft <= 7 && daysLeft > 0) {
+                  return (
+                    <div className="mt-4 p-4 bg-amber-500/20 border border-amber-500/30 rounded-xl">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-amber-200 mb-1">
+                            Test pilot period expires in {daysLeft} {daysLeft === 1 ? 'day' : 'days'}
+                          </p>
+                          {checkingResources ? (
+                            <p className="text-sm text-amber-200/80">Checking resources...</p>
+                          ) : exceedingResources && (exceedingResources.classes.length > (TIER_LIMITS.free.maxClasses || 0) || exceedingResources.wordSets.length > (TIER_LIMITS.free.maxWordSets || 0)) ? (
+                            <>
+                              <p className="text-sm text-amber-200/80 mb-2">
+                                When the period expires, your account will be downgraded to the Free plan. You have more classes or word sets than the Free plan allows.
+                              </p>
+                              <button
+                                onClick={() => setShowDowngradeModal(true)}
+                                className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-white font-semibold rounded-lg transition-colors text-sm"
+                              >
+                                Choose what to keep
+                              </button>
+                            </>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                } else if ((daysLeft !== null && daysLeft <= 0) || isExpired) {
+                  return (
+                    <div className="mt-4 p-4 bg-red-500/20 border border-red-500/30 rounded-xl">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-red-200 mb-1">
+                            Test pilot period has expired
+                          </p>
+                          {checkingResources ? (
+                            <p className="text-sm text-red-200/80">Checking resources...</p>
+                          ) : exceedingResources && (exceedingResources.classes.length > TIER_LIMITS.free.maxClasses || exceedingResources.wordSets.length > TIER_LIMITS.free.maxWordSets) ? (
+                            <>
+                              <p className="text-sm text-red-200/80 mb-2">
+                                Your account will be downgraded to the Free plan. You have more classes or word sets than the Free plan allows. Choose what to keep.
+                              </p>
+                              <button
+                                onClick={() => setShowDowngradeModal(true)}
+                                className="px-4 py-2 bg-red-500 hover:bg-red-400 text-white font-semibold rounded-lg transition-colors text-sm"
+                              >
+                                Choose what to keep
+                              </button>
+                            </>
+                          ) : (
+                            <p className="text-sm text-red-200/80">
+                              Your account will be automatically downgraded to the Free plan.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                }
+                return null
+              })()}
             </div>
           </div>
         )}
@@ -681,7 +799,7 @@ function TeacherAccountPageContent() {
                       <Calendar className="w-4 h-4 text-purple-400" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">Faktureringsperiod</p>
+                  <p className="text-xs text-gray-400">Billing period</p>
                   <p className="text-sm font-medium text-white capitalize">
                     {subscriptionInfo.billingPeriod === 'yearly' ? 'Yearly' : 'Monthly'}
                   </p>
@@ -726,7 +844,7 @@ function TeacherAccountPageContent() {
               {/* Billing Period Toggle */}
               <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/[0.12]">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-gray-300">Faktureringsperiod:</span>
+                  <span className="text-sm font-medium text-gray-300">Billing period:</span>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -887,7 +1005,7 @@ function TeacherAccountPageContent() {
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="w-4 h-4 text-gray-400" />
-                      Progress & Quiz-statistik
+                      Progress & Quiz Statistics
                     </li>
                   </ul>
                   <button
@@ -940,14 +1058,14 @@ function TeacherAccountPageContent() {
                 className="text-sm text-violet-400 hover:text-violet-300 font-medium transition-colors flex items-center gap-2"
               >
                 <Key className="w-4 h-4" />
-                Har du en testpilot-kod?
+                Do you have a test pilot code?
               </button>
               
               {showTestpilotInput && (
                 <div className="mt-4 p-4 bg-white/5 rounded-xl border border-white/[0.12] space-y-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Ange testpilot-kod
+                      Enter test pilot code
                     </label>
                     <input
                       type="text"
@@ -961,7 +1079,7 @@ function TeacherAccountPageContent() {
                   
                   {testpilotMessage && (
                     <div className={`p-3 rounded-lg text-sm ${
-                      testpilotMessage.includes('✅') || testpilotMessage.includes('aktiverats')
+                      testpilotMessage.includes('✅') || testpilotMessage.includes('activated')
                         ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                         : 'bg-red-500/20 text-red-300 border border-red-500/30'
                     }`}>
@@ -972,7 +1090,7 @@ function TeacherAccountPageContent() {
                   <button
                     onClick={async () => {
                       if (!testpilotCode.trim()) {
-                        setTestpilotMessage('❌ Ange en kod')
+                        setTestpilotMessage('❌ Enter a code')
                         return
                       }
                       
@@ -1000,7 +1118,7 @@ function TeacherAccountPageContent() {
                           throw new Error(data.error || 'Could not activate code')
                         }
                         
-                        setTestpilotMessage('✅ Pro-planen har aktiverats!')
+                        setTestpilotMessage('✅ Pro plan has been activated!')
                         setTestpilotCode('')
                         
                         // Reload to show updated tier
@@ -1008,7 +1126,7 @@ function TeacherAccountPageContent() {
                           window.location.reload()
                         }, 1500)
                       } catch (error: any) {
-                        setTestpilotMessage(`❌ ${error.message || 'Ett fel uppstod'}`)
+                        setTestpilotMessage(`❌ ${error.message || 'An error occurred'}`)
                       } finally {
                         setTestpilotLoading(false)
                       }
@@ -1019,12 +1137,12 @@ function TeacherAccountPageContent() {
                     {testpilotLoading ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Aktiverar...
+                        Activating...
                       </>
                     ) : (
                       <>
                         <Key className="w-4 h-4" />
-                        Aktivera Pro
+                        Activate Pro
                       </>
                     )}
                   </button>
@@ -1206,7 +1324,7 @@ function TeacherAccountPageContent() {
             {limits.hasSessionMode ? (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/20 rounded-lg">
                 <Check className="w-4 h-4 text-emerald-400" />
-                <span className="text-sm text-emerald-400 font-medium">Inkluderad</span>
+                <span className="text-sm text-emerald-400 font-medium">Included</span>
               </div>
             ) : (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
@@ -1219,12 +1337,12 @@ function TeacherAccountPageContent() {
           <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/[0.12]">
             <div className="flex items-center gap-3">
               <TrendingUp className="w-5 h-5 text-purple-400" />
-              <span className="font-medium text-white">Progress-statistik</span>
+              <span className="font-medium text-white">Progress Statistics</span>
             </div>
             {limits.hasProgressStats ? (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/20 rounded-lg">
                 <Check className="w-4 h-4 text-emerald-400" />
-                <span className="text-sm text-emerald-400 font-medium">Inkluderad</span>
+                <span className="text-sm text-emerald-400 font-medium">Included</span>
               </div>
             ) : (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
@@ -1237,12 +1355,12 @@ function TeacherAccountPageContent() {
           <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/[0.12]">
             <div className="flex items-center gap-3">
               <BookOpen className="w-5 h-5 text-amber-400" />
-              <span className="font-medium text-white">Quiz-statistik</span>
+              <span className="font-medium text-white">Quiz Statistics</span>
             </div>
             {limits.hasQuizStats ? (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/20 rounded-lg">
                 <Check className="w-4 h-4 text-emerald-400" />
-                <span className="text-sm text-emerald-400 font-medium">Inkluderad</span>
+                <span className="text-sm text-emerald-400 font-medium">Included</span>
               </div>
             ) : (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
@@ -1254,6 +1372,37 @@ function TeacherAccountPageContent() {
         </div>
 
       </div>
+
+      {/* Downgrade Modal */}
+      {exceedingResources && (
+        <DowngradeModal
+          isOpen={showDowngradeModal}
+          onClose={() => setShowDowngradeModal(false)}
+          onConfirm={async (classesToKeep, wordSetsToKeep) => {
+            const response = await fetch('/api/downgrade-to-free', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                classesToKeep,
+                wordSetsToKeep,
+              }),
+            })
+
+            if (!response.ok) {
+              const data = await response.json()
+              throw new Error(data.error || 'Failed to downgrade')
+            }
+
+            // Reload page to reflect changes
+            window.location.reload()
+          }}
+          classes={exceedingResources.classes}
+          wordSets={exceedingResources.wordSets}
+          totalStudents={exceedingResources.totalStudents}
+        />
+      )}
     </div>
   )
 }

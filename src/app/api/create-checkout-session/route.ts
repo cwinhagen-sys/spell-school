@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
         },
       },
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/teacher/account?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/signup/teacher?tier=${tier}&canceled=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/teacher/account?canceled=true`,
     })
 
     return NextResponse.json({ sessionId: session.id, url: session.url })

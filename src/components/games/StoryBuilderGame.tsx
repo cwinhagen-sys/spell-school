@@ -258,8 +258,72 @@ function TypewriterWithTTS({
     // Don't start word reveal until audio is ready to play
     let wordRevealInterval: NodeJS.Timeout | null = null
     
-    // Use Vertex AI TTS if autoPlay is enabled
-    if (autoPlay && text.trim() && voiceId && !hasStartedRef.current) {
+    // Use Web Speech API (free, built into browser) if autoPlay is enabled
+    // Vertex AI TTS removed for cost reasons
+    if (autoPlay && text.trim() && !hasStartedRef.current) {
+      hasStartedRef.current = true
+      
+      // Use Web Speech API instead of Vertex AI TTS
+      if ('speechSynthesis' in window) {
+        // Show words at fixed speed while speaking
+        wordRevealInterval = setInterval(() => {
+          setVisibleWords(prev => {
+            if (prev >= words.length) {
+              if (wordRevealInterval) {
+                clearInterval(wordRevealInterval)
+              }
+              onComplete?.()
+              return prev
+            }
+            return prev + 1
+          })
+        }, speed)
+        
+        // Use Web Speech API to speak the text
+        const utterance = new SpeechSynthesisUtterance(cleanText)
+        utterance.lang = 'en-US' // Default to English, can be made configurable
+        utterance.rate = 0.9 // Slightly slower for clarity
+        utterance.pitch = 1.0
+        utterance.volume = 1.0
+        
+        utterance.onend = () => {
+          if (wordRevealInterval) {
+            clearInterval(wordRevealInterval)
+          }
+          setVisibleWords(words.length)
+          onComplete?.()
+        }
+        
+        utterance.onerror = () => {
+          if (wordRevealInterval) {
+            clearInterval(wordRevealInterval)
+          }
+          setVisibleWords(words.length)
+          onComplete?.()
+        }
+        
+        speechSynthesis.speak(utterance)
+        return
+      }
+      
+      // Fallback if Web Speech API not available - just show words
+      wordRevealInterval = setInterval(() => {
+        setVisibleWords(prev => {
+          if (prev >= words.length) {
+            if (wordRevealInterval) {
+              clearInterval(wordRevealInterval)
+            }
+            onComplete?.()
+            return prev
+          }
+          return prev + 1
+        })
+      }, speed)
+      return
+    }
+    
+    // Legacy Vertex AI TTS code (kept for reference, but not used)
+    if (false && autoPlay && text.trim() && voiceId && !hasStartedRef.current) {
       hasStartedRef.current = true
       
       // Determine speaking rate and pitch based on voice type
@@ -269,7 +333,7 @@ function TypewriterWithTTS({
       const speakingRate = isStoryteller ? 0.75 : 0.9 // Slower for storyteller voices
       const pitch = selectedVoiceOption?.pitch ?? 0 // Use configured pitch (negative = deeper/darker)
       
-      // Call Vertex AI TTS API
+      // Call Vertex AI TTS API (DISABLED - too expensive)
       // Use cleanText (without underscores) so TTS doesn't read them
       fetch('/api/tts/vertex', {
         method: 'POST',

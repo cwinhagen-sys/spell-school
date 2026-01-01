@@ -48,7 +48,7 @@ export default function AddStudentsPage() {
       setClasses(data || [])
     } catch (error) {
       console.error('Error loading classes:', error)
-      setMessage({ type: 'error', text: 'Kunde inte ladda klasser' })
+      setMessage({ type: 'error', text: 'Could not load classes' })
     }
   }
 
@@ -72,13 +72,13 @@ export default function AddStudentsPage() {
     const errors: string[] = []
     
     if (!selectedClass) {
-      errors.push('Välj en klass')
+      errors.push('Select a class')
     }
 
     students.forEach((student, index) => {
       const row = index + 1
-      if (!student.username.trim()) errors.push(`Rad ${row}: Användarnamn krävs`)
-      if (!student.password.trim()) errors.push(`Rad ${row}: Lösenord krävs`)
+      if (!student.username.trim()) errors.push(`Row ${row}: Username required`)
+      if (!student.password.trim()) errors.push(`Row ${row}: Password required`)
     })
 
     // Check for duplicate usernames
@@ -86,7 +86,7 @@ export default function AddStudentsPage() {
     const usernames = students.map(s => s.username.trim())
     const duplicates = usernames.filter((username, index) => usernames.indexOf(username) !== index)
     if (duplicates.length > 0) {
-      errors.push(`Duplicerade användarnamn: ${[...new Set(duplicates)].join(', ')}`)
+      errors.push(`Duplicate usernames: ${[...new Set(duplicates)].join(', ')}`)
     }
 
     return errors
@@ -106,7 +106,7 @@ export default function AddStudentsPage() {
       // Check subscription limits
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        setMessage({ type: 'error', text: 'Inte inloggad' })
+        setMessage({ type: 'error', text: 'Not logged in' })
         return
       }
 
@@ -121,14 +121,14 @@ export default function AddStudentsPage() {
       const canAdd = await canAddStudentsToClass(user.id, selectedClass, currentStudentCount)
 
       if (!canAdd.allowed) {
-        setMessage({ type: 'error', text: canAdd.reason || 'Prenumerationsgräns nådd' })
+        setMessage({ type: 'error', text: canAdd.reason || 'Subscription limit reached' })
         setLoading(false)
         return
       }
 
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.access_token) {
-        setMessage({ type: 'error', text: 'Inte inloggad' })
+        setMessage({ type: 'error', text: 'Not logged in' })
         return
       }
 
@@ -150,7 +150,7 @@ export default function AddStudentsPage() {
       const result = await response.json()
 
       if (!response.ok) {
-        const errorText = result?.error || 'Kunde inte skapa elever'
+        const errorText = result?.error || 'Could not create students'
         console.error('❌ API Error Response:', {
           status: response.status,
           statusText: response.statusText,
@@ -167,7 +167,7 @@ export default function AddStudentsPage() {
       if (successCount > 0) {
         setMessage({
           type: 'success',
-          text: `${successCount} elev(er) skapades!`
+          text: `${successCount} student${successCount === 1 ? '' : 's'} created!`
         })
         setStudents([{ username: '', password: '' }])
       }
@@ -175,23 +175,23 @@ export default function AddStudentsPage() {
       if (errorCount > 0) {
         const errorMessages = results
           .filter((r: any) => !r.success)
-          .map((r: any) => `${r.username || 'Elev'}: ${r.message}`)
+          .map((r: any) => `${r.username || 'Student'}: ${r.message}`)
           .join(', ')
 
         setMessage({
           type: 'error',
-          text: `Kunde inte skapa ${errorCount} elev(er): ${errorMessages}`
+          text: `Could not create ${errorCount} student${errorCount === 1 ? '' : 's'}: ${errorMessages}`
         })
       } else if (successCount === 0) {
         setMessage({
           type: 'error',
-          text: 'Inga elever skapades'
+          text: 'No students created'
         })
       }
 
     } catch (error: any) {
       console.error('Error creating students:', error)
-      setMessage({ type: 'error', text: error.message || 'Kunde inte skapa elever' })
+      setMessage({ type: 'error', text: error.message || 'Could not create students' })
     } finally {
       setLoading(false)
     }
@@ -207,7 +207,7 @@ export default function AddStudentsPage() {
         className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        Tillbaka till klasser
+        Back to classes
       </Link>
 
       {/* Header */}
@@ -219,50 +219,50 @@ export default function AddStudentsPage() {
           <div className="absolute -inset-1 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl blur opacity-30" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-white">Lägg till elever</h1>
-          <p className="text-gray-400">Skapa elevkonton för din klass</p>
+          <h1 className="text-2xl font-bold text-white">Add students</h1>
+          <p className="text-gray-400">Create student accounts for your class</p>
         </div>
       </div>
 
       {/* Class Selection */}
-      <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-white/10 p-6 mb-6 shadow-xl">
-        <h2 className="text-lg font-semibold text-white mb-4">Välj klass</h2>
+      <div className="bg-[#161622] rounded-2xl border border-white/[0.12] p-6 mb-6">
+        <h2 className="text-lg font-semibold text-white mb-4">Select class</h2>
         <select
           value={selectedClass}
           onChange={(e) => setSelectedClass(e.target.value)}
           className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all appearance-none cursor-pointer"
         >
-          <option value="" className="bg-[#1a1a2e]">Välj en klass...</option>
+          <option value="" className="bg-[#161622]">Select a class...</option>
           {classes.map(c => (
-            <option key={c.id} value={c.id} className="bg-[#1a1a2e]">{c.name}</option>
+            <option key={c.id} value={c.id} className="bg-[#161622]">{c.name}</option>
           ))}
         </select>
         {selectedClass && (
           <p className="mt-2 text-sm text-amber-400">
-            Lägger till elever i: <span className="font-semibold">{selectedClassName}</span>
+            Adding students to: <span className="font-semibold">{selectedClassName}</span>
           </p>
         )}
       </div>
 
       {/* Student Form */}
-      <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-white/10 p-6 mb-6 shadow-xl">
+      <div className="bg-[#161622] rounded-2xl border border-white/[0.12] p-6 mb-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-white">
-            Elevuppgifter ({students.length} {students.length === 1 ? 'elev' : 'elever'})
+            Student information ({students.length} {students.length === 1 ? 'student' : 'students'})
           </h2>
           <button
             onClick={addStudentRow}
             className="flex items-center gap-2 px-4 py-2 bg-amber-500/20 text-amber-400 rounded-xl hover:bg-amber-500/30 transition-colors text-sm font-medium"
           >
             <Plus className="w-4 h-4" />
-            Lägg till
+            Add
           </button>
         </div>
 
         {/* Table Header */}
         <div className="grid grid-cols-12 gap-4 mb-4 pb-3 border-b border-white/10">
-          <div className="col-span-5 text-sm font-medium text-gray-400">Användarnamn</div>
-          <div className="col-span-5 text-sm font-medium text-gray-400">Lösenord</div>
+          <div className="col-span-5 text-sm font-medium text-gray-400">Username</div>
+          <div className="col-span-5 text-sm font-medium text-gray-400">Password</div>
           <div className="col-span-2 text-sm font-medium text-gray-400"></div>
         </div>
 
@@ -275,7 +275,7 @@ export default function AddStudentsPage() {
                   type="text"
                   value={student.username}
                   onChange={(e) => updateStudent(index, 'username', e.target.value)}
-                  placeholder="Användarnamn"
+                  placeholder="Username"
                   className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all"
                 />
               </div>
@@ -284,7 +284,7 @@ export default function AddStudentsPage() {
                   type="text"
                   value={student.password}
                   onChange={(e) => updateStudent(index, 'password', e.target.value)}
-                  placeholder="Lösenord"
+                  placeholder="Password"
                   className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all"
                 />
               </div>
@@ -293,7 +293,7 @@ export default function AddStudentsPage() {
                   <button
                     onClick={() => removeStudentRow(index)}
                     className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                    title="Ta bort elev"
+                    title="Remove student"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -315,7 +315,7 @@ export default function AddStudentsPage() {
             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white/5 text-gray-400 rounded-xl hover:bg-white/10 transition-colors border-2 border-dashed border-white/10"
           >
             <Plus className="w-4 h-4" />
-            <span className="font-medium text-sm">Lägg till fler elever</span>
+            <span className="font-medium text-sm">Add more students</span>
           </button>
         </div>
       </div>
@@ -342,7 +342,7 @@ export default function AddStudentsPage() {
           href="/teacher/classes"
           className="flex-1 px-6 py-3.5 bg-white/5 border border-white/10 rounded-xl text-gray-400 hover:bg-white/10 transition-colors font-medium text-center"
         >
-          Avbryt
+          Cancel
         </Link>
         <button
           onClick={handleSubmit}

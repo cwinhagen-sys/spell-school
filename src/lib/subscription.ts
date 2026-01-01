@@ -66,26 +66,54 @@ export async function getTestPilotInfo(userId: string, supabaseClient?: any): Pr
       return { isTestPilot: false, expiresAt: null, usedAt: null }
     }
 
-    // Get test pilot code usage date
-    const { data: testPilotCode } = await supabase
-      .from('testpilot_codes')
-      .select('used_at')
-      .eq('used_by', userId)
+    // Get test pilot code usage date and expiration from testpilot_code_usage table
+    // This table stores individual usage records per user, allowing multiple users per code
+    const { data: codeUsage } = await supabase
+      .from('testpilot_code_usage')
+      .select('used_at, expires_at')
+      .eq('user_id', userId)
       .order('used_at', { ascending: false })
       .limit(1)
       .maybeSingle()
 
-    if (!testPilotCode || !testPilotCode.used_at) {
-      return { isTestPilot: true, expiresAt: null, usedAt: null }
+    if (!codeUsage || !codeUsage.used_at) {
+      // Fallback to old testpilot_codes table for backwards compatibility
+      // (in case there's old data that hasn't been migrated yet)
+      const { data: oldCodeUsage } = await supabase
+        .from('testpilot_codes')
+        .select('used_at, expires_at')
+        .eq('used_by', userId)
+        .order('used_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (!oldCodeUsage || !oldCodeUsage.used_at) {
+        return { isTestPilot: true, expiresAt: null, usedAt: null }
+      }
+
+      const usedAt = new Date(oldCodeUsage.used_at)
+      let expiresAt: Date
+      if (oldCodeUsage.expires_at) {
+        expiresAt = new Date(oldCodeUsage.expires_at)
+      } else {
+        expiresAt = new Date(usedAt)
+        expiresAt.setMonth(expiresAt.getMonth() + 1)
+      }
+
+      if (expiresAt < new Date()) {
+        return { isTestPilot: false, expiresAt, usedAt }
+      }
+
+      return { isTestPilot: true, expiresAt, usedAt }
     }
 
-    const usedAt = new Date(testPilotCode.used_at)
-    const expiresAt = new Date(usedAt)
-    expiresAt.setMonth(expiresAt.getMonth() + 1) // 1 month from used_at
+    const usedAt = new Date(codeUsage.used_at)
+    const expiresAt = new Date(codeUsage.expires_at)
 
     // Check if expired (but don't update here - let getUserSubscriptionTier handle it)
+    // Return expiresAt even if expired so UI can display the expiration date
     if (expiresAt < new Date()) {
-      return { isTestPilot: false, expiresAt: null, usedAt: null }
+      return { isTestPilot: false, expiresAt, usedAt }
     }
 
     return { isTestPilot: true, expiresAt, usedAt }
@@ -298,9 +326,151 @@ export function getTierDisplayName(tier: SubscriptionTier): string {
  */
 export function getTierPrice(tier: SubscriptionTier, yearly: boolean = false): number {
   if (tier === 'free') return 0
-  if (tier === 'premium') return yearly ? 758 : 79
-  if (tier === 'pro') return yearly ? 1238 : 129
+  if (tier === 'premium') return yearly ? 299 : 29
+  if (tier === 'pro') return yearly ? 499 : 49
   return 0
+}
+
+/**
+ * Get classes and word sets that exceed free tier limits
+ */
+export async function getExceedingResources(userId: string, supabaseClient?: any): Promise<{
+  classes: Array<{ id: string; name: string; studentCount: number }>
+  wordSets: Array<{ id: string; title: string }>
+  totalStudents: number
+}> {
+  try {
+    let supabase = supabaseClient
+    if (!supabase) {
+      const supabaseModule = await import('@/lib/supabase')
+      supabase = supabaseModule.supabase
+    }
+
+    // Get all classes
+    const { data: classes } = await supabase
+      .from('classes')
+      .select('id, name')
+      .eq('teacher_id', userId)
+      .is('deleted_at', null)
+
+    // Get all word sets
+    const { data: wordSets } = await supabase
+      .from('word_sets')
+      .select('id, title')
+      .eq('teacher_id', userId)
+      .is('deleted_at', null)
+
+    // Get student counts per class
+    const classIds = classes?.map(c => c.id) || []
+    const { data: classStudents } = await supabase
+      .from('class_students')
+      .select('class_id, student_id')
+      .in('class_id', classIds)
+      .is('deleted_at', null)
+
+    // Count students per class
+    const studentCounts = new Map<string, number>()
+    const allStudentIds = new Set<string>()
+    
+    classStudents?.forEach(cs => {
+      const count = studentCounts.get(cs.class_id) || 0
+      studentCounts.set(cs.class_id, count + 1)
+      allStudentIds.add(cs.student_id)
+    })
+
+    const classesWithCounts = (classes || []).map(c => ({
+      id: c.id,
+      name: c.name,
+      studentCount: studentCounts.get(c.id) || 0
+    }))
+
+    // Return all classes and word sets (user needs to select which to keep)
+    return {
+      classes: classesWithCounts,
+      wordSets: (wordSets || []).map(ws => ({ id: ws.id, title: ws.title })),
+      totalStudents: allStudentIds.size
+    }
+  } catch (error) {
+    console.error('Error getting exceeding resources:', error)
+    return { classes: [], wordSets: [], totalStudents: 0 }
+  }
+}
+
+/**
+ * Downgrade user to free tier and delete selected resources
+ */
+export async function downgradeToFreeWithSelection(
+  userId: string,
+  classesToKeep: string[],
+  wordSetsToKeep: string[],
+  supabaseClient?: any
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    let supabase = supabaseClient
+    if (!supabase) {
+      const supabaseModule = await import('@/lib/supabase')
+      supabase = supabaseModule.supabase
+    }
+
+    // Get all classes and word sets
+    const { data: allClasses } = await supabase
+      .from('classes')
+      .select('id')
+      .eq('teacher_id', userId)
+      .is('deleted_at', null)
+
+    const { data: allWordSets } = await supabase
+      .from('word_sets')
+      .select('id')
+      .eq('teacher_id', userId)
+      .is('deleted_at', null)
+
+    // Delete classes not in keep list
+    const classesToDelete = (allClasses || [])
+      .map(c => c.id)
+      .filter(id => !classesToKeep.includes(id))
+
+    if (classesToDelete.length > 0) {
+      const { error: deleteClassesError } = await supabase
+        .from('classes')
+        .update({ deleted_at: new Date().toISOString() })
+        .in('id', classesToDelete)
+
+      if (deleteClassesError) {
+        return { success: false, error: `Failed to delete classes: ${deleteClassesError.message}` }
+      }
+    }
+
+    // Delete word sets not in keep list
+    const wordSetsToDelete = (allWordSets || [])
+      .map(ws => ws.id)
+      .filter(id => !wordSetsToKeep.includes(id))
+
+    if (wordSetsToDelete.length > 0) {
+      const { error: deleteWordSetsError } = await supabase
+        .from('word_sets')
+        .update({ deleted_at: new Date().toISOString() })
+        .in('id', wordSetsToDelete)
+
+      if (deleteWordSetsError) {
+        return { success: false, error: `Failed to delete word sets: ${deleteWordSetsError.message}` }
+      }
+    }
+
+    // Update subscription tier to free
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ subscription_tier: 'free' })
+      .eq('id', userId)
+
+    if (updateError) {
+      return { success: false, error: `Failed to update subscription: ${updateError.message}` }
+    }
+
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Unknown error' }
+  }
 }
 
 /**
@@ -334,17 +504,31 @@ export async function downgradeExpiredTestPilots(supabaseAdmin: any): Promise<{ 
         const testPilotInfo = await getTestPilotInfo(profile.id, supabaseAdmin)
         
         if (!testPilotInfo.isTestPilot) {
-          // Test pilot has expired, downgrade to free
-          const { error: updateError } = await supabaseAdmin
-            .from('profiles')
-            .update({ subscription_tier: 'free' })
-            .eq('id', profile.id)
+          // Test pilot has expired, check if user exceeds free tier limits
+          const exceedingResources = await getExceedingResources(profile.id, supabaseAdmin)
+          
+          // Only auto-downgrade if user doesn't exceed limits
+          // If they exceed limits, they need to manually choose what to keep
+          if (exceedingResources.classes.length <= (TIER_LIMITS.free.maxClasses || 0) && 
+              exceedingResources.wordSets.length <= (TIER_LIMITS.free.maxWordSets || 0) &&
+              exceedingResources.totalStudents <= (TIER_LIMITS.free.maxTotalStudents || 0)) {
+            // Safe to auto-downgrade
+            const { error: updateError } = await supabaseAdmin
+              .from('profiles')
+              .update({ subscription_tier: 'free' })
+              .eq('id', profile.id)
 
-          if (updateError) {
-            errors.push(`Failed to downgrade user ${profile.id}: ${updateError.message}`)
+            if (updateError) {
+              errors.push(`Failed to downgrade user ${profile.id}: ${updateError.message}`)
+            } else {
+              downgraded++
+              console.log(`✅ Downgraded expired test pilot user ${profile.id} to free (no exceeding resources)`)
+            }
           } else {
-            downgraded++
-            console.log(`✅ Downgraded expired test pilot user ${profile.id} to free`)
+            // User exceeds limits - don't auto-downgrade, let them choose manually
+            console.log(`⚠️ User ${profile.id} has expired test pilot but exceeds free tier limits - manual downgrade required`)
+            // Note: We could set a flag here, but for now we'll let getUserSubscriptionTier handle it
+            // when the user logs in, they'll see the warning and can use the modal
           }
         }
       } catch (error: any) {

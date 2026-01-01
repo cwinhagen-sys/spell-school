@@ -229,7 +229,10 @@ export async function POST(request: NextRequest) {
       if (subscription.status === 'canceled' || subscription.status === 'past_due' || subscription.status === 'unpaid') {
         const { error } = await supabaseAdmin
           .from('profiles')
-          .update({ subscription_tier: 'free' })
+          .update({ 
+            subscription_tier: 'free',
+            stripe_subscription_id: null // Clear subscription ID when subscription is canceled/unpaid
+          })
           .eq('id', profile.id)
 
         if (error) {
@@ -285,7 +288,10 @@ export async function POST(request: NextRequest) {
         
         const { error } = await supabaseAdmin
           .from('profiles')
-          .update({ subscription_tier: 'free' })
+          .update({ 
+            subscription_tier: 'free',
+            stripe_subscription_id: null // Clear subscription ID when subscription is deleted
+          })
           .eq('id', profile.id)
 
         if (error) {

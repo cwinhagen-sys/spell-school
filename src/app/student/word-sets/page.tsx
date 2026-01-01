@@ -22,6 +22,7 @@ interface WordSet {
 interface AssignedRecord {
   id: string
   created_at: string
+  due_date: string | null
   class_id: string | null
   student_id: string | null
   word_sets: WordSet | null
@@ -31,6 +32,8 @@ export default function StudentWordSetsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [assigned, setAssigned] = useState<AssignedRecord[]>([])
+  const [activeWordSets, setActiveWordSets] = useState<AssignedRecord[]>([])
+  const [oldWordSets, setOldWordSets] = useState<AssignedRecord[]>([])
   const [selectedWordSet, setSelectedWordSet] = useState<WordSet | null>(null)
   const [showWordSetModal, setShowWordSetModal] = useState(false)
 
@@ -50,6 +53,19 @@ export default function StudentWordSetsPage() {
           try {
             const parsed = JSON.parse(cachedAssignments)
             setAssigned(parsed)
+            // Separate cached data into active and old
+            const today = new Date()
+            today.setHours(23, 59, 59, 999)
+            const active = parsed.filter((rec: AssignedRecord) => !rec.due_date || new Date(rec.due_date) >= today)
+            const old = parsed
+              .filter((rec: AssignedRecord) => rec.due_date && new Date(rec.due_date) < today)
+              .sort((a: AssignedRecord, b: AssignedRecord) => {
+                const dateA = a.due_date ? new Date(a.due_date).getTime() : 0
+                const dateB = b.due_date ? new Date(b.due_date).getTime() : 0
+                return dateB - dateA
+              })
+            setActiveWordSets(active)
+            setOldWordSets(old)
             setLoading(false)
             console.log('⚡ INSTANT: Loaded assignments from cache:', parsed.length)
           } catch (e) {
@@ -89,7 +105,7 @@ export default function StudentWordSetsPage() {
         const assignmentQueries = [
           supabase
             .from('assigned_word_sets')
-            .select('id, created_at, class_id, student_id, word_sets ( id, title, words, created_at, color )')
+            .select('id, created_at, due_date, class_id, student_id, word_sets ( id, title, words, created_at, color )')
             .eq('student_id', user.id)
         ]
 
@@ -97,8 +113,9 @@ export default function StudentWordSetsPage() {
           assignmentQueries.push(
             supabase
               .from('assigned_word_sets')
-              .select('id, created_at, class_id, student_id, word_sets ( id, title, words, created_at, color )')
+              .select('id, created_at, due_date, class_id, student_id, word_sets ( id, title, words, created_at, color )')
               .in('class_id', classIds)
+              .is('student_id', null)
           )
         }
 
@@ -114,18 +131,42 @@ export default function StudentWordSetsPage() {
           classAssigned = byClass as unknown as AssignedRecord[]
         }
 
-        // Merge unique by word set id
+        // Merge unique by word set id (keep the one with earliest due_date if duplicates)
         const combined = [...(direct as unknown as AssignedRecord[] || []), ...classAssigned]
-        const seen = new Set<string>()
-        const unique = combined.filter((rec) => {
+        const byWordSetId = new Map<string, AssignedRecord>()
+        for (const rec of combined) {
           const setId = rec.word_sets?.id
-          if (!setId) return false
-          if (seen.has(setId)) return false
-          seen.add(setId)
-          return true
-        })
+          if (!setId) continue
+          const existing = byWordSetId.get(setId)
+          if (!existing) {
+            byWordSetId.set(setId, rec)
+          } else {
+            // Keep the one with earlier due_date (or the one without due_date if other has one)
+            const existingDate = existing.due_date ? new Date(existing.due_date).getTime() : Infinity
+            const newDate = rec.due_date ? new Date(rec.due_date).getTime() : Infinity
+            if (newDate < existingDate) {
+              byWordSetId.set(setId, rec)
+            }
+          }
+        }
+        const unique = Array.from(byWordSetId.values())
+
+        // Separate into active and old based on due_date
+        const today = new Date()
+        today.setHours(23, 59, 59, 999)
+        const active = unique.filter(rec => !rec.due_date || new Date(rec.due_date) >= today)
+        const old = unique
+          .filter(rec => rec.due_date && new Date(rec.due_date) < today)
+          .sort((a, b) => {
+            // Sort by due_date descending (newest first)
+            const dateA = a.due_date ? new Date(a.due_date).getTime() : 0
+            const dateB = b.due_date ? new Date(b.due_date).getTime() : 0
+            return dateB - dateA
+          })
 
         setAssigned(unique)
+        setActiveWordSets(active)
+        setOldWordSets(old)
         
         // 💾 Save to cache for next time
         localStorage.setItem(assignmentsCacheKey, JSON.stringify(unique))
@@ -224,52 +265,135 @@ export default function StudentWordSetsPage() {
               <p className="text-sm text-gray-500 mt-2">Come back later!</p>
             </div>
           ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {assigned.map((rec) => (
-                <div 
-                  key={rec.id} 
-                  className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 hover:bg-white/10 hover:border-amber-500/30 transition-all cursor-pointer group"
-                  onClick={() => rec.word_sets && handleWordSetClick(rec.word_sets)}
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    {rec.word_sets?.color && (
-                      <div 
-                        className="w-4 h-4 rounded-full shadow-lg" 
-                        style={{ backgroundColor: rec.word_sets.color }}
-                      />
-                    )}
-                    <h3 className="text-lg font-semibold text-white group-hover:text-amber-400 transition-colors">
-                      {rec.word_sets?.title}
-                    </h3>
-                  </div>
-                  <p className="text-sm text-gray-500 mb-4">Assigned {new Date(rec.created_at).toLocaleDateString('en-US')}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {renderWordPreview(rec.word_sets?.words).map((w, idx) => (
-                      <span key={idx} className="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full border border-amber-500/30">
-                        {w}
+            <>
+              {/* Active Word Sets */}
+              {activeWordSets.length > 0 && (
+                <div className="mb-8">
+                  <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm shadow-xl p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                        <BookOpen className="w-5 h-5 text-amber-400" />
+                        Active Word Sets
+                      </h2>
+                      <span className="text-sm text-gray-500">
+                        {activeWordSets.length} set{activeWordSets.length !== 1 ? 's' : ''}
                       </span>
-                    ))}
-                    {Array.isArray(rec.word_sets?.words) && rec.word_sets!.words.length > 5 && (
-                      <span className="bg-white/5 text-gray-400 text-xs px-2 py-1 rounded-full border border-white/10">
-                        +{rec.word_sets!.words.length - 5} more
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-4 text-xs text-amber-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                    Click to see all words →
+                    </div>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {activeWordSets.map((rec) => (
+                        <div 
+                          key={rec.id} 
+                          className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 hover:bg-white/10 hover:border-amber-500/30 transition-all cursor-pointer group"
+                          onClick={() => rec.word_sets && handleWordSetClick(rec.word_sets)}
+                        >
+                          <div className="flex items-center gap-3 mb-3">
+                            {rec.word_sets?.color && (
+                              <div 
+                                className="w-4 h-4 rounded-full shadow-lg" 
+                                style={{ backgroundColor: rec.word_sets.color }}
+                              />
+                            )}
+                            <h3 className="text-lg font-semibold text-white group-hover:text-amber-400 transition-colors">
+                              {rec.word_sets?.title}
+                            </h3>
+                          </div>
+                          <p className="text-sm text-gray-500 mb-4">
+                            {rec.due_date ? (
+                              <>Due: {new Date(rec.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</>
+                            ) : (
+                              <>Assigned {new Date(rec.created_at).toLocaleDateString('en-US')}</>
+                            )}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {renderWordPreview(rec.word_sets?.words).map((w, idx) => (
+                              <span key={idx} className="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full border border-amber-500/30">
+                                {w}
+                              </span>
+                            ))}
+                            {Array.isArray(rec.word_sets?.words) && rec.word_sets!.words.length > 5 && (
+                              <span className="bg-white/5 text-gray-400 text-xs px-2 py-1 rounded-full border border-white/10">
+                                +{rec.word_sets!.words.length - 5} more
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-4 text-xs text-amber-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                            Click to see all words →
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              )}
+
+              {/* Previous Word Sets */}
+              {oldWordSets.length > 0 && (
+                <div className="mb-8">
+                  <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm shadow-xl p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                        <BookOpen className="w-5 h-5 text-gray-400" />
+                        Previous Word Sets
+                      </h2>
+                      <span className="text-sm text-gray-500">
+                        {oldWordSets.length} set{oldWordSets.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {oldWordSets.map((rec) => (
+                        <div 
+                          key={rec.id} 
+                          className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 hover:bg-white/10 hover:border-amber-500/30 transition-all cursor-pointer group opacity-70"
+                          onClick={() => rec.word_sets && handleWordSetClick(rec.word_sets)}
+                        >
+                          <div className="flex items-center gap-3 mb-3">
+                            {rec.word_sets?.color && (
+                              <div 
+                                className="w-4 h-4 rounded-full shadow-lg" 
+                                style={{ backgroundColor: rec.word_sets.color }}
+                              />
+                            )}
+                            <h3 className="text-lg font-semibold text-gray-400 group-hover:text-amber-400 transition-colors">
+                              {rec.word_sets?.title}
+                            </h3>
+                          </div>
+                          <p className="text-sm text-gray-500 mb-4">
+                            {rec.due_date ? (
+                              <>Was due: {new Date(rec.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</>
+                            ) : (
+                              <>Assigned {new Date(rec.created_at).toLocaleDateString('en-US')}</>
+                            )}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {renderWordPreview(rec.word_sets?.words).map((w, idx) => (
+                              <span key={idx} className="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full border border-amber-500/30">
+                                {w}
+                              </span>
+                            ))}
+                            {Array.isArray(rec.word_sets?.words) && rec.word_sets!.words.length > 5 && (
+                              <span className="bg-white/5 text-gray-400 text-xs px-2 py-1 rounded-full border border-white/10">
+                                +{rec.word_sets!.words.length - 5} more
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-4 text-xs text-amber-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                            Click to see all words →
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )
         )}
 
         {/* Word Set Detail Modal */}
         {showWordSetModal && selectedWordSet && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="relative w-full max-w-4xl max-h-[90vh]">
-              <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/30 to-orange-500/30 rounded-3xl blur-xl" />
-              <div className="relative rounded-2xl p-8 shadow-2xl bg-[#12122a] border border-white/10 overflow-hidden">
+            <div className="relative w-full max-w-3xl max-h-[85vh]">
+              <div className="relative rounded-2xl p-6 shadow-2xl bg-white/5 backdrop-blur-sm border border-white/10 overflow-hidden">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
                     {selectedWordSet.color && (
@@ -288,7 +412,13 @@ export default function StudentWordSetsPage() {
                   </button>
                 </div>
                 
-                <div className="overflow-y-auto max-h-[60vh] pr-2">
+                <div 
+                  className="overflow-y-auto max-h-[55vh] pr-2 custom-scrollbar"
+                  style={{ 
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: 'rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05)'
+                  }}
+                >
                   <div className="grid gap-3">
                     {normalizeWords(selectedWordSet.words).map((word, index) => (
                       <div key={index} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">

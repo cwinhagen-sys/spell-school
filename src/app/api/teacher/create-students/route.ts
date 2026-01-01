@@ -164,6 +164,9 @@ export async function POST(request: NextRequest) {
       .replace(/[^A-Z0-9]/g, '')
       .slice(0, 16) || 'CLASS'
 
+    // Create a short unique identifier for the teacher (first 8 chars of UUID)
+    const teacherShortId = user.id.replace(/-/g, '').slice(0, 8)
+
     const results: Array<{ username: string; success: boolean; message: string }> = []
 
     for (const rawStudent of students) {
@@ -171,18 +174,76 @@ export async function POST(request: NextRequest) {
       const username = rawStudent.username?.trim()
       const password = rawStudent.password ?? ''
 
-      if (!username || !password) {
-        results.push({
-          username: rawStudent.username || '',
-          success: false,
-          message: 'Username and password are required'
-        })
-        continue
-      }
+        if (!username || !password) {
+          results.push({
+            username: rawStudent.username || '',
+            success: false,
+            message: 'Användarnamn och lösenord krävs'
+          })
+          continue
+        }
 
       try {
-        const email = `${username}.${normalizedClassCode}@local.local`
+        // Include teacher ID to make email unique per teacher
+        // This allows multiple teachers to have students with the same username
+        // To allow same username with different passwords, we add a hash of the password to the email
+        // Format: username.teacherShortId.classCode.passwordHash@local.local
+        // This makes each (username, password) combination unique per teacher and class
+        const crypto = await import('crypto')
+        const passwordHash = crypto.createHash('sha256').update(password).digest('hex').slice(0, 8)
+        const email = `${username}.${teacherShortId}.${normalizedClassCode}.${passwordHash}@local.local`
 
+        // Check if this teacher already has a student with the same username in the same class
+        // We need to verify if the password matches an existing account
+        const { data: existingClassStudents } = await supabaseAdmin
+          .from('class_students')
+          .select(`
+            student_id,
+            profiles!inner(username, email)
+          `)
+          .eq('class_id', classId)
+          .eq('profiles.username', username)
+          .is('deleted_at', null)
+
+        if (existingClassStudents && existingClassStudents.length > 0) {
+          // There's already a student with this username in this class
+          // Try to verify if the password matches by attempting to sign in
+          let passwordMatchFound = false
+          for (const existingStudent of existingClassStudents) {
+            const existingEmail = (existingStudent.profiles as any)?.email
+            
+            if (existingEmail) {
+              // Try to sign in to verify if the password matches
+              const { error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+                email: existingEmail,
+                password: password
+              })
+
+              // Sign out immediately after verification attempt (whether it succeeded or failed)
+              await supabaseAdmin.auth.signOut()
+
+              // If sign-in succeeds, it means this exact username+password combination already exists
+              if (!signInError) {
+                passwordMatchFound = true
+                break
+              }
+            }
+          }
+          
+          if (passwordMatchFound) {
+            results.push({
+              username,
+              success: false,
+              message: 'En elev med detta användarnamn och lösenord finns redan'
+            })
+            continue // Continue to next student in the outer loop
+          }
+          // If we get here, there are students with this username but different passwords
+          // This is allowed - we'll create a new account with a unique email (based on password hash)
+        }
+
+        // Check if the email already exists (which would mean this exact combination already exists)
+        // Note: email already generated above with password hash, so this checks for exact (username+password) match
         const { data: existingProfile } = await supabaseAdmin
           .from('profiles')
           .select('id, deleted_at')
@@ -193,7 +254,7 @@ export async function POST(request: NextRequest) {
           results.push({
             username,
             success: false,
-            message: 'User already exists'
+            message: 'En elev med detta användarnamn och lösenord finns redan'
           })
           continue
         }

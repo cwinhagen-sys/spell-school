@@ -181,7 +181,6 @@ export default function SpellSchoolLanding({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [featuresOpen, setFeaturesOpen] = useState(false);
-  const [pricingOpen, setPricingOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -195,21 +194,11 @@ export default function SpellSchoolLanding({
     document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const scrollToPricing = () => {
-    document.getElementById('pricing-section')?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   const featuresItems = [
     { label: "Interactive Games", description: "10+ engaging vocabulary games", icon: Sparkles, onClick: scrollToFeatures },
     { label: "Pronunciation Training", description: "AI-powered feedback", icon: Mic, onClick: scrollToFeatures },
     { label: "Progress Tracking", description: "Real-time analytics", icon: BarChart3, onClick: scrollToFeatures },
     { label: "Session Mode", description: "Structured homework chains", icon: Clock, onClick: scrollToFeatures },
-  ];
-
-  const pricingItems = [
-    { label: "Free Plan", description: "Get started at no cost", icon: Star, onClick: scrollToPricing },
-    { label: "Premium Plan", description: "More classes and features", icon: Zap, onClick: scrollToPricing },
-    { label: "Pro Plan", description: "Full control and insights", icon: GraduationCap, onClick: scrollToPricing },
   ];
 
   return (
@@ -259,15 +248,8 @@ export default function SpellSchoolLanding({
                 label="Features" 
                 items={featuresItems} 
                 isOpen={featuresOpen} 
-                onToggle={() => { setFeaturesOpen(!featuresOpen); setPricingOpen(false); }}
+                onToggle={() => { setFeaturesOpen(!featuresOpen); }}
                 onClose={() => setFeaturesOpen(false)}
-              />
-              <Dropdown 
-                label="Pricing" 
-                items={pricingItems} 
-                isOpen={pricingOpen} 
-                onToggle={() => { setPricingOpen(!pricingOpen); setFeaturesOpen(false); }}
-                onClose={() => setPricingOpen(false)}
               />
               <Link href="/about" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">
                 About
@@ -316,7 +298,6 @@ export default function SpellSchoolLanding({
             >
               <div className="px-4 py-6 space-y-4">
                 <button onClick={() => { scrollToFeatures(); setMobileMenuOpen(false); }} className="block w-full text-left text-gray-300 hover:text-white py-2 font-medium">Features</button>
-                <button onClick={() => { scrollToPricing(); setMobileMenuOpen(false); }} className="block w-full text-left text-gray-300 hover:text-white py-2 font-medium">Pricing</button>
                 <Link href="/about" className="block text-gray-300 hover:text-white py-2 font-medium">About</Link>
                 <Link href="/faq" className="block text-gray-300 hover:text-white py-2 font-medium">FAQ</Link>
                 <div className="border-t border-white/10 pt-4 space-y-3">
@@ -700,108 +681,6 @@ export default function SpellSchoolLanding({
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section id="pricing-section" className="relative py-32">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-amber-500/5 to-transparent" />
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <span className="text-amber-500 font-semibold text-sm uppercase tracking-wider mb-4 block">Pricing</span>
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Simple, transparent
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500"> pricing</span>
-            </h2>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Start free and upgrade as your needs grow
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {[
-              {
-                name: "Free",
-                price: "0",
-                description: "Perfect for getting started",
-                features: ["1 class", "Up to 30 students", "5 word lists", "All game types"],
-                cta: "Get Started",
-                popular: false
-              },
-              {
-                name: "Premium",
-                price: "79",
-                period: " SEK/month",
-                yearlyPrice: "758 SEK/year",
-                description: "For teachers who want more",
-                features: ["3 classes", "30 students per class", "20 word lists", "All game types", "Session Mode"],
-                cta: "Sign up",
-                popular: true
-              },
-              {
-                name: "Pro",
-                price: "129",
-                period: " SEK/month",
-                yearlyPrice: "1238 SEK/year",
-                description: "Full control and insights",
-                features: ["Unlimited classes", "Unlimited students", "Unlimited word lists", "All game types", "Session Mode", "Progress & Quiz statistics"],
-                cta: "Sign up",
-                popular: false
-              }
-            ].map((plan, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className={`relative ${plan.popular ? 'lg:-mt-4 lg:mb-4' : ''}`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold px-4 py-1 rounded-full">
-                    Most Popular
-                  </div>
-                )}
-                <div className={`h-full bg-[#12122a] border rounded-3xl p-8 ${
-                  plan.popular ? 'border-amber-500/50' : 'border-white/5'
-                }`}>
-                  <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
-                  <div className="mb-4">
-                    <span className="text-4xl font-bold">
-                      {plan.price}
-                    </span>
-                    {plan.period && <span className="text-gray-500">{plan.period}</span>}
-                    {plan.price === "0" && <span className="text-gray-500 ml-2">Free</span>}
-                  </div>
-                  <p className="text-gray-500 mb-6">{plan.description}</p>
-                  <ul className="space-y-3 mb-8">
-                    {plan.features.map((feature, j) => (
-                      <li key={j} className="flex items-center gap-3 text-sm">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                        <span className="text-gray-300">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    href={plan.name === "School" ? "/contact" : "/signup/teacher"}
-                    className={`block w-full text-center py-3 rounded-xl font-semibold transition-all ${
-                      plan.popular 
-                        ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-400 hover:to-orange-500' 
-                        : 'bg-white/5 text-white hover:bg-white/10 border border-white/10'
-                    }`}
-                  >
-                    {plan.cta}
-                  </Link>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Benefits Section */}
       <section className="relative py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
@@ -920,7 +799,6 @@ export default function SpellSchoolLanding({
               <h3 className="text-white font-semibold mb-4">Product</h3>
               <ul className="space-y-3">
                 <li><button onClick={scrollToFeatures} className="text-gray-400 hover:text-white transition-colors">Features</button></li>
-                <li><button onClick={scrollToPricing} className="text-gray-400 hover:text-white transition-colors">Pricing</button></li>
                 <li><Link href="/faq" className="text-gray-400 hover:text-white transition-colors">FAQ</Link></li>
                 <li><Link href="/about" className="text-gray-400 hover:text-white transition-colors">About</Link></li>
               </ul>

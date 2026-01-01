@@ -84,11 +84,11 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
   
   const BACKGROUNDS = [
     { 
-      id: 'aurora', 
-      label: 'Aurora', 
-      type: 'gradient' as const, 
+      id: 'dark', 
+      label: 'Dark', 
+      type: 'solid' as const, 
       style: { 
-        background: 'radial-gradient(1200px 800px at 10% 10%, rgba(72,187,255,0.25), transparent), radial-gradient(900px 700px at 90% 30%, rgba(124,58,237,0.25), transparent), linear-gradient(135deg, #0f172a, #0b1020 60%, #0b1325)' 
+        background: '#0a0a1a'
       } 
     },
   ]
@@ -458,13 +458,9 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
   if (showPlayerSelection) {
     return (
       <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50">
-        {/* Aurora background effects */}
-        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
-        
-        <div className="relative bg-[#12122a] rounded-2xl p-8 w-full max-w-md shadow-2xl border border-white/10">
+        <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-8 w-full max-w-md shadow-2xl border border-white/10">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/30">
+            <div className="w-16 h-16 bg-white/10 border border-white/10 rounded-xl flex items-center justify-center mx-auto mb-4">
               <Brain className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">Memory Game</h2>
@@ -476,7 +472,7 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
               onClick={() => {
                 setNumPlayers(1)
               }}
-              className={`p-6 rounded-xl border transition-all shadow-lg ${
+              className={`p-6 rounded-xl border transition-colors ${
                 numPlayers === 1
                   ? 'bg-amber-500/20 border-amber-500/50'
                   : 'bg-white/5 border-white/10 hover:border-amber-500/30 hover:bg-amber-500/10'
@@ -491,13 +487,13 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
               onClick={() => {
                 setNumPlayers(2)
               }}
-              className={`p-6 rounded-xl border transition-all shadow-lg ${
+              className={`p-6 rounded-xl border transition-colors ${
                 numPlayers === 2
-                  ? 'bg-orange-500/20 border-orange-500/50'
-                  : 'bg-white/5 border-white/10 hover:border-orange-500/30 hover:bg-orange-500/10'
+                  ? 'bg-amber-500/20 border-amber-500/50'
+                  : 'bg-white/5 border-white/10 hover:border-amber-500/30 hover:bg-amber-500/10'
               }`}
             >
-              <Users className={`w-8 h-8 mx-auto mb-2 ${numPlayers === 2 ? 'text-orange-400' : 'text-gray-400'}`} />
+              <Users className={`w-8 h-8 mx-auto mb-2 ${numPlayers === 2 ? 'text-amber-400' : 'text-gray-400'}`} />
               <div className={`font-semibold ${numPlayers === 2 ? 'text-white' : 'text-gray-300'}`}>2 Spelare</div>
               <div className={`text-sm mt-1 ${numPlayers === 2 ? 'text-gray-300' : 'text-gray-500'}`}>Turordning</div>
             </button>
@@ -541,7 +537,7 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
                 setShowPlayerSelection(false)
                 setShowGridSelector(true)
               }}
-              className="flex-1 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-medium transition-all shadow-lg shadow-amber-500/30"
+              className="flex-1 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-medium transition-colors"
             >
               Fortsätt
             </button>
@@ -978,12 +974,9 @@ export default function MemoryGame({ words, translations = {}, onClose, onScoreU
 
   return (
     <div
-      className="fixed inset-0 z-50"
+      className="fixed inset-0 z-50 bg-[#0a0a1a]"
       onClick={waitingForFlipBack ? handleFlipBackClick : undefined}
-      style={selectedBackground.style}
     >
-      {/* Subtle vignette */}
-      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(75% 60% at 50% 40%, transparent 60%, rgba(0,0,0,.35))' }} />
 
       {/* Top bar (glass) */}
       <div className="relative flex items-center justify-between gap-3 px-3 sm:px-6 py-3 z-50">

@@ -205,36 +205,36 @@ export default function GridConfigModal({ wordSet, onSave, onClose, existingGrid
   // Mode selection screen
   if (placementMode === null) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-        <div className="rounded-2xl p-8 max-w-2xl w-full text-center shadow-2xl relative bg-white text-gray-800 border border-gray-200">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="rounded-2xl p-8 max-w-2xl w-full text-center shadow-2xl relative bg-[#161622] border border-white/[0.12]">
           {/* Top Progress Bar */}
           <div className="h-1 rounded-md mb-6 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
           
           <div className="mb-8">
             <div className="text-6xl mb-4">🎨</div>
-            <h2 className="text-2xl font-bold mb-2">Configure Grid Layout</h2>
-            <p className="text-gray-600 text-sm mb-6">Choose how to organize words into color grids</p>
+            <h2 className="text-2xl font-bold mb-2 text-white">Configure Grid Layout</h2>
+            <p className="text-gray-400 text-sm mb-6">Choose how to organize words into color grids</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             <button
               onClick={handleAutomaticPlacement}
-              className="group p-6 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-all duration-300 hover:scale-105 hover:shadow-xl"
+              className="group p-6 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all duration-300 hover:scale-105 hover:shadow-xl"
             >
               <div className="text-5xl mb-3">⚡</div>
-              <h3 className="text-xl font-bold mb-2">Automatic</h3>
-              <p className="text-gray-600 text-sm">
+              <h3 className="text-xl font-bold mb-2 text-white">Automatic</h3>
+              <p className="text-gray-400 text-sm">
                 System automatically sorts words by difficulty (easier first) and assigns them to grids
               </p>
             </button>
 
             <button
               onClick={handleManualPlacement}
-              className="group p-6 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-all duration-300 hover:scale-105 hover:shadow-xl"
+              className="group p-6 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all duration-300 hover:scale-105 hover:shadow-xl"
             >
               <div className="text-5xl mb-3">✏️</div>
-              <h3 className="text-xl font-bold mb-2">Manual</h3>
-              <p className="text-gray-600 text-sm">
+              <h3 className="text-xl font-bold mb-2 text-white">Manual</h3>
+              <p className="text-gray-400 text-sm">
                 Manually select which words go in each grid, choose colors and symbols
               </p>
             </button>
@@ -242,7 +242,7 @@ export default function GridConfigModal({ wordSet, onSave, onClose, existingGrid
 
           <button
             onClick={onClose}
-            className="px-6 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+            className="px-6 py-3 bg-white/5 border border-white/10 text-gray-300 rounded-lg font-medium hover:bg-white/10 transition-colors"
           >
             Cancel
           </button>
@@ -272,20 +272,20 @@ export default function GridConfigModal({ wordSet, onSave, onClose, existingGrid
     })
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 overflow-y-auto">
-        <div className="rounded-2xl p-8 max-w-4xl w-full shadow-2xl relative bg-white text-gray-800 border border-gray-200 my-8">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div className="rounded-2xl p-8 max-w-4xl w-full shadow-2xl relative bg-[#161622] border border-white/[0.12] my-8">
           {/* Top Progress Bar */}
           <div className="h-1 rounded-md mb-6 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
           
           <div className="mb-6">
-            <h2 className="text-2xl font-bold mb-2">Configure Grid {selectedGridIndex + 1}</h2>
-            <p className="text-gray-600 text-sm">Select words and color for this grid</p>
+            <h2 className="text-2xl font-bold mb-2 text-white">Configure Grid {selectedGridIndex + 1}</h2>
+            <p className="text-gray-400 text-sm">Select words and color for this grid</p>
           </div>
 
           {/* Word Selection */}
           <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-3">Select Words ({selectedWords.length}/{wordsPerGrid})</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-64 overflow-y-auto p-4 border border-gray-200 rounded-lg">
+            <h3 className="text-lg font-semibold mb-3 text-white">Select Words ({selectedWords.length}/{wordsPerGrid})</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-64 overflow-y-auto p-4 border border-white/10 rounded-lg bg-white/5">
               {unusedWords.map((word, idx) => {
                 const isSelected = selectedWords.some(w => w.sv === word.sv && w.en === word.en)
                 return (
@@ -294,8 +294,8 @@ export default function GridConfigModal({ wordSet, onSave, onClose, existingGrid
                     onClick={() => toggleWord(word)}
                     className={`p-3 rounded-lg border transition-all ${
                       isSelected
-                        ? 'bg-blue-100 border-blue-400 text-blue-900'
-                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                        ? 'bg-blue-500/20 border-blue-400 text-blue-300'
+                        : 'bg-white/5 border-white/10 hover:bg-white/10 text-gray-300'
                     }`}
                   >
                     <div className="font-semibold">{word.sv}</div>
@@ -308,7 +308,7 @@ export default function GridConfigModal({ wordSet, onSave, onClose, existingGrid
 
           {/* Color Selection */}
           <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-3">Select Color</h3>
+            <h3 className="text-lg font-semibold mb-3 text-white">Select Color</h3>
             <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
               {COLOR_GRIDS.map((scheme, idx) => (
                 <button
@@ -316,8 +316,8 @@ export default function GridConfigModal({ wordSet, onSave, onClose, existingGrid
                   onClick={() => setSelectedColor(scheme.hex)}
                   className={`p-3 rounded-lg border-2 transition-all ${
                     selectedColor === scheme.hex
-                      ? 'border-gray-800 scale-110'
-                      : 'border-gray-200 hover:border-gray-400'
+                      ? 'border-white scale-110 ring-2 ring-white/50'
+                      : 'border-white/20 hover:border-white/40'
                   }`}
                   style={{ backgroundColor: scheme.hex }}
                   title={scheme.name}
@@ -334,7 +334,7 @@ export default function GridConfigModal({ wordSet, onSave, onClose, existingGrid
               setSelectedWords([])
               setSelectedColor('')
             }}
-              className="flex-1 px-6 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+              className="flex-1 px-6 py-3 bg-white/5 border border-white/10 text-gray-300 rounded-lg font-medium hover:bg-white/10 transition-colors"
             >
               Cancel
             </button>
@@ -352,16 +352,16 @@ export default function GridConfigModal({ wordSet, onSave, onClose, existingGrid
 
   // Grid overview screen (automatic or manual preview)
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="rounded-2xl p-8 max-w-6xl w-full shadow-2xl relative bg-white text-gray-800 border border-gray-200 my-8">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+      <div className="rounded-2xl p-8 max-w-6xl w-full shadow-2xl relative bg-[#161622] border border-white/[0.12] my-8">
         {/* Top Progress Bar */}
         <div className="h-1 rounded-md mb-6 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
         
         <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-2">
+          <h2 className="text-2xl font-bold mb-2 text-white">
             {placementMode === 'automatic' ? 'Automatic Grid Layout' : 'Manual Grid Layout'}
           </h2>
-          <p className="text-gray-600 text-sm">
+          <p className="text-gray-400 text-sm">
             {placementMode === 'automatic' 
               ? 'Words have been sorted by difficulty and assigned to grids'
               : 'Click on a grid to edit it'}
@@ -380,19 +380,19 @@ export default function GridConfigModal({ wordSet, onSave, onClose, existingGrid
                   : ''
               } ${
                 grid.words.length === 0
-                  ? 'border-dashed border-gray-300 bg-gray-50'
-                  : 'border-gray-400'
+                  ? 'border-dashed border-white/20 bg-white/5'
+                  : 'border-white/30'
               }`}
               style={{ backgroundColor: grid.words.length > 0 ? `${grid.color}20` : undefined }}
             >
               <div className="text-center mb-2">
-                <div className="text-xs font-semibold text-gray-600">Grid {idx + 1}</div>
+                <div className="text-xs font-semibold text-gray-300">Grid {idx + 1}</div>
               </div>
-              <div className="text-xs text-gray-600 mb-2">
+              <div className="text-xs text-gray-400 mb-2">
                 {grid.words.length} / {wordsPerGrid} words
               </div>
               {grid.words.length > 0 && (
-                <div className="text-xs text-gray-700 space-y-1">
+                <div className="text-xs text-gray-300 space-y-1">
                   {grid.words.slice(0, 3).map((word, i) => {
                     const w = typeof word === 'string' ? { en: '', sv: word } : word
                     return (
@@ -418,14 +418,14 @@ export default function GridConfigModal({ wordSet, onSave, onClose, existingGrid
               setGrids([])
               setSelectedGridIndex(null)
             }}
-            className="px-6 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+            className="px-6 py-3 bg-white/5 border border-white/10 text-gray-300 rounded-lg font-medium hover:bg-white/10 transition-colors"
           >
             Back
           </button>
           <button
             onClick={handleFinalSave}
             disabled={grids.some(g => g.words.length === 0)}
-            className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
           >
             Save Configuration
           </button>

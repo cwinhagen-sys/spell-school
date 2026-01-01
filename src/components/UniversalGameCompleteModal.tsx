@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { RotateCcw, ArrowLeft, Star, Trophy, Target, Clock, Gamepad2, CheckCircle, Award, Keyboard, AlertTriangle, BookOpen, CheckSquare, Brain, Scissors, FileText, Globe, Mic, Target as TargetIcon, Sparkles, BarChart3, Zap, Crown } from 'lucide-react'
+import { RotateCcw, ArrowLeft, Star, Trophy, Target, Clock, Gamepad2, CheckCircle, Award, Keyboard, AlertTriangle, BookOpen, CheckSquare, Brain, Scissors, FileText, Globe, Mic, Target as TargetIcon, Sparkles, BarChart3, Zap, Crown, Gem } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface GameCompleteModalProps {
@@ -62,8 +62,8 @@ function Particle({ delay, x, color }: { delay: number; x: number; color: string
   )
 }
 
-// XP Counter animation
-function XPCounter({ value, duration = 1.5 }: { value: number; duration?: number }) {
+// AP Counter animation
+function APCounter({ value, duration = 1.5 }: { value: number; duration?: number }) {
   const [count, setCount] = useState(0)
   
   useEffect(() => {
@@ -125,11 +125,11 @@ export default function UniversalGameCompleteModal({
   levelUp
 }: GameCompleteModalProps) {
   const [showContent, setShowContent] = useState(false)
-  const [showXP, setShowXP] = useState(false)
+  const [showAP, setShowAP] = useState(false)
   
   useEffect(() => {
     const timer1 = setTimeout(() => setShowContent(true), 300)
-    const timer2 = setTimeout(() => setShowXP(true), 800)
+    const timer2 = setTimeout(() => setShowAP(true), 800)
     return () => {
       clearTimeout(timer1)
       clearTimeout(timer2)
@@ -199,85 +199,65 @@ export default function UniversalGameCompleteModal({
   return (
     <AnimatePresence>
       <motion.div 
-        className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto"
+        className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
       >
         {/* Particle effects */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {showXP && particles.map(p => (
+          {showAP && particles.map(p => (
             <Particle key={p.id} delay={p.delay} x={p.x} color={p.color} />
           ))}
         </div>
         
         <motion.div
-          className="relative w-full max-w-lg my-auto"
+          className="relative w-full max-w-lg max-h-[calc(100vh-2rem)] flex flex-col"
           initial={{ scale: 0.8, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           transition={{ type: "spring", damping: 20, stiffness: 300 }}
         >
-          {/* Glowing background effect */}
-          <div className="absolute -inset-4 bg-gradient-to-br from-amber-500/30 via-orange-500/20 to-rose-500/30 rounded-3xl blur-2xl" />
-          
-          {/* Animated rings */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
-            <GlowingRing color="rgba(245, 158, 11, 0.4)" size={300} delay={0.2} />
-            <GlowingRing color="rgba(249, 115, 22, 0.3)" size={400} delay={0.4} />
-            <GlowingRing color="rgba(251, 146, 60, 0.2)" size={500} delay={0.6} />
-          </div>
-          
-          <div className="relative bg-[#12122a] border border-white/10 rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-[#12122a] border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[calc(100vh-2rem)]">
             {/* Top gradient bar */}
-            <div className={`h-1.5 bg-gradient-to-r ${performance.color}`} />
+            <div className={`h-1.5 bg-gradient-to-r ${performance.color} flex-shrink-0`} />
             
-            <div className="p-4 sm:p-6 md:p-8">
+            <div className="p-3 sm:p-4 md:p-6 flex flex-col flex-1 min-h-0 overflow-hidden">
               {/* Level Up Notification */}
               <AnimatePresence>
                 {levelUp && (
                   <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mb-6 p-4 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-2xl"
+                    className="mb-3 sm:mb-4 p-2 sm:p-3 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-xl flex-shrink-0"
                   >
-                    <div className="flex items-center justify-center gap-3">
+                    <div className="flex items-center justify-center gap-2 sm:gap-3">
                       <motion.div
                         animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
                         transition={{ duration: 0.5, repeat: 3 }}
                       >
-                        <Crown className="w-8 h-8 text-amber-400" />
+                        <Crown className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-amber-400" />
                       </motion.div>
                       <div className="text-center">
-                        <h3 className="text-xl font-bold text-amber-400">Level Up!</h3>
-                        <p className="text-amber-200/80">You reached level {levelUp.level}</p>
-                        <p className="text-sm text-amber-300/60 mt-1">{levelUp.title}</p>
+                        <h3 className="text-base sm:text-lg md:text-xl font-bold text-amber-400">Level Up!</h3>
+                        <p className="text-xs sm:text-sm text-amber-200/80">You reached level {levelUp.level}</p>
+                        <p className="text-xs text-amber-300/60 mt-0.5">{levelUp.title}</p>
                       </div>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
               
-              {/* Trophy and Title */}
+              {/* Title */}
               <AnimatePresence>
                 {showContent && (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.1 }}
-                    className="text-center mb-6"
+                    className="text-center mb-2 sm:mb-3 flex-shrink-0"
                   >
-                    {/* Performance emoji with glow */}
-                    <motion.div
-                      className="relative inline-block mb-4"
-                      animate={{ y: [0, -8, 0] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                    >
-                      <div className="text-6xl">{performance.emoji}</div>
-                      <div className="absolute inset-0 blur-xl opacity-50 text-6xl">{performance.emoji}</div>
-                    </motion.div>
-                    
                     <motion.h2
-                      className={`text-3xl font-bold bg-gradient-to-r ${performance.color} bg-clip-text text-transparent mb-2`}
+                      className={`text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r ${performance.color} bg-clip-text text-transparent mb-1`}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
@@ -286,56 +266,56 @@ export default function UniversalGameCompleteModal({
                     </motion.h2>
                     
                     <motion.div
-                      className="flex items-center justify-center gap-2 text-gray-400"
+                      className="flex items-center justify-center gap-1.5 sm:gap-2 text-gray-400 text-xs sm:text-sm"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.3 }}
                     >
-                      <GameIconComponent className="w-5 h-5 text-amber-400" />
+                      <GameIconComponent className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
                       <span>{getGameTitle()}</span>
                     </motion.div>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              {/* XP Award - Big animated counter */}
+              {/* AP Award - Big animated counter */}
               <AnimatePresence>
-                {showXP && (
+                {showAP && (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.5 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ type: "spring", damping: 15, stiffness: 300 }}
-                    className="text-center mb-8"
+                    className="text-center mb-3 sm:mb-4 flex-shrink-0"
                   >
-                    <div className="relative inline-flex items-center gap-3 px-4 sm:px-6 md:px-8 py-3 sm:py-4 bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-2xl border border-amber-500/30">
+                    <div className="relative inline-flex items-center gap-2 sm:gap-3 px-3 sm:px-4 md:px-6 py-2 sm:py-3 bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-xl sm:rounded-2xl border border-amber-500/30">
                       <motion.div
                         animate={{ rotate: 360 }}
                         transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                       >
-                        <Star className="w-8 h-8 text-amber-400" />
+                        <Gem className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-amber-400" />
                       </motion.div>
                       <div>
-                        <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">
-                          +<XPCounter value={pointsAwarded} /> XP
+                        <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
+                          +<APCounter value={pointsAwarded} /> AP
                         </div>
-                        <div className="text-xs sm:text-sm text-gray-400">Points earned</div>
+                        <div className="text-xs text-gray-400">Arcane Points earned</div>
                       </div>
                       
-                      {/* Sparkle effects around XP */}
+                      {/* Sparkle effects around AP */}
                       {[...Array(4)].map((_, i) => (
                         <motion.div
                           key={i}
                           className="absolute"
                           style={{
-                            top: i < 2 ? '-8px' : 'auto',
-                            bottom: i >= 2 ? '-8px' : 'auto',
-                            left: i % 2 === 0 ? '-8px' : 'auto',
-                            right: i % 2 === 1 ? '-8px' : 'auto'
+                            top: i < 2 ? '-6px' : 'auto',
+                            bottom: i >= 2 ? '-6px' : 'auto',
+                            left: i % 2 === 0 ? '-6px' : 'auto',
+                            right: i % 2 === 1 ? '-6px' : 'auto'
                           }}
                           animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
                           transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
                         >
-                          <Sparkles className="w-4 h-4 text-amber-400" />
+                          <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400" />
                         </motion.div>
                       ))}
                     </div>
@@ -348,7 +328,7 @@ export default function UniversalGameCompleteModal({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="space-y-3 mb-8"
+                className="space-y-2 sm:space-y-3 mb-3 sm:mb-4 flex-shrink-0 overflow-y-auto min-h-0"
               >
                 {details.failureReason === 'too_many_errors' && (
                   <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-xl flex items-start gap-3">
@@ -361,12 +341,12 @@ export default function UniversalGameCompleteModal({
                 
                 <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   {accuracy !== undefined && (
-                    <div className="bg-white/5 rounded-xl p-2 sm:p-3 md:p-4 border border-white/5">
-                      <div className="flex items-center gap-1 sm:gap-2 text-gray-400 text-xs sm:text-sm mb-1">
-                        <Target className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <div className="bg-white/5 rounded-lg sm:rounded-xl p-1.5 sm:p-2 border border-white/5">
+                      <div className="flex items-center gap-1 text-gray-400 text-xs mb-0.5">
+                        <Target className="w-3 h-3" />
                         <span>Accuracy</span>
                       </div>
-                      <div className={`text-lg sm:text-xl md:text-2xl font-bold ${
+                      <div className={`text-base sm:text-lg font-bold ${
                         accuracy >= 80 ? 'text-emerald-400' : 
                         accuracy >= 60 ? 'text-amber-400' : 'text-red-400'
                       }`}>
@@ -376,54 +356,54 @@ export default function UniversalGameCompleteModal({
                   )}
                   
                   {details.correctAnswers !== undefined && details.totalQuestions !== undefined && (
-                    <div className="bg-white/5 rounded-xl p-2 sm:p-3 md:p-4 border border-white/5">
-                      <div className="flex items-center gap-1 sm:gap-2 text-gray-400 text-xs sm:text-sm mb-1">
-                        <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <div className="bg-white/5 rounded-lg sm:rounded-xl p-1.5 sm:p-2 border border-white/5">
+                      <div className="flex items-center gap-1 text-gray-400 text-xs mb-0.5">
+                        <CheckCircle className="w-3 h-3" />
                         <span>Correct</span>
                       </div>
-                      <div className="text-lg sm:text-xl md:text-2xl font-bold text-white">
+                      <div className="text-base sm:text-lg font-bold text-white">
                         {details.correctAnswers}/{details.totalQuestions}
                       </div>
                     </div>
                   )}
                   
                   {time && (
-                    <div className="bg-white/5 rounded-xl p-2 sm:p-3 md:p-4 border border-white/5">
-                      <div className="flex items-center gap-1 sm:gap-2 text-gray-400 text-xs sm:text-sm mb-1">
-                        <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <div className="bg-white/5 rounded-lg sm:rounded-xl p-1.5 sm:p-2 border border-white/5">
+                      <div className="flex items-center gap-1 text-gray-400 text-xs mb-0.5">
+                        <Clock className="w-3 h-3" />
                         <span>Time</span>
                       </div>
-                      <div className="text-lg sm:text-xl md:text-2xl font-bold text-amber-400">{time}</div>
+                      <div className="text-base sm:text-lg font-bold text-amber-400">{time}</div>
                     </div>
                   )}
 
                   {details.streak !== undefined && (
-                    <div className="bg-white/5 rounded-xl p-2 sm:p-3 md:p-4 border border-white/5">
-                      <div className="flex items-center gap-1 sm:gap-2 text-gray-400 text-xs sm:text-sm mb-1">
-                        <Zap className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <div className="bg-white/5 rounded-lg sm:rounded-xl p-1.5 sm:p-2 border border-white/5">
+                      <div className="flex items-center gap-1 text-gray-400 text-xs mb-0.5">
+                        <Zap className="w-3 h-3" />
                         <span>Best streak</span>
                       </div>
-                      <div className="text-lg sm:text-xl md:text-2xl font-bold text-amber-400">{details.streak}</div>
+                      <div className="text-base sm:text-lg font-bold text-amber-400">{details.streak}</div>
                     </div>
                   )}
 
                   {details.kpm !== undefined && (
-                    <div className="bg-white/5 rounded-xl p-2 sm:p-3 md:p-4 border border-white/5">
-                      <div className="flex items-center gap-1 sm:gap-2 text-gray-400 text-xs sm:text-sm mb-1">
-                        <Keyboard className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <div className="bg-white/5 rounded-lg sm:rounded-xl p-1.5 sm:p-2 border border-white/5">
+                      <div className="flex items-center gap-1 text-gray-400 text-xs mb-0.5">
+                        <Keyboard className="w-3 h-3" />
                         <span>Typing speed</span>
                       </div>
-                      <div className="text-lg sm:text-xl md:text-2xl font-bold text-amber-400">{details.kpm} WPM</div>
+                      <div className="text-base sm:text-lg font-bold text-amber-400">{details.kpm} WPM</div>
                     </div>
                   )}
 
                   {details.wordCount !== undefined && (
-                    <div className="bg-white/5 rounded-xl p-2 sm:p-3 md:p-4 border border-white/5">
-                      <div className="flex items-center gap-1 sm:gap-2 text-gray-400 text-xs sm:text-sm mb-1">
-                        <BookOpen className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <div className="bg-white/5 rounded-lg sm:rounded-xl p-1.5 sm:p-2 border border-white/5">
+                      <div className="flex items-center gap-1 text-gray-400 text-xs mb-0.5">
+                        <BookOpen className="w-3 h-3" />
                         <span>Words</span>
                       </div>
-                      <div className="text-lg sm:text-xl md:text-2xl font-bold text-amber-400">{details.wordCount}</div>
+                      <div className="text-base sm:text-lg font-bold text-amber-400">{details.wordCount}</div>
                     </div>
                   )}
                 </div>
@@ -434,15 +414,15 @@ export default function UniversalGameCompleteModal({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.7 }}
-                className="space-y-3"
+                className="space-y-2 sm:space-y-3 flex-shrink-0 mt-auto"
               >
                 <button
                   onClick={onPlayAgain}
                   className="w-full relative group"
                 >
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl blur opacity-60 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-semibold flex items-center justify-center gap-2 hover:from-amber-400 hover:to-orange-400 transition-all text-sm sm:text-base">
-                    <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg sm:rounded-xl blur opacity-60 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative bg-gradient-to-r from-amber-500 to-orange-500 text-white py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg sm:rounded-xl font-semibold flex items-center justify-center gap-2 hover:from-amber-400 hover:to-orange-400 transition-all text-xs sm:text-sm">
+                    <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span>Play again</span>
                   </div>
                 </button>
@@ -450,18 +430,18 @@ export default function UniversalGameCompleteModal({
                 {onViewLeaderboard && (
                   <button
                     onClick={onViewLeaderboard}
-                    className="w-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 border border-amber-500/30 text-sm sm:text-base"
+                    className="w-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg sm:rounded-xl font-semibold transition-all flex items-center justify-center gap-2 border border-amber-500/30 text-xs sm:text-sm"
                   >
-                    <Trophy className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span>View leaderboard</span>
                   </button>
                 )}
                 
                 <button
                   onClick={onBackToDashboard}
-                  className="w-full bg-white/5 hover:bg-white/10 text-gray-400 py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-medium transition-all flex items-center justify-center gap-2 border border-white/10 text-sm sm:text-base"
+                  className="w-full bg-white/5 hover:bg-white/10 text-gray-400 py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg sm:rounded-xl font-medium transition-all flex items-center justify-center gap-2 border border-white/10 text-xs sm:text-sm"
                 >
-                  <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>Back to dashboard</span>
                 </button>
               </motion.div>

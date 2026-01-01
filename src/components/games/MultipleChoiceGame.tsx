@@ -246,11 +246,7 @@ export default function MultipleChoiceGame({ words, translations = {}, onClose, 
 
   return (
     <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-[1000] overflow-y-auto">
-      {/* Aurora background effects */}
-      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
-      
-      <div className="relative bg-[#12122a] rounded-2xl p-6 w-full max-w-2xl shadow-2xl border border-white/10 my-4">
+      <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-6 w-full max-w-2xl shadow-2xl border border-white/10 my-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
@@ -272,7 +268,7 @@ export default function MultipleChoiceGame({ words, translations = {}, onClose, 
 
         {questions.length === 0 ? (
           <div className="text-center py-12">
-            <Loader2 className="w-12 h-12 text-amber-400 animate-spin mx-auto mb-4" />
+            <Loader2 className="w-12 h-12 text-white animate-spin mx-auto mb-4" />
             <h3 className="text-xl font-bold text-white mb-2">Loading questions...</h3>
             <p className="text-gray-400">Förbereder ditt quiz</p>
           </div>
@@ -282,7 +278,7 @@ export default function MultipleChoiceGame({ words, translations = {}, onClose, 
             <div className="mb-6">
               <div className="flex items-center justify-between text-sm text-gray-400 mb-3">
                 <span className="font-medium">Fråga {index + 1} av {questions.length}</span>
-                <span className="font-medium text-amber-400">{Math.round(((index + 1) / questions.length) * 100)}%</span>
+                <span className="font-medium text-white">{Math.round(((index + 1) / questions.length) * 100)}%</span>
               </div>
               <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
                 <div 
@@ -293,7 +289,7 @@ export default function MultipleChoiceGame({ words, translations = {}, onClose, 
             </div>
 
             {/* Question */}
-            <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-2xl p-6 border border-white/10">
+            <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
               <div className="text-xl font-bold text-white text-center">{questions[index]?.prompt}</div>
             </div>
 
@@ -308,7 +304,7 @@ export default function MultipleChoiceGame({ words, translations = {}, onClose, 
                     'w-full text-left px-6 py-4 rounded-xl border transition-all duration-300 font-medium text-lg',
                     locked && feedbackIdx === i && feedbackType === 'correct' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-lg shadow-emerald-500/20' : '',
                     locked && feedbackIdx === i && feedbackType === 'wrong' ? 'bg-red-500/20 border-red-500/50 text-red-400 shadow-lg shadow-red-500/20' : '',
-                    !locked || feedbackIdx !== i ? 'bg-white/5 border-white/10 hover:border-amber-500/50 hover:bg-amber-500/10 text-white hover:shadow-lg' : '',
+                    !locked || feedbackIdx !== i ? 'bg-white/5 border-white/10 hover:border-white/30 hover:bg-white/10 text-white hover:shadow-lg' : '',
                     locked && feedbackIdx !== i ? 'opacity-40' : ''
                   ].join(' ')}
                 >
@@ -329,9 +325,9 @@ export default function MultipleChoiceGame({ words, translations = {}, onClose, 
 
             {/* Score Display */}
             <div className="text-center">
-              <div className="inline-flex items-center gap-2 bg-amber-500/10 px-6 py-3 rounded-xl border border-amber-500/30">
-                <Trophy className="w-5 h-5 text-amber-400" />
-                <span className="font-semibold text-amber-400">Score: {score} / {questions.length}</span>
+              <div className="inline-flex items-center gap-2 bg-white/5 px-6 py-3 rounded-xl border border-white/10">
+                <Trophy className="w-5 h-5 text-white" />
+                <span className="font-semibold text-white">Score: {score} / {questions.length}</span>
               </div>
             </div>
           </div>

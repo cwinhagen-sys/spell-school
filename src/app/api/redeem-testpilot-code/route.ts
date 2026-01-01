@@ -65,8 +65,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Koden har redan använts max antal gånger' }, { status: 400 })
     }
 
-    // Check if user has already used this code
-    if (codeData.used_by === user.id) {
+    // Check if user has already used this code (using new testpilot_code_usage table)
+    const { data: existingUsage } = await supabaseAdmin
+      .from('testpilot_code_usage')
+      .select('id')
+      .eq('code_id', codeData.id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (existingUsage) {
       console.error('❌ User has already used this code')
       return NextResponse.json({ error: 'Du har redan använt denna kod' }, { status: 400 })
     }
@@ -88,35 +95,76 @@ export async function POST(request: NextRequest) {
 
     console.log(`✅ Code is valid. Upgrading user ${user.id} to Pro...`)
 
-    // Update code usage
+    // Calculate expiration date
+    // Test pilot codes are valid for 1 month from when they are activated (used_at)
+    const usedAt = new Date()
+    const expiresAt = new Date(usedAt)
+    expiresAt.setMonth(expiresAt.getMonth() + 1) // 1 month from activation
+
+    // Create usage record in testpilot_code_usage table (each user gets their own expires_at)
+    // Note: We already checked for existing usage above, but the UNIQUE constraint provides
+    // additional protection in case of race conditions
+    const { error: createUsageError } = await supabaseAdmin
+      .from('testpilot_code_usage')
+      .insert({
+        code_id: codeData.id,
+        user_id: user.id,
+        used_at: usedAt.toISOString(),
+        expires_at: expiresAt.toISOString(),
+      })
+
+    if (createUsageError) {
+      console.error('❌ Error creating code usage record:', createUsageError)
+      
+      // Check if it's a UNIQUE constraint violation (user already used this code)
+      if (createUsageError.code === '23505' || createUsageError.message?.includes('duplicate key') || createUsageError.message?.includes('unique constraint')) {
+        return NextResponse.json({ error: 'Du har redan använt denna kod' }, { status: 400 })
+      }
+      
+      return NextResponse.json({ error: 'Kunde inte skapa kodanvändning' }, { status: 500 })
+    }
+
+    // Update code usage count (but don't update used_by/used_at/expires_at as these are now per-user)
     const { error: updateCodeError } = await supabaseAdmin
       .from('testpilot_codes')
       .update({
-        used_by: user.id,
-        used_at: new Date().toISOString(),
         current_uses: codeData.current_uses + 1,
       })
       .eq('id', codeData.id)
 
     if (updateCodeError) {
-      console.error('❌ Error updating code usage:', updateCodeError)
+      console.error('❌ Error updating code usage count:', updateCodeError)
+      // Try to rollback usage record
+      await supabaseAdmin
+        .from('testpilot_code_usage')
+        .delete()
+        .eq('code_id', codeData.id)
+        .eq('user_id', user.id)
       return NextResponse.json({ error: 'Kunde inte uppdatera kod' }, { status: 500 })
     }
 
     // Upgrade user to Pro tier
+    // CRITICAL: Set stripe_subscription_id to NULL for test pilot users
+    // If this is not NULL, getTestPilotInfo will return isTestPilot: false
     const { error: upgradeError } = await supabaseAdmin
       .from('profiles')
-      .update({ subscription_tier: 'pro' })
+      .update({ 
+        subscription_tier: 'pro',
+        stripe_subscription_id: null  // Must be NULL for test pilot
+      })
       .eq('id', user.id)
 
     if (upgradeError) {
       console.error('❌ Error upgrading user:', upgradeError)
-      // Try to rollback code usage
+      // Try to rollback code usage record and count
+      await supabaseAdmin
+        .from('testpilot_code_usage')
+        .delete()
+        .eq('code_id', codeData.id)
+        .eq('user_id', user.id)
       await supabaseAdmin
         .from('testpilot_codes')
         .update({
-          used_by: codeData.used_by,
-          used_at: codeData.used_at,
           current_uses: codeData.current_uses,
         })
         .eq('id', codeData.id)

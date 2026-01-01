@@ -97,11 +97,9 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
   const [selectedVoice, setSelectedVoice] = useState<string>('en-US-Journey-F') // Default voice
   const [scenarioFilter, setScenarioFilter] = useState<string>('All')
   
-  // Text-to-speech states
+  // Text-to-speech states (using Web Speech API - no audio element needed)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentWordIndex, setCurrentWordIndex] = useState(-1)
-  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null)
-  const [wordTimings, setWordTimings] = useState<Array<{ word: string; start: number; end: number }>>([])
   
   // AI Evaluation states
   const [evaluationResult, setEvaluationResult] = useState<{
@@ -231,82 +229,68 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
     return out
   }
 
-  // Text-to-speech with word highlighting
-  const synthesizeSpeech = useCallback(async (text: string) => {
-    try {
-      const response = await fetch('/api/tts/vertex', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text,
-          voiceId: selectedVoice,
-          speakingRate: 0.9
-        })
-      })
-      
-      if (!response.ok) {
-        console.error('TTS failed:', await response.text())
-        return null
-      }
-      
-      const data = await response.json()
-      return {
-        audioContent: data.audioContent,
-        wordTimings: data.wordTimings as Array<{ word: string; start: number; end: number }>
-      }
-    } catch (error) {
-      console.error('TTS error:', error)
-      return null
-    }
-  }, [selectedVoice])
-
+  // Text-to-speech using Web Speech API (free, built into browser)
+  // Vertex AI TTS removed for cost reasons
   const playStoryWithHighlighting = useCallback(async () => {
     if (!solutionText || isPlaying) return
     
     // Get the full story text (with user's answers filled in)
     const fullText = solutionText
     
-    const result = await synthesizeSpeech(fullText)
-    if (!result) return
-    
-    // Create audio element from base64
-    const audio = new Audio(`data:audio/mpeg;base64,${result.audioContent}`)
-    setAudioElement(audio)
-    setWordTimings(result.wordTimings)
-    setIsPlaying(true)
-    setCurrentWordIndex(0)
-    
-    // Set up word timing tracking
-    const startTime = Date.now()
-    const checkInterval = setInterval(() => {
-      const elapsed = (Date.now() - startTime) / 1000
-      const currentIdx = result.wordTimings.findIndex(
-        (t, i) => elapsed >= t.start && elapsed < t.end
-      )
-      if (currentIdx !== -1) {
-        setCurrentWordIndex(currentIdx)
+    // Use Web Speech API instead of Vertex AI TTS
+    if ('speechSynthesis' in window) {
+      setIsPlaying(true)
+      setCurrentWordIndex(0)
+      
+      // Simple word highlighting - highlight words as they would be spoken
+      // (Web Speech API doesn't provide word timings, so we estimate)
+      const words = fullText.split(/\s+/).filter(w => w.trim().length > 0)
+      const estimatedTimePerWord = 0.5 // Rough estimate: 0.5 seconds per word
+      let currentWordIdx = 0
+      
+      const highlightInterval = setInterval(() => {
+        if (currentWordIdx < words.length) {
+          setCurrentWordIndex(currentWordIdx)
+          currentWordIdx++
+        } else {
+          clearInterval(highlightInterval)
+        }
+      }, estimatedTimePerWord * 1000)
+      
+      const utterance = new SpeechSynthesisUtterance(fullText)
+      utterance.lang = 'en-US'
+      utterance.rate = 0.9 // Slightly slower for clarity
+      utterance.pitch = 1.0
+      utterance.volume = 1.0
+      
+      utterance.onend = () => {
+        clearInterval(highlightInterval)
+        setIsPlaying(false)
+        setCurrentWordIndex(-1)
       }
-    }, 50)
-    
-    audio.onended = () => {
-      clearInterval(checkInterval)
+      
+      utterance.onerror = () => {
+        clearInterval(highlightInterval)
+        setIsPlaying(false)
+        setCurrentWordIndex(-1)
+      }
+      
+      speechSynthesis.speak(utterance)
+    } else {
+      // Browser doesn't support speech synthesis
+      console.warn('Browser does not support speech synthesis')
       setIsPlaying(false)
-      setCurrentWordIndex(-1)
-      setAudioElement(null)
     }
-    
-    audio.play()
-  }, [solutionText, isPlaying, synthesizeSpeech])
+  }, [solutionText, isPlaying])
 
   const stopPlayback = useCallback(() => {
-    if (audioElement) {
-      audioElement.pause()
-      audioElement.currentTime = 0
-      setAudioElement(null)
+    // Stop Web Speech API
+    if ('speechSynthesis' in window) {
+      speechSynthesis.cancel()
     }
     setIsPlaying(false)
     setCurrentWordIndex(-1)
-  }, [audioElement])
+  }, [])
 
   const retryGeneration = async () => {
     if (isRetrying) return
@@ -324,6 +308,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
   }
 
   // Safe fallback templates (never use placeholders)
+  // Varied templates for better sentence generation, especially for few words
   const SAFE_TEMPLATES = [
     (w: string) => `I left the ${w} on the kitchen counter.`,
     (w: string) => `Did you remember the ${w} before we left?`,
@@ -332,7 +317,14 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
     (w: string) => `Only the ${w} fits this narrow space.`,
     (w: string) => `Please attach the ${w} to the email.`,
     (w: string) => `They stored the ${w} in the attic.`,
-    (w: string) => `What a relief the ${w} brought today.`
+    (w: string) => `What a relief the ${w} brought today.`,
+    (w: string) => `The ${w} sat quietly in the corner.`,
+    (w: string) => `Can you pass me the ${w}, please?`,
+    (w: string) => `I found the ${w} under the table.`,
+    (w: string) => `The ${w} looked beautiful in the sunlight.`,
+    (w: string) => `My friend gave me the ${w} as a gift.`,
+    (w: string) => `We saw the ${w} in the garden yesterday.`,
+    (w: string) => `The ${w} made everyone smile.`
   ]
 
   // Safe fallback generator (only used if server fails completely)
@@ -771,13 +763,8 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
     return Object.keys(newInvalidMap).length === 0
   }
 
-  const checkAnswersVisual = () => {
-    // First validate all answers
-    if (!validateAllAnswers()) {
-      // Don't proceed with checking if there are invalid words
-      return
-    }
-    
+  // Calculate correct answers and return the map (for use in submit)
+  const calculateCorrectAnswers = (): Record<number, boolean> => {
     const map: Record<number, boolean> = {}
     
     // Normalize function for consistent matching
@@ -864,6 +851,17 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
       map[meta.index] = matches
     }
     
+    return map
+  }
+
+  const checkAnswersVisual = () => {
+    // First validate all answers
+    if (!validateAllAnswers()) {
+      // Don't proceed with checking if there are invalid words
+      return
+    }
+    
+    const map = calculateCorrectAnswers()
     setCorrectMap(map)
     setChecked(true)
   }
@@ -871,16 +869,27 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
   const submit = async () => {
     if (submitted) return
     
-    // Check answers first if not already checked
+    // Validate all answers first
+    if (!validateAllAnswers()) {
+      // Don't proceed with submitting if there are invalid words
+      return
+    }
+    
+    // Calculate correct answers - use existing checked map if available, otherwise calculate fresh
+    let correctMapToUse: Record<number, boolean>
     if (!checked) {
-      checkAnswersVisual()
-      // Wait a bit for state to update
-      await new Promise(resolve => setTimeout(resolve, 100))
+      // Calculate fresh and update state for visual feedback
+      correctMapToUse = calculateCorrectAnswers()
+      setCorrectMap(correctMapToUse)
+      setChecked(true)
+    } else {
+      // Use existing checked map
+      correctMapToUse = correctMap
     }
     
     // Calculate and set score IMMEDIATELY based on correct answers (before AI evaluation)
     const totalGaps = gapsMeta.length
-    const correctAnswers = Object.values(correctMap).filter(Boolean).length
+    const correctAnswers = Object.values(correctMapToUse).filter(Boolean).length
     const scoreResult = calculateStoryGapScore(correctAnswers, totalGaps, 0)
     setScore(scoreResult.pointsAwarded)
     
@@ -1009,7 +1018,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
     let wordCount = 0
     
     return (
-      <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-2xl p-6 border border-amber-500/30 mb-6">
+      <div className="bg-white/5 rounded-xl p-6 border border-white/10 mb-6">
         <div className="flex items-center gap-2 mb-4">
           <Volume2 className="w-5 h-5 text-amber-400" />
           <span className="text-amber-400 font-medium">Now Playing</span>
@@ -1147,13 +1156,9 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
   if (loading && difficulty) {
     return (
       <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50">
-        {/* Aurora background effects */}
-        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
-        
-        <div className="relative rounded-2xl p-8 max-w-lg w-full shadow-2xl bg-[#12122a] border border-white/10 text-center">
+        <div className="relative rounded-2xl p-8 max-w-lg w-full shadow-2xl bg-white/5 backdrop-blur-sm border border-white/10 text-center">
           <div className="mb-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/30">
+            <div className="w-16 h-16 bg-white/10 border border-white/10 rounded-xl flex items-center justify-center mx-auto mb-4">
               <FileText className="w-8 h-8 text-white" />
             </div>
             <div className="text-2xl text-white font-bold mb-2">Spell School</div>
@@ -1168,7 +1173,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
   if (error) {
     return (
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div className="relative rounded-2xl p-8 max-w-2xl w-full shadow-2xl bg-[#12122a] border border-white/10">
+        <div className="relative rounded-2xl p-8 max-w-2xl w-full shadow-2xl bg-white/5 backdrop-blur-sm border border-white/10">
           <div className="text-red-400 mb-4">
             <h3 className="font-semibold mb-2 text-white">Ett fel uppstod vid generering av meningar</h3>
             <p className="text-sm text-gray-400">{error}</p>
@@ -1209,14 +1214,10 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
   if (submitted && !sessionMode) {
     return (
       <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50 overflow-y-auto">
-        {/* Aurora background effects */}
-        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
-        
-        <div className="relative bg-[#12122a] rounded-2xl p-6 w-full max-w-2xl shadow-2xl border border-white/10 my-4 text-center">
+        <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-6 w-full max-w-2xl shadow-2xl border border-white/10 my-4 text-center">
           {/* Header */}
           <div className="flex items-center justify-center mb-6">
-            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/30">
+            <div className="w-10 h-10 bg-white/10 border border-white/10 rounded-xl flex items-center justify-center">
               <FileText className="w-6 h-6 text-white" />
             </div>
             <div className="ml-3">
@@ -1233,7 +1234,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
 
           <button 
             onClick={onClose} 
-            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white py-3 px-8 rounded-xl font-semibold transition-all shadow-lg shadow-amber-500/30"
+            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white py-3 px-8 rounded-xl font-semibold transition-colors duration-150"
           >
             Stäng
           </button>
@@ -1266,12 +1267,10 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
         {/* Aurora background effects */}
         <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
         <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 right-1/3 w-[250px] h-[250px] bg-amber-500/15 rounded-full blur-[80px] animate-pulse" style={{ animationDelay: '2s' }} />
-        
-        <div className="relative bg-[#12122a] rounded-3xl p-8 w-full max-w-2xl shadow-2xl border border-white/10 my-4">
+        <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-8 w-full max-w-2xl shadow-2xl border border-white/10 my-4">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-amber-500/40 animate-pulse">
+            <div className="w-20 h-20 bg-white/10 border border-white/10 rounded-xl flex items-center justify-center mx-auto mb-4">
               <BookOpen className="w-10 h-10 text-white" />
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">Story Gap Adventure</h1>
@@ -1282,7 +1281,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
           <div className="space-y-4 mb-8">
             <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 bg-white/10 border border-white/10 rounded-xl flex items-center justify-center flex-shrink-0">
                   <span className="text-xl">🎯</span>
                 </div>
                 <div>
@@ -1294,7 +1293,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
 
             <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 bg-white/10 border border-white/10 rounded-xl flex items-center justify-center flex-shrink-0">
                   <span className="text-xl">📝</span>
                 </div>
                 <div>
@@ -1306,7 +1305,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
 
             <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 bg-white/10 border border-white/10 rounded-xl flex items-center justify-center flex-shrink-0">
                   <span className="text-xl">⭐</span>
                 </div>
                 <div>
@@ -1318,7 +1317,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
 
             <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 bg-white/10 border border-white/10 rounded-xl flex items-center justify-center flex-shrink-0">
                   <span className="text-xl">🔊</span>
                 </div>
                 <div>
@@ -1339,7 +1338,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
             </button>
             <button
               onClick={() => setGameStep('scenario')}
-              className="flex-1 py-4 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white rounded-xl font-semibold transition-all shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2"
+              className="flex-1 py-4 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white rounded-xl font-semibold transition-colors duration-150 flex items-center justify-center gap-2"
             >
               Choose Scenario
               <ChevronRight className="w-5 h-5" />
@@ -1354,14 +1353,10 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
   if (gameStep === 'scenario') {
     return (
       <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50 overflow-y-auto">
-        {/* Aurora background effects */}
-        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
-        
-        <div className="relative bg-[#12122a] rounded-3xl p-6 w-full max-w-4xl shadow-2xl border border-white/10 my-4 max-h-[90vh] flex flex-col">
+        <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-6 w-full max-w-4xl shadow-2xl border border-white/10 my-4 max-h-[90vh] flex flex-col">
           {/* Header */}
           <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-amber-500/30">
+            <div className="w-16 h-16 bg-white/10 border border-white/10 rounded-xl flex items-center justify-center mx-auto mb-3">
               <MapPin className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-white mb-1">Choose Your Setting</h2>
@@ -1461,14 +1456,10 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
 
     return (
       <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50 overflow-y-auto">
-        {/* Aurora background effects */}
-        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
-        
-        <div className="relative bg-[#12122a] rounded-3xl p-8 w-full max-w-2xl shadow-2xl border border-white/10 my-4">
+        <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-8 w-full max-w-2xl shadow-2xl border border-white/10 my-4">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-amber-500/30">
+            <div className="w-16 h-16 bg-white/10 border border-white/10 rounded-xl flex items-center justify-center mx-auto mb-3">
               <Gauge className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-white mb-1">Choose Difficulty</h2>
@@ -1532,14 +1523,10 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
   if (gameStep === 'voice') {
     return (
       <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50 overflow-y-auto">
-        {/* Aurora background effects */}
-        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
-        
-        <div className="relative bg-[#12122a] rounded-3xl p-8 w-full max-w-2xl shadow-2xl border border-white/10 my-4">
+        <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-8 w-full max-w-2xl shadow-2xl border border-white/10 my-4">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-amber-500/30">
+            <div className="w-16 h-16 bg-white/10 border border-white/10 rounded-xl flex items-center justify-center mx-auto mb-3">
               <Volume2 className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-white mb-1">Choose Narrator</h2>
@@ -1582,7 +1569,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
                 setGameStep('playing')
                 // Start generating the story with selected options
               }}
-              className="flex-1 py-4 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white rounded-xl font-semibold transition-all shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2"
+              className="flex-1 py-4 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white rounded-xl font-semibold transition-colors duration-150 flex items-center justify-center gap-2"
             >
               <Sparkles className="w-5 h-5" />
               Generate Story
@@ -1626,13 +1613,10 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
     return (
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div className="relative w-full max-w-2xl">
-          {/* Glow effect */}
-          <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/30 via-orange-500/20 to-rose-500/30 rounded-3xl blur-xl" />
-          
-          <div className="relative rounded-2xl p-8 shadow-2xl bg-[#12122a] border border-white/10 text-center">
+          <div className="relative rounded-2xl p-8 shadow-2xl bg-white/5 backdrop-blur-sm border border-white/10 text-center">
             {/* Header */}
             <div className="mb-8">
-              <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/30">
+              <div className="w-16 h-16 bg-white/10 border border-white/10 rounded-xl flex items-center justify-center mx-auto mb-4">
                 <FileText className="w-8 h-8 text-white" />
               </div>
               <h2 className="text-2xl font-bold text-white mb-2">Sentence Gap</h2>
@@ -1688,15 +1672,11 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
 
   return (
     <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-4 z-50 overflow-y-auto">
-      {/* Aurora background effects */}
-      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
-      
-      <div className="relative bg-[#12122a] rounded-2xl p-6 w-full max-w-6xl shadow-2xl border border-white/10 my-4">
+      <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-6 w-full max-w-6xl shadow-2xl border border-white/10 my-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
+            <div className="w-10 h-10 bg-white/10 border border-white/10 rounded-xl flex items-center justify-center">
               <FileText className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -1731,16 +1711,6 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
 
         {/* Story Info Bar */}
         <div className="mb-6 flex flex-wrap items-center gap-3">
-          {/* Scenario Badge */}
-          {selectedScenario && (
-            <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl border bg-amber-500/10 border-amber-500/30">
-              <span className="text-lg">{STORY_SCENARIOS.find(s => s.id === selectedScenario)?.emoji}</span>
-              <span className="text-sm font-medium text-amber-400">
-                {STORY_SCENARIOS.find(s => s.id === selectedScenario)?.name}
-              </span>
-            </div>
-          )}
-          
           {/* Difficulty Badge */}
           <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-xl border ${
             difficulty === 'green' ? 'bg-emerald-500/10 border-emerald-500/30' :
@@ -1753,14 +1723,6 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
               'text-red-400'
             }`}>
               {difficulty === 'green' ? '🌱 Easy' : difficulty === 'yellow' ? '⚡ Medium' : '🔥 Hard'}
-            </span>
-          </div>
-
-          {/* Voice Badge */}
-          <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl border bg-amber-500/10 border-amber-500/30">
-            <span className="text-lg">{VOICE_OPTIONS.find(v => v.id === selectedVoice)?.emoji}</span>
-            <span className="text-sm font-medium text-amber-400">
-              {VOICE_OPTIONS.find(v => v.id === selectedVoice)?.name}
             </span>
           </div>
 
@@ -1802,7 +1764,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
           </div>
 
           <div>
-            <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-2xl border border-amber-500/20 p-6">
+            <div className="bg-white/5 rounded-xl border border-white/10 p-6">
               <div className="text-lg font-bold mb-4 text-white flex items-center">
                 <FileText className="w-5 h-5 mr-2 text-amber-400" />
                 Available words
@@ -1849,7 +1811,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
             <button 
               onClick={submit} 
               disabled={!allAnswered || submitted} 
-              className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white rounded-xl font-semibold disabled:bg-white/5 disabled:text-gray-600 transition-all shadow-lg shadow-amber-500/30 hover:shadow-xl"
+              className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white rounded-xl font-semibold disabled:bg-white/5 disabled:text-gray-600 transition-colors duration-150"
             >
               Submit
             </button>

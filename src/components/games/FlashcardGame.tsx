@@ -4,13 +4,19 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { RotateCcw, ArrowLeft, Star, Trophy, Volume2, Mic, MicOff, Loader2, CheckCircle2, XCircle, AlertCircle, BookOpen, X } from 'lucide-react'
 import { startGameSession, endGameSession, logWordAttempt, type GameType, type TrackingContext } from '@/lib/tracking'
-import GameCompleteModal from '@/components/GameCompleteModal'
+import UniversalGameCompleteModal from '@/components/UniversalGameCompleteModal'
 import ColorGridSelector, { COLOR_GRIDS, GridConfig } from '@/components/ColorGridSelector'
+import { hasTTSAccess } from '@/lib/tts-access'
+import { supabase } from '@/lib/supabase'
+import UnsplashAttribution from '@/components/UnsplashAttribution'
 
 interface Word {
   en: string
   sv: string
   image_url?: string
+  photographer_name?: string
+  photographer_url?: string
+  unsplash_url?: string
 }
 
 interface FlashcardGameProps {
@@ -74,7 +80,7 @@ function ScoreMeter({ score, onClose }: { score: number; onClose: () => void }) 
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
       transition={{ duration: 0.3 }}
-      className="absolute inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-[#1a1a3a] to-[#12122a] rounded-2xl"
+      className="absolute inset-0 z-50 flex items-center justify-center bg-transparent rounded-2xl"
       onClick={onClose}
     >
       <div className="relative w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
@@ -143,9 +149,19 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
   const [isSpeaking, setIsSpeaking] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const isPlayingGoogleTTSRef = useRef(false)
+  const [hasTTSAccessState, setHasTTSAccessState] = useState<boolean | null>(null) // null = not checked yet
   
   // Pronunciation functionality - use session mode setting if provided, otherwise default to training
   const [pronunciationMode, setPronunciationMode] = useState<'training' | 'test'>(sessionMode ? sessionFlashcardMode : 'training')
+  
+  // Check TTS access on mount
+  useEffect(() => {
+    hasTTSAccess().then(access => {
+      setHasTTSAccessState(access)
+    }).catch(() => {
+      setHasTTSAccessState(false)
+    })
+  }, [])
   
   // Stable word list ref for session mode to prevent re-shuffling
   const stableWordListRef = useRef<Word[]>([])
@@ -157,12 +173,12 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
   const shuffledWordListKeyRef = useRef<string>('')
   const [isRecording, setIsRecording] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
-  const [pronunciationResults, setPronunciationResults] = useState<Map<number, { isCorrect: boolean; accuracyScore: number; feedback: string; transcript: string; xpAwarded?: boolean }>>(new Map())
+  const [pronunciationResults, setPronunciationResults] = useState<Map<number, { isCorrect: boolean; accuracyScore: number; feedback: string; transcript: string; xpAwarded?: boolean; mastered?: boolean }>>(new Map())
+  const [showScoreMeter, setShowScoreMeter] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const streamRef = useRef<MediaStream | null>(null)
-  const [xpAnimations, setXpAnimations] = useState<Array<{ id: number; x: number; y: number }>>([])
-  const xpAnimationIdRef = useRef(0)
+  // XP animation state removed
   const recordingTimeoutRef = useRef<number | null>(null)
   const continuousAssessmentIntervalRef = useRef<number | null>(null)
   const recordingStartTimeRef = useRef<number>(0)
@@ -206,15 +222,15 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
     }
   }, [allTranslations])
 
-  // Stop text-to-speech (both Google TTS and browser TTS)
+  // Stop text-to-speech (both API TTS and browser TTS)
   const stopSpeech = () => {
     // Stop browser TTS
     if ('speechSynthesis' in window) {
       speechSynthesis.cancel()
     }
     
-    // Stop HTML5 audio (Google TTS)
-    const audio = document.querySelector('audio[data-google-tts]') as HTMLAudioElement
+    // Stop HTML5 audio (API TTS)
+    const audio = document.querySelector('audio[data-tts-audio]') as HTMLAudioElement
     if (audio) {
       audio.pause()
       audio.remove()
@@ -231,8 +247,8 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
     isPlayingGoogleTTSRef.current = false
   }
 
-  // Play text-to-speech using Google TTS (Vertex AI)
-  const speakTextWithGoogleTTS = async (text: string, language: 'en-US' | 'sv-SE') => {
+  // Play text-to-speech using Web Speech API (default) or OpenAI TTS (if student has access)
+  const speakTextWithTTS = async (text: string, language: 'en-US' | 'sv-SE') => {
     // Stop any ongoing speech first
     stopSpeech()
     
@@ -246,135 +262,131 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
     
     setIsSpeaking(true)
     
-    try {
-      // Mark that we're using Google TTS
-      isPlayingGoogleTTSRef.current = true
-      
-      // Select voice based on language
-      // English voices (American) - using Neural2 for better quality
-      // C and E are typically female voices in Google TTS
-      const englishVoices = {
-        female: 'en-US-Neural2-C', // Female American voice
-        male: 'en-US-Neural2-D' // Male American voice
-      }
-      
-      // Swedish voices - using Neural2 for better quality
-      // C and E are typically female voices in Google TTS
-      const swedishVoices = {
-        female: 'sv-SE-Neural2-C', // Female Swedish voice
-        male: 'sv-SE-Neural2-D' // Male Swedish voice
-      }
-      
-      const voiceId = language === 'en-US' 
-        ? englishVoices.female // Default to female for English
-        : swedishVoices.female // Default to female for Swedish
-      
-      // Call Google TTS API (Vertex AI)
-      const response = await fetch('/api/tts/vertex', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text,
-          voiceId,
-          speakingRate: 1.0, // Normal speed for flashcards
-          pitch: 0 // Default pitch
+    // Use OpenAI TTS only if student has access granted by PRO teacher
+    // Otherwise, use Web Speech API (free, built into browser)
+    const useOpenAITTS = hasTTSAccessState === true
+    
+    if (useOpenAITTS) {
+      // Student has TTS access - use OpenAI TTS (high quality)
+      try {
+        // Mark that we're using TTS
+        isPlayingGoogleTTSRef.current = true
+        
+        // OpenAI TTS voices:
+        // - nova: Female, warm and friendly (recommended for education)
+        // - alloy: Neutral, balanced
+        // - shimmer: Female, clear and expressive
+        // Note: OpenAI TTS handles multiple languages automatically
+        const voice = 'nova' // Best for educational content
+        
+        // Call OpenAI TTS API
+        const response = await fetch('/api/tts/openai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text,
+            voice,
+            speed: 1.0, // Normal speed for flashcards
+            language: language === 'en-US' ? 'en' : 'sv'
+          })
         })
-      })
-      
-      if (!response.ok) {
-        // Try to get error message from response
-        let errorMessage = 'Failed to generate speech'
-        try {
-          const errorText = await response.text()
-          if (errorText) {
-            try {
-              const errorData = JSON.parse(errorText)
-              errorMessage = errorData.error || errorData.message || errorMessage
-            } catch {
-              // If not JSON, use the text as error message
-              errorMessage = errorText || errorMessage
+        
+        if (!response.ok) {
+          // Try to get error message from response
+          let errorMessage = 'Failed to generate speech'
+          try {
+            const errorText = await response.text()
+            if (errorText) {
+              try {
+                const errorData = JSON.parse(errorText)
+                errorMessage = errorData.error || errorData.message || errorMessage
+              } catch {
+                // If not JSON, use the text as error message
+                errorMessage = errorText || errorMessage
+              }
             }
+          } catch (e) {
+            // If we can't read the response, use status text
+            errorMessage = response.statusText || `HTTP ${response.status}`
           }
-        } catch (e) {
-          // If we can't read the response, use status text
-          errorMessage = response.statusText || `HTTP ${response.status}`
-        }
-        
-        console.error('❌ Google TTS failed:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorMessage
-        })
-        
-        // Check if it's an environment variable issue
-        if (errorMessage.includes('configuration missing') || errorMessage.includes('env var') || errorMessage.includes('credentials')) {
-          console.error('⚠️ Google TTS API configuration missing. Check Vercel environment variables.')
+          
+          console.error('❌ OpenAI TTS failed:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorMessage
+          })
+          
           // Fall through to browser TTS fallback
+          throw new Error(errorMessage)
         }
         
-        throw new Error(errorMessage)
-      }
-      
-      const data = await response.json()
-      
-      if (!data.audioContent) {
-        throw new Error('No audio content returned from API')
-      }
-      
-      // Create audio from base64 content
-      const audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`)
-      audio.setAttribute('data-google-tts', 'true')
-      
-      audio.onended = () => {
-        setIsSpeaking(false)
-        audio.remove()
-        isPlayingGoogleTTSRef.current = false
-        audioRef.current = null
-      }
-      
-      audio.onerror = () => {
-        setIsSpeaking(false)
-        audio.remove()
-        isPlayingGoogleTTSRef.current = false
-        audioRef.current = null
-      }
-      
-      await audio.play()
-      
-      // Store reference for cleanup
-      audioRef.current = audio
-      
-      return
-    } catch (error) {
-      console.warn('Google TTS error, falling back to browser TTS:', error)
-      isPlayingGoogleTTSRef.current = false
-      
-      // Fallback to browser TTS
-      if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(text)
-        utterance.lang = language
-        utterance.rate = 0.8
-        utterance.pitch = 1.0
+        const data = await response.json()
         
-        utterance.onend = () => {
+        if (!data.audioContent) {
+          throw new Error('No audio content returned from API')
+        }
+        
+        // Create audio from base64 content
+        const audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`)
+        audio.setAttribute('data-tts-audio', 'true')
+        
+        audio.onended = () => {
           setIsSpeaking(false)
+          audio.remove()
+          isPlayingGoogleTTSRef.current = false
+          audioRef.current = null
         }
         
-        utterance.onerror = () => {
+        audio.onerror = () => {
           setIsSpeaking(false)
+          audio.remove()
+          isPlayingGoogleTTSRef.current = false
+          audioRef.current = null
         }
         
-        speechSynthesis.speak(utterance)
+        await audio.play()
+        
+        // Store reference for cleanup
+        audioRef.current = audio
+        
+        return
+      } catch (error) {
+        console.warn('OpenAI TTS error, falling back to Web Speech API:', error)
+        isPlayingGoogleTTSRef.current = false
+        // Fall through to Web Speech API
       }
+    }
+    
+    // Default: Use Web Speech API (free, built into browser)
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text)
+      utterance.lang = language
+      utterance.rate = 0.9 // Slightly slower for clarity
+      utterance.pitch = 1.0
+      utterance.volume = 1.0
+      
+      utterance.onend = () => {
+        setIsSpeaking(false)
+      }
+      
+      utterance.onerror = () => {
+        setIsSpeaking(false)
+      }
+      
+      speechSynthesis.speak(utterance)
+    } else {
+      // Browser doesn't support speech synthesis
+      console.warn('Browser does not support speech synthesis')
+      setIsSpeaking(false)
     }
   }
 
   const handleSpeakEnglish = () => {
-    speakTextWithGoogleTTS(currentEnglish, 'en-US')
+    speakTextWithTTS(currentEnglish, 'en-US')
   }
 
   const handleSpeakSwedish = () => {
-    speakTextWithGoogleTTS(currentSwedish, 'sv-SE')
+    speakTextWithTTS(currentSwedish, 'sv-SE')
   }
 
   // Helper function to fetch with timeout
@@ -485,15 +497,31 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
       const newResults = new Map(pronunciationResults)
       const existingResult = newResults.get(resultIndex)
       const xpAwarded = existingResult?.xpAwarded || alreadyAwardedXP
+      const isMastered = result.isCorrect && result.accuracyScore >= 85
       
       newResults.set(resultIndex, {
         isCorrect: result.isCorrect,
         accuracyScore: result.accuracyScore,
         feedback: result.feedback,
         transcript: result.transcript || '',
-        xpAwarded: xpAwarded
+        xpAwarded: xpAwarded,
+        mastered: isMastered
       })
       setPronunciationResults(newResults)
+      
+      // Save to database if mastered - DISABLED for now
+      // if (isMastered) {
+      //   const currentWord = wordList[resultIndex]
+      //   if (currentWord) {
+      //     saveMasteredWord(currentWord.en || '', currentWord.sv || '', result.accuracyScore)
+      //   }
+      // }
+      
+      // Show ScoreMeter for a few seconds, then hide it to show the word again
+      setShowScoreMeter(true)
+      setTimeout(() => {
+        setShowScoreMeter(false)
+      }, 3000) // Show for 3 seconds
 
       // Play sound for correct pronunciation - only once per word
       if (result.isCorrect && result.accuracyScore >= 85 && !soundPlayedRef.current.has(resultIndex)) {
@@ -504,23 +532,29 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
       // Only award XP in test mode (not in training mode)
       if (result.isCorrect && result.accuracyScore >= 85 && pronunciationMode === 'test' && !alreadyAwardedXP) {
         // Award XP (2 XP per correct word) - only in test mode
-        setTotalXP(prev => prev + 2)
+        setTotalXP(prev => {
+          const newTotal = prev + 2
+          console.log('🎮 XP awarded in test mode:', { 
+            previousXP: prev, 
+            newTotal, 
+            wordIndex: resultIndex,
+            accuracyScore: result.accuracyScore,
+            isCorrect: result.isCorrect
+          })
+          return newTotal
+        })
         xpAwardedRef.current.add(resultIndex)
         
         // Update result with xpAwarded flag
+        const existingResult = newResults.get(resultIndex)!
         newResults.set(resultIndex, {
-          ...newResults.get(resultIndex)!,
-          xpAwarded: true
+          ...existingResult,
+          xpAwarded: true,
+          mastered: existingResult.mastered !== undefined ? existingResult.mastered : (existingResult.isCorrect && existingResult.accuracyScore >= 85)
         })
         setPronunciationResults(newResults)
         
-        // Show XP animation only in test mode
-        const rect = document.querySelector('.flashcard-container')?.getBoundingClientRect()
-        if (rect) {
-          const x = rect.left + rect.width / 2
-          const y = rect.top + rect.height / 2
-          showXPAnimation(x, y)
-        }
+        // XP animation removed
       }
 
       // In test mode, flip card to show result (English side)
@@ -644,7 +678,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
               const result = {
                 isCorrect: errorData.isCorrect || false,
                 accuracyScore: errorData.accuracyScore || 0,
-                feedback: errorData.feedback || 'Analysen tog för lång tid. Försök igen.',
+                feedback: errorData.feedback || 'Analysis took too long. Please try again.',
                 transcript: errorData.transcript || ''
               }
               
@@ -685,8 +719,47 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
             
             // Check for timeout without valid result structure - handle gracefully
             if (response.status === 504 || errorData.error?.includes('timeout')) {
-              // Timeout already logged above as info, just throw a user-friendly error
-              throw new Error('Analysen tog för lång tid. Kontrollera din internetanslutning och försök igen.')
+              // Timeout already logged above as info
+              console.log('⏱️ Handling timeout - creating fallback result')
+              // Even if we don't have a valid result structure, create a fallback result
+              const result = {
+                isCorrect: false,
+                accuracyScore: 0,
+                feedback: errorData.feedback || 'Analysis took too long. Please try again.',
+                transcript: errorData.transcript || ''
+              }
+              
+              // Process the timeout result as if it were a normal result
+              const resultIndex = getResultIndex()
+              const newResults = new Map(pronunciationResults)
+              newResults.set(resultIndex, {
+                isCorrect: result.isCorrect,
+                accuracyScore: result.accuracyScore,
+                feedback: result.feedback,
+                transcript: result.transcript,
+                xpAwarded: false
+              })
+              setPronunciationResults(newResults)
+              
+              // In test mode, flip card to show result (English side)
+              if (pronunciationMode === 'test') {
+                setIsFlipped(false)
+                setTimeout(() => {
+                  handleSpeakEnglish()
+                }, 400)
+              }
+              
+              // Important: Set processing to false before returning
+              setIsProcessing(false)
+              resultProcessedRef.current = false
+              
+              // Clean up microphone stream
+              if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => track.stop())
+                streamRef.current = null
+              }
+              
+              return // Exit early, we've handled the timeout result
             }
             
             // Only log as error if it's not a timeout
@@ -720,14 +793,30 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
           const existingResult = newResults.get(resultIndex)
           const xpAwarded = existingResult?.xpAwarded || alreadyAwardedXP
           
+          const isMastered = result.isCorrect && result.accuracyScore >= 85
           newResults.set(resultIndex, {
             isCorrect: result.isCorrect,
             accuracyScore: result.accuracyScore,
             feedback: result.feedback,
             transcript: result.transcript || '',
-            xpAwarded: xpAwarded
+            xpAwarded: xpAwarded,
+            mastered: isMastered
           })
           setPronunciationResults(newResults)
+          
+          // Save to database if mastered - DISABLED for now
+          // if (isMastered) {
+          //   const currentWord = wordList[resultIndex]
+          //   if (currentWord) {
+          //     saveMasteredWord(currentWord.en || '', currentWord.sv || '', result.accuracyScore)
+          //   }
+          // }
+          
+          // Show ScoreMeter for a few seconds, then hide it to show the word again
+          setShowScoreMeter(true)
+          setTimeout(() => {
+            setShowScoreMeter(false)
+          }, 3000) // Show for 3 seconds
 
           // Play sound for correct pronunciation - only once per word
           if (result.isCorrect && result.accuracyScore >= 85 && !soundPlayedRef.current.has(resultIndex)) {
@@ -738,7 +827,15 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
             // Only award XP in test mode (not in training mode)
             if (pronunciationMode === 'test' && !alreadyAwardedXP) {
               // Award XP (2 XP per correct word) - only in test mode
-              setTotalXP(prev => prev + 2)
+              setTotalXP(prev => {
+                const newTotal = prev + 2
+                console.log('🎮 XP awarded in test mode (timeout fallback):', { 
+                  previousXP: prev, 
+                  newTotal, 
+                  wordIndex: resultIndex
+                })
+                return newTotal
+              })
               xpAwardedRef.current.add(resultIndex)
               
               // Update result with xpAwarded flag
@@ -748,13 +845,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
               })
               setPronunciationResults(newResults)
               
-              // Show XP animation only in test mode
-              const rect = document.querySelector('.flashcard-container')?.getBoundingClientRect()
-              if (rect) {
-                const x = rect.left + rect.width / 2
-                const y = rect.top + rect.height / 2
-                showXPAnimation(x, y)
-              }
+              // XP animation removed
             }
           }
 
@@ -783,9 +874,9 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
           const newResults = new Map(pronunciationResults)
           
           // Provide more specific error message
-          let errorMessage = 'Ett fel uppstod vid bedömning av uttalet. Försök igen.'
+          let errorMessage = 'An error occurred while assessing pronunciation. Please try again.'
           if (error?.message?.includes('timeout')) {
-            errorMessage = 'Analysen tog för lång tid. Kontrollera din internetanslutning och försök igen.'
+            errorMessage = 'Analysis took too long. Check your internet connection and try again.'
           } else if (error?.message) {
             errorMessage = error.message
           }
@@ -794,7 +885,8 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
             isCorrect: false,
             accuracyScore: 0,
             feedback: errorMessage,
-            transcript: ''
+            transcript: '',
+            mastered: false
           })
           setPronunciationResults(newResults)
         } finally {
@@ -849,7 +941,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
       }, 1500) // Check every 1.5 seconds
     } catch (error) {
       console.error('Error accessing microphone:', error)
-      alert('Kunde inte komma åt mikrofonen. Kontrollera att du har gett tillstånd.')
+      alert('Could not access microphone. Please check that you have granted permission.')
     }
   }
 
@@ -882,6 +974,238 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
   // Get pronunciation status for current word
   const getPronunciationStatus = () => {
     return pronunciationResults.get(getResultIndex())
+  }
+
+  // Check if current word is mastered (green, 85%+)
+  const isWordMastered = () => {
+    const status = getPronunciationStatus()
+    // Check both the mastered flag and the accuracy score
+    return status && (status.mastered === true || (status.isCorrect && status.accuracyScore >= 85))
+  }
+
+  // Save mastered word to database
+  const saveMasteredWord = async (wordEn: string, wordSv: string, accuracyScore: number) => {
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError) {
+        console.warn('⚠️ Error getting user:', userError)
+        return
+      }
+      
+      if (!user) {
+        console.warn('⚠️ No user found, cannot save mastered word')
+        return
+      }
+
+      const wordSetId = trackingContext?.wordSetId || null
+      const homeworkId = trackingContext?.homeworkId || null
+
+      console.log('💾 Saving mastered word:', {
+        wordEn,
+        wordSv,
+        accuracyScore,
+        wordSetId,
+        homeworkId
+      })
+
+      // Build the data object
+      const masteryData: any = {
+        student_id: user.id,
+        word_en: wordEn.toLowerCase().trim(),
+        accuracy_score: accuracyScore,
+        mastered_at: new Date().toISOString()
+      }
+
+      if (wordSv) {
+        masteryData.word_sv = wordSv
+      }
+      if (wordSetId) {
+        masteryData.word_set_id = wordSetId
+      }
+      if (homeworkId) {
+        masteryData.homework_id = homeworkId
+      }
+
+      // Try to insert - if it fails with 409 conflict, that means word is already saved (OK!)
+      const { data: insertedData, error: insertError } = await supabase
+        .from('pronunciation_mastery')
+        .insert(masteryData)
+        .select()
+
+      if (insertError) {
+        // FIRST: Check if it's a conflict/duplicate error (409, 23505, etc.) - this is OK, word is already saved
+        const errorStr = JSON.stringify(insertError)
+        const isConflict = insertError.code === '23505' ||  // PostgreSQL unique violation
+                          insertError.code === 'PGRST301' || // PostgREST conflict
+                          errorStr.includes('409') ||
+                          errorStr.includes('Conflict') ||
+                          (insertError.message && (
+                            insertError.message.includes('duplicate') || 
+                            insertError.message.includes('unique') || 
+                            insertError.message.includes('already exists') ||
+                            insertError.message.includes('Conflict') ||
+                            insertError.message.includes('409')
+                          ))
+        
+        if (isConflict) {
+          // Word is already saved in database - perfect! This is expected behavior.
+          // No need to log - it's working as intended
+          return
+        }
+        
+        // THEN: Check if table doesn't exist yet (only if it's NOT a conflict)
+        if (insertError.code === '42P01' || 
+            (insertError.message && (insertError.message.includes('does not exist') || 
+                                    insertError.message.includes('relation') || 
+                                    insertError.message.includes('table') ||
+                                    insertError.message.includes('pronunciation_mastery')))) {
+          console.warn('⚠️ pronunciation_mastery table does not exist yet. Run pronunciation-mastery-schema.sql in Supabase SQL Editor first.')
+          return
+        }
+        
+        // Log other errors for debugging
+        console.error('❌ Error saving mastered word:', {
+          message: insertError.message,
+          code: insertError.code,
+          details: insertError.details,
+          hint: insertError.hint
+        })
+      } else if (insertedData && insertedData.length > 0) {
+        // Success - word saved!
+        console.log('✅ Successfully saved mastered word to database:', wordEn)
+      }
+    } catch (error: any) {
+      console.error('❌ Exception saving mastered word:', {
+        message: error?.message,
+        stack: error?.stack,
+        error: error
+      })
+    }
+  }
+
+  // Load mastered words from database
+  const loadMasteredWords = async () => {
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError) {
+        console.warn('⚠️ Error getting user:', userError)
+        return new Map<number, { isCorrect: boolean; accuracyScore: number; feedback: string; transcript: string; xpAwarded?: boolean; mastered?: boolean }>()
+      }
+      
+      if (!user) {
+        console.warn('⚠️ No user found, cannot load mastered words')
+        return new Map<number, { isCorrect: boolean; accuracyScore: number; feedback: string; transcript: string; xpAwarded?: boolean; mastered?: boolean }>()
+      }
+
+      const wordSetId = trackingContext?.wordSetId || null
+      const homeworkId = trackingContext?.homeworkId || null
+
+      console.log('🔍 Loading mastered words:', {
+        wordSetId,
+        homeworkId,
+        wordListLength: wordList.length,
+        userId: user.id
+      })
+
+      // Build query - handle cases where both wordSetId and homeworkId are null
+      let query = supabase
+        .from('pronunciation_mastery')
+        .select('word_en, word_sv, accuracy_score')
+        .eq('student_id', user.id)
+
+      // If we have both wordSetId and homeworkId, filter by both
+      if (wordSetId && homeworkId) {
+        query = query.eq('word_set_id', wordSetId).eq('homework_id', homeworkId)
+      }
+      // If we have wordSetId, filter by it (and homework should be null)
+      else if (wordSetId) {
+        query = query.eq('word_set_id', wordSetId).is('homework_id', null)
+      } 
+      // If we have homeworkId, filter by it (and wordSetId should be null)
+      else if (homeworkId) {
+        query = query.eq('homework_id', homeworkId).is('word_set_id', null)
+      }
+      // If both are null, get words that have both null (general mastery)
+      else {
+        query = query.is('word_set_id', null).is('homework_id', null)
+      }
+
+      const { data, error } = await query
+
+      if (error) {
+        // Check if table doesn't exist yet (common error code: 42P01)
+        if (error.code === '42P01' || error.message?.includes('does not exist') || error.message?.includes('relation') || error.message?.includes('table')) {
+          console.warn('⚠️ pronunciation_mastery table does not exist yet. Run pronunciation-mastery-schema.sql in Supabase SQL Editor first.')
+          return new Map()
+        }
+        console.error('❌ Error loading mastered words:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+          error: error
+        })
+        return new Map()
+      }
+
+      if (!data || data.length === 0) {
+        console.log('📥 No mastered words found in database for this context')
+        return new Map()
+      }
+
+      console.log('📥 Found mastered words in database:', {
+        count: data.length,
+        words: data.map(d => d.word_en)
+      })
+
+      // Create a map of mastered words by word index
+      const masteredMap = new Map<number, { isCorrect: boolean; accuracyScore: number; feedback: string; transcript: string; xpAwarded?: boolean; mastered?: boolean }>()
+      
+      console.log('🔍 Matching mastered words:', {
+        dataFromDB: data.map(d => ({ word_en: d.word_en, accuracy: d.accuracy_score })),
+        wordList: wordList.map(w => w.en)
+      })
+      
+      wordList.forEach((word, index) => {
+        const wordEnLower = (word.en || '').toLowerCase().trim()
+        const masteredWord = data.find(m => {
+          const dbWordLower = (m.word_en || '').toLowerCase().trim()
+          return dbWordLower === wordEnLower
+        })
+        
+        if (masteredWord) {
+          console.log('✅ Found mastered word match:', {
+            index,
+            word: word.en,
+            dbWord: masteredWord.word_en,
+            accuracy: masteredWord.accuracy_score
+          })
+          masteredMap.set(index, {
+            isCorrect: true,
+            accuracyScore: masteredWord.accuracy_score || 85,
+            feedback: 'Perfect pronunciation',
+            transcript: word.en || '',
+            mastered: true,
+            xpAwarded: false
+          })
+        }
+      })
+
+      console.log('📥 Loaded mastered words from database:', {
+        count: masteredMap.size,
+        indices: Array.from(masteredMap.keys()),
+        words: Array.from(masteredMap.keys()).map(i => wordList[i]?.en)
+      })
+
+      return masteredMap
+    } catch (error: any) {
+      console.error('❌ Exception loading mastered words:', {
+        message: error?.message,
+        stack: error?.stack,
+        error: error
+      })
+      return new Map()
+    }
   }
 
   // Get card background color and opacity based on pronunciation result
@@ -968,16 +1292,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
     }
   }
 
-  // Show XP animation
-  const showXPAnimation = (x: number, y: number) => {
-    const id = xpAnimationIdRef.current++
-    setXpAnimations(prev => [...prev, { id, x, y }])
-    
-    // Remove animation after it completes
-    setTimeout(() => {
-      setXpAnimations(prev => prev.filter(anim => anim.id !== id))
-    }, 2000)
-  }
+  // XP animation removed
 
   // Convert WebM to WAV format for Azure Speech Service
   // Azure requires WAV/PCM format with 16kHz sample rate, mono channel
@@ -1060,7 +1375,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
     } catch (error) {
       console.error('❌ Error converting WebM to WAV:', error)
       // Fallback: return original blob (might not work with Azure)
-      alert('Kunde inte konvertera ljudfilen. Försök igen.')
+      alert('Could not convert audio file. Please try again.')
       throw error
     }
   }
@@ -1224,7 +1539,10 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
           allWords.push({
             en: wordObj.en || '',
             sv: wordObj.sv || '',
-            image_url: wordObj.image_url
+            image_url: wordObj.image_url,
+            photographer_name: wordObj.photographer_name,
+            photographer_url: wordObj.photographer_url,
+            unsplash_url: wordObj.unsplash_url
           })
         } else {
           // Fallback: use translations from grid or provided translations
@@ -1282,11 +1600,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
         wordListLength: wordList.length // Save length to detect if word list changed
       }
       localStorage.setItem(progressKey, JSON.stringify(progress))
-      console.log('💾 Saved progress:', {
-        resultsCount: pronunciationResults.size,
-        currentWordIndex,
-        wordListLength: wordList.length
-      })
+      // Removed console.log to reduce console noise
     }
   }
 
@@ -1335,7 +1649,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
           
           // Restore pronunciation results (only for 2+ words and if word list matches)
           if (progress.pronunciationResults && wordList.length >= 2 && wordListMatches) {
-            const restoredResults = new Map<number, { isCorrect: boolean; accuracyScore: number; feedback: string; transcript: string; xpAwarded?: boolean }>(progress.pronunciationResults as any)
+            const restoredResults = new Map<number, { isCorrect: boolean; accuracyScore: number; feedback: string; transcript: string; xpAwarded?: boolean; mastered?: boolean }>(progress.pronunciationResults as any)
             setPronunciationResults(restoredResults)
             console.log('📥 Loaded progress:', {
               resultsCount: restoredResults.size,
@@ -1365,22 +1679,53 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
   // Load progress when wordList is ready
   // Only load if we have at least 2 words (to avoid auto-completing with 1 word)
   useEffect(() => {
-    if (sessionMode && wordList.length >= 2 && !showGridSelector) {
-      loadProgress()
-    } else if (sessionMode && wordList.length === 1 && !showGridSelector) {
-      // Reset progress if only 1 word (shouldn't auto-complete)
-      setCurrentWordIndex(0)
-      setGameFinished(false)
-      setPronunciationResults(new Map())
-      // Also clear localStorage progress for single word to prevent auto-completion
-      const currentSessionId = sessionMode ? sessionId : internalSessionId
-      if (currentSessionId && gameName) {
-        const progressKey = `flashcard_progress_${currentSessionId}_${gameName}`
-        localStorage.removeItem(progressKey)
-        console.log('🧹 Cleared localStorage progress for single word game')
+    const loadAllProgress = async () => {
+      if (sessionMode && wordList.length >= 2 && !showGridSelector) {
+        // Load session progress from localStorage
+        loadProgress()
+        
+        // Load mastered words from database - DISABLED for now
+        // await new Promise(resolve => setTimeout(resolve, 100))
+        // const masteredWords = await loadMasteredWords()
+        // if (masteredWords.size > 0) {
+        //   setPronunciationResults(prev => {
+        //     const merged = new Map(prev)
+        //     masteredWords.forEach((value, key) => {
+        //       merged.set(key, value)
+        //     })
+        //     return merged
+        //   })
+        // }
+      } else if (sessionMode && wordList.length === 1 && !showGridSelector) {
+        // Reset progress if only 1 word (shouldn't auto-complete)
+        setCurrentWordIndex(0)
+        setGameFinished(false)
+        setPronunciationResults(new Map())
+        // Also clear localStorage progress for single word to prevent auto-completion
+        const currentSessionId = sessionMode ? sessionId : internalSessionId
+        if (currentSessionId && gameName) {
+          const progressKey = `flashcard_progress_${currentSessionId}_${gameName}`
+          localStorage.removeItem(progressKey)
+          console.log('🧹 Cleared localStorage progress for single word game')
+        }
+      } else if (!sessionMode && wordList.length > 0 && !showGridSelector) {
+        // Load mastered words for non-session mode - DISABLED for now
+        // await new Promise(resolve => setTimeout(resolve, 100))
+        // const masteredWords = await loadMasteredWords()
+        // if (masteredWords.size > 0) {
+        //   setPronunciationResults(prev => {
+        //     const merged = new Map(prev)
+        //     masteredWords.forEach((value, key) => {
+        //       merged.set(key, value)
+        //     })
+        //     return merged
+        //   })
+        // }
       }
     }
-  }, [sessionMode, wordList.length, showGridSelector])
+
+    loadAllProgress()
+  }, [sessionMode, wordList.length, showGridSelector, trackingContext?.wordSetId, trackingContext?.homeworkId])
 
   // Save progress whenever pronunciationResults or currentWordIndex changes
   // Only save if we have at least 2 words
@@ -1573,12 +1918,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
           wordListLength: wordList.length
         }
         localStorage.setItem(progressKey, JSON.stringify(progress))
-        console.log('💾 Saved final progress to localStorage:', {
-          resultsCount: latestResults.size,
-          correctWords,
-          totalWords,
-          resultsKeys: Array.from(latestResults.keys())
-        })
+        // Removed console.log to reduce console noise
       }
       
       // Also update state so it's consistent
@@ -1592,6 +1932,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
         onClose()
       }, 300)
     } else if (pronunciationMode === 'test') {
+      console.log('🎮 Finishing test mode - calling onScoreUpdate with XP:', { totalXP })
       onScoreUpdate(totalXP, totalXP)
     } else {
       onScoreUpdate(0, 0)
@@ -1726,6 +2067,9 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
   const currentEnglish = currentWord?.en || ''
   const currentSwedish = currentWord?.sv || (currentEnglish ? getTranslation(currentEnglish) : '')
   const currentImage = currentWord?.image_url
+  const photographerName = currentWord?.photographer_name
+  const photographerUrl = currentWord?.photographer_url
+  const unsplashUrl = currentWord?.unsplash_url
   
   // Debug logging
   useEffect(() => {
@@ -1772,24 +2116,39 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
     r => !r.isCorrect || r.accuracyScore < 85
   ).length
 
-  // In session mode, don't show GameCompleteModal - just close automatically
+  // Calculate accuracy percentage
+  const totalAttempted = pronunciationResults.size
+  const accuracy = totalAttempted > 0 ? Math.round((correctWordsCount / totalAttempted) * 100) : 0
+
+  // Calculate time spent
+  const started = startedAtRef.current
+  const durationSec = started ? Math.max(1, Math.floor((Date.now() - started) / 1000)) : 0
+  const timeString = durationSec > 0 ? `${Math.floor(durationSec / 60)}:${String(durationSec % 60).padStart(2, '0')}` : undefined
+
+  // Points awarded (XP in test mode, 0 in training mode)
+  const pointsAwarded = pronunciationMode === 'test' ? totalXP : 0
+
+  // In session mode, don't show UniversalGameCompleteModal - just close automatically
   if (gameFinished && !sessionMode) {
     return (
-      <GameCompleteModal
-        score={pronunciationMode === 'test' ? totalXP : 0}
+      <UniversalGameCompleteModal
+        score={correctWordsCount}
+        pointsAwarded={pointsAwarded}
+        gameType="flashcards"
+        accuracy={accuracy}
+        time={timeString}
         details={{
-          wordsReviewed: baseWordList.length,
-          correctWords: correctWordsCount,
-          incorrectWords: incorrectWordsCount,
+          correctAnswers: correctWordsCount,
+          totalQuestions: totalAttempted,
+          wrongAttempts: incorrectWordsCount,
           totalWords: baseWordList.length,
-          xpEarned: pronunciationMode === 'test' ? totalXP : 0,
+          wordsReviewed: baseWordList.length,
+          failedWordsCount: failedWordIndices.length,
           testMode: pronunciationMode === 'test',
-          failedWordsCount: failedWordIndices.length
+          xpEarned: pointsAwarded
         }}
         onPlayAgain={restartGame}
-        onRedoFailed={failedWordIndices.length > 0 ? restartWithFailedWords : undefined}
         onBackToDashboard={onClose}
-        gameType="flashcards"
         themeColor={themeColor}
       />
     )
@@ -1823,11 +2182,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
 
   return (
     <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-2 z-50 overflow-y-auto">
-      {/* Aurora background effects */}
-      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-emerald-600/20 rounded-full blur-[100px] animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-amber-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
-      
-      <div className="relative bg-[#12122a] rounded-2xl p-6 w-full max-w-3xl shadow-2xl border border-white/10 my-2">
+      <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-6 w-full max-w-3xl shadow-2xl border border-white/10 my-2">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -1835,7 +2190,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
               <BookOpen className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">Ordkort</h2>
+              <h2 className="text-2xl font-bold text-white">Flashcards</h2>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -1858,7 +2213,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                       : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  Träning
+                  Training
                 </button>
                 <button
                   onClick={() => {
@@ -1882,13 +2237,18 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
             )}
             <button
               onClick={() => {
+                // Save XP before closing if in test mode
+                if (pronunciationMode === 'test' && totalXP > 0) {
+                  console.log('🎮 Closing game - saving XP before close:', { totalXP })
+                  onScoreUpdate(totalXP, totalXP)
+                }
                 if (sessionMode) {
                   saveProgress()
                 }
                 onClose()
               }}
               className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center transition-colors border border-white/10"
-              title={sessionMode ? 'Tillbaka till spelval' : 'Stäng'}
+              title={sessionMode ? 'Back to game selection' : 'Close'}
             >
               <X className="w-5 h-5 text-gray-400" />
             </button>
@@ -1936,7 +2296,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                     className={`
                       w-2.5 h-2.5 rounded-full
                       transition-all duration-150 hover:scale-150 hover:z-10 relative
-                      ${isCurrent ? 'ring-2 ring-amber-400 ring-offset-1 ring-offset-[#12122a] scale-150' : ''}
+                      ${isCurrent ? 'ring-2 ring-amber-400 ring-offset-1 ring-offset-white/5 scale-150' : ''}
                       ${pronunciationMode === 'test' ? 'cursor-not-allowed opacity-50' : ''}
                       ${
                         status === 'green' 
@@ -1948,7 +2308,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                           : 'bg-white/20 border border-white/30'
                       }
                     `}
-                    title={`${word.en} - ${status === 'white' ? 'Ej försökt' : status === 'green' ? 'Perfekt' : status === 'yellow' ? 'Nära' : 'Behöver övning'}`}
+                    title={`${word.en} - ${status === 'white' ? 'Not attempted' : status === 'green' ? 'Perfect' : status === 'yellow' ? 'Close' : 'Needs practice'}`}
                   />
                 )
               })}
@@ -2002,7 +2362,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
           >
             {/* Front of card (English word) */}
             <div 
-              className={`absolute inset-0 bg-gradient-to-br from-[#1a1a3a] to-[#12122a] rounded-2xl overflow-hidden shadow-2xl backface-hidden border border-white/10 transition-colors ${
+              className={`absolute inset-0 bg-white/5 backdrop-blur-sm rounded-2xl overflow-hidden shadow-2xl backface-hidden border border-white/10 transition-colors ${
                 isFlipped ? 'opacity-0' : 'opacity-100'
               } ${pronunciationMode === 'training' ? getCardColorClass() : ''}`}
             >
@@ -2010,14 +2370,14 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
               <AnimatePresence>
                 {(() => {
                   const status = getPronunciationStatus()
-                  // Show meter in training mode when English side is visible, or in test mode when English side is visible after result
-                  const showMeter = !isFlipped && status && !isRecording && !isProcessing && status.accuracyScore > 0
+                  // Show meter when showScoreMeter is true and we have a result
+                  const showMeter = showScoreMeter && !isFlipped && status && !isRecording && !isProcessing && status.accuracyScore > 0
                   if (showMeter) {
                     return (
                       <ScoreMeter 
                         score={status.accuracyScore} 
                         onClose={() => {
-                          // Auto-close handled by AnimatePresence after timeout
+                          setShowScoreMeter(false)
                         }}
                       />
                     )
@@ -2045,31 +2405,46 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
               
               <div className="flex h-full">
                 {/* Left side - Image (only show if image exists) */}
-                {currentImage && (
-                <div className="w-1/2 relative">
-                    <img 
-                      src={currentImage} 
-                      alt={currentEnglish}
-                      className="w-full h-full object-cover"
-                    />
+                {(() => {
+                  const status = getPronunciationStatus()
+                  // Hide image when ScoreMeter is showing
+                  if (showScoreMeter && status && !isRecording && !isProcessing && status.accuracyScore > 0) return null
+                  return currentImage && (
+                    <div className="w-1/2 relative">
+                      <img 
+                        src={currentImage} 
+                        alt={currentEnglish}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black/95 via-black/90 to-black/60">
+                        <UnsplashAttribution
+                          photographerName={photographerName}
+                          photographerUrl={photographerUrl}
+                          unsplashUrl={unsplashUrl}
+                        />
+                      </div>
                     </div>
-                  )}
+                  )
+                })()}
                 
                 {/* Right side - Word */}
                 <div className={`flex items-center justify-center p-8 ${currentImage ? 'w-1/2' : 'w-full'}`}>
                   <div className="text-center w-full">
-                    <h3 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight" style={{ 
-                      fontSize: 'clamp(1.5rem, 4vw, 3rem)',
-                      wordBreak: 'keep-all',
-                      overflowWrap: 'break-word',
-                      hyphens: 'none'
-                    }}>{currentEnglish}</h3>
+                    {/* Word - hide only when ScoreMeter is showing */}
+                    {!showScoreMeter && (
+                      <h3 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight" style={{ 
+                        fontSize: 'clamp(1.5rem, 4vw, 3rem)',
+                        wordBreak: 'keep-all',
+                        overflowWrap: 'break-word',
+                        hyphens: 'none'
+                      }}>{currentEnglish}</h3>
+                    )}
                     
                     {/* Recording indicator */}
                     {isRecording && (
                       <div className="mt-4 flex items-center justify-center gap-3 text-red-400">
                         <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                        <span className="font-semibold">Spelar in...</span>
+                        <span className="font-semibold">Recording...</span>
                       </div>
                     )}
                     
@@ -2077,13 +2452,15 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                     {isProcessing && (
                       <div className="mt-4 flex items-center justify-center gap-3 text-amber-400">
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        <span>Analyserar uttal...</span>
+                        <span>Analyzing pronunciation...</span>
                       </div>
                     )}
                     
                     {/* Pronunciation result indicator */}
                     {(() => {
                       const status = getPronunciationStatus()
+                      // Hide feedback when ScoreMeter is showing
+                      if (showScoreMeter && status && !isRecording && !isProcessing && status.accuracyScore > 0) return null
                       return pronunciationMode === 'training' && status && !isRecording && !isProcessing && (
                         <div className="mt-4">
                           <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl ${
@@ -2112,7 +2489,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
 
             {/* Back of card (Swedish translation) */}
             <div 
-              className={`absolute inset-0 bg-gradient-to-br from-[#1a1a3a] to-[#12122a] rounded-2xl overflow-hidden shadow-2xl backface-hidden rotate-y-180 border border-white/10 transition-colors ${
+              className={`absolute inset-0 bg-white/5 backdrop-blur-sm rounded-2xl overflow-hidden shadow-2xl backface-hidden rotate-y-180 border border-white/10 transition-colors ${
                 isFlipped ? 'opacity-100' : 'opacity-0'
               } ${pronunciationMode === 'test' && getPronunciationStatus() ? getCardColorClass() : ''}`}
             >
@@ -2133,23 +2510,31 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                 <Volume2 className={`w-5 h-5 ${isSpeaking ? 'animate-pulse' : ''}`} />
               </button>
                 
-                {/* Microphone button for test mode (when Swedish side is visible and no result yet) */}
-                {pronunciationMode === 'test' && isFlipped && !isRecording && !isProcessing && !getPronunciationStatus() && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      startRecording()
-                    }}
-                    className="p-3 rounded-xl transition-all shadow-lg bg-white/10 hover:bg-white/20 text-cyan-400 hover:shadow-xl border border-white/10"
-                  >
-                    <Mic className="w-5 h-5" />
-                  </button>
-                )}
-                {/* Disabled microphone indicator if already attempted in test mode */}
-                {pronunciationMode === 'test' && isFlipped && getPronunciationStatus() && (
-                  <div className="p-3 rounded-xl bg-white/5 text-gray-500 cursor-not-allowed border border-white/5">
-                    <Mic className="w-5 h-5" />
-                  </div>
+                {/* Microphone button for test mode (when Swedish side is visible and no result yet, or if result is yellow/red) */}
+                {pronunciationMode === 'test' && isFlipped && !isRecording && !isProcessing && (
+                  (() => {
+                    const status = getPronunciationStatus()
+                    // Show mic button if no result yet, or if result is not mastered (yellow/red)
+                    if (!status || !isWordMastered()) {
+                      return (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            startRecording()
+                          }}
+                          className="p-3 rounded-xl transition-all shadow-lg bg-white/10 hover:bg-white/20 text-cyan-400 hover:shadow-xl border border-white/10"
+                        >
+                          <Mic className="w-5 h-5" />
+                        </button>
+                      )
+                    }
+                    // If mastered (green), show disabled mic
+                    return (
+                      <div className="p-3 rounded-xl bg-white/5 text-gray-500 cursor-not-allowed border border-white/5" title="This word is already mastered!">
+                        <Mic className="w-5 h-5" />
+                      </div>
+                    )
+                  })()
                 )}
               </div>
               
@@ -2162,6 +2547,13 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                       alt={currentSwedish}
                       className="w-full h-full object-cover"
                     />
+                    <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black/95 via-black/90 to-black/60">
+                      <UnsplashAttribution
+                        photographerName={photographerName}
+                        photographerUrl={photographerUrl}
+                        unsplashUrl={unsplashUrl}
+                      />
+                    </div>
                     </div>
                   )}
                 
@@ -2179,7 +2571,7 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                     {pronunciationMode === 'test' && isRecording && (
                       <div className="mt-4 flex items-center justify-center gap-3 text-red-400">
                         <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                        <span className="font-semibold">Spelar in...</span>
+                        <span className="font-semibold">Recording...</span>
                       </div>
                     )}
                     
@@ -2187,13 +2579,15 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
                     {pronunciationMode === 'test' && isProcessing && (
                       <div className="mt-4 flex items-center justify-center gap-3 text-amber-400">
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        <span>Analyserar uttal...</span>
+                        <span>Analyzing pronunciation...</span>
                       </div>
                     )}
                     
                     {/* Pronunciation Test Mode - Show result when flipped to English side (isFlipped = false means English is showing) */}
                     {(() => {
                       const status = getPronunciationStatus()
+                      // Hide feedback when ScoreMeter is showing
+                      if (showScoreMeter && status && !isRecording && !isProcessing && status.accuracyScore > 0) return null
                       return pronunciationMode === 'test' && !isFlipped && status && (
                         <div className="mt-4">
                           <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl ${
@@ -2230,27 +2624,39 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
             className="bg-white/5 hover:bg-white/10 text-gray-300 py-3 px-4 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center space-x-2 border border-white/10"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Föregående</span>
+            <span>Previous</span>
           </button>
 
           {pronunciationMode === 'test' && (
             <div className="text-sm text-gray-400 font-medium">
-              {pronunciationResults.size} / {wordList.length} ord försökta
+              {pronunciationResults.size} / {wordList.length} words attempted
             </div>
           )}
 
           <div className="flex items-center gap-3">
             {/* Microphone button - positioned to the left of Next button */}
             {!isRecording && !isProcessing && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  startRecording()
-                }}
-                className="p-3 rounded-xl transition-all shadow-lg bg-white/10 border border-amber-500/30 hover:bg-amber-500/10 text-amber-400 hover:shadow-xl"
-              >
-                <Mic className="w-5 h-5" />
-              </button>
+              (() => {
+                // Don't show mic button if word is mastered (green)
+                if (isWordMastered()) {
+                  return (
+                    <div className="p-3 rounded-xl bg-white/5 text-gray-500 cursor-not-allowed border border-white/5" title="Detta ord är redan klart!">
+                      <Mic className="w-5 h-5" />
+                    </div>
+                  )
+                }
+                return (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      startRecording()
+                    }}
+                    className="p-3 rounded-xl transition-all shadow-lg bg-white/10 border border-amber-500/30 hover:bg-amber-500/10 text-amber-400 hover:shadow-xl"
+                  >
+                    <Mic className="w-5 h-5" />
+                  </button>
+                )
+              })()
             )}
             
             <button
@@ -2261,29 +2667,13 @@ export default function FlashcardGame({ words, wordObjects, translations = {}, o
               }
               className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white py-3 px-5 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-lg shadow-amber-500/30"
             >
-              <span>{currentWordIndex === wordList.length - 1 ? 'Klar' : 'Nästa'}</span>
+              <span>{currentWordIndex === wordList.length - 1 ? 'Done' : 'Next'}</span>
               <ArrowLeft className="w-4 h-4 rotate-180" />
             </button>
           </div>
         </div>
 
-        {/* XP Animation Overlay - Don't show in session mode test */}
-        {!sessionMode && xpAnimations.map(anim => (
-          <div
-            key={anim.id}
-            className="fixed pointer-events-none z-50"
-            style={{
-              left: `${anim.x}px`,
-              top: `${anim.y}px`,
-              transform: 'translate(-50%, -50%)',
-              animation: 'xpFloat 2s ease-out forwards'
-            }}
-          >
-            <div className="text-2xl font-bold text-amber-400 drop-shadow-lg">
-              +2 XP
-            </div>
-          </div>
-        ))}
+        {/* XP Animation Overlay - Removed */}
       </div>
     </div>
   )

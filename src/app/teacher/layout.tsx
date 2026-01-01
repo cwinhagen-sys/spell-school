@@ -102,20 +102,20 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
     { id: 'word-sets', href: '/teacher/word-sets', label: 'Word Lists', icon: FileText },
     { id: 'assign', href: '/teacher/assign', label: 'Assign', icon: Calendar },
     { 
-      id: 'progress',
-      href: hasProgressAccess ? '/teacher/students' : '/teacher/account', 
-      label: 'Progress', 
-      icon: TrendingUp,
-      locked: !hasProgressAccess,
-      lockMessage: 'Requires Pro plan'
-    },
-    { 
       id: 'sessions',
       href: hasSessionAccess ? '/teacher/sessions' : '/teacher/account', 
       label: 'Sessions', 
       icon: Gamepad2,
       locked: !hasSessionAccess,
       lockMessage: 'Requires Premium or Pro'
+    },
+    { 
+      id: 'progress',
+      href: hasProgressAccess ? '/teacher/students' : '/teacher/account', 
+      label: 'Progress', 
+      icon: TrendingUp,
+      locked: !hasProgressAccess,
+      lockMessage: 'Requires Pro plan'
     },
   ]
 

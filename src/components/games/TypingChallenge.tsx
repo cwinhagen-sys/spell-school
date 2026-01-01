@@ -611,15 +611,11 @@ export default function TypingChallenge({ words, onClose, onScoreUpdate, trackin
 
   return (
     <div className="fixed inset-0 bg-[#0a0a1a] flex items-center justify-center p-2 z-50 overflow-y-auto">
-      {/* Aurora background effects */}
-      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/20 rounded-full blur-[100px] animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
-      
-      <div className="relative bg-[#12122a] rounded-2xl p-6 w-full max-w-2xl shadow-2xl border border-white/10 my-2">
+      <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-6 w-full max-w-2xl shadow-2xl border border-white/10 my-2">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
+            <div className="w-10 h-10 bg-white/10 border border-white/10 rounded-xl flex items-center justify-center">
               <Clock className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -638,17 +634,17 @@ export default function TypingChallenge({ words, onClose, onScoreUpdate, trackin
         {/* Game Stats */}
         <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
           <div className="flex items-center space-x-3 flex-wrap gap-3">
-            <div className="flex items-center space-x-2 bg-amber-500/10 px-4 py-3 rounded-xl border border-amber-500/30">
+            <div className="flex items-center space-x-2 bg-white/5 px-4 py-3 rounded-xl border border-white/10">
               <Clock className="w-5 h-5 text-amber-400" />
-              <span className="text-amber-300 font-bold text-lg">{formatTime(elapsedSec)}</span>
+              <span className="text-white font-bold text-lg">{formatTime(elapsedSec)}</span>
             </div>
-            <div className="flex items-center space-x-2 bg-emerald-500/10 px-4 py-3 rounded-xl border border-emerald-500/30">
+            <div className="flex items-center space-x-2 bg-white/5 px-4 py-3 rounded-xl border border-white/10">
               <Target className="w-5 h-5 text-emerald-400" />
-              <span className="text-emerald-300 font-bold text-lg">Streak: {streak}</span>
+              <span className="text-white font-bold text-lg">Streak: {streak}</span>
             </div>
-            <div className="flex items-center space-x-2 bg-amber-500/10 px-4 py-3 rounded-xl border border-amber-500/30">
+            <div className="flex items-center space-x-2 bg-white/5 px-4 py-3 rounded-xl border border-white/10">
               <Star className="w-5 h-5 text-amber-400" />
-              <span className="text-amber-300 font-bold text-lg">Score: {correctAnswersRef.current}</span>
+              <span className="text-white font-bold text-lg">Score: {correctAnswersRef.current}</span>
             </div>
           </div>
         </div>
@@ -659,9 +655,9 @@ export default function TypingChallenge({ words, onClose, onScoreUpdate, trackin
             <span className="font-medium">Ord {currentWordIndex + 1} av {wordList.length}</span>
             <span className="font-medium text-amber-400">{Math.round(((currentWordIndex + 1) / wordList.length) * 100)}%</span>
           </div>
-          <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
+          <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
             <div 
-              className="bg-gradient-to-r from-amber-500 to-orange-500 h-3 rounded-full transition-all duration-500"
+              className="bg-gradient-to-r from-amber-500 to-orange-500 h-1.5 rounded-full transition-all duration-300"
               style={{ width: `${((currentWordIndex + 1) / wordList.length) * 100}%` }}
             ></div>
           </div>
@@ -669,12 +665,12 @@ export default function TypingChallenge({ words, onClose, onScoreUpdate, trackin
 
         {/* Current Word Display */}
         <div className="text-center mb-6">
-          <div className="bg-gradient-to-br from-amber-500/20 via-orange-500/20 to-red-500/20 rounded-2xl p-8 text-white shadow-2xl border border-amber-500/30">
-            <div className="inline-block bg-white/10 px-4 py-2 rounded-xl mb-4 backdrop-blur-sm border border-white/10">
+          <div className="bg-white/5 rounded-xl p-8 text-white border border-white/10">
+            <div className="inline-block bg-white/5 px-4 py-2 rounded-lg mb-4 border border-white/10">
               <h3 className="text-lg font-bold">Skriv detta ord:</h3>
             </div>
-            <div className="text-5xl font-bold mb-4 drop-shadow-lg">{currentWord}</div>
-            <p className="text-gray-300 text-lg font-medium">Skriv så snabbt du kan!</p>
+            <div className="text-5xl font-bold mb-4">{currentWord}</div>
+            <p className="text-gray-400 text-lg font-medium">Skriv så snabbt du kan!</p>
           </div>
         </div>
 
@@ -687,7 +683,7 @@ export default function TypingChallenge({ words, onClose, onScoreUpdate, trackin
               value={userInput}
               onChange={handleInputChange}
               placeholder="Skriv här..."
-              className="flex-1 px-4 py-3 border border-white/10 rounded-xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500/50 text-white placeholder:text-gray-500 text-lg bg-white/5 transition-all shadow-lg hover:shadow-xl"
+              className="flex-1 px-4 py-3 border border-white/10 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 text-white placeholder:text-gray-500 text-lg bg-white/5 transition-all duration-150"
               autoComplete="off"
               autoFocus
               disabled={gameFinished}
@@ -695,7 +691,7 @@ export default function TypingChallenge({ words, onClose, onScoreUpdate, trackin
             <button
               type="submit"
               disabled={gameFinished}
-              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white py-3 px-6 rounded-xl font-bold text-base transition-all shadow-lg shadow-amber-500/30 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white py-3 px-6 rounded-xl font-bold text-base transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Skicka
             </button>

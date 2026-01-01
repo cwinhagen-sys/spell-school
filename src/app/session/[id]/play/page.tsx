@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { CheckCircle2, Circle, ArrowRight, X } from 'lucide-react'
 import { COLOR_GRIDS } from '@/components/ColorGridSelector'
@@ -16,6 +16,7 @@ import QuizGame from '@/components/games/QuizGame'
 import { getGameMetadata } from '@/lib/session-games'
 import BlockSelectionUI from '@/components/session/BlockSelectionUI'
 import GameSelectionUI from '@/components/session/GameSelectionUI'
+import SessionGameCompleteModal from '@/components/session/SessionGameCompleteModal'
 
 interface Word {
   en: string
@@ -65,7 +66,9 @@ const getGameIcon = (gameId: string): string => {
 export default function SessionPlayPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const sessionId = params.id as string
+  const autoJoin = searchParams?.get('autoJoin') === 'true'
   const [session, setSession] = useState<Session | null>(null)
   const [participantId, setParticipantId] = useState<string | null>(null)
   const [selectedBlocks, setSelectedBlocks] = useState<string[]>([])
@@ -81,13 +84,26 @@ export default function SessionPlayPage() {
   const [quizDetails, setQuizDetails] = useState<Array<{ word_en: string; word_sv: string; student_answer: string; score: number }>>([])
   const [quizSubmitted, setQuizSubmitted] = useState(false) // Track if quiz has been submitted
   const [quizGraded, setQuizGraded] = useState(false) // Track if quiz has been graded
+  const [showGameCompleteModal, setShowGameCompleteModal] = useState(false)
+  const gameCompleteModalRef = useRef(false) // Ref to track if modal should be shown (for immediate checks)
+  
+  // Update ref when modal state changes
+  useEffect(() => {
+    gameCompleteModalRef.current = showGameCompleteModal
+  }, [showGameCompleteModal])
 
   useEffect(() => {
     if (sessionId) {
       loadSession()
-      loadParticipant()
     }
   }, [sessionId])
+
+  useEffect(() => {
+    if (sessionId && session) {
+      // Wait for session to load before loading participant (needed for autoJoin to access session.session_code)
+      loadParticipant()
+    }
+  }, [sessionId, session, autoJoin])
 
   useEffect(() => {
     if (session && session.word_sets && session.word_sets.length > 0) {
@@ -266,6 +282,119 @@ export default function SessionPlayPage() {
 
   const loadParticipant = async () => {
     try {
+      // If autoJoin is enabled, try to automatically join with student's account name
+      if (autoJoin) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          // Get student's profile to get their display name
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('username, name, email')
+            .eq('id', user.id)
+            .single()
+
+          // Determine student name (username > name > email prefix)
+          let studentName = profile?.username || profile?.name || null
+          if (!studentName && profile?.email) {
+            studentName = profile.email.split('@')[0]
+          }
+
+          if (studentName) {
+            // Check if participant already exists with this name
+            const { data: existingParticipant } = await supabase
+              .from('session_participants')
+              .select('id, selected_blocks, student_name')
+              .eq('session_id', sessionId)
+              .eq('student_name', studentName.trim())
+              .single()
+
+            let participantIdToUse: string
+
+            if (existingParticipant) {
+              // Participant already exists, use it
+              participantIdToUse = existingParticipant.id
+            } else {
+              // Create new participant with student's name
+              const { data: newParticipant, error: joinError } = await supabase
+                .from('session_participants')
+                .insert({
+                  session_id: sessionId,
+                  student_name: studentName.trim(),
+                  student_id: user.id,
+                })
+                .select()
+                .single()
+
+              if (joinError) {
+                // If error is duplicate, try to fetch existing one
+                if (joinError.code === '23505') {
+                  const { data: retryParticipant } = await supabase
+                    .from('session_participants')
+                    .select('id')
+                    .eq('session_id', sessionId)
+                    .eq('student_name', studentName.trim())
+                    .single()
+                  
+                  if (retryParticipant) {
+                    participantIdToUse = retryParticipant.id
+                  } else {
+                    console.error('Error joining session:', joinError)
+                    router.push(`/session/join?code=${session?.session_code || ''}`)
+                    return
+                  }
+                } else {
+                  console.error('Error joining session:', joinError)
+                  router.push(`/session/join?code=${session?.session_code || ''}`)
+                  return
+                }
+              } else {
+                participantIdToUse = newParticipant.id
+              }
+            }
+
+            // Store participant ID
+            setParticipantId(participantIdToUse)
+            sessionStorage.setItem('sessionParticipantId', participantIdToUse)
+            localStorage.setItem(`sessionParticipantId_${sessionId}`, participantIdToUse)
+            sessionStorage.setItem('studentName', studentName.trim())
+            localStorage.setItem(`studentName_${sessionId}`, studentName.trim())
+
+            // Load selected blocks if they exist
+            const existingBlocks = existingParticipant?.selected_blocks
+            if (existingBlocks && Array.isArray(existingBlocks) && existingBlocks.length > 0) {
+              setSelectedBlocks(existingBlocks)
+              sessionStorage.setItem('selectedBlocks', JSON.stringify(existingBlocks))
+              localStorage.setItem(`selectedBlocks_${sessionId}`, JSON.stringify(existingBlocks))
+            }
+
+            // Continue with progress loading below
+            const { data: progressData } = await supabase
+              .from('session_progress')
+              .select('game_name, completed, score, rounds_completed')
+              .eq('session_id', sessionId)
+              .eq('participant_id', participantIdToUse)
+
+            if (progressData) {
+              setProgress(progressData as GameProgress[])
+            }
+
+            // Check if blocks are selected
+            const hasValidBlocks = existingParticipant?.selected_blocks && 
+                                  Array.isArray(existingParticipant.selected_blocks) && 
+                                  existingParticipant.selected_blocks.length > 0
+            if (!hasValidBlocks) {
+              setStep('blocks')
+            } else {
+              setStep('select-game')
+            }
+            
+            setLoading(false)
+            return
+          }
+        }
+        // If we couldn't get student name, fall through to normal join flow
+      }
+
       // Try to get participant ID from sessionStorage first (for same tab)
       let participantIdFromStorage = sessionStorage.getItem('sessionParticipantId')
       
@@ -518,12 +647,12 @@ export default function SessionPlayPage() {
 
   const handleBlocksSubmit = async () => {
     if (selectedBlocks.length === 0) {
-      alert('Välj minst ett färgblock')
+      alert('Select at least one color block')
       return
     }
 
     if (!participantId) {
-      alert('Fel: Ingen deltagare hittades')
+      alert('Error: No participant found')
       return
     }
 
@@ -648,24 +777,27 @@ export default function SessionPlayPage() {
     }
 
     // Update local progress
-    setProgress(prev => {
-      const existing = prev.find(p => p.game_name === currentGame)
+    const updatedProgress = (() => {
+      const existing = progress.find(p => p.game_name === currentGame)
       if (existing) {
-        return prev.map(p => 
+        return progress.map(p => 
           p.game_name === currentGame 
             ? { ...p, completed: allRoundsCompleted, score, rounds_completed: newRoundsCompleted }
             : p
         )
       }
-      return [...prev, { game_name: currentGame, completed: allRoundsCompleted, score, rounds_completed: newRoundsCompleted }]
-    })
+      return [...progress, { game_name: currentGame, completed: allRoundsCompleted, score, rounds_completed: newRoundsCompleted }]
+    })()
+    
+    setProgress(updatedProgress)
 
-    // If all correct, return to game selection immediately
+    // If all correct, show completion modal then return to game selection
     if (allCorrect) {
-      // Return to game selection
-      setStep('select-game')
-      // Reset game completed state for this round
-      setGameCompleted(new Set())
+      // Mark game as completed FIRST to prevent onClose from closing
+      setGameCompleted(prev => new Set(prev).add(currentGame))
+      
+      // Show modal immediately with updated progress
+      setShowGameCompleteModal(true)
     }
   }
 
@@ -699,7 +831,21 @@ export default function SessionPlayPage() {
     
     // Only update if game is completed (100%) or if we haven't saved progress yet
     if (allCorrect) {
-      setGameCompleted(prev => new Set(prev).add(currentGame))
+      // Mark as completed FIRST (synchronously) to prevent onClose from closing
+      // This must happen BEFORE handleGameComplete to ensure onClose check works
+      setGameCompleted(prev => {
+        const newSet = new Set(prev)
+        newSet.add(currentGame)
+        return newSet
+      })
+      
+      // Set ref immediately (synchronously) so onClose can check it
+      gameCompleteModalRef.current = true
+      
+      // Show modal immediately (before handleGameComplete to ensure it's set)
+      setShowGameCompleteModal(true)
+      
+      // Then handle completion (which will update progress)
       handleGameComplete(allCorrect, percentage)
     } else {
       // Update progress even if not 100%, but don't advance to next game
@@ -726,6 +872,20 @@ export default function SessionPlayPage() {
       words: wordsArray,
       translations,
       onClose: async () => {
+        // In session mode, if modal is showing or about to show, don't close yet
+        // Use ref for immediate check (state may not have updated yet)
+        if (gameCompleteModalRef.current || showGameCompleteModal) {
+          return // Don't close if modal is showing
+        }
+        
+        // Check if we just completed the game - if so, wait for modal
+        const currentGame = session?.enabled_games[currentGameIndex]
+        if (currentGame && gameCompleted.has(currentGame)) {
+          // Game was just completed, modal should show - don't close yet
+          // The modal will handle closing when user clicks Continue
+          return
+        }
+        
         // In session mode, allow going back to game selection
         // Reload progress to ensure we have the latest state
         if (participantId) {
@@ -800,7 +960,7 @@ export default function SessionPlayPage() {
             <div className="w-16 h-16 bg-amber-500/20 border border-amber-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <span className="text-3xl">🎮</span>
             </div>
-            <p className="text-gray-400">Spel "{currentGame}" är inte implementerat än</p>
+            <p className="text-gray-400">Game "{currentGame}" is not implemented yet</p>
           </div>
         )
     }
@@ -834,12 +994,18 @@ export default function SessionPlayPage() {
         </div>
         <div className="text-center text-red-400 relative z-10">
           <p>Session not found</p>
-          <button
-            onClick={() => router.push('/session/join')}
-            className="mt-4 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg hover:from-amber-400 hover:to-orange-400 shadow-lg shadow-amber-500/30"
-          >
-            Gå tillbaka
-          </button>
+            <button
+              onClick={() => {
+                if (autoJoin) {
+                  router.push('/student')
+                } else {
+                  router.push('/session/join')
+                }
+              }}
+              className="mt-4 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg hover:from-amber-400 hover:to-orange-400 shadow-lg shadow-amber-500/30"
+            >
+              Go back
+            </button>
         </div>
       </div>
     )
@@ -889,11 +1055,26 @@ export default function SessionPlayPage() {
         quizGraded={quizGraded}
         onChangeBlocks={() => setStep('blocks')}
         onExitSession={() => {
-          if (confirm('Är du säker på att du vill avsluta sessionen?')) {
-            router.push('/session/join')
+          const message = autoJoin 
+            ? 'Are you sure you want to go back to dashboard?'
+            : 'Are you sure you want to exit the session?'
+          if (confirm(message)) {
+            // If student joined via dashboard, go back to dashboard
+            // Otherwise, go to join page
+            if (autoJoin) {
+              router.push('/student')
+            } else {
+              router.push('/session/join')
+            }
           }
         }}
+        showBackToDashboard={autoJoin}
         onSelectGame={(gameIndex, gameId) => {
+          // Close modal if it's open when starting a new game
+          if (showGameCompleteModal) {
+            gameCompleteModalRef.current = false
+            setShowGameCompleteModal(false)
+          }
           setCurrentGameIndex(gameIndex)
           setStep('playing')
           // Reset game completed state for this game when replaying
@@ -957,15 +1138,21 @@ export default function SessionPlayPage() {
             <div className="w-16 h-16 bg-[#161622] border border-white/[0.08] rounded-2xl flex items-center justify-center mx-auto mb-6">
               <span className="text-3xl">⚠️</span>
             </div>
-            <h2 className="text-xl font-bold text-white mb-3">Inga ord hittades</h2>
+            <h2 className="text-xl font-bold text-white mb-3">No words found</h2>
             <p className="text-gray-400 mb-6">
-              Sessionen har inga ord att visa. Kontakta din lärare.
+              The session has no words to display. Contact your teacher.
             </p>
             <button
-              onClick={() => router.push('/session/join')}
+              onClick={() => {
+                if (autoJoin) {
+                  router.push('/student')
+                } else {
+                  router.push('/session/join')
+                }
+              }}
               className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:from-amber-400 hover:to-orange-400 shadow-lg shadow-amber-500/30 transition-all"
             >
-              Gå tillbaka
+              Go back
             </button>
           </div>
         </div>
@@ -978,6 +1165,11 @@ export default function SessionPlayPage() {
         selectedBlocks={selectedBlocks}
         onToggleBlock={toggleBlock}
         onSubmit={handleBlocksSubmit}
+        onExit={autoJoin ? () => {
+          if (confirm('Are you sure you want to go back to dashboard?')) {
+            router.push('/student')
+          }
+        } : undefined}
       />
     )
   }
@@ -1287,6 +1479,28 @@ export default function SessionPlayPage() {
         />
         </div>
       </div>
+    )
+  }
+
+  // Game Complete Modal - always render FIRST when open, regardless of step
+  // This ensures it shows immediately when game completes, even if step changes
+  if (session && showGameCompleteModal) {
+    return (
+      <SessionGameCompleteModal
+        isOpen={showGameCompleteModal}
+        completedGames={session.enabled_games.filter((game) => {
+          const gameProgress = progress.find(p => p.game_name === game)
+          const requiredRounds = session.game_rounds?.[game] || 1
+          const roundsCompleted = gameProgress?.rounds_completed || 0
+          return roundsCompleted >= requiredRounds
+        }).length}
+        totalGames={session.enabled_games.length}
+        onClose={() => {
+          gameCompleteModalRef.current = false
+          setShowGameCompleteModal(false)
+          setStep('select-game')
+        }}
+      />
     )
   }
 

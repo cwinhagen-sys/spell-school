@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Target, CheckCircle2, Circle, Zap, ArrowRight } from 'lucide-react'
+import { Target, CheckCircle2, Circle, Zap, ArrowRight, Gem } from 'lucide-react'
 
 interface Quest {
   id: string
@@ -187,15 +187,15 @@ export default function DailyQuestsPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-[#161622] border border-white/[0.08] rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center">
               <Target className="w-6 h-6 text-amber-400" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white">Daily Quests</h1>
-              <p className="text-sm text-gray-500">Complete quests to earn XP</p>
+              <p className="text-sm text-gray-500">Complete quests to earn Arcane Points</p>
             </div>
           </div>
-          <div className="text-right bg-[#161622] rounded-xl px-4 py-3 border border-white/[0.08]">
+          <div className="text-right bg-white/5 rounded-xl px-4 py-3 border border-white/10">
             <div className="text-2xl font-bold text-white">{completedCount}/{dailyQuests.length}</div>
             <div className="text-xs text-gray-500">Completed</div>
           </div>
@@ -206,18 +206,76 @@ export default function DailyQuestsPage() {
           {dailyQuests.map((quest) => {
             const progressPercent = (quest.progress / quest.target) * 100
 
+            // Map quest ID to badge background image
+            const getQuestBackgroundImage = (questId: string): string | null => {
+              const backgroundMap: { [key: string]: string } = {
+                'play_3_games': 'word_warrior.png',
+                'memory_2': 'memory_champion.png',
+                'typing_1': 'spelling_bee.png',
+                'choice_3_perfect': 'choice_master.png',
+                'sentence_gap_perfect': 'gap_filler.png',
+                'spell_slinger_100': 'spell_slinger_novice.png',
+                'sentence_gap_2': 'sentence_builder.png',
+                'roulette_3': 'roulette_master.png',
+                'multi_game_4': 'multi_game_player.png',
+                'perfect_score_1': 'perfect_score.png',
+                'spell_slinger_1200': 'spell_slinger_expert.png',
+                'sentence_gap_5': 'grammar_guru.png',
+                'roulette_5': 'roulette_legend.png',
+                'marathon_10': 'marathon_runner.png',
+                'perfect_3': 'perfectionist.png',
+                'quiz_perfect': 'quiz_god.png',
+                'typing_speed': 'speed_god.png',
+                'roulette_perfect_5_words': 'sentence_starter.png',
+                'roulette_perfect_10_words': 'sentence_expert.png',
+                'roulette_perfect_20_words': 'sentence_master.png',
+                'scenario_breakfast_2_stars': 'breakfast_chef.png',
+                'scenario_breakfast_3_stars': 'master_chef.png'
+              }
+              
+              const filename = backgroundMap[questId]
+              return filename ? `/images/badges/backgrounds/${filename}` : null
+            }
+
+            const backgroundImage = getQuestBackgroundImage(quest.id)
+
             return (
               <div
                 key={quest.id}
-                className={`bg-[#161622] rounded-xl p-5 border border-white/[0.08] ${
+                className={`bg-white/5 rounded-xl p-5 border border-white/10 relative overflow-hidden ${
                   quest.completed ? 'border-emerald-500/30' : ''
-                } transition-all hover:bg-[#1a1a2e]`}
+                } transition-all hover:bg-white/10`}
               >
+                {/* Background image */}
+                {backgroundImage && (
+                  <div 
+                    className={`absolute inset-0 transition-opacity duration-300 ${
+                      quest.completed 
+                        ? 'opacity-30' 
+                        : 'opacity-20'
+                    }`}
+                    style={{
+                      backgroundImage: `url(${backgroundImage})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      backgroundRepeat: 'no-repeat'
+                    }}
+                  />
+                )}
+                
+                {/* Dark overlay for readability */}
+                {backgroundImage && (
+                  <div className={`absolute inset-0 transition-opacity duration-300 ${
+                    quest.completed 
+                      ? 'bg-gradient-to-br from-black/60 via-black/50 to-black/60' 
+                      : 'bg-gradient-to-br from-black/70 via-black/60 to-black/70'
+                  }`} />
+                )}
+                
+                {/* Content */}
+                <div className="relative z-10">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-[#1a1a2e] rounded-xl flex items-center justify-center border border-white/[0.06]">
-                      <span className="text-2xl">{quest.icon}</span>
-                    </div>
                     <div>
                       <h3 className="text-base font-semibold text-white">{quest.title}</h3>
                       <p className="text-sm text-gray-500">{quest.description}</p>
@@ -229,9 +287,12 @@ export default function DailyQuestsPage() {
                     ) : (
                       <Circle className="w-6 h-6 text-gray-600" />
                     )}
-                    <div className="flex items-center gap-1 text-amber-400 text-sm font-semibold">
-                      <Zap className="w-3.5 h-3.5" />
-                      +{quest.xp} XP
+                    <div className="flex items-center gap-1 text-white text-sm font-semibold">
+                      <Zap className="w-3.5 h-3.5 text-amber-400" />
+                      <div className="flex items-center gap-1">
+                        <Gem className="w-3.5 h-3.5 text-amber-400" />
+                        +{quest.xp} AP
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -252,18 +313,7 @@ export default function DailyQuestsPage() {
                     />
                   </div>
                 </div>
-
-                {!quest.completed && (
-                  <div className="flex justify-end">
-                    <button
-                      onClick={() => startQuestGame(quest.id)}
-                      className="flex items-center gap-2 text-sm font-medium text-amber-400 hover:text-amber-300 transition-colors"
-                    >
-                      Start playing
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
+              </div>
               </div>
             )
           })}
@@ -271,19 +321,22 @@ export default function DailyQuestsPage() {
 
         {/* All Complete Banner */}
         {completedCount === dailyQuests.length && (
-          <div className="bg-[#161622] border border-emerald-500/20 rounded-xl p-6 text-center mb-6">
-            <div className="w-14 h-14 bg-[#1a1a2e] rounded-xl flex items-center justify-center mx-auto mb-3 border border-white/[0.06]">
+          <div className="bg-white/5 border border-emerald-500/20 rounded-xl p-6 text-center mb-6">
+            <div className="w-14 h-14 bg-white/5 rounded-xl flex items-center justify-center mx-auto mb-3 border border-white/10">
               <span className="text-3xl">🏆</span>
             </div>
             <h3 className="text-lg font-semibold text-white mb-1">All quests completed!</h3>
-            <p className="text-emerald-400 text-sm font-medium">+100 XP Bonus</p>
+            <div className="flex items-center gap-1 text-emerald-400 text-sm font-medium">
+              <Gem className="w-3.5 h-3.5" />
+              +100 AP Bonus
+            </div>
           </div>
         )}
 
         {/* Footer Info */}
-        <div className="p-4 bg-[#161622] rounded-xl text-center text-sm text-gray-500 border border-white/[0.08]">
+        <div className="p-4 bg-white/5 rounded-xl text-center text-sm text-gray-500 border border-white/10">
           <p className="mb-1">
-            XP earned today: <span className="font-semibold text-amber-400">{totalXp}</span>
+            AP earned today: <span className="font-semibold text-amber-400">{totalXp}</span>
             {completedCount === dailyQuests.length && <span className="text-amber-400"> (+100 bonus)</span>}
           </p>
           <p className="text-xs text-gray-600">New quests tomorrow at 06:00</p>
