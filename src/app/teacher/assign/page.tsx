@@ -332,8 +332,10 @@ export default function AssignWordSetsPage() {
       }>>()
       
       for (const item of data || []) {
-        // word_sets is an object (from inner join), not an array
+        // word_sets, classes, and profiles are objects (from joins), not arrays
         const wordSet = Array.isArray(item.word_sets) ? item.word_sets[0] : item.word_sets
+        const classObj = Array.isArray(item.classes) ? item.classes[0] : item.classes
+        const profile = Array.isArray(item.profiles) ? item.profiles[0] : item.profiles
         
         if (item.class_id) {
           // Class assignment - keep as is
@@ -341,7 +343,7 @@ export default function AssignWordSetsPage() {
             id: item.id,
             word_set_title: wordSet?.title || 'Unknown',
             word_set_color: wordSet?.color,
-            class_name: item.classes?.name,
+            class_name: classObj?.name,
             due_date: item.due_date || null
           })
         } else if (item.student_id) {
@@ -352,7 +354,7 @@ export default function AssignWordSetsPage() {
           }
           individualAssignmentsMap.get(key)!.push({
             id: item.id,
-            student_name: item.profiles?.username || 'Student',
+            student_name: profile?.username || 'Student',
             due_date: item.due_date || null,
             word_set_title: wordSet?.title || 'Unknown',
             word_set_color: wordSet?.color
