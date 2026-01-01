@@ -499,9 +499,12 @@ export default function ScenarioGame({
     if (sessionId && trackingContext) {
       await endGameSession(sessionId, 'scenario_adventure', {
         score: ap,
-        maxScore: story?.xpRewards.threeStars || 50,
-        accuracy: stars === 3 ? 100 : stars === 2 ? 70 : 40,
-        duration
+        durationSec: duration,
+        accuracyPct: stars === 3 ? 100 : stars === 2 ? 70 : 40,
+        details: {
+          maxScore: story?.xpRewards.threeStars || 50,
+          stars
+        }
       })
       
       await updateStudentProgress(ap, 'scenario_adventure', trackingContext)
