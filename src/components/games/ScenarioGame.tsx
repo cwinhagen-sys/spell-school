@@ -381,7 +381,7 @@ export default function ScenarioGame({
     if (trackingContext) {
       const session = await startGameSession('scenario_adventure', trackingContext)
       if (session) {
-        setSessionId(session.sessionId)
+        setSessionId(session.id)
       }
     }
     
