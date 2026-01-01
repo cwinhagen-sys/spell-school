@@ -332,12 +332,15 @@ export default function AssignWordSetsPage() {
       }>>()
       
       for (const item of data || []) {
+        // word_sets is an object (from inner join), not an array
+        const wordSet = Array.isArray(item.word_sets) ? item.word_sets[0] : item.word_sets
+        
         if (item.class_id) {
           // Class assignment - keep as is
           classAssignments.push({
             id: item.id,
-            word_set_title: item.word_sets?.title || 'Unknown',
-            word_set_color: item.word_sets?.color,
+            word_set_title: wordSet?.title || 'Unknown',
+            word_set_color: wordSet?.color,
             class_name: item.classes?.name,
             due_date: item.due_date || null
           })
@@ -351,8 +354,8 @@ export default function AssignWordSetsPage() {
             id: item.id,
             student_name: item.profiles?.username || 'Student',
             due_date: item.due_date || null,
-            word_set_title: item.word_sets?.title || 'Unknown',
-            word_set_color: item.word_sets?.color
+            word_set_title: wordSet?.title || 'Unknown',
+            word_set_color: wordSet?.color
           })
         }
       }
