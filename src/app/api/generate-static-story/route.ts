@@ -234,16 +234,17 @@ Return ONLY valid JSON.`
       scenarioId: storyId.split('_')[0],
       goalId: storyId.split('_').slice(1).join('_'),
       title: storyData.title,
+      description: `${goalDescription} in ${scenarioName}`,
       difficulty,
-      successRate,
-      vocabularyLevel,
+      difficultyStars: difficulty === 'easy' ? 1 : difficulty === 'medium' ? 2 : 3,
       estimatedMinutes: decisionPoints + 1,
       segments: storyData.segments,
       startSegmentId: storyData.startSegmentId,
-      totalSegments: segments.length,
-      totalEndings: endings.length,
-      successEndings: successEndingsCount,
-      failureEndings: failureEndingsCount
+      xpRewards: {
+        oneStar: 10,
+        twoStars: 20,
+        threeStars: 30
+      }
     }
 
     return NextResponse.json(staticStory)
