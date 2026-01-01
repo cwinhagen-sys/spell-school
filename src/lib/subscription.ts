@@ -372,7 +372,7 @@ export async function getExceedingResources(userId: string, supabaseClient?: any
     const studentCounts = new Map<string, number>()
     const allStudentIds = new Set<string>()
     
-    classStudents?.forEach(cs => {
+    classStudents?.forEach((cs: { class_id: string; student_id: string }) => {
       const count = studentCounts.get(cs.class_id) || 0
       studentCounts.set(cs.class_id, count + 1)
       allStudentIds.add(cs.student_id)
