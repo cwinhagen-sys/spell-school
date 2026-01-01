@@ -428,7 +428,7 @@ export async function downgradeToFreeWithSelection(
     // Delete classes not in keep list
     const classesToDelete = (allClasses || [])
       .map((c: { id: string }) => c.id)
-      .filter(id => !classesToKeep.includes(id))
+      .filter((id: string) => !classesToKeep.includes(id))
 
     if (classesToDelete.length > 0) {
       const { error: deleteClassesError } = await supabase
@@ -444,7 +444,7 @@ export async function downgradeToFreeWithSelection(
     // Delete word sets not in keep list
     const wordSetsToDelete = (allWordSets || [])
       .map((ws: { id: string }) => ws.id)
-      .filter(id => !wordSetsToKeep.includes(id))
+      .filter((id: string) => !wordSetsToKeep.includes(id))
 
     if (wordSetsToDelete.length > 0) {
       const { error: deleteWordSetsError } = await supabase
