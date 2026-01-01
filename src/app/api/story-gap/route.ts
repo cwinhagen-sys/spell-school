@@ -125,8 +125,8 @@ function buildPrompt(opts: {
   // Single prompt - minimize reasoning, output JSON directly
   const isFewWords = wordSet.length <= 2
   const storyGuidance = isFewWords
-    ? `- CREATE SIMPLE, CLEAR SENTENCES: With only ${wordSet.length} word(s), create ${wordSet.length === 1 ? 'one clear, complete sentence' : 'two distinct sentences'}. ${wordSet.length === 1 ? 'Make it a complete, meaningful sentence that naturally uses the word.' : 'Make each sentence unique and specific to its word, so they clearly differ from each other.'}`
-    : `- CREATE A COHERENT STORY: The sentences should form a complete mini-story with a beginning, middle, and satisfying ending. The story should flow naturally from sentence to sentence.`
+    ? `- CREATE SIMPLE, CLEAR, GRAMMATICALLY CORRECT SENTENCES: With only ${wordSet.length} word(s), create ${wordSet.length === 1 ? 'one clear, complete sentence' : 'two distinct sentences'}. ${wordSet.length === 1 ? 'Make it a complete, meaningful sentence that naturally uses the word with perfect grammar and clarity.' : 'Make each sentence unique and specific to its word with perfect grammar, so they clearly differ from each other and cannot be confused.'}`
+    : `- CREATE A COHERENT, GRAMMATICALLY CORRECT STORY: The sentences should form a complete mini-story with a beginning, middle, and satisfying ending. The story should flow naturally from sentence to sentence. All sentences must be grammatically correct, clear, and use natural English.`
   
   const system = `Generate a story-gap exercise${isFewWords ? ' with simple, clear sentences' : ' as a COHESIVE NARRATIVE'}. Output JSON directly. Be concise.
 
@@ -134,6 +134,9 @@ ${difficultyGuidance}${scenarioGuidance}
 
 Rules:
 ${storyGuidance}
+- GRAMMATICAL CORRECTNESS: All sentences must be grammatically correct, use proper English grammar, correct verb tenses, articles, and sentence structure.
+- CLARITY AND PRECISION: Each sentence must be clear, unambiguous, and easy to understand. Avoid vague or confusing wording.
+- NATURAL LANGUAGE: Use natural, everyday English that sounds fluent and native. Avoid awkward constructions or overly formal language.
 - CRITICAL ORDER REQUIREMENT: The order MUST match wordSet exactly.
   * solution_text[0] must contain wordSet[0]${wordSet.length > 1 ? ', solution_text[1] must contain wordSet[1]' : ''}
   * ... and so on for all N words
@@ -147,12 +150,14 @@ ${storyGuidance}
 - No placeholders ("The word is...", "This is a...").
 - No component overlap between multi-word targets across different lines.${isFewWords ? '' : '\n- The story should flow naturally from sentence to sentence.'}${animalGuidance}
 - Duplicate words in wordSet are allowed - use them in different contexts.
-- CRITICAL UNIQUENESS REQUIREMENT: Each gap word/phrase must be UNIQUE to its sentence.
+- CRITICAL UNIQUENESS REQUIREMENT: Each gap word/phrase must be UNIQUE and UNAMBIGUOUS to its sentence.
   * wordSet[i] should ONLY fit grammatically and semantically in sentence[i]
   * wordSet[i] should NOT fit naturally in any other sentence (sentence[j] where j ≠ i)
-  * Create distinct contexts, subjects, verbs, or sentence structures so each word is clearly tied to ONE specific sentence
-  * For example: if wordSet contains "by day" and "by night", create sentences where "by day" only fits one context and "by night" only fits another
-  * Avoid generic sentences where multiple words could fit - make each sentence specific to its target word
+  * Create distinct contexts, subjects, verbs, objects, or sentence structures so each word is clearly and unambiguously tied to ONE specific sentence
+  * For example: if wordSet contains "by day" and "by night", create sentences where "by day" only fits one context and "by night" only fits another - make the distinction very clear
+  * Avoid generic sentences where multiple words could fit - make each sentence highly specific to its target word with clear contextual clues
+  * Each sentence must make it OBVIOUS which word belongs in that gap - there should be no ambiguity or confusion
+  * Use specific subjects, verbs, objects, and contexts that naturally guide the reader to the correct word
 - IMPORTANT: Generate UNIQUE sentences different from previous runs. Vary wording, context, and examples.${isFewWords ? '' : '\n- The last sentence should provide a satisfying conclusion to the story.'}
 
 Output JSON only (no explanations, no reasoning):
@@ -182,16 +187,17 @@ ${wordSet.length > 5 ? `- wordSet[5]="${wordSet[5]}" → solution_text[5] must c
 ${wordSet.length > 6 ? `- wordSet[6]="${wordSet[6]}" → solution_text[6] must contain "${wordSet[6]}", gaps_meta[6].correct="${wordSet[6].toLowerCase()}"` : ''}
 ${wordSet.length > 7 ? `- wordSet[7]="${wordSet[7]}" → solution_text[7] must contain "${wordSet[7]}", gaps_meta[7].correct="${wordSet[7].toLowerCase()}"` : ''}
 
-CRITICAL: Each word/phrase must be UNIQUE to its sentence:
-- "${wordSet[0]}" should ONLY fit in sentence 1, not in any other sentence
-${wordSet.length > 1 ? `- "${wordSet[1]}" should ONLY fit in sentence 2, not in any other sentence` : ''}
-${wordSet.length > 2 ? `- "${wordSet[2]}" should ONLY fit in sentence 3, not in any other sentence` : ''}
-${wordSet.length > 3 ? `- "${wordSet[3]}" should ONLY fit in sentence 4, not in any other sentence` : ''}
-${wordSet.length > 4 ? `- "${wordSet[4]}" should ONLY fit in sentence 5, not in any other sentence` : ''}
-${wordSet.length > 5 ? `- "${wordSet[5]}" should ONLY fit in sentence 6, not in any other sentence` : ''}
-${wordSet.length > 6 ? `- "${wordSet[6]}" should ONLY fit in sentence 7, not in any other sentence` : ''}
-${wordSet.length > 7 ? `- "${wordSet[7]}" should ONLY fit in sentence 8, not in any other sentence` : ''}
-- Create distinct contexts so each word is clearly tied to ONE specific sentence${wordSet.length <= 2 ? '\n- With only ' + wordSet.length + ' word(s), create ' + (wordSet.length === 1 ? 'one complete, meaningful sentence' : 'two clearly different sentences') + '.' : '\n- The story should have a clear beginning, middle, and satisfying conclusion'}
+CRITICAL: Each word/phrase must be UNIQUE, UNAMBIGUOUS, and OBVIOUSLY correct in its sentence:
+- "${wordSet[0]}" should ONLY fit in sentence 1 - make it grammatically and contextually OBVIOUS that this word belongs here and nowhere else
+${wordSet.length > 1 ? `- "${wordSet[1]}" should ONLY fit in sentence 2 - make it grammatically and contextually OBVIOUS that this word belongs here and nowhere else` : ''}
+${wordSet.length > 2 ? `- "${wordSet[2]}" should ONLY fit in sentence 3 - make it grammatically and contextually OBVIOUS that this word belongs here and nowhere else` : ''}
+${wordSet.length > 3 ? `- "${wordSet[3]}" should ONLY fit in sentence 4 - make it grammatically and contextually OBVIOUS that this word belongs here and nowhere else` : ''}
+${wordSet.length > 4 ? `- "${wordSet[4]}" should ONLY fit in sentence 5 - make it grammatically and contextually OBVIOUS that this word belongs here and nowhere else` : ''}
+${wordSet.length > 5 ? `- "${wordSet[5]}" should ONLY fit in sentence 6 - make it grammatically and contextually OBVIOUS that this word belongs here and nowhere else` : ''}
+${wordSet.length > 6 ? `- "${wordSet[6]}" should ONLY fit in sentence 7 - make it grammatically and contextually OBVIOUS that this word belongs here and nowhere else` : ''}
+${wordSet.length > 7 ? `- "${wordSet[7]}" should ONLY fit in sentence 8 - make it grammatically and contextually OBVIOUS that this word belongs here and nowhere else` : ''}
+- Create distinct, clear contexts so each word is unambiguously tied to ONE specific sentence - use different subjects, verbs, objects, or settings to make it impossible to confuse which word goes where
+- Each sentence must be grammatically correct, clear, and natural-sounding${wordSet.length <= 2 ? '\n- With only ' + wordSet.length + ' word(s), create ' + (wordSet.length === 1 ? 'one complete, meaningful, grammatically perfect sentence' : 'two clearly different, grammatically perfect sentences') + '.' : '\n- The story should have a clear beginning, middle, and satisfying conclusion with perfect grammar throughout'}
 
 sig=${signature} difficulty=${difficulty}
 wordSet=${JSON.stringify(wordSet)}

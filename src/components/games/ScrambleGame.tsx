@@ -265,12 +265,14 @@ export default function ScrambleGame({
     const scoreResult = calculateScrambleScore(finalScore, activeWords.length, wrongAttempts)
     
     if (sessionMode) {
-      onScoreUpdate(scoreResult.pointsAwarded, scoreResult.pointsAwarded, 'scramble')
+      // Send accuracy as score for quest tracking (perfectionist quest needs percentage)
+      onScoreUpdate(scoreResult.accuracy, scoreResult.pointsAwarded, 'scramble')
       setTimeout(() => {
         onClose()
       }, 500)
     } else {
-      onScoreUpdate(scoreResult.pointsAwarded, scoreResult.pointsAwarded, 'scramble')
+      // Send accuracy as score for quest tracking (perfectionist quest needs percentage)
+      onScoreUpdate(scoreResult.accuracy, scoreResult.pointsAwarded, 'scramble')
       setShowComplete(true)
     }
   }

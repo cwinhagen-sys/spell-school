@@ -93,7 +93,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
   // New game flow states - Skip the new flow and go directly to the old game
   const [gameStep, setGameStep] = useState<GameStep>('playing')
   // Auto-select default values to skip the new flow screens
-  const [selectedScenario, setSelectedScenario] = useState<string | null>('school') // Default scenario
+  const [selectedScenario, setSelectedScenario] = useState<string | null>(null) // No default scenario - allow any context
   const [selectedVoice, setSelectedVoice] = useState<string>('en-US-Journey-F') // Default voice
   const [scenarioFilter, setScenarioFilter] = useState<string>('All')
   
@@ -525,8 +525,8 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
               setIsRetrying(true)
             }
             
-            // Get scenario name from selected scenario ID
-            const scenarioName = STORY_SCENARIOS.find(s => s.id === selectedScenario)?.name
+            // Get scenario name from selected scenario ID (only if scenario is selected)
+            const scenarioName = selectedScenario ? STORY_SCENARIOS.find(s => s.id === selectedScenario)?.name : undefined
 
             const res = await fetch('/api/story-gap', {
               method: 'POST',
@@ -535,7 +535,7 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
                 wordSet: shuffledEnglishWords, 
                 difficulty,
                 retryAttempt: attempt,
-                scenario: scenarioName
+                ...(scenarioName ? { scenario: scenarioName } : {}) // Only include scenario if it's selected
               }),
             })
             
@@ -894,16 +894,17 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
     setScore(scoreResult.pointsAwarded)
     
     // Send score update immediately for instant XP
+    // Send accuracy as score for quest tracking (perfectionist quest needs percentage)
     if (onScoreUpdate) {
       if (sessionMode) {
-        onScoreUpdate(correctAnswers, totalGaps, 'story_gap')
+        onScoreUpdate(scoreResult.accuracy, scoreResult.pointsAwarded, 'story_gap')
         if (correctAnswers === totalGaps) {
           setTimeout(() => {
             onClose()
           }, 500)
         }
       } else {
-        onScoreUpdate(scoreResult.pointsAwarded, totalGaps, 'story_gap')
+        onScoreUpdate(scoreResult.accuracy, scoreResult.pointsAwarded, 'story_gap')
       }
     }
     
@@ -925,8 +926,8 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
     })
     const completedStory = completedLines.join(' ')
     
-    // Get scenario name
-    const scenarioName = STORY_SCENARIOS.find(s => s.id === selectedScenario)?.name
+    // Get scenario name (only if scenario is selected)
+    const scenarioName = selectedScenario ? STORY_SCENARIOS.find(s => s.id === selectedScenario)?.name : undefined
     
     // AI evaluation runs in background (doesn't affect score)
     try {

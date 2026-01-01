@@ -887,15 +887,15 @@ function TeacherAccountPageContent() {
                   <div className="mb-4">
                     {billingPeriod === 'monthly' ? (
                       <>
-                        <span className="text-3xl font-bold text-white">79</span>
+                        <span className="text-3xl font-bold text-white">{getTierPrice('premium', false)}</span>
                         <span className="text-gray-400 ml-1">SEK/month</span>
                       </>
                     ) : (
                       <>
-                        <span className="text-3xl font-bold text-white">758</span>
+                        <span className="text-3xl font-bold text-white">{getTierPrice('premium', true)}</span>
                         <span className="text-gray-400 ml-1">SEK/year</span>
                         <div className="text-xs text-gray-500 mt-1">
-                          (63 SEK/month)
+                          ({Math.round(getTierPrice('premium', true) / 12)} SEK/month)
                         </div>
                       </>
                     )}
@@ -973,15 +973,15 @@ function TeacherAccountPageContent() {
                   <div className="mb-4">
                     {billingPeriod === 'monthly' ? (
                       <>
-                        <span className="text-3xl font-bold text-white">129</span>
+                        <span className="text-3xl font-bold text-white">{getTierPrice('pro', false)}</span>
                         <span className="text-gray-400 ml-1">SEK/month</span>
                       </>
                     ) : (
                       <>
-                        <span className="text-3xl font-bold text-white">1238</span>
+                        <span className="text-3xl font-bold text-white">{getTierPrice('pro', true)}</span>
                         <span className="text-gray-400 ml-1">SEK/year</span>
                         <div className="text-xs text-gray-500 mt-1">
-                          (103 SEK/month)
+                          ({Math.round(getTierPrice('pro', true) / 12)} SEK/month)
                         </div>
                       </>
                     )}
