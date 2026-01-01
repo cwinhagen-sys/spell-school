@@ -619,6 +619,19 @@ function StudentDashboardContent() {
         setPoints(prev => {
           const newTotal = prev + quest.xp
           console.log(`Quest completed: ${quest.title}, XP awarded: ${quest.xp}, Total: ${prev} → ${newTotal}`)
+          
+          // Save to localStorage immediately to prevent data loss on page navigation
+          supabase.auth.getUser().then(({ data: { user } }) => {
+            if (user) {
+              const userSpecificKey = `studentTotalXP_${user.id}`
+              localStorage.setItem(userSpecificKey, newTotal.toString())
+              console.log(`💾 Saved XP to localStorage after quest completion: ${newTotal}`)
+            }
+          }).catch(() => {
+            // Fallback if error
+            localStorage.setItem('studentTotalXP', newTotal.toString())
+          })
+          
           return newTotal
         })
         
@@ -654,10 +667,11 @@ function StudentDashboardContent() {
           return questOutbox.flushOutbox()
         }).then(() => {
           // After sync completes, refresh points from database to ensure accuracy
+          // Use longer timeout to ensure database has updated (localStorage is already saved above)
           setTimeout(async () => {
             const total = await loadStudentProgress()
             setPoints(prev => Math.max(prev, total))
-          }, 500)
+          }, 1500)
         })
       }
       
@@ -729,6 +743,19 @@ function StudentDashboardContent() {
       setPoints(prev => {
         const newTotal = prev + 100
         console.log(`All quests completed bonus: +100 XP, Total: ${prev} → ${newTotal}`)
+        
+        // Save to localStorage immediately to prevent data loss on page navigation
+        supabase.auth.getUser().then(({ data: { user } }) => {
+          if (user) {
+            const userSpecificKey = `studentTotalXP_${user.id}`
+            localStorage.setItem(userSpecificKey, newTotal.toString())
+            console.log(`💾 Saved XP to localStorage after all quests bonus: ${newTotal}`)
+          }
+        }).catch(() => {
+          // Fallback if error
+          localStorage.setItem('studentTotalXP', newTotal.toString())
+        })
+        
         return newTotal
       })
       localStorage.setItem(bonusKey, 'true')
@@ -742,10 +769,11 @@ function StudentDashboardContent() {
         return questOutbox.flushOutbox()
       }).then(() => {
         // After sync completes, refresh points from database to ensure accuracy
+        // Use longer timeout to ensure database has updated (localStorage is already saved above)
         setTimeout(async () => {
           const total = await loadStudentProgress()
           setPoints(prev => Math.max(prev, total))
-        }, 500)
+        }, 1500)
       })
       
       // Show bonus notification
