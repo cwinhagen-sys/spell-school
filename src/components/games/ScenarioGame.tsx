@@ -380,7 +380,9 @@ export default function ScenarioGame({
     // Start tracking session
     if (trackingContext) {
       const session = await startGameSession('scenario_adventure', trackingContext)
-      setSessionId(session.sessionId)
+      if (session) {
+        setSessionId(session.sessionId)
+      }
     }
     
     // Auto-play intro audio after a short delay
