@@ -361,7 +361,7 @@ export async function getExceedingResources(userId: string, supabaseClient?: any
       .is('deleted_at', null)
 
     // Get student counts per class
-    const classIds = classes?.map(c => c.id) || []
+    const classIds = classes?.map((c: { id: string }) => c.id) || []
     const { data: classStudents } = await supabase
       .from('class_students')
       .select('class_id, student_id')
@@ -378,7 +378,7 @@ export async function getExceedingResources(userId: string, supabaseClient?: any
       allStudentIds.add(cs.student_id)
     })
 
-    const classesWithCounts = (classes || []).map(c => ({
+    const classesWithCounts = (classes || []).map((c: { id: string; name: string }) => ({
       id: c.id,
       name: c.name,
       studentCount: studentCounts.get(c.id) || 0
@@ -387,7 +387,7 @@ export async function getExceedingResources(userId: string, supabaseClient?: any
     // Return all classes and word sets (user needs to select which to keep)
     return {
       classes: classesWithCounts,
-      wordSets: (wordSets || []).map(ws => ({ id: ws.id, title: ws.title })),
+      wordSets: (wordSets || []).map((ws: { id: string; title: string }) => ({ id: ws.id, title: ws.title })),
       totalStudents: allStudentIds.size
     }
   } catch (error) {
@@ -427,7 +427,7 @@ export async function downgradeToFreeWithSelection(
 
     // Delete classes not in keep list
     const classesToDelete = (allClasses || [])
-      .map(c => c.id)
+      .map((c: { id: string }) => c.id)
       .filter(id => !classesToKeep.includes(id))
 
     if (classesToDelete.length > 0) {
@@ -443,7 +443,7 @@ export async function downgradeToFreeWithSelection(
 
     // Delete word sets not in keep list
     const wordSetsToDelete = (allWordSets || [])
-      .map(ws => ws.id)
+      .map((ws: { id: string }) => ws.id)
       .filter(id => !wordSetsToKeep.includes(id))
 
     if (wordSetsToDelete.length > 0) {
