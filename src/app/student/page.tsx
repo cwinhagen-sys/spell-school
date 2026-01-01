@@ -599,12 +599,12 @@ export default function StudentDashboard() {
           quest.progress = Math.min(quest.progress + 1, quest.target)
           break
         case 'scenario_breakfast_2_stars':
-          if (scenarioInfo && scenarioInfo.scenarioId === 'home' && scenarioInfo.goalId === 'breakfast' && scenarioInfo.success && scenarioInfo.stars >= 2) {
+          if (scenarioInfo && scenarioInfo.scenarioId === 'home' && scenarioInfo.goalId === 'breakfast' && scenarioInfo.success && scenarioInfo.stars !== undefined && scenarioInfo.stars >= 2) {
             quest.progress = quest.target
           }
           break
         case 'scenario_breakfast_3_stars':
-          if (scenarioInfo && scenarioInfo.scenarioId === 'home' && scenarioInfo.goalId === 'breakfast' && scenarioInfo.success && scenarioInfo.stars >= 3) {
+          if (scenarioInfo && scenarioInfo.scenarioId === 'home' && scenarioInfo.goalId === 'breakfast' && scenarioInfo.success && scenarioInfo.stars !== undefined && scenarioInfo.stars >= 3) {
             quest.progress = quest.target
           }
           break
