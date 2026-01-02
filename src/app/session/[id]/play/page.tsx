@@ -826,7 +826,17 @@ export default function SessionPlayPage() {
     if (gameCompleted.has(currentGame)) return
 
     // Calculate percentage
-    const percentage = total && total > 0 ? Math.round((score / total) * 100) : 0
+    // Some games (like story_gap, scramble) send accuracy (0-100) as first param and points as second
+    // Other games send (correctAnswers, totalQuestions)
+    // If gameType is 'story_gap' or 'scramble', first param is already a percentage
+    let percentage = 0
+    if (gameType === 'story_gap' || gameType === 'scramble') {
+      // First param is already accuracy (0-100)
+      percentage = Math.round(score)
+    } else {
+      // First param is correctAnswers, second is totalQuestions
+      percentage = total && total > 0 ? Math.round((score / total) * 100) : 0
+    }
     const allCorrect = percentage === 100
     
     // Only update if game is completed (100%) or if we haven't saved progress yet

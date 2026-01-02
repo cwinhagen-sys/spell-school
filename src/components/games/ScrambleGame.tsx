@@ -5,12 +5,14 @@ import { Shuffle, X, RotateCcw, CheckCircle2, Trophy, Zap } from 'lucide-react'
 import UniversalGameCompleteModal from '@/components/UniversalGameCompleteModal'
 import { calculateScrambleScore } from '@/lib/gameScoring'
 import ColorGridSelector, { GridConfig } from '@/components/ColorGridSelector'
+import { type TrackingContext, endGameSession } from '@/lib/tracking'
 
 interface ScrambleGameProps {
   words: string[]
   translations?: { [key: string]: string }
   onClose: () => void
   onScoreUpdate: (score: number, total?: number, gameType?: string) => void
+  trackingContext?: TrackingContext
   sessionMode?: boolean
   themeColor?: string
   gridConfig?: GridConfig[]
@@ -22,7 +24,8 @@ export default function ScrambleGame({
   words, 
   translations = {},
   onClose, 
-  onScoreUpdate, 
+  onScoreUpdate,
+  trackingContext,
   sessionMode = false,
   gridConfig,
 }: ScrambleGameProps) {
@@ -45,6 +48,7 @@ export default function ScrambleGame({
   const inputRef = useRef<HTMLInputElement>(null)
   const startedAtRef = useRef<number | null>(null)
   const previousInputRef = useRef('')
+  const gameSessionIdRef = useRef<string | null>(null)
 
   // Convert words to English if they are Swedish
   // translations object has bidirectional mapping: translations[englishWord] = swedishWord and translations[swedishWord] = englishWord
@@ -98,6 +102,16 @@ export default function ScrambleGame({
     })
   }, [translations, words])
 
+  // Shuffle words array to randomize order
+  const shuffleWordsArray = useCallback((wordList: string[]): string[] => {
+    const shuffled = [...wordList]
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    }
+    return shuffled
+  }, [])
+
   // Handle grid selection
   const handleGridSelection = (grids: Array<{ words: string[], translations: Record<string, string> }>) => {
     // Combine all grid translations
@@ -109,7 +123,9 @@ export default function ScrambleGame({
     // Get all words from grids and convert to English
     const selectedWords = grids.flatMap(g => g.words)
     const englishWords = convertToEnglishWords(selectedWords, combinedTranslations)
-    setActiveWords(englishWords)
+    // Shuffle the words to randomize order
+    const shuffledWords = shuffleWordsArray(englishWords)
+    setActiveWords(shuffledWords)
     setShowGridSelector(false)
   }
 
@@ -131,17 +147,19 @@ export default function ScrambleGame({
   useEffect(() => {
     if (activeWords.length === 0) return
     startedAtRef.current = Date.now()
+    gameSessionIdRef.current = null // Reset session ID for new game
     initializeWord(0)
   }, [activeWords])
 
-  // For session mode, use words directly (converted to English)
+  // For session mode, use words directly (converted to English) and shuffle them
   useEffect(() => {
     if (sessionMode && words.length > 0) {
       const englishWords = convertToEnglishWords(words)
-      setActiveWords(englishWords)
+      const shuffledWords = shuffleWordsArray(englishWords)
+      setActiveWords(shuffledWords)
       setShowGridSelector(false)
     }
-  }, [sessionMode, words, convertToEnglishWords])
+  }, [sessionMode, words, convertToEnglishWords, shuffleWordsArray])
 
   // Focus input when word changes
   useEffect(() => {
@@ -259,10 +277,25 @@ export default function ScrambleGame({
   }
 
   // Finish game
-  const finishGame = (finalScore: number) => {
+  const finishGame = async (finalScore: number) => {
     setGameFinished(true)
     
     const scoreResult = calculateScrambleScore(finalScore, activeWords.length, wrongAttempts)
+    
+    // Log game session to database
+    if (trackingContext && startedAtRef.current) {
+      const durationSec = Math.round((Date.now() - startedAtRef.current) / 1000)
+      await endGameSession(
+        gameSessionIdRef.current,
+        'scramble',
+        {
+          score: scoreResult.pointsAwarded,
+          durationSec,
+          accuracyPct: scoreResult.accuracy,
+        },
+        trackingContext
+      )
+    }
     
     if (sessionMode) {
       // Send accuracy as score for quest tracking (perfectionist quest needs percentage)

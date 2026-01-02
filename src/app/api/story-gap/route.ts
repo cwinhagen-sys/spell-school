@@ -115,11 +115,12 @@ function buildPrompt(opts: {
 - Keep sentences moderate length: 6-10 words.
 - Can use simple past/future tenses, basic clauses.
 - Some variety in structure but still accessible.`,
-    red: `RED LEVEL (Advanced):
-- Use more advanced vocabulary and structures (CEFR B1-B2 level).
-- Longer sentences: 8-15 words, can include clauses.
-- Complex tenses, varied structures, nuanced expressions.
-- More sophisticated language while remaining clear.`
+    red: `YELLOW LEVEL (Moderate) - but with more advanced vocabulary:
+- Use advanced vocabulary (CEFR B1-B2 level).
+- Keep sentences moderate length: 6-10 words (same as Yellow).
+- Can use past/future tenses and clauses.
+- Some variety in structure but keep it clear and natural.
+- Focus on using more sophisticated vocabulary while maintaining the same sentence length.`
   }[difficulty]
 
   // Single prompt - minimize reasoning, output JSON directly
@@ -280,9 +281,10 @@ async function callModelOnce(params: {
   } else if (params.difficulty === 'yellow') {
     maxTokens = 250 + 35 * N  // Yellow: moderate
   } else {
-    maxTokens = 300 + 40 * N  // Red: more complex
+    // Red: same length as yellow but more complex vocabulary, so same token estimate
+    maxTokens = 250 + 35 * N  // Red: same sentence length as yellow, just more advanced vocabulary
   }
-  // Cap at reasonable max but higher to avoid truncation
+  // Cap at reasonable max
   if (maxTokens > 500) maxTokens = 500
   
   const openai = getOpenAI()
@@ -333,7 +335,7 @@ async function callModelOnce(params: {
     } else if (params.difficulty === 'yellow') {
       temperature = 0.7
     } else {
-      temperature = 0.75
+      temperature = 0.7  // Same as yellow for more predictable generation
     }
     
     const completionParams: any = {

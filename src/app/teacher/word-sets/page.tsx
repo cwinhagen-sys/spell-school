@@ -133,11 +133,17 @@ export default function TeacherWordSetsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       
-      const canCreate = await canCreateWordSet(user.id, wordSets.length)
+      // Check word count limit
+      const wordCount = clean.length
+      const canCreate = await canCreateWordSet(user.id, wordSets.length, wordCount)
       if (!canCreate.allowed) {
         const tier = await getUserSubscriptionTier(user.id)
         const limits = TIER_LIMITS[tier]
-        setPaymentWallLimit(limits.maxWordSets)
+        if (canCreate.limitType === 'wordCount') {
+          setPaymentWallLimit(limits.maxWordsPerWordSet)
+        } else {
+          setPaymentWallLimit(limits.maxWordSets)
+        }
         setPaymentWallTier(tier === 'free' ? 'premium' : 'pro')
         setShowPaymentWall(true)
         setSaving(false)
@@ -202,6 +208,23 @@ export default function TeacherWordSetsPage() {
         setMessage({ type: 'error', text: 'Enter title and at least one word' })
         return
       }
+      
+      // Check word count limit
+      const wordCount = clean.length
+      const canUpdate = await canCreateWordSet(user.id, wordSets.length, wordCount)
+      if (!canUpdate.allowed) {
+        const tier = await getUserSubscriptionTier(user.id)
+        const limits = TIER_LIMITS[tier]
+        if (canUpdate.limitType === 'wordCount') {
+          setPaymentWallLimit(limits.maxWordsPerWordSet)
+        } else {
+          setPaymentWallLimit(limits.maxWordSets)
+        }
+        setPaymentWallTier(tier === 'free' ? 'premium' : 'pro')
+        setShowPaymentWall(true)
+        return
+      }
+      
       setSaving(true)
       const { error } = await supabase
         .from('word_sets')

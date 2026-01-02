@@ -370,26 +370,6 @@ export default function SpellSchoolLanding({
                 </button>
               </motion.div>
 
-              {/* Stats */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5, duration: 0.6 }}
-                className="grid grid-cols-3 gap-8 max-w-md mx-auto lg:mx-0"
-              >
-                {[
-                  { value: 10, suffix: "+", label: "Game Types" },
-                  { value: 50000, suffix: "+", label: "Words Practiced" },
-                  { value: 98, suffix: "%", label: "Satisfaction" },
-                ].map((stat, i) => (
-                  <div key={i} className="text-center lg:text-left">
-                    <div className="text-2xl md:text-3xl font-bold text-white">
-                      <AnimatedCounter value={stat.value} suffix={stat.suffix} />
-                    </div>
-                    <div className="text-sm text-gray-500">{stat.label}</div>
-                  </div>
-                ))}
-              </motion.div>
             </div>
 
             {/* Right Column - Single wizard with platform preview */}

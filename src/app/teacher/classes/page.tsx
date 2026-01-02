@@ -160,6 +160,8 @@ export default function TeacherClassesPage() {
       
       const studentIdsArray = Array.from(unassignedStudentIds)
       
+      // IMPORTANT: Fetch profiles and explicitly filter out deleted ones
+      // Use .is('deleted_at', null) in the query AND filter again in code as a safety measure
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, email, username, name, deleted_at, role')
@@ -172,7 +174,14 @@ export default function TeacherClassesPage() {
         return []
       }
       
-      const activeProfiles = (profiles || []).filter(p => p.deleted_at === null || p.deleted_at === undefined)
+      // Double-filter: filter out any profiles that have deleted_at set (extra safety)
+      const activeProfiles = (profiles || []).filter(p => {
+        const isDeleted = p.deleted_at !== null && p.deleted_at !== undefined
+        if (isDeleted) {
+          console.log('Filtered out deleted profile:', p.id, p.email)
+        }
+        return !isDeleted
+      })
       
       return activeProfiles.map(profile => {
         const username = profile.username || profile.name
@@ -191,8 +200,51 @@ export default function TeacherClassesPage() {
     }
   }
 
-  const addStudentRow = () => {
-    setNewClassStudents([...newClassStudents, { username: '', password: '' }])
+  const addStudentRow = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Check if adding another student row would exceed free tier limit
+      const tier = await getUserSubscriptionTier(user.id)
+      if (tier === 'free') {
+        const limits = TIER_LIMITS[tier]
+        
+        // Count existing total students across all classes
+        const { data: teacherClasses } = await supabase
+          .from('classes')
+          .select('id')
+          .eq('teacher_id', user.id)
+          .is('deleted_at', null)
+
+        if (teacherClasses && teacherClasses.length > 0) {
+          const classIds = teacherClasses.map(c => c.id)
+          const { data: allClassStudents } = await supabase
+            .from('class_students')
+            .select('student_id')
+            .in('class_id', classIds)
+            .is('deleted_at', null)
+
+          const totalExistingStudents = new Set(allClassStudents?.map(cs => cs.student_id) || []).size
+          const validNewStudents = newClassStudents.filter(s => s.username.trim() && s.password.trim()).length
+          const totalAfterAdd = totalExistingStudents + validNewStudents + 1 // +1 for the new row being added
+
+          if (limits.maxTotalStudents !== null && totalAfterAdd > limits.maxTotalStudents) {
+            setPaymentWallFeature('students')
+            setPaymentWallLimit(limits.maxTotalStudents)
+            setPaymentWallTier('premium')
+            setShowPaymentWall(true)
+            return
+          }
+        }
+      }
+
+      setNewClassStudents([...newClassStudents, { username: '', password: '' }])
+    } catch (error) {
+      console.error('Error checking student limit:', error)
+      // Allow adding row even if check fails (graceful degradation)
+      setNewClassStudents([...newClassStudents, { username: '', password: '' }])
+    }
   }
 
   const removeStudentRow = (index: number) => {
@@ -574,8 +626,23 @@ export default function TeacherClassesPage() {
       if (response.ok) {
         if (action === 'delete_student') {
           setMessage({ type: 'success', text: 'Student account deleted' })
+          // Remove from local state immediately
           const remainingStudents = selectedClassStudents.filter(s => s.id !== studentToDelete.id)
           setSelectedClassStudents(remainingStudents)
+          // Refresh the list from database after a delay to ensure database has updated
+          if (selectedClassId === 'unassigned') {
+            // Use a longer delay to ensure database transaction is committed
+            setTimeout(async () => {
+              try {
+                const unassignedStudents = await getUnassignedStudents()
+                // Double-check that deleted student is not in the list
+                const filteredStudents = unassignedStudents.filter(s => s.id !== studentToDelete.id)
+                setSelectedClassStudents(filteredStudents)
+              } catch (error) {
+                console.error('Error refreshing unassigned students after deletion:', error)
+              }
+            }, 1000)
+          }
         } else {
           setMessage({ type: 'success', text: 'Student removed from class' })
           await fetchClassStudents(selectedClassId)

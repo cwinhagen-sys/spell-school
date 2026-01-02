@@ -1639,44 +1639,108 @@ function StudentDashboardContent() {
   }
 
   const loadActiveSessions = async () => {
+    console.log('🔍 loadActiveSessions: Starting...')
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) {
+        console.log('🔍 loadActiveSessions: No user found')
+        return
+      }
+      console.log('🔍 loadActiveSessions: User found:', user.id)
 
-      // Get student's classes
-      const { data: classStudents } = await supabase
+      // Get student's classes (exclude deleted)
+      const { data: classStudents, error: classStudentsError } = await supabase
         .from('class_students')
         .select('class_id')
         .eq('student_id', user.id)
+        .is('deleted_at', null)
+
+      if (classStudentsError) {
+        console.error('🔍 loadActiveSessions: Error loading class_students:', classStudentsError)
+        setActiveSessions([])
+        return
+      }
 
       if (!classStudents || classStudents.length === 0) {
+        console.log('🔍 loadActiveSessions: No active classes found for student')
         setActiveSessions([])
         return
       }
 
       const classIds = classStudents.map(cs => cs.class_id)
+      console.log('🔍 loadActiveSessions: Student class IDs:', classIds)
 
       // Get active sessions linked to these classes
       // First, get session IDs from session_classes
+      console.log('🔍 loadActiveSessions: Querying session_classes for class_ids:', classIds)
       const { data: sessionClassLinks, error: linkError } = await supabase
         .from('session_classes')
         .select('session_id')
         .in('class_id', classIds)
 
       if (linkError) {
-        console.error('Error loading session-class links:', linkError)
+        console.error('🔍 loadActiveSessions: Error loading session-class links:', linkError)
         setActiveSessions([])
         return
       }
 
       if (!sessionClassLinks || sessionClassLinks.length === 0) {
+        console.log('🔍 loadActiveSessions: No session-class links found for classes:', classIds)
         setActiveSessions([])
         return
       }
 
       const sessionIds = [...new Set(sessionClassLinks.map(sc => sc.session_id))]
+      console.log('🔍 loadActiveSessions: Session IDs from session_classes:', sessionIds)
 
-      // Then, get the sessions
+      // First, get ALL sessions (without filters) to see what we have
+      let allSessions: any[] = []
+      const { data: allSessionsData, error: allSessionsError } = await supabase
+        .from('sessions')
+        .select(`
+          id,
+          session_code,
+          session_name,
+          due_date,
+          enabled_games,
+          is_active,
+          word_set_id
+        `)
+        .in('id', sessionIds)
+
+      if (allSessionsError) {
+        console.error('🔍 loadActiveSessions: Error loading all sessions:', allSessionsError)
+      } else {
+        allSessions = allSessionsData || []
+        const nowForLogging = new Date()
+        const oneDayAgoForLogging = new Date(nowForLogging.getTime() - (24 * 60 * 60 * 1000))
+        const sessionDetails = allSessions.map(s => ({
+          id: s.id,
+          session_name: s.session_name,
+          is_active: s.is_active,
+          due_date: s.due_date,
+          due_date_passed: s.due_date ? new Date(s.due_date) < oneDayAgoForLogging : null // Expired if due_date + 1 day has passed
+        }))
+        console.log('🔍 loadActiveSessions: All sessions found (before filters):', allSessions.length)
+        sessionDetails.forEach(detail => {
+          console.log('  - Session:', detail.session_name, {
+            id: detail.id,
+            is_active: detail.is_active,
+            due_date: detail.due_date,
+            due_date_passed: detail.due_date_passed,
+            current_time: nowForLogging.toISOString()
+          })
+        })
+      }
+
+      // Then, get the filtered sessions (only active and not expired)
+      // Sessions should be visible until 1 day AFTER due_date to allow quiz completion on due_date
+      // Show sessions where: due_date >= (now - 1 day), which means due_date + 1 day >= now
+      const now = new Date()
+      const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000)) // Subtract 1 day from current time
+      const filterDate = oneDayAgo.toISOString()
+      console.log('🔍 loadActiveSessions: Current time:', now.toISOString())
+      console.log('🔍 loadActiveSessions: Showing sessions with due_date >=', filterDate, '(visible until 1 day after due_date)')
       const { data: sessions, error: sessionError } = await supabase
         .from('sessions')
         .select(`
@@ -1690,18 +1754,39 @@ function StudentDashboardContent() {
         `)
         .in('id', sessionIds)
         .eq('is_active', true)
-        .gte('due_date', new Date().toISOString())
+        // Show sessions until 1 day after due_date (to allow quiz on due_date)
+        .gte('due_date', filterDate)
 
       if (sessionError) {
-        console.error('Error loading sessions:', sessionError)
+        console.error('🔍 loadActiveSessions: Error loading sessions:', sessionError)
         setActiveSessions([])
         return
       }
 
       if (!sessions || sessions.length === 0) {
+        console.log('🔍 loadActiveSessions: No active sessions found for session IDs:', sessionIds)
+        if (allSessions && allSessions.length > 0) {
+          console.log('🔍 loadActiveSessions: Sessions were filtered out. Details:')
+          const oneDayAgoForFilterLog = new Date(new Date().getTime() - (24 * 60 * 60 * 1000))
+          allSessions.forEach(s => {
+            const isExpired = s.due_date ? new Date(s.due_date) < oneDayAgoForFilterLog : false
+            console.log(`  - Session "${s.session_name}":`, {
+              is_active: s.is_active,
+              due_date: s.due_date,
+              is_expired: isExpired,
+              reason_filtered: !s.is_active ? 'is_active = false' : isExpired ? 'due_date + 1 day has passed' : 'unknown'
+            })
+          })
+        }
         setActiveSessions([])
         return
       }
+
+      console.log('🔍 loadActiveSessions: Found active sessions after filtering:', sessions.length, sessions.map(s => ({
+        id: s.id,
+        session_name: s.session_name,
+        due_date: s.due_date
+      })))
 
       // Fetch word set titles separately
       const wordSetIds = [...new Set(sessions.map((s: any) => s.word_set_id).filter(Boolean))]
@@ -1737,9 +1822,11 @@ function StudentDashboardContent() {
         word_set_title: string
       }>
 
+      console.log('🔍 loadActiveSessions: Setting active sessions:', activeSessionList.length)
       setActiveSessions(activeSessionList)
     } catch (error) {
-      console.error('Error loading active sessions:', error)
+      console.error('🔍 loadActiveSessions: Error loading active sessions:', error)
+      setActiveSessions([])
     }
   }
 
@@ -2796,36 +2883,69 @@ function StudentDashboardContent() {
               </div>
             ) : (
               <div className="space-y-3">
-                {activeSessions.map((session) => (
-                  <Link
-                    key={session.id}
-                    href={`/session/${session.id}/play?autoJoin=true`}
-                    className="block p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-amber-500/50 transition-all cursor-pointer"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-white mb-1">
-                          {session.session_name || `Session ${session.session_code}`}
-                        </h3>
-                        <p className="text-sm text-gray-400 mb-2">
-                          {session.word_set_title}
-                        </p>
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <span>{session.enabled_games.length} games</span>
-                          <span>•</span>
-                          <span>
-                            Due: {new Date(session.due_date).toLocaleDateString()}
-                          </span>
+                {activeSessions.map((session) => {
+                  const dueDate = new Date(session.due_date)
+                  const now = new Date()
+                  const timeDiff = dueDate.getTime() - now.getTime()
+                  const daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24))
+                  const hoursLeft = Math.ceil(timeDiff / (1000 * 60 * 60))
+                  const isExpiringSoon = daysLeft <= 1
+                  
+                  // Format time remaining text
+                  let timeRemainingText = ''
+                  if (daysLeft < 0) {
+                    timeRemainingText = 'Expired'
+                  } else if (daysLeft === 0) {
+                    if (hoursLeft <= 0) {
+                      timeRemainingText = 'Expires soon'
+                    } else {
+                      timeRemainingText = `${hoursLeft} ${hoursLeft === 1 ? 'hour' : 'hours'} left`
+                    }
+                  } else if (daysLeft === 1) {
+                    timeRemainingText = '1 day left'
+                  } else {
+                    timeRemainingText = `${daysLeft} days left`
+                  }
+
+                  return (
+                    <Link
+                      key={session.id}
+                      href={`/session/${session.id}/play?autoJoin=true`}
+                      className="block p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-amber-500/50 transition-all cursor-pointer"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-white mb-1">
+                            {session.session_name || `Session ${session.session_code}`}
+                          </h3>
+                          <p className="text-sm text-gray-400 mb-2">
+                            {session.word_set_title}
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <span>{session.enabled_games.length} games</span>
+                            <span>•</span>
+                            <span className={isExpiringSoon && daysLeft >= 0 ? 'text-amber-400 font-medium' : ''}>
+                              {timeRemainingText}
+                            </span>
+                            {!isExpiringSoon && (
+                              <>
+                                <span>•</span>
+                                <span>
+                                  Due: {dueDate.toLocaleDateString()}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div className="ml-4">
+                          <div className="px-3 py-1 bg-amber-500/20 border border-amber-500/30 rounded-lg text-amber-400 text-xs font-mono font-semibold">
+                            {session.session_code}
+                          </div>
                         </div>
                       </div>
-                      <div className="ml-4">
-                        <div className="px-3 py-1 bg-amber-500/20 border border-amber-500/30 rounded-lg text-amber-400 text-xs font-mono font-semibold">
-                          {session.session_code}
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  )
+                })}
               </div>
             )}
           </div>
@@ -3183,6 +3303,7 @@ function StudentDashboardContent() {
             translations={getCurrentGameData()!.translations}
             onClose={() => setShowSpellCasting(false)}
             onScoreUpdate={(score: number, total?: number) => handleScoreUpdate(score, total, 'scramble')}
+            trackingContext={getTrackingContext()}
             themeColor={getCurrentGameData()!.color}
             gridConfig={getCurrentGameData()!.grid_config}
           />

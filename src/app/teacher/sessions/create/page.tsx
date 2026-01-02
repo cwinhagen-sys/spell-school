@@ -7,6 +7,8 @@ import Link from 'next/link'
 import { ChevronLeft, Search, X, CheckCircle2, BookOpen, CheckSquare, Brain, Scissors, FileText, Globe, Mic, Target, Plus, Gamepad2, ArrowLeft } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { SESSION_GAMES, sortGamesByRecommendedOrder, type GameMetadata, getGameMetadata } from '@/lib/session-games'
+import { hasSessionModeAccess, getUserSubscriptionTier, TIER_LIMITS } from '@/lib/subscription'
+import PaymentWallModal from '@/components/PaymentWallModal'
 
 interface WordSet {
   id: string
@@ -408,6 +410,9 @@ export default function SessionGameSelection() {
   const [quizGradingType, setQuizGradingType] = useState<'ai' | 'manual'>('ai')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [checkingAccess, setCheckingAccess] = useState(true)
+  const [showPaymentWall, setShowPaymentWall] = useState(false)
+  const [paymentWallTier, setPaymentWallTier] = useState<'premium' | 'pro'>('premium')
   
   // UI state
   const [searchQuery, setSearchQuery] = useState('')
@@ -418,9 +423,37 @@ export default function SessionGameSelection() {
   const games = generateGames()
 
   useEffect(() => {
-    loadWordSets()
-    loadClasses()
-  }, [])
+    const checkAccessAndLoad = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          router.push('/')
+          return
+        }
+
+        // Check session mode access
+        setCheckingAccess(true)
+        const hasAccess = await hasSessionModeAccess(user.id)
+        if (!hasAccess) {
+          const tier = await getUserSubscriptionTier(user.id)
+          setPaymentWallTier(tier === 'free' ? 'premium' : 'pro')
+          setShowPaymentWall(true)
+          setCheckingAccess(false)
+          return
+        }
+        setCheckingAccess(false)
+
+        // Load data if access is granted
+        loadWordSets()
+        loadClasses()
+      } catch (err: any) {
+        console.error('Error checking access:', err)
+        setCheckingAccess(false)
+      }
+    }
+
+    checkAccessAndLoad()
+  }, [router])
 
   const loadWordSets = async () => {
     try {
@@ -496,6 +529,17 @@ export default function SessionGameSelection() {
       addGameToSession(selectedGame.id, rounds)
       setDrawerOpen(false)
     }
+  }
+
+  if (checkingAccess) {
+    return (
+      <div className="min-h-screen bg-[#0a0a12] text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   const filteredGames = games.filter(game => {
@@ -695,8 +739,43 @@ export default function SessionGameSelection() {
         </div>
       </div>
 
-      {/* Session Form */}
-      <div className="bg-[#161622] rounded-2xl border border-white/[0.12] p-6 mb-8">
+      {/* Session Timeline */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold text-white mb-4">Session timeline</h2>
+        <SessionTimeline 
+          selectedGames={selectedGames}
+          gameRounds={gameRounds}
+          games={games}
+          onRemoveGame={handleRemoveGame}
+        />
+        {selectedGames.length === 0 && (
+          <p className="text-sm text-gray-500 mt-4 text-center">
+            Select games below to build your session timeline
+          </p>
+        )}
+      </div>
+
+      {/* Games Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+        {filteredGames.map((game) => (
+          <GameCard
+            key={game.id}
+            game={game}
+            onSelect={() => handleGameSelect(game)}
+            isSelected={selectedGames.includes(game.id)}
+          />
+        ))}
+      </div>
+
+      {filteredGames.length === 0 && (
+        <div className="text-center py-12 mb-8">
+          <Gamepad2 className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+          <p className="text-gray-400">No games found with your search.</p>
+        </div>
+      )}
+
+      {/* Session Details Form */}
+      <div className="bg-[#161622] rounded-2xl border border-white/[0.12] p-6">
         <h2 className="text-xl font-semibold text-white mb-6">Session details</h2>
         <form onSubmit={(e) => { e.preventDefault(); handleSubmit(e); }} className="space-y-6">
           <div className="grid md:grid-cols-3 gap-6">
@@ -859,41 +938,6 @@ export default function SessionGameSelection() {
         </form>
       </div>
 
-      {/* Session Timeline */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold text-white mb-4">Session timeline</h2>
-        <SessionTimeline 
-          selectedGames={selectedGames}
-          gameRounds={gameRounds}
-          games={games}
-          onRemoveGame={handleRemoveGame}
-        />
-        {selectedGames.length === 0 && (
-          <p className="text-sm text-gray-500 mt-4 text-center">
-            Select games below to build your session timeline
-          </p>
-        )}
-      </div>
-
-      {/* Games Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredGames.map((game) => (
-          <GameCard
-            key={game.id}
-            game={game}
-            onSelect={() => handleGameSelect(game)}
-            isSelected={selectedGames.includes(game.id)}
-          />
-        ))}
-      </div>
-
-      {filteredGames.length === 0 && (
-        <div className="text-center py-12">
-          <Gamepad2 className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">No games found with your search.</p>
-        </div>
-      )}
-
       {/* Details Drawer */}
       <DetailsDrawer
         game={selectedGame}
@@ -906,6 +950,16 @@ export default function SessionGameSelection() {
             setGameRounds(prev => ({ ...prev, [selectedGame.id]: rounds }))
           }
         }}
+      />
+
+      {/* Payment Wall Modal */}
+      <PaymentWallModal
+        isOpen={showPaymentWall}
+        onClose={() => router.push('/teacher')}
+        feature="session mode"
+        currentLimit={null}
+        upgradeTier={paymentWallTier}
+        upgradeMessage={`Session mode is only available for ${paymentWallTier === 'premium' ? 'Premium' : 'Pro'} subscribers. Upgrade to create and manage sessions.`}
       />
     </div>
   )

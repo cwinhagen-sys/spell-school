@@ -308,23 +308,25 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
   }
 
   // Safe fallback templates (never use placeholders)
-  // Varied templates for better sentence generation, especially for few words
+  // More neutral and contextual templates that work better for various word types (sports, animals, etc.)
   const SAFE_TEMPLATES = [
-    (w: string) => `I left the ${w} on the kitchen counter.`,
-    (w: string) => `Did you remember the ${w} before we left?`,
-    (w: string) => `Tomorrow, we will discuss the ${w} in class.`,
-    (w: string) => `She whispered the ${w} and closed the door.`,
-    (w: string) => `Only the ${w} fits this narrow space.`,
-    (w: string) => `Please attach the ${w} to the email.`,
-    (w: string) => `They stored the ${w} in the attic.`,
-    (w: string) => `What a relief the ${w} brought today.`,
-    (w: string) => `The ${w} sat quietly in the corner.`,
-    (w: string) => `Can you pass me the ${w}, please?`,
-    (w: string) => `I found the ${w} under the table.`,
-    (w: string) => `The ${w} looked beautiful in the sunlight.`,
-    (w: string) => `My friend gave me the ${w} as a gift.`,
-    (w: string) => `We saw the ${w} in the garden yesterday.`,
-    (w: string) => `The ${w} made everyone smile.`
+    // Neutral templates that work for many word types
+    (w: string) => `We talked about ${w} during the lesson.`,
+    (w: string) => `My favorite activity is ${w}.`,
+    (w: string) => `I learned something new about ${w} today.`,
+    (w: string) => `The topic of ${w} is very interesting.`,
+    (w: string) => `Can you tell me more about ${w}?`,
+    (w: string) => `I enjoy ${w} with my friends.`,
+    (w: string) => `We discussed ${w} in our group.`,
+    (w: string) => `The subject of ${w} is fascinating.`,
+    (w: string) => `I want to learn more about ${w}.`,
+    (w: string) => `We studied ${w} in class today.`,
+    (w: string) => `The teacher explained ${w} to us.`,
+    (w: string) => `I found ${w} very interesting.`,
+    (w: string) => `Our lesson today was about ${w}.`,
+    (w: string) => `The class focused on ${w} today.`,
+    (w: string) => `I'm practicing ${w} this week.`,
+    (w: string) => `We're learning about ${w} now.`
   ]
 
   // Safe fallback generator (only used if server fails completely)
@@ -895,17 +897,9 @@ export default function StoryGapGame({ words, translations = {}, onClose, tracki
     
     // Send score update immediately for instant XP
     // Send accuracy as score for quest tracking (perfectionist quest needs percentage)
+    // In session mode, handleGameScoreUpdate will handle completion and showing modal
     if (onScoreUpdate) {
-      if (sessionMode) {
-        onScoreUpdate(scoreResult.accuracy, scoreResult.pointsAwarded, 'story_gap')
-        if (correctAnswers === totalGaps) {
-          setTimeout(() => {
-            onClose()
-          }, 500)
-        }
-      } else {
-        onScoreUpdate(scoreResult.accuracy, scoreResult.pointsAwarded, 'story_gap')
-      }
+      onScoreUpdate(scoreResult.accuracy, scoreResult.pointsAwarded, 'story_gap')
     }
     
     setSubmitted(true)

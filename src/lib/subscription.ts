@@ -9,6 +9,7 @@ export interface SubscriptionLimits {
   maxStudentsPerClass: number | null // null = unlimited
   maxTotalStudents: number | null // null = unlimited (for free tier, this is total across all classes)
   maxWordSets: number | null // null = unlimited
+  maxWordsPerWordSet: number | null // null = unlimited (for free tier, max words per word set)
   hasSessionMode: boolean
   hasProgressStats: boolean
   hasQuizStats: boolean
@@ -18,8 +19,9 @@ export const TIER_LIMITS: Record<SubscriptionTier, SubscriptionLimits> = {
   free: {
     maxClasses: 1,
     maxStudentsPerClass: null, // Not applicable for free tier
-    maxTotalStudents: 30, // Total across all classes
-    maxWordSets: 5,
+    maxTotalStudents: 10, // Total across all classes
+    maxWordSets: 1,
+    maxWordsPerWordSet: 12, // Max words per word set for free tier
     hasSessionMode: false,
     hasProgressStats: false,
     hasQuizStats: false,
@@ -29,6 +31,7 @@ export const TIER_LIMITS: Record<SubscriptionTier, SubscriptionLimits> = {
     maxStudentsPerClass: 30,
     maxTotalStudents: null, // Not applicable (limited by classes * students per class)
     maxWordSets: 20,
+    maxWordsPerWordSet: null, // Unlimited
     hasSessionMode: true,
     hasProgressStats: false,
     hasQuizStats: false,
@@ -38,6 +41,7 @@ export const TIER_LIMITS: Record<SubscriptionTier, SubscriptionLimits> = {
     maxStudentsPerClass: null, // Unlimited
     maxTotalStudents: null, // Unlimited
     maxWordSets: null, // Unlimited
+    maxWordsPerWordSet: null, // Unlimited
     hasSessionMode: true,
     hasProgressStats: true,
     hasQuizStats: true,
@@ -200,19 +204,28 @@ export async function canCreateClass(userId: string, currentClassCount: number):
 /**
  * Check if user can create a new word set
  */
-export async function canCreateWordSet(userId: string, currentWordSetCount: number): Promise<{ allowed: boolean; reason?: string }> {
+export async function canCreateWordSet(userId: string, currentWordSetCount: number, wordCount?: number): Promise<{ allowed: boolean; reason?: string; limitType?: 'wordSets' | 'wordCount' }> {
   const limits = await getUserSubscriptionLimits(userId)
   
-  if (limits.maxWordSets === null) {
-    return { allowed: true } // Unlimited
-  }
-  
-  if (currentWordSetCount >= limits.maxWordSets) {
+  // Check word set count limit
+  if (limits.maxWordSets !== null && currentWordSetCount >= limits.maxWordSets) {
     const tier = await getUserSubscriptionTier(userId)
     const tierName = getTierDisplayName(tier)
     return { 
       allowed: false, 
-      reason: `${tierName}-planen tillåter max ${limits.maxWordSets} ordlistor. Uppgradera till ${tier === 'free' ? 'Premium' : 'Pro'} för fler ordlistor.` 
+      reason: `${tierName}-planen tillåter max ${limits.maxWordSets} ordlistor. Uppgradera till ${tier === 'free' ? 'Premium' : 'Pro'} för fler ordlistor.`,
+      limitType: 'wordSets'
+    }
+  }
+  
+  // Check word count per word set limit (if wordCount is provided)
+  if (wordCount !== undefined && limits.maxWordsPerWordSet !== null && wordCount > limits.maxWordsPerWordSet) {
+    const tier = await getUserSubscriptionTier(userId)
+    const tierName = getTierDisplayName(tier)
+    return { 
+      allowed: false, 
+      reason: `${tierName}-planen tillåter max ${limits.maxWordsPerWordSet} ord per ordlista. Uppgradera till ${tier === 'free' ? 'Premium' : 'Pro'} för fler ord.`,
+      limitType: 'wordCount'
     }
   }
   
