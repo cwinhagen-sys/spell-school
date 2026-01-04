@@ -516,3 +516,9 @@ export async function POST(request: NextRequest) {
 // Disable body parsing for webhooks (Stripe needs raw body)
 export const runtime = 'nodejs'
 
+
+}
+
+// Disable body parsing for webhooks (Stripe needs raw body)
+export const runtime = 'nodejs'
+

@@ -192,7 +192,7 @@ export default function DailyQuestsPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white">Daily Quests</h1>
-              <p className="text-sm text-gray-500">Complete quests to earn Arcane Points</p>
+              <p className="text-sm text-gray-500">Complete quests to earn Experience Points</p>
             </div>
           </div>
           <div className="text-right bg-white/5 rounded-xl px-4 py-3 border border-white/10">
@@ -291,7 +291,7 @@ export default function DailyQuestsPage() {
                       <Zap className="w-3.5 h-3.5 text-amber-400" />
                       <div className="flex items-center gap-1">
                         <Gem className="w-3.5 h-3.5 text-amber-400" />
-                        +{quest.xp} AP
+                        +{quest.xp} XP
                       </div>
                     </div>
                   </div>
@@ -328,7 +328,7 @@ export default function DailyQuestsPage() {
             <h3 className="text-lg font-semibold text-white mb-1">All quests completed!</h3>
             <div className="flex items-center gap-1 text-emerald-400 text-sm font-medium">
               <Gem className="w-3.5 h-3.5" />
-              +100 AP Bonus
+              +100 XP Bonus
             </div>
           </div>
         )}
@@ -336,7 +336,7 @@ export default function DailyQuestsPage() {
         {/* Footer Info */}
         <div className="p-4 bg-white/5 rounded-xl text-center text-sm text-gray-500 border border-white/10">
           <p className="mb-1">
-            AP earned today: <span className="font-semibold text-amber-400">{totalXp}</span>
+            XP earned today: <span className="font-semibold text-amber-400">{totalXp}</span>
             {completedCount === dailyQuests.length && <span className="text-amber-400"> (+100 bonus)</span>}
           </p>
           <p className="text-xs text-gray-600">New quests tomorrow at 06:00</p>

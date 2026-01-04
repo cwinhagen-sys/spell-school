@@ -180,9 +180,9 @@ function StarReward({ stars, onComplete }: { stars: 1 | 2 | 3, onComplete: () =>
   )
 }
 
-// AP Tick-up Animation Component
-function APCounter({ targetAP, delay = 0 }: { targetAP: number, delay?: number }) {
-  const [displayAP, setDisplayAP] = useState(0)
+// XP Tick-up Animation Component
+function XPCounter({ targetXP, delay = 0 }: { targetXP: number, delay?: number }) {
+  const [displayXP, setDisplayXP] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
   
   useEffect(() => {
@@ -190,16 +190,16 @@ function APCounter({ targetAP, delay = 0 }: { targetAP: number, delay?: number }
       setIsAnimating(true)
       const duration = 1200
       const steps = 30
-      const increment = targetAP / steps
+      const increment = targetXP / steps
       let current = 0
       
       const interval = setInterval(() => {
         current += increment
-        if (current >= targetAP) {
-          setDisplayAP(targetAP)
+        if (current >= targetXP) {
+          setDisplayXP(targetXP)
           clearInterval(interval)
         } else {
-          setDisplayAP(Math.floor(current))
+          setDisplayXP(Math.floor(current))
         }
       }, duration / steps)
       
@@ -207,7 +207,7 @@ function APCounter({ targetAP, delay = 0 }: { targetAP: number, delay?: number }
     }, delay)
     
     return () => clearTimeout(startTimer)
-  }, [targetAP, delay])
+  }, [targetXP, delay])
   
   return (
     <motion.div
@@ -221,19 +221,19 @@ function APCounter({ targetAP, delay = 0 }: { targetAP: number, delay?: number }
           scale: [1, 1.1, 1],
           rotate: [0, -5, 5, 0]
         } : {}}
-        transition={{ duration: 0.3, repeat: isAnimating && displayAP < targetAP ? Infinity : 0 }}
+        transition={{ duration: 0.3, repeat: isAnimating && displayXP < targetXP ? Infinity : 0 }}
         className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center shadow-lg shadow-slate-900/30"
       >
         <Gem className="w-5 h-5 text-white" />
       </motion.div>
       <div className="text-left">
-        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-medium">AP Earned</p>
+        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-medium">XP Earned</p>
         <motion.p 
           className="text-2xl font-bold text-white"
-          animate={displayAP === targetAP ? { scale: [1, 1.15, 1] } : {}}
+          animate={displayXP === targetXP ? { scale: [1, 1.15, 1] } : {}}
           transition={{ duration: 0.3 }}
         >
-          +{displayAP}
+          +{displayXP}
         </motion.p>
       </div>
     </motion.div>
@@ -274,7 +274,7 @@ export default function ScenarioGame({
   
   // Completion state
   const [finalStars, setFinalStars] = useState<1 | 2 | 3>(1)
-  const [apEarned, setApEarned] = useState(0)
+  const [xpEarned, setXpEarned] = useState(0)
   const [showStarAnimation, setShowStarAnimation] = useState(true)
   
   // Session tracking
@@ -371,7 +371,7 @@ export default function ScenarioGame({
     })
     // Reset completion state when starting new story
     setFinalStars(1)
-    setApEarned(0)
+    setXpEarned(0)
     setShowStarAnimation(true)
     
     setGamePhase('playing')
@@ -485,20 +485,20 @@ export default function ScenarioGame({
       segmentId: endingSegment.id
     })
     
-    // Calculate AP
-    const ap = story?.xpRewards 
+    // Calculate XP
+    const xp = story?.xpRewards 
       ? (stars === 3 ? story.xpRewards.threeStars : stars === 2 ? story.xpRewards.twoStars : story.xpRewards.oneStar)
       : stars * 15
     
     setFinalStars(stars)
-    setApEarned(ap)
+    setXpEarned(xp)
     setShowStarAnimation(true)
     setGamePhase('ending')
     
     // End session and update progress
     if (sessionId && trackingContext) {
       await endGameSession(sessionId, 'scenario_adventure', {
-        score: ap,
+        score: xp,
         durationSec: duration,
         accuracyPct: stars === 3 ? 100 : stars === 2 ? 70 : 40,
         details: {
@@ -507,12 +507,12 @@ export default function ScenarioGame({
         }
       })
       
-      await updateStudentProgress(ap, 'scenario_adventure', trackingContext)
+      await updateStudentProgress(xp, 'scenario_adventure', trackingContext)
     }
     
-    // Callback - pass ap as newTotal to ensure it gets added to player's points
+    // Callback - pass xp as newTotal to ensure it gets added to player's points
     if (onScoreUpdate && selectedEnvironment && selectedScenario) {
-      onScoreUpdate(stars === 3 ? 100 : stars === 2 ? 70 : 40, ap, 'scenario_adventure', {
+      onScoreUpdate(stars === 3 ? 100 : stars === 2 ? 70 : 40, xp, 'scenario_adventure', {
         scenarioId: selectedEnvironment.id,
         goalId: selectedScenario.id,
         success: stars >= 2,
@@ -760,7 +760,7 @@ export default function ScenarioGame({
                             <div className="flex items-center gap-1.5 shrink-0">
                               <DifficultyStars count={scenario.difficultyStars} size="xs" />
                               <span className={`text-[10px] font-medium ${canPlay ? 'text-gray-300' : 'text-gray-500'}`}>
-                                {scenario.maxXp} AP
+                                {scenario.maxXp} XP
                               </span>
                             </div>
                           </div>
@@ -908,10 +908,10 @@ export default function ScenarioGame({
                     </p>
                   </motion.div>
 
-                  {/* Divider + AP in row */}
+                  {/* Divider + XP in row */}
                   <div className="flex items-center gap-4 mb-4">
                     <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-600/30 to-gray-600/10" />
-                    <APCounter targetAP={apEarned} delay={800} />
+                    <XPCounter targetXP={xpEarned} delay={800} />
                     <div className="flex-1 h-px bg-gradient-to-r from-gray-600/10 via-gray-600/30 to-transparent" />
                   </div>
 

@@ -215,7 +215,7 @@ export default function StudentHeader() {
     },
     {
       id: 'levels',
-      label: 'Level & Arcane Points',
+      label: 'Level & Experience Points',
       href: '/student/levels',
       icon: <TrendingUp className="w-4 h-4 text-emerald-400" />
     },

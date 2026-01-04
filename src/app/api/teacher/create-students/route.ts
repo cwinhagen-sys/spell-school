@@ -336,3 +336,64 @@ export async function POST(request: NextRequest) {
 
 
 
+
+          .upsert({
+            id: createdUser.user.id,
+            email,
+            role: 'student',
+            username,
+            class_code: normalizedClassCode,
+            deleted_at: null
+          }, { onConflict: 'id' })
+
+        if (profileInsertError) {
+          throw profileInsertError
+        }
+
+        // Ensure class membership
+        const { error: classInsertError } = await supabaseAdmin
+          .from('class_students')
+          .upsert({
+            class_id: classId,
+            student_id: createdUser.user.id,
+            deleted_at: null
+          }, { onConflict: 'class_id,student_id' })
+
+        if (classInsertError) {
+          throw classInsertError
+        }
+
+        results.push({ username, success: true, message: 'Student created' })
+      } catch (error: any) {
+        console.error('Failed to create student', { username: rawStudent.username, error })
+        const message =
+          typeof error?.message === 'string'
+            ? error.message
+            : 'Failed to create student'
+        results.push({
+          username: rawStudent.username || '',
+          success: false,
+          message
+        })
+      }
+    }
+
+    const successCount = results.filter(r => r.success).length
+    const errorCount = results.length - successCount
+
+    return NextResponse.json({
+      successCount,
+      errorCount,
+      results
+    })
+  } catch (error) {
+    console.error('Error in POST /api/teacher/create-students:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+
+

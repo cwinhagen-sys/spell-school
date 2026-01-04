@@ -270,7 +270,7 @@ export default function SpellSchoolLanding({
                 href="/signup/teacher"
                 className="relative group"
               >
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl blur opacity-50 group-hover:opacity-80 transition-opacity" />
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl blur opacity-50 group-hover:opacity-80 transition-opacity hidden lg:block" />
                 <span className="relative bg-gradient-to-r from-amber-500 to-orange-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm inline-block hover:from-amber-400 hover:to-orange-500 transition-all">
                   Sign up
                 </span>
@@ -355,10 +355,10 @@ export default function SpellSchoolLanding({
                   href="/signup/teacher"
                   className="group relative inline-flex items-center justify-center"
                 >
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl blur opacity-60 group-hover:opacity-100 transition-opacity" />
-                  <span className="relative bg-gradient-to-r from-amber-500 to-orange-600 text-white px-8 py-4 rounded-2xl font-semibold text-lg inline-flex items-center gap-2 hover:from-amber-400 hover:to-orange-500 transition-all">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl blur opacity-60 group-hover:opacity-100 transition-opacity hidden sm:block" />
+                  <span className="relative bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-2xl font-semibold text-base sm:text-lg inline-flex items-center gap-2 hover:from-amber-400 hover:to-orange-500 transition-all w-full sm:w-auto justify-center">
                     Sign up
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
                   </span>
                 </Link>
                 
@@ -735,10 +735,10 @@ export default function SpellSchoolLanding({
                 href="/signup/teacher"
                 className="group relative inline-flex items-center justify-center"
               >
-                <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl blur-lg opacity-70 group-hover:opacity-100 transition-opacity" />
-                <span className="relative bg-gradient-to-r from-amber-500 to-orange-600 text-white px-10 py-4 rounded-2xl font-bold text-lg inline-flex items-center gap-3 hover:from-amber-400 hover:to-orange-500 transition-all">
+                <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl blur-lg opacity-70 group-hover:opacity-100 transition-opacity hidden sm:block" />
+                <span className="relative bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 sm:px-10 py-3 sm:py-4 rounded-2xl font-bold text-base sm:text-lg inline-flex items-center gap-2 sm:gap-3 hover:from-amber-400 hover:to-orange-500 transition-all w-full sm:w-auto justify-center">
                   Sign up now
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
                 </span>
               </Link>
               <Link

@@ -439,6 +439,14 @@ export default function AssignWordSetsPage() {
       let skippedCount = 0
       const errors: string[] = []
 
+      // Convert dueDate to ISO timestamp if provided (add time to end of day)
+      let dueDateTimestamp: string | null = null
+      if (dueDate) {
+        const date = new Date(dueDate)
+        date.setHours(23, 59, 59, 999) // Set to end of day
+        dueDateTimestamp = date.toISOString()
+      }
+
       for (const classId of selectedClasses) {
         try {
           const { data: existing, error: checkError } = await supabase
@@ -464,7 +472,7 @@ export default function AssignWordSetsPage() {
               word_set_id: selectedWordSet, 
               class_id: classId,
               student_id: null,
-              due_date: dueDate || null,
+              due_date: dueDateTimestamp,
               quiz_unlocked: true
             })
 
@@ -511,6 +519,14 @@ export default function AssignWordSetsPage() {
       let skippedCount = 0
       const errors: string[] = []
 
+      // Convert dueDate to ISO timestamp if provided (add time to end of day)
+      let dueDateTimestamp: string | null = null
+      if (dueDate) {
+        const date = new Date(dueDate)
+        date.setHours(23, 59, 59, 999) // Set to end of day
+        dueDateTimestamp = date.toISOString()
+      }
+
       for (const studentId of selectedStudents) {
         try {
           const { data: existing, error: checkError } = await supabase
@@ -536,7 +552,7 @@ export default function AssignWordSetsPage() {
               word_set_id: selectedWordSet, 
               student_id: studentId,
               class_id: null,
-              due_date: dueDate || null,
+              due_date: dueDateTimestamp,
               quiz_unlocked: true
             })
 
@@ -607,9 +623,17 @@ export default function AssignWordSetsPage() {
       const assignment = assignments.find(a => a.id === assignmentId)
       const idsToUpdate = assignment?.isGrouped && assignment.ids ? assignment.ids : [assignmentId]
       
+      // Convert editingDueDate to ISO timestamp if provided (add time to end of day)
+      let dueDateTimestamp: string | null = null
+      if (editingDueDate) {
+        const date = new Date(editingDueDate)
+        date.setHours(23, 59, 59, 999) // Set to end of day
+        dueDateTimestamp = date.toISOString()
+      }
+      
       const { error } = await supabase
         .from('assigned_word_sets')
-        .update({ due_date: editingDueDate || null })
+        .update({ due_date: dueDateTimestamp })
         .in('id', idsToUpdate)
 
       if (error) throw error

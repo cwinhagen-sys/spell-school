@@ -772,3 +772,11 @@ export default function QuizResultsPage() {
     </div>
   )
 }
+        feature="Quiz Statistics"
+        currentLimit={null}
+        upgradeTier="pro"
+        upgradeMessage="Quiz statistics and detailed results are only available for Pro plans. Upgrade to view comprehensive quiz analytics and track student performance."
+      />
+    </div>
+  )
+}

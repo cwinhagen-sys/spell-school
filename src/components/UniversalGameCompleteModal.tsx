@@ -62,8 +62,8 @@ function Particle({ delay, x, color }: { delay: number; x: number; color: string
   )
 }
 
-// AP Counter animation
-function APCounter({ value, duration = 1.5 }: { value: number; duration?: number }) {
+// XP Counter animation
+function XPCounter({ value, duration = 1.5 }: { value: number; duration?: number }) {
   const [count, setCount] = useState(0)
   
   useEffect(() => {
@@ -125,11 +125,11 @@ export default function UniversalGameCompleteModal({
   levelUp
 }: GameCompleteModalProps) {
   const [showContent, setShowContent] = useState(false)
-  const [showAP, setShowAP] = useState(false)
+  const [showXP, setShowXP] = useState(false)
   
   useEffect(() => {
     const timer1 = setTimeout(() => setShowContent(true), 300)
-    const timer2 = setTimeout(() => setShowAP(true), 800)
+    const timer2 = setTimeout(() => setShowXP(true), 800)
     return () => {
       clearTimeout(timer1)
       clearTimeout(timer2)
@@ -206,7 +206,7 @@ export default function UniversalGameCompleteModal({
       >
         {/* Particle effects */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {showAP && particles.map(p => (
+          {showXP && particles.map(p => (
             <Particle key={p.id} delay={p.delay} x={p.x} color={p.color} />
           ))}
         </div>
@@ -278,9 +278,9 @@ export default function UniversalGameCompleteModal({
                 )}
               </AnimatePresence>
 
-              {/* AP Award - Big animated counter */}
+              {/* XP Award - Big animated counter */}
               <AnimatePresence>
-                {showAP && (
+                {showXP && (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.5 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -296,12 +296,12 @@ export default function UniversalGameCompleteModal({
                       </motion.div>
                       <div>
                         <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
-                          +<APCounter value={pointsAwarded} /> AP
+                          +<XPCounter value={pointsAwarded} /> XP
                         </div>
-                        <div className="text-xs text-gray-400">Arcane Points earned</div>
+                        <div className="text-xs text-gray-400">Experience Points earned</div>
                       </div>
                       
-                      {/* Sparkle effects around AP */}
+                      {/* Sparkle effects around XP */}
                       {[...Array(4)].map((_, i) => (
                         <motion.div
                           key={i}

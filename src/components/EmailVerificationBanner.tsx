@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { AlertCircle, Mail, X, CheckCircle } from 'lucide-react'
+import { AlertCircle, Mail, CheckCircle } from 'lucide-react'
 import { resendVerificationEmail } from '@/lib/email-verification'
 
 interface EmailVerificationBannerProps {
@@ -75,9 +75,3 @@ export default function EmailVerificationBanner({ className = '', onVerified }: 
     </div>
   )
 }
-
-
-
-
-
-

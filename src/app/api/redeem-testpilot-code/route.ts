@@ -191,3 +191,51 @@ export async function POST(request: NextRequest) {
 
 
 
+
+    // CRITICAL: Set stripe_subscription_id to NULL for test pilot users
+    // If this is not NULL, getTestPilotInfo will return isTestPilot: false
+    const { error: upgradeError } = await supabaseAdmin
+      .from('profiles')
+      .update({ 
+        subscription_tier: 'pro',
+        stripe_subscription_id: null  // Must be NULL for test pilot
+      })
+      .eq('id', user.id)
+
+    if (upgradeError) {
+      console.error('❌ Error upgrading user:', upgradeError)
+      // Try to rollback code usage record and count
+      await supabaseAdmin
+        .from('testpilot_code_usage')
+        .delete()
+        .eq('code_id', codeData.id)
+        .eq('user_id', user.id)
+      await supabaseAdmin
+        .from('testpilot_codes')
+        .update({
+          current_uses: codeData.current_uses,
+        })
+        .eq('id', codeData.id)
+      return NextResponse.json({ error: 'Kunde inte uppgradera till Pro' }, { status: 500 })
+    }
+
+    console.log(`✅ Successfully upgraded user ${user.id} to Pro with code ${codeUpper}`)
+
+    return NextResponse.json({
+      success: true,
+      message: 'Pro-planen har aktiverats!',
+      tier: 'pro'
+    })
+  } catch (error: any) {
+    console.error('❌ Error redeeming testpilot code:', error)
+    return NextResponse.json({
+      error: error.message || 'Ett fel uppstod vid aktivering av kod'
+    }, { status: 500 })
+  }
+}
+
+
+
+
+
+

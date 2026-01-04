@@ -408,7 +408,6 @@ export async function getExceedingResources(userId: string, supabaseClient?: any
     return { classes: [], wordSets: [], totalStudents: 0 }
   }
 }
-
 /**
  * Downgrade user to free tier and delete selected resources
  */

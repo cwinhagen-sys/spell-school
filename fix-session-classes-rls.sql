@@ -15,3 +15,4 @@ CREATE POLICY "students_view_session_classes" ON session_classes
     )
   );
 
+

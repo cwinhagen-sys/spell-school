@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { useActivityTracking } from '@/hooks/useActivityTracking'
 import { markUserAsLoggedOut } from '@/lib/activity'
 import { syncManager } from '@/lib/syncManager'
-import { BookOpen, Target, Star, Users, ChevronDown, Calendar, LogOut, Trophy, X, Gem } from 'lucide-react'
+import { BookOpen, Target, Star, Users, ChevronDown, Calendar, LogOut, Trophy, X, Gem, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 import { levelForXp } from '@/lib/leveling'
 import { titleForLevel } from '@/lib/wizardTitles'
@@ -204,6 +204,8 @@ function StudentDashboardContent() {
     due_date: string
     enabled_games: string[]
     word_set_title: string
+    game_rounds?: { [key: string]: number }
+    isComplete?: boolean
   }>>([])
   const [dailyQuests, setDailyQuests] = useState<any[]>([])
   const [questProgress, setQuestProgress] = useState<{[key: string]: number}>({})
@@ -1749,6 +1751,7 @@ function StudentDashboardContent() {
           session_name,
           due_date,
           enabled_games,
+          game_rounds,
           is_active,
           word_set_id
         `)
@@ -1805,21 +1808,78 @@ function StudentDashboardContent() {
         }
       }
 
+      // Get participant IDs for all sessions
+      const sessionIdList = sessions.map((s: any) => s.id)
+      const { data: participants } = await supabase
+        .from('session_participants')
+        .select('session_id, id')
+        .eq('student_id', user.id)
+        .in('session_id', sessionIdList)
+
+      const participantMap: Record<string, string> = {}
+      if (participants) {
+        participants.forEach((p: any) => {
+          participantMap[p.session_id] = p.id
+        })
+      }
+
+      // Get progress for all sessions
+      const participantIds = Object.values(participantMap)
+      let progressMap: Record<string, Array<{ game_name: string; rounds_completed: number }>> = {}
+      
+      if (participantIds.length > 0) {
+        const { data: progressData } = await supabase
+          .from('session_progress')
+          .select('participant_id, game_name, rounds_completed')
+          .in('participant_id', participantIds)
+
+        // Build progress map by matching participant_id to session_id
+        if (progressData && participants) {
+          participants.forEach((participant: any) => {
+            const sessionProgress = progressData.filter((p: any) => p.participant_id === participant.id)
+            if (sessionProgress.length > 0) {
+              progressMap[participant.session_id] = sessionProgress.map((p: any) => ({
+                game_name: p.game_name,
+                rounds_completed: p.rounds_completed || 0
+              }))
+            }
+          })
+        }
+      }
+
       // Transform sessions data
-      const activeSessionList = sessions.map((session: any) => ({
-        id: session.id,
-        session_code: session.session_code,
-        session_name: session.session_name,
-        due_date: session.due_date,
-        enabled_games: session.enabled_games || [],
-        word_set_title: session.word_set_id ? (wordSetTitles[session.word_set_id] || 'Session') : 'Session'
-      })) as Array<{
+      const activeSessionList = sessions.map((session: any) => {
+        const sessionProgress = progressMap[session.id] || []
+        const gameRounds = session.game_rounds || {}
+        const enabledGames = session.enabled_games || []
+        
+        // Check if all games are completed
+        const allGamesCompleted = enabledGames.every((game: string) => {
+          const gameProgress = sessionProgress.find((p: any) => p.game_name === game)
+          const requiredRounds = gameRounds[game] || 1
+          const roundsCompleted = gameProgress?.rounds_completed || 0
+          return roundsCompleted >= requiredRounds
+        })
+
+        return {
+          id: session.id,
+          session_code: session.session_code,
+          session_name: session.session_name,
+          due_date: session.due_date,
+          enabled_games: enabledGames,
+          game_rounds: gameRounds,
+          word_set_title: session.word_set_id ? (wordSetTitles[session.word_set_id] || 'Session') : 'Session',
+          isComplete: allGamesCompleted
+        }
+      }) as Array<{
         id: string
         session_code: string
         session_name: string | null
         due_date: string
         enabled_games: string[]
+        game_rounds?: { [key: string]: number }
         word_set_title: string
+        isComplete?: boolean
       }>
 
       console.log('🔍 loadActiveSessions: Setting active sessions:', activeSessionList.length)
@@ -2503,7 +2563,7 @@ function StudentDashboardContent() {
                     <Gem className="w-5 h-5 text-amber-400" />
                     <div className="text-3xl font-bold text-amber-400">{points.toLocaleString()}</div>
                   </div>
-                  <div className="text-sm text-gray-300">Arcane Points</div>
+                  <div className="text-sm text-gray-300">Experience Points</div>
                 </div>
                 {currentStreak > 0 && (
                   <div className="text-center px-4 py-2 bg-white/10 rounded-xl backdrop-blur-sm border border-white/10">
@@ -2514,13 +2574,13 @@ function StudentDashboardContent() {
               </div>
             </div>
             
-            {/* AP Progress Bar */}
+            {/* XP Progress Bar */}
             <div className="mt-6">
               <div className="flex items-center justify-between text-sm mb-2">
                 <span className="text-gray-300">Progress to Level {leveling.level + 1}</span>
                 <span className="font-semibold text-white">
                   {leveling.nextDelta > 0 
-                    ? `${Math.round(leveling.progressToNext * leveling.nextDelta)} / ${leveling.nextDelta} AP`
+                    ? `${Math.round(leveling.progressToNext * leveling.nextDelta)} / ${leveling.nextDelta} XP`
                     : 'Max level reached!'
                   }
                 </span>
@@ -2533,7 +2593,7 @@ function StudentDashboardContent() {
               </div>
               {leveling.nextDelta > 0 && (
                 <div className="text-xs text-gray-400 mt-1 text-right">
-                  {leveling.nextDelta - Math.round(leveling.progressToNext * leveling.nextDelta)} AP left to next level
+                  {leveling.nextDelta - Math.round(leveling.progressToNext * leveling.nextDelta)} XP left to next level
                 </div>
               )}
             </div>
@@ -2646,7 +2706,7 @@ function StudentDashboardContent() {
                         ) : (
                           <div className="flex items-center gap-1">
                             <Gem className="w-3.5 h-3.5 text-amber-400" />
-                            <span className="text-sm font-semibold text-white">+{quest.xp} AP</span>
+                            <span className="text-sm font-semibold text-white">+{quest.xp} XP</span>
                           </div>
                         )}
                       </div>
@@ -2685,7 +2745,7 @@ function StudentDashboardContent() {
                       <div className="font-bold text-amber-400">All quests completed!</div>
                       <div className="flex items-center gap-1 text-sm text-amber-300/80">
                         <Gem className="w-3.5 h-3.5 text-amber-300/80" />
-                        +100 AP Bonus earned
+                        +100 XP Bonus earned
                       </div>
                     </div>
                   </div>
@@ -2911,13 +2971,25 @@ function StudentDashboardContent() {
                     <Link
                       key={session.id}
                       href={`/session/${session.id}/play?autoJoin=true`}
-                      className="block p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-amber-500/50 transition-all cursor-pointer"
+                      className="block p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-amber-500/50 transition-all cursor-pointer relative"
                     >
+                      {session.isComplete && (
+                        <div className="absolute top-3 right-3 w-6 h-6 bg-emerald-500/20 border border-emerald-500/30 rounded-full flex items-center justify-center">
+                          <CheckCircle className="w-4 h-4 text-emerald-400" />
+                        </div>
+                      )}
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-white mb-1">
-                            {session.session_name || `Session ${session.session_code}`}
-                          </h3>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-white">
+                              {session.session_name || `Session ${session.session_code}`}
+                            </h3>
+                            {session.isComplete && (
+                              <span className="px-2 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded text-emerald-400 text-xs font-medium">
+                                Complete
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm text-gray-400 mb-2">
                             {session.word_set_title}
                           </p>
@@ -2935,11 +3007,6 @@ function StudentDashboardContent() {
                                 </span>
                               </>
                             )}
-                          </div>
-                        </div>
-                        <div className="ml-4">
-                          <div className="px-3 py-1 bg-amber-500/20 border border-amber-500/30 rounded-lg text-amber-400 text-xs font-mono font-semibold">
-                            {session.session_code}
                           </div>
                         </div>
                       </div>
@@ -3761,7 +3828,7 @@ function StudentDashboardContent() {
               <div className="font-bold text-lg">All quests completed!</div>
               <div className="flex items-center gap-1 text-sm opacity-90">
                 <Gem className="w-3.5 h-3.5" />
-                +100 AP Bonus earned!
+                +100 XP Bonus earned!
               </div>
             </div>
           </div>

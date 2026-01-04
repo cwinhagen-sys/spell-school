@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Gamepad2, Plus, Users, Calendar, Trash2, X, Lock, ArrowRight, Sparkles } from 'lucide-react'
+import { Gamepad2, Plus, Users, Calendar, Trash2, Edit2, Lock, ArrowRight, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import { hasSessionModeAccess, getUserSubscriptionTier } from '@/lib/subscription'
 import PaymentWallModal from '@/components/PaymentWallModal'
@@ -137,23 +137,6 @@ export default function TeacherSessionsPage() {
     }
   }
 
-  const handleDeactivateSession = async (sessionId: string, e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    
-    try {
-      const { error } = await supabase
-        .from('sessions')
-        .update({ is_active: false })
-        .eq('id', sessionId)
-
-      if (error) throw error
-      loadSessions()
-    } catch (error) {
-      console.error('Error deactivating session:', error)
-      alert('Could not deactivate session. Please try again.')
-    }
-  }
 
   if (checkingAccess) {
     return (
@@ -328,15 +311,14 @@ export default function TeacherSessionsPage() {
               
               {/* Action buttons */}
               <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                {session.is_active && (
-                  <button
-                    onClick={(e) => handleDeactivateSession(session.id, e)}
-                    className="p-2 bg-white/[0.04] text-gray-400 rounded-lg hover:bg-white/[0.08] hover:text-white transition-all border border-white/[0.08]"
-                    title="End session"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
+                <Link
+                  href={`/teacher/sessions/${session.id}/edit`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="p-2 bg-white/[0.04] text-gray-400 rounded-lg hover:bg-amber-500/20 hover:text-amber-400 transition-all border border-white/[0.08]"
+                  title="Edit session"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </Link>
                 <button
                   onClick={(e) => handleDeleteSession(session.id, e)}
                   className="p-2 bg-white/[0.04] text-gray-400 rounded-lg hover:bg-red-500/20 hover:text-red-400 transition-all border border-white/[0.08]"

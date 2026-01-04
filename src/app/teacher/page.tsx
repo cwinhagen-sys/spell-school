@@ -43,6 +43,7 @@ export default function TeacherDashboard() {
   const [user, setUser] = useState<any>(null)
   const [teacherName, setTeacherName] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const [hasClasses, setHasClasses] = useState<boolean>(false)
   
   // Session progress
   const [sessions, setSessions] = useState<SessionProgress[]>([])
@@ -85,11 +86,26 @@ export default function TeacherDashboard() {
       
       setTeacherName(profile.name || user.email?.split('@')[0] || 'Teacher')
       
-      await Promise.all([
-        loadSessions(),
-        loadCurrentlyPlaying(),
-        loadActivity()
-      ])
+      // Check if teacher has any classes
+      const { data: classes } = await supabase
+        .from('classes')
+        .select('id')
+        .eq('teacher_id', user.id)
+        .is('deleted_at', null)
+        .limit(1)
+      
+      const hasAnyClasses = (classes && classes.length > 0) || false
+      setHasClasses(hasAnyClasses)
+      
+      // Only load dashboard data if teacher has classes
+      if (hasAnyClasses) {
+        await Promise.all([
+          loadSessions(),
+          loadCurrentlyPlaying(),
+          loadActivity()
+        ])
+      }
+      
       setLoading(false)
     }
     init()
@@ -543,6 +559,94 @@ export default function TeacherDashboard() {
     )
   }
 
+  // Show welcome screen for new teachers without classes
+  if (!hasClasses) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-[#161622] border border-white/[0.10] rounded-2xl p-8 md:p-12 text-center"
+        >
+          <motion.div
+            initial={{ scale: 0.9 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2 }}
+            className="w-20 h-20 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6"
+          >
+            <Users className="w-10 h-10 text-amber-400" />
+          </motion.div>
+          
+          <motion.h1
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="text-3xl md:text-4xl font-bold text-white mb-4"
+          >
+            Welcome to Spell School, {teacherName}!
+          </motion.h1>
+          
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="text-lg text-gray-400 mb-8 max-w-2xl mx-auto"
+          >
+            Get started by creating your first class. Once you have a class, you can add students, create word lists, and start sessions.
+          </motion.p>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <Link
+              href="/teacher/classes"
+              className="inline-flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-xl hover:from-amber-400 hover:to-orange-500 transition-all shadow-lg shadow-amber-500/30 hover:shadow-xl"
+            >
+              <Users className="w-5 h-5" />
+            Create Your First Class
+            </Link>
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="mt-12 pt-8 border-t border-white/10"
+          >
+            <p className="text-sm text-gray-500 mb-4">What's next?</p>
+            <div className="grid md:grid-cols-3 gap-4 text-left max-w-3xl mx-auto">
+              <div className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
+                <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center mb-3">
+                  <Users className="w-5 h-5 text-amber-400" />
+                </div>
+                <h3 className="text-sm font-semibold text-white mb-1">1. Create a Class</h3>
+                <p className="text-xs text-gray-500">Set up your first class to organize your students</p>
+              </div>
+              
+              <div className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
+                <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center mb-3">
+                  <BookOpen className="w-5 h-5 text-amber-400" />
+                </div>
+                <h3 className="text-sm font-semibold text-white mb-1">2. Add Students</h3>
+                <p className="text-xs text-gray-500">Invite students to join your class</p>
+              </div>
+              
+              <div className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
+                <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center mb-3">
+                  <Gamepad2 className="w-5 h-5 text-amber-400" />
+                </div>
+                <h3 className="text-sm font-semibold text-white mb-1">3. Start Sessions</h3>
+                <p className="text-xs text-gray-500">Create sessions and assign word lists to your class</p>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
@@ -724,7 +828,12 @@ export default function TeacherDashboard() {
 
           <div className="flex-1 flex flex-col">
             {currentlyPlaying.length > 0 ? (
-              <div className="space-y-2">
+              <div 
+                className={`space-y-2 ${currentlyPlaying.length > 3 ? 'overflow-y-auto pr-2 custom-scrollbar' : ''}`}
+                style={{
+                  maxHeight: currentlyPlaying.length > 3 ? '240px' : 'none'
+                }}
+              >
                 {currentlyPlaying.map((student, i) => (
                   <motion.div
                     key={student.id}
