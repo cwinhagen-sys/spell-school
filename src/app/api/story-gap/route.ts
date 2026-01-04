@@ -874,23 +874,3 @@ export async function POST(req: NextRequest) {
     }, { status: 500 })
   }
 }
-
-    console.log('📊 Story Gap - Request completed', { wordSet: words, difficulty, latency: totalLatency, cached: !!cached })
-    if (res.ok && 'data' in res) {
-      return NextResponse.json(res.data)
-    } else {
-      return NextResponse.json({ error: 'generation_failed' }, { status: 502 })
-    }
-  } catch (e: any) {
-    const totalLatency = Date.now() - requestStart
-    console.error('📊 Story Gap - Server error', {
-      error: e?.message ?? String(e),
-      latency: totalLatency
-    })
-    return NextResponse.json({
-      error: 'server_error',
-      retryable: false,
-      details: e?.message ?? String(e)
-    }, { status: 500 })
-  }
-}

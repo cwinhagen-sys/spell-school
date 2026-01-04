@@ -120,20 +120,3 @@ export interface ScenarioDefinition {
 }
 
 
-
-  id: string
-  name: string
-  description: string
-  successRate: number
-  storyId: string
-}
-
-export interface ScenarioDefinition {
-  id: string
-  name: string
-  icon: string
-  description: string
-  goals: GoalDefinition[]
-}
-
-
