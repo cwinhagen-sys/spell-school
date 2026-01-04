@@ -138,8 +138,8 @@ export default function StudentDetailsModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-[#161622] rounded-3xl max-w-6xl w-full h-[90vh] overflow-hidden shadow-2xl flex flex-col border border-white/[0.12]">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4 pt-24">
+      <div className="bg-[#161622] rounded-3xl max-w-6xl w-full h-[85vh] overflow-hidden shadow-2xl flex flex-col border border-white/[0.12]">
         {/* Modern Header */}
         <div className="flex items-center justify-between px-8 py-6 border-b border-white/[0.12] bg-[#161622] shrink-0">
           <div className="flex items-center gap-5">
@@ -149,8 +149,6 @@ export default function StudentDetailsModal({
             <div>
               <h2 className="text-2xl font-bold text-white">{student.name}</h2>
               <div className="flex items-center gap-3 mt-1 flex-wrap">
-                <span className="text-sm text-gray-400">{student.email}</span>
-                <div className="w-1 h-1 bg-gray-600 rounded-full"></div>
                 <span className="text-sm font-medium text-gray-300 bg-white/5 px-2 py-1 rounded-lg">{student.class_name}</span>
                 {details && (
                   <>
@@ -190,7 +188,7 @@ export default function StudentDetailsModal({
         </div>
 
         {/* Content */}
-        <div className="p-8 flex-1 overflow-y-auto bg-[#161622]">
+        <div className="p-8 flex-1 overflow-y-auto bg-[#161622] custom-scrollbar">
           {loading ? (
             <div className="text-center py-16">
               <div className="animate-spin rounded-full h-12 w-12 border-2 border-amber-500/30 border-t-amber-500 mx-auto mb-4"></div>
@@ -396,7 +394,7 @@ export default function StudentDetailsModal({
                                 </div>
                                 
                                 {/* Word-by-word List */}
-                                <div className="space-y-2 max-h-96 overflow-y-auto">
+                                <div className="space-y-2 max-h-96 overflow-y-auto custom-scrollbar">
                                   {quiz.word_details.map((word, wordIndex) => (
                                     <div
                                       key={wordIndex}

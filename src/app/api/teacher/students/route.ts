@@ -33,6 +33,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Get query params
+    const { searchParams } = new URL(request.url)
+    const classId = searchParams.get('classId')
+    const dateFromParam = searchParams.get('dateFrom')
+    const dateToParam = searchParams.get('dateTo')
+    
+    // Parse date filters
+    const dateFrom = dateFromParam ? new Date(dateFromParam) : null
+    const dateTo = dateToParam ? new Date(dateToParam) : null
+
     console.log('API: Got user:', user.id, user.email)
 
     // Get teacher's classes (only non-deleted ones)
@@ -230,13 +240,23 @@ export async function GET(request: NextRequest) {
     let progressData: any[] = []
     
     if (studentIds.length > 0) {
-      const { data: progress, error: progressError } = await supabase
+      let progressQuery = supabase
         .from('student_progress')
         .select('student_id, total_points, last_played_at, games_played')
         .in('student_id', studentIds)
         .is('word_set_id', null)  // Global progress record
         .is('homework_id', null)   // Global progress record
         .is('deleted_at', null)
+      
+      // Apply date filter if provided (filter by last_played_at)
+      if (dateFrom) {
+        progressQuery = progressQuery.gte('last_played_at', dateFrom.toISOString())
+      }
+      if (dateTo) {
+        progressQuery = progressQuery.lte('last_played_at', dateTo.toISOString())
+      }
+      
+      const { data: progress, error: progressError } = await progressQuery
       
       if (progressError) {
         console.error('Error fetching progress:', progressError)
@@ -255,8 +275,21 @@ export async function GET(request: NextRequest) {
       console.log('API: Sample progress record:', progressData[0])
     }
 
-    // Combine data - use studentsWithStatus (includes unassigned)
-    const studentsWithProgress = studentsWithStatus?.map((student: any) => {
+    // Filter students by class if classId is provided
+    let filteredStudents = studentsWithStatus || []
+    if (classId) {
+      filteredStudents = filteredStudents.filter((s: any) => s.class_id === classId)
+    }
+    
+    // Filter students by date if date filter is provided
+    // Only show students that have activity in the date range
+    if (dateFrom || dateTo) {
+      const studentIdsWithActivity = new Set(progressData.map(p => p.student_id))
+      filteredStudents = filteredStudents.filter((s: any) => studentIdsWithActivity.has(s.student_id))
+    }
+    
+    // Combine data - use filtered students
+    const studentsWithProgress = filteredStudents?.map((student: any) => {
       const studentDetail = studentDetails?.find(s => s.id === student.student_id)
       const progress = progressData?.find(p => p.student_id === student.student_id)
       

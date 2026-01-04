@@ -116,6 +116,10 @@ export default function ManageStudentsPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [selectedClass, setSelectedClass] = useState<string>('')
   const [classes, setClasses] = useState<Array<{id: string, name: string}>>([])
+  const [timeFilter, setTimeFilter] = useState<'today' | '7days' | '30days' | 'all' | 'custom'>('all')
+  const [customStartDate, setCustomStartDate] = useState<string | null>(null)
+  const [customEndDate, setCustomEndDate] = useState<string | null>(null)
+  const [showCustomCalendar, setShowCustomCalendar] = useState(false)
   const [hasProgressAccess, setHasProgressAccess] = useState(false)
   const [hasQuizAccess, setHasQuizAccess] = useState(false)
   const [checkingAccess, setCheckingAccess] = useState(true)
@@ -157,6 +161,15 @@ export default function ManageStudentsPage() {
     // loadClasses will automatically load students for the selected class
     loadClasses()
   }, [])
+
+  // Reload students when time filter changes
+  useEffect(() => {
+    if (classes.length > 0) {
+      loadStudents(selectedClass || undefined)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeFilter, customStartDate, customEndDate])
+
   
   // Load TTS access status for all students
   const loadTTSAccess = async (studentIds: string[]) => {
@@ -268,7 +281,40 @@ export default function ManageStudentsPage() {
         return
       }
 
-      const response = await fetch('/api/teacher/students', {
+      // Build query string with time filter
+      const params = new URLSearchParams()
+      if (classFilter) {
+        params.append('classId', classFilter)
+      }
+      if (timeFilter !== 'all') {
+        if (timeFilter === 'today') {
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+          params.append('dateFrom', today.toISOString())
+        } else if (timeFilter === '7days') {
+          const dateFrom = new Date()
+          dateFrom.setDate(dateFrom.getDate() - 7)
+          dateFrom.setHours(0, 0, 0, 0)
+          params.append('dateFrom', dateFrom.toISOString())
+        } else if (timeFilter === '30days') {
+          const dateFrom = new Date()
+          dateFrom.setDate(dateFrom.getDate() - 30)
+          dateFrom.setHours(0, 0, 0, 0)
+          params.append('dateFrom', dateFrom.toISOString())
+        } else if (timeFilter === 'custom' && customStartDate) {
+          const dateFrom = new Date(customStartDate)
+          dateFrom.setHours(0, 0, 0, 0)
+          params.append('dateFrom', dateFrom.toISOString())
+          if (customEndDate) {
+            const dateTo = new Date(customEndDate)
+            dateTo.setHours(23, 59, 59, 999)
+            params.append('dateTo', dateTo.toISOString())
+          }
+        }
+      }
+
+      const queryString = params.toString()
+      const response = await fetch(`/api/teacher/students${queryString ? `?${queryString}` : ''}`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`
         }
@@ -276,18 +322,8 @@ export default function ManageStudentsPage() {
       const data = await response.json()
       
       if (response.ok) {
+        // API already filters by class and date, so we can use students directly
         let allStudents = data.students || []
-        
-        // Filter students based on selected class - exclude unassigned
-        if (classFilter) {
-          allStudents = allStudents.filter((s: Student) => {
-            // Only show students with active classes (not unassigned)
-            return s.class_id === classFilter && s.class_name !== 'Unassigned'
-          })
-        } else {
-          // If no filter, exclude unassigned students
-          allStudents = allStudents.filter((s: Student) => s.class_name !== 'Unassigned')
-        }
         
         // Load additional stats for each student
         const studentsWithStats = await Promise.all(
@@ -614,38 +650,119 @@ export default function ManageStudentsPage() {
 
       {/* Search and Filter */}
       <div className="bg-[#161622] rounded-2xl border border-white/[0.12] p-6 mb-8">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search students by name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/[0.12] rounded-xl text-white placeholder:text-gray-500 focus:border-amber-500/50 focus:outline-none transition-all"
-              />
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search students by name..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/[0.12] rounded-xl text-white placeholder:text-gray-500 focus:border-amber-500/50 focus:outline-none transition-all"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <select
+                value={selectedClass}
+                onChange={(e) => handleClassChange(e.target.value)}
+                className="px-4 py-3 bg-white/5 border border-white/[0.12] rounded-xl text-white focus:border-amber-500/50 focus:outline-none transition-all appearance-none cursor-pointer min-w-[200px]"
+              >
+                <option value="" className="bg-[#161622]">All active classes</option>
+                {classes.map(c => (
+                  <option key={c.id} value={c.id} className="bg-[#161622]">{c.name}</option>
+                ))}
+              </select>
+              <button
+                onClick={() => setViewMode(viewMode === 'compact' ? 'expanded' : 'compact')}
+                className="px-4 py-3 bg-white/5 border border-white/[0.12] rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center gap-2"
+                title={`Switch to ${viewMode === 'compact' ? 'expanded' : 'compact'} view`}
+              >
+                {viewMode === 'compact' ? <LayoutGrid className="w-4 h-4" /> : <List className="w-4 h-4" />}
+              </button>
             </div>
           </div>
-          <div className="flex gap-2">
-            <select
-              value={selectedClass}
-              onChange={(e) => handleClassChange(e.target.value)}
-              className="px-4 py-3 bg-white/5 border border-white/[0.12] rounded-xl text-white focus:border-amber-500/50 focus:outline-none transition-all appearance-none cursor-pointer min-w-[200px]"
-            >
-              <option value="" className="bg-[#161622]">All active classes</option>
-              {classes.map(c => (
-                <option key={c.id} value={c.id} className="bg-[#161622]">{c.name}</option>
-              ))}
-            </select>
-            <button
-              onClick={() => setViewMode(viewMode === 'compact' ? 'expanded' : 'compact')}
-              className="px-4 py-3 bg-white/5 border border-white/[0.12] rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center gap-2"
-              title={`Switch to ${viewMode === 'compact' ? 'expanded' : 'compact'} view`}
-            >
-              {viewMode === 'compact' ? <LayoutGrid className="w-4 h-4" /> : <List className="w-4 h-4" />}
-            </button>
+          <div>
+            <label className="block text-sm text-gray-400 mb-2">Time Period</label>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => { setTimeFilter('today'); setShowCustomCalendar(false) }}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  timeFilter === 'today'
+                    ? 'bg-amber-500/20 border border-amber-500/50 text-white'
+                    : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                Today
+              </button>
+              <button
+                onClick={() => { setTimeFilter('7days'); setShowCustomCalendar(false) }}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  timeFilter === '7days'
+                    ? 'bg-amber-500/20 border border-amber-500/50 text-white'
+                    : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                7 Days
+              </button>
+              <button
+                onClick={() => { setTimeFilter('30days'); setShowCustomCalendar(false) }}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  timeFilter === '30days'
+                    ? 'bg-amber-500/20 border border-amber-500/50 text-white'
+                    : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                30 Days
+              </button>
+              <button
+                onClick={() => { setTimeFilter('all'); setShowCustomCalendar(false) }}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  timeFilter === 'all'
+                    ? 'bg-amber-500/20 border border-amber-500/50 text-white'
+                    : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                All Time
+              </button>
+              <button
+                onClick={() => { setTimeFilter('custom'); setShowCustomCalendar(!showCustomCalendar) }}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  timeFilter === 'custom'
+                    ? 'bg-amber-500/20 border border-amber-500/50 text-white'
+                    : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                Custom
+              </button>
+            </div>
           </div>
+          {timeFilter === 'custom' && showCustomCalendar && (
+            <div className="pt-4 border-t border-white/10">
+              <div className="flex flex-wrap items-end gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    value={customStartDate || ''}
+                    onChange={e => setCustomStartDate(e.target.value)}
+                    className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:border-amber-500/50 focus:outline-none transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">End Date</label>
+                  <input
+                    type="date"
+                    value={customEndDate || ''}
+                    onChange={e => setCustomEndDate(e.target.value)}
+                    className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:border-amber-500/50 focus:outline-none transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1039,7 +1156,7 @@ export default function ManageStudentsPage() {
                     <div className="bg-white/5 rounded-lg p-3 border border-white/5">
                       <div className="flex items-center gap-2 mb-1">
                         <Award className="w-4 h-4 text-amber-400" />
-                        <span className="text-xs text-gray-500">Spel</span>
+                        <span className="text-xs text-gray-500">Games</span>
                       </div>
                       <div className="text-xl font-bold text-white">{student.games_played || 0}</div>
                     </div>
@@ -1047,7 +1164,7 @@ export default function ManageStudentsPage() {
                     <div className="bg-white/5 rounded-lg p-3 border border-white/5">
                       <div className="flex items-center gap-2 mb-1">
                         <Clock className="w-4 h-4 text-amber-400" />
-                        <span className="text-xs text-gray-500">Senast aktiv</span>
+                        <span className="text-xs text-gray-500">Last active</span>
                       </div>
                       <div className="text-xs font-semibold text-white">{formatDate(student.last_activity)}</div>
                     </div>

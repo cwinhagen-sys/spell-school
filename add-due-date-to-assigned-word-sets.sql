@@ -13,3 +13,4 @@ ADD COLUMN IF NOT EXISTS quiz_unlocked BOOLEAN DEFAULT false;
 COMMENT ON COLUMN assigned_word_sets.due_date IS 'Due date for the assignment';
 COMMENT ON COLUMN assigned_word_sets.quiz_unlocked IS 'Whether the quiz is unlocked for this assignment';
 
+

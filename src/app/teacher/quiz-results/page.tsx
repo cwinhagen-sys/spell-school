@@ -45,6 +45,10 @@ export default function QuizResultsPage() {
   const [wordSets, setWordSets] = useState<WordSet[]>([])
   const [selectedClass, setSelectedClass] = useState<string>('')
   const [selectedWordSet, setSelectedWordSet] = useState<string>('')
+  const [timeFilter, setTimeFilter] = useState<'today' | '7days' | '30days' | 'all' | 'custom'>('all')
+  const [customStartDate, setCustomStartDate] = useState<string | null>(null)
+  const [customEndDate, setCustomEndDate] = useState<string | null>(null)
+  const [showCustomCalendar, setShowCustomCalendar] = useState(false)
   const [results, setResults] = useState<QuizResult[]>([])
   const [sortKey, setSortKey] = useState<'student' | 'score' | 'date' | 'wordSet'>('date')
   const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc')
@@ -110,7 +114,7 @@ export default function QuizResultsPage() {
 
   useEffect(() => {
     ;(async () => {
-      console.log('Quiz Results DEBUG → useEffect triggered:', { selectedClass, selectedWordSet })
+      console.log('Quiz Results DEBUG → useEffect triggered:', { selectedClass, selectedWordSet, timeFilter, customStartDate, customEndDate })
       // Always run the query - empty values mean "show all"
       try {
         setLoading(true)
@@ -153,6 +157,30 @@ export default function QuizResultsPage() {
 
         console.log('Quiz Results DEBUG → Student IDs found:', studentIds.length)
 
+        // Calculate date filter
+        let dateFrom: Date | null = null
+        if (timeFilter === 'today') {
+          dateFrom = new Date()
+          dateFrom.setHours(0, 0, 0, 0)
+        } else if (timeFilter === '7days') {
+          dateFrom = new Date()
+          dateFrom.setDate(dateFrom.getDate() - 7)
+          dateFrom.setHours(0, 0, 0, 0)
+        } else if (timeFilter === '30days') {
+          dateFrom = new Date()
+          dateFrom.setDate(dateFrom.getDate() - 30)
+          dateFrom.setHours(0, 0, 0, 0)
+        } else if (timeFilter === 'custom' && customStartDate) {
+          dateFrom = new Date(customStartDate)
+          dateFrom.setHours(0, 0, 0, 0)
+        }
+
+        let dateTo: Date | null = null
+        if (timeFilter === 'custom' && customEndDate) {
+          dateTo = new Date(customEndDate)
+          dateTo.setHours(23, 59, 59, 999)
+        }
+
         // Build query for quiz results
         let query = supabase
           .from('student_progress')
@@ -168,6 +196,14 @@ export default function QuizResultsPage() {
           // If no students found, return empty results
           setResults([])
           return
+        }
+
+        // Apply date filter
+        if (dateFrom) {
+          query = query.gte('last_quiz_at', dateFrom.toISOString())
+        }
+        if (dateTo) {
+          query = query.lte('last_quiz_at', dateTo.toISOString())
         }
 
         if (selectedWordSet) {
@@ -265,7 +301,7 @@ export default function QuizResultsPage() {
         setLoading(false)
       }
     })()
-  }, [selectedClass, selectedWordSet])
+  }, [selectedClass, selectedWordSet, timeFilter, customStartDate, customEndDate])
 
   const sorted = useMemo(() => {
     const list = [...results]
@@ -303,9 +339,19 @@ export default function QuizResultsPage() {
 
   const fetchQuizDetails = async (result: QuizResult) => {
     const quizKey = result.id
+    const willExpand = expandedQuiz !== quizKey
     if (quizDetails[quizKey]) {
       // Already loaded, just toggle
       setExpandedQuiz(expandedQuiz === quizKey ? null : quizKey)
+      // Scroll to details after state update
+      if (willExpand) {
+        setTimeout(() => {
+          const detailsRow = document.getElementById(`quiz-details-${quizKey}`)
+          if (detailsRow) {
+            detailsRow.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' })
+          }
+        }, 100)
+      }
       return
     }
 
@@ -370,6 +416,13 @@ export default function QuizResultsPage() {
 
       setQuizDetails(prev => ({ ...prev, [quizKey]: wordDetails }))
       setExpandedQuiz(quizKey)
+      // Scroll to details after state update
+      setTimeout(() => {
+        const detailsRow = document.getElementById(`quiz-details-${quizKey}`)
+        if (detailsRow) {
+          detailsRow.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' })
+        }
+      }, 100)
     } catch (error) {
       console.error('Error fetching quiz details:', error)
     } finally {
@@ -458,7 +511,7 @@ export default function QuizResultsPage() {
         </div>
 
         <div className="bg-[#12122a]/80 backdrop-blur-sm rounded-2xl border border-white/10 p-6 mb-6 shadow-xl">
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-end gap-4">
             <div>
               <label className="block text-sm text-gray-400 mb-1">Class</label>
               <select 
@@ -485,7 +538,88 @@ export default function QuizResultsPage() {
                 ))}
               </select>
             </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Time Period</label>
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => { setTimeFilter('today'); setShowCustomCalendar(false) }}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      timeFilter === 'today'
+                        ? 'bg-violet-500/20 border border-violet-500/50 text-white'
+                        : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    Today
+                  </button>
+                  <button
+                    onClick={() => { setTimeFilter('7days'); setShowCustomCalendar(false) }}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      timeFilter === '7days'
+                        ? 'bg-violet-500/20 border border-violet-500/50 text-white'
+                        : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    7 Days
+                  </button>
+                  <button
+                    onClick={() => { setTimeFilter('30days'); setShowCustomCalendar(false) }}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      timeFilter === '30days'
+                        ? 'bg-violet-500/20 border border-violet-500/50 text-white'
+                        : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    30 Days
+                  </button>
+                  <button
+                    onClick={() => { setTimeFilter('all'); setShowCustomCalendar(false) }}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      timeFilter === 'all'
+                        ? 'bg-violet-500/20 border border-violet-500/50 text-white'
+                        : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    All Time
+                  </button>
+                  <button
+                    onClick={() => { setTimeFilter('custom'); setShowCustomCalendar(!showCustomCalendar) }}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      timeFilter === 'custom'
+                        ? 'bg-violet-500/20 border border-violet-500/50 text-white'
+                        : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    Custom
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
+          {timeFilter === 'custom' && showCustomCalendar && (
+            <div className="mt-4 pt-4 border-t border-white/10">
+              <div className="flex flex-wrap items-end gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    value={customStartDate || ''}
+                    onChange={e => setCustomStartDate(e.target.value)}
+                    className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:border-violet-500/50 focus:outline-none transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">End Date</label>
+                  <input
+                    type="date"
+                    value={customEndDate || ''}
+                    onChange={e => setCustomEndDate(e.target.value)}
+                    className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:border-violet-500/50 focus:outline-none transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {loading ? (
@@ -653,12 +787,12 @@ export default function QuizResultsPage() {
                                 {isExpanded ? (
                                   <>
                                     <ChevronUp className="w-4 h-4" />
-                                    <span>Dölj detaljer</span>
+                                    <span>Hide details</span>
                                   </>
                                 ) : (
                                   <>
                                     <ChevronDown className="w-4 h-4" />
-                                    <span>Visa detaljer</span>
+                                    <span>Show details</span>
                                   </>
                                 )}
                               </>
@@ -667,29 +801,29 @@ export default function QuizResultsPage() {
                         </td>
                       </tr>
                       {isExpanded && hasDetails && (
-                        <tr key={`${result.id}-details`} className="bg-white/5">
+                        <tr key={`${result.id}-details`} id={`quiz-details-${result.id}`} className="bg-white/5 scroll-mt-20">
                           <td colSpan={6} className="px-6 py-4">
-                            <div className="bg-white/5 rounded-lg border-2 border-violet-500/30 p-5">
-                              <h4 className="text-lg font-semibold text-white mb-4">Detaljer per ord</h4>
+                            <div className="bg-white/5 rounded-lg border-2 border-violet-500/30 p-5 max-h-[600px] overflow-y-auto custom-scrollbar">
+                              <h4 className="text-lg font-semibold text-white mb-4">Word Details</h4>
                               
                               {/* Summary Stats - Compact */}
                               {counts && (
                                 <div className="grid grid-cols-4 gap-2 mb-4">
                                   <div className="text-center p-2 bg-emerald-500/20 rounded-lg border border-emerald-500/50">
                                     <div className="text-xl font-bold text-emerald-400">{counts.correct}</div>
-                                    <div className="text-xs text-emerald-500">Rätt</div>
+                                    <div className="text-xs text-emerald-500">Correct</div>
                                   </div>
                                   <div className="text-center p-2 bg-amber-500/20 rounded-lg border border-amber-500/50">
                                     <div className="text-xl font-bold text-amber-400">{counts.partial}</div>
-                                    <div className="text-xs text-amber-500">Nästan</div>
+                                    <div className="text-xs text-amber-500">Partial</div>
                                   </div>
                                   <div className="text-center p-2 bg-red-500/20 rounded-lg border border-red-500/50">
                                     <div className="text-xl font-bold text-red-400">{counts.wrong}</div>
-                                    <div className="text-xs text-red-500">Fel</div>
+                                    <div className="text-xs text-red-500">Wrong</div>
                                   </div>
                                   <div className="text-center p-2 bg-white/5 rounded-lg border border-white/10">
                                     <div className="text-xl font-bold text-gray-400">{counts.empty}</div>
-                                    <div className="text-xs text-gray-500">Tomt</div>
+                                    <div className="text-xs text-gray-500">Empty</div>
                                   </div>
                                 </div>
                               )}
@@ -710,13 +844,13 @@ export default function QuizResultsPage() {
                                       <div className="flex-1 min-w-0">
                                         <div className="font-semibold text-white text-sm mb-1 truncate">{word.prompt}</div>
                                         <div className="text-xs text-gray-400 mb-0.5">
-                                          <span className="font-medium">Förväntat: </span>
+                                          <span className="font-medium">Expected: </span>
                                           <span className="text-gray-300 truncate block">{word.expected}</span>
                                         </div>
                                         <div className="text-xs text-gray-400">
-                                          <span className="font-medium">Svar: </span>
+                                          <span className="font-medium">Answer: </span>
                                           <span className={word.given ? 'text-gray-300 truncate block' : 'text-gray-500 italic'}>
-                                            {word.given || '(tomt)'}
+                                            {word.given || '(empty)'}
                                           </span>
                                         </div>
                                       </div>
@@ -726,16 +860,16 @@ export default function QuizResultsPage() {
                                         word.verdict === 'wrong' ? 'bg-red-500/30 text-red-400' :
                                         'bg-white/10 text-gray-400'
                                       }`}>
-                                        {word.verdict === 'correct' ? 'Rätt' :
-                                         word.verdict === 'partial' ? 'Nästan' :
-                                         word.verdict === 'wrong' ? 'Fel' : 'Tomt'}
+                                        {word.verdict === 'correct' ? 'Correct' :
+                                         word.verdict === 'partial' ? 'Partial' :
+                                         word.verdict === 'wrong' ? 'Wrong' : 'Empty'}
                                       </div>
                                     </div>
                                   </div>
                                 ))}
                                 {wordDetails.length > 8 && (
                                   <div className="col-span-full text-center py-2 text-sm text-gray-400">
-                                    + {wordDetails.length - 8} fler ord
+                                    + {wordDetails.length - 8} more words
                                   </div>
                                 )}
                               </div>
@@ -747,8 +881,8 @@ export default function QuizResultsPage() {
                         <tr key={`${result.id}-no-details`} className="bg-white/5">
                           <td colSpan={6} className="px-6 py-4">
                             <div className="bg-white/5 rounded-lg border-2 border-white/10 p-5 text-center">
-                              <p className="text-gray-400">Ingen detaljerad information tillgänglig för detta quiz.</p>
-                              <p className="text-sm text-gray-500 mt-2">Detaljerad information sparas endast för quiz som slutförts efter denna funktion lades till.</p>
+                              <p className="text-gray-400">No detailed information available for this quiz.</p>
+                              <p className="text-sm text-gray-500 mt-2">Detailed information is only saved for quizzes completed after this feature was added.</p>
                             </div>
                           </td>
                         </tr>

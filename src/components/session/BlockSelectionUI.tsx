@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckCircle2, Circle, Palette, Sparkles, Layers, ArrowLeft } from 'lucide-react'
+import { Circle, Sparkles, Layers, ArrowLeft } from 'lucide-react'
 import { COLOR_GRIDS } from '@/components/ColorGridSelector'
 
 interface Word {
@@ -87,8 +87,8 @@ export default function BlockSelectionUI({
           </div>
         </div>
 
-        {/* Blocks Grid - Refined */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        {/* Blocks Grid - Compact */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 mb-6">
           {colorBlocks.map((block, index) => {
             const isSelected = selectedBlocks.includes(block.id)
             const colorScheme = COLOR_GRIDS[index % COLOR_GRIDS.length]
@@ -97,80 +97,23 @@ export default function BlockSelectionUI({
               <button
                 key={block.id}
                 onClick={() => onToggleBlock(block.id)}
-                className={`group relative p-5 rounded-xl text-left transition-all duration-200 ${
-                  isSelected
-                    ? 'bg-[#161622] border-2 shadow-lg'
-                    : 'bg-[#161622] border border-white/[0.08] hover:border-white/[0.15] hover:shadow-md'
-                }`}
+                className="rounded-lg transition-all duration-200 border-2 overflow-hidden hover:scale-105"
                 style={{
-                  borderColor: isSelected ? colorScheme.hex : undefined,
-                  boxShadow: isSelected ? `0 4px 12px ${colorScheme.hex}20` : undefined
+                  backgroundColor: colorScheme.hex,
+                  borderColor: isSelected ? '#ffffff' : 'transparent',
+                  boxShadow: isSelected ? `0 0 0 2px ${colorScheme.hex}, 0 4px 12px rgba(0,0,0,0.2)` : '0 2px 8px rgba(0,0,0,0.15)'
                 }}
               >
-                
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    {/* Color indicator - refined */}
-                    <div 
-                      className="w-10 h-10 rounded-lg flex items-center justify-center border"
-                      style={{ 
-                        backgroundColor: isSelected ? `${colorScheme.hex}15` : '#1a1a2e',
-                        borderColor: isSelected ? colorScheme.hex : 'rgba(255, 255, 255, 0.1)'
-                      }}
-                    >
-                      <span 
-                        className="font-bold text-base"
-                        style={{ color: colorScheme.hex }}
-                      >
-                        {index + 1}
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className={`font-semibold text-base transition-colors ${isSelected ? 'text-white' : 'text-gray-300 group-hover:text-white'}`}>
-                        {block.color}
-                      </h3>
-                      <p className="text-xs font-medium text-gray-500 mt-0.5">
-                        {block.words.length} {block.words.length === 1 ? 'word' : 'words'}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Checkbox - refined */}
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200 ${
-                    isSelected 
-                      ? 'bg-white/10' 
-                      : 'bg-white/5 group-hover:bg-white/8'
-                  }`}>
-                    {isSelected ? (
-                      <CheckCircle2 className="w-4.5 h-4.5" style={{ color: colorScheme.hex }} />
-                    ) : (
-                      <Circle className="w-4.5 h-4.5 text-gray-600 group-hover:text-gray-400" />
-                    )}
-                  </div>
-                </div>
-                
-                {/* Words preview - refined */}
-                <div className="mt-3 pt-3 border-t border-white/[0.08]">
-                  <div className="flex flex-wrap gap-1.5">
-                    {block.words.slice(0, 5).map((word, wordIdx) => (
-                      <span
+                <div className="p-3">
+                  <div className="flex flex-col gap-1.5">
+                    {block.words.slice(0, 6).map((word, wordIdx) => (
+                      <div
                         key={wordIdx}
-                        className={`text-[11px] px-2 py-0.5 rounded-md transition-all ${
-                          isSelected 
-                            ? 'bg-white/12 text-white' 
-                            : 'bg-white/5 text-gray-400 group-hover:bg-white/8'
-                        }`}
+                        className="text-sm text-white font-medium text-center py-1"
                       >
                         {word.en}
-                      </span>
+                      </div>
                     ))}
-                    {block.words.length > 5 && (
-                      <span className={`text-[11px] px-2 py-0.5 rounded-md ${
-                        isSelected ? 'text-white/50' : 'text-gray-500'
-                      }`}>
-                        +{block.words.length - 5}
-                      </span>
-                    )}
                   </div>
                 </div>
               </button>

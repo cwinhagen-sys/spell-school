@@ -86,3 +86,4 @@ SELECT 'Profile auto-create trigger installed successfully' as status;
 
 
 
+

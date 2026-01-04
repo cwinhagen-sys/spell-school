@@ -384,3 +384,4 @@ För att testa funktionaliteten:
    - Verifiera att nedgraderingar sker när förväntat
 
 
+

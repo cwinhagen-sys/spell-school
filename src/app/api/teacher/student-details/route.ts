@@ -116,13 +116,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get student ID from query params
+    // Get student ID and date filters from query params
     const { searchParams } = new URL(request.url)
     const studentId = searchParams.get('studentId')
+    const dateFromParam = searchParams.get('dateFrom')
+    const dateToParam = searchParams.get('dateTo')
     
     if (!studentId) {
       return NextResponse.json({ error: 'Student ID required' }, { status: 400 })
     }
+
+    // Parse date filters
+    const dateFrom = dateFromParam ? new Date(dateFromParam) : null
+    const dateTo = dateToParam ? new Date(dateToParam) : null
 
     console.log('📊 Fetching detailed stats for student:', studentId)
     console.log('📊 Teacher user ID:', user.id)
@@ -251,11 +257,21 @@ export async function GET(request: NextRequest) {
     // Fetch game sessions with score, accuracy, and duration
     let gameSessions: any[] = []
     try {
-      const { data, error } = await supabase
+      let gameSessionsQuery = supabase
         .from('game_sessions')
         .select('id, game_type, score, accuracy_pct, duration_sec, started_at, finished_at, word_set_id, homework_id')
         .eq('student_id', studentId)
         .not('finished_at', 'is', null)
+      
+      // Apply date filter if provided
+      if (dateFrom) {
+        gameSessionsQuery = gameSessionsQuery.gte('finished_at', dateFrom.toISOString())
+      }
+      if (dateTo) {
+        gameSessionsQuery = gameSessionsQuery.lte('finished_at', dateTo.toISOString())
+      }
+      
+      const { data, error } = await gameSessionsQuery
         .order('finished_at', { ascending: false })
         .limit(100)
       
@@ -333,7 +349,7 @@ export async function GET(request: NextRequest) {
 
     // ===== 6. QUIZ RESULTS =====
     // Get latest quiz result per word_set_id (only show latest per word set)
-    const { data: allQuizResults } = await supabase
+    let allQuizResultsQuery = supabase
       .from('student_progress')
       .select(`
         last_quiz_score,
@@ -346,6 +362,16 @@ export async function GET(request: NextRequest) {
       .eq('student_id', studentId)
       .not('last_quiz_score', 'is', null)
       .not('last_quiz_total', 'is', null)
+    
+    // Apply date filter if provided
+    if (dateFrom) {
+      allQuizResultsQuery = allQuizResultsQuery.gte('last_quiz_at', dateFrom.toISOString())
+    }
+    if (dateTo) {
+      allQuizResultsQuery = allQuizResultsQuery.lte('last_quiz_at', dateTo.toISOString())
+    }
+    
+    const { data: allQuizResults } = await allQuizResultsQuery
       .order('last_quiz_at', { ascending: false })
 
     // Also get session quiz results where student participated via dashboard (has student_id)
@@ -361,7 +387,7 @@ export async function GET(request: NextRequest) {
         const participantIds = sessionParticipants.map(sp => sp.id)
         
         // Get quiz responses for these participants
-        const { data: sessionQuizResponses } = await supabase
+        let sessionQuizResponsesQuery = supabase
           .from('session_quiz_responses')
           .select(`
             id,
@@ -377,6 +403,16 @@ export async function GET(request: NextRequest) {
             )
           `)
           .in('participant_id', participantIds)
+        
+        // Apply date filter if provided (filter on created_at as it's always present)
+        if (dateFrom) {
+          sessionQuizResponsesQuery = sessionQuizResponsesQuery.gte('created_at', dateFrom.toISOString())
+        }
+        if (dateTo) {
+          sessionQuizResponsesQuery = sessionQuizResponsesQuery.lte('created_at', dateTo.toISOString())
+        }
+        
+        const { data: sessionQuizResponses } = await sessionQuizResponsesQuery
           .order('created_at', { ascending: false })
         
         if (sessionQuizResponses && sessionQuizResponses.length > 0) {
@@ -437,12 +473,22 @@ export async function GET(request: NextRequest) {
     }
 
     // Also get quiz sessions with detailed evaluations from game_sessions
-    const { data: quizSessions } = await supabase
+    let quizSessionsQuery = supabase
       .from('game_sessions')
       .select('id, word_set_id, homework_id, score, accuracy_pct, finished_at, details')
       .eq('student_id', studentId)
       .eq('game_type', 'quiz')
       .not('finished_at', 'is', null)
+    
+    // Apply date filter if provided
+    if (dateFrom) {
+      quizSessionsQuery = quizSessionsQuery.gte('finished_at', dateFrom.toISOString())
+    }
+    if (dateTo) {
+      quizSessionsQuery = quizSessionsQuery.lte('finished_at', dateTo.toISOString())
+    }
+    
+    const { data: quizSessions } = await quizSessionsQuery
       .order('finished_at', { ascending: false })
     
     console.log('📊 Quiz sessions found:', quizSessions?.length || 0)
